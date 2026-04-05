@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @layer base {
-  body {
-    @apply bg-white text-black transition-colors duration-300;
+  :root {
+    --transition-duration: 300ms;
   }
   
-  body[data-theme="dark"] {
-    @apply bg-black text-white;
+  body {
+    @apply transition-colors duration-300;
   }
 }
