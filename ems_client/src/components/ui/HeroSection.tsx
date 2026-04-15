@@ -284,7 +284,7 @@ const ShaderMaterial = ({
     timeLocation.value = timestamp;
 
     if (material.uniforms.u_mouse) {
-       material.uniforms.u_mouse.value.set(mouseRef.current.x, mouseRef.current.y);
+      material.uniforms.u_mouse.value.set(mouseRef.current.x, mouseRef.current.y);
     }
   });
 
@@ -519,7 +519,7 @@ export const HeroSection = ({ className }: HeroSectionProps) => {
         <div className="flex flex-1 flex-col lg:flex-row ">
           {/* Left side (form) */}
           <div className="flex-1 flex flex-col justify-center items-center">
-            <div className="w-full mt-[150px] max-w-sm">
+            <div className="w-full mt-[150px] max-w-3xl">
               <AnimatePresence mode="wait">
                 {step === "email" ? (
                   <motion.div
@@ -657,8 +657,8 @@ export const HeroSection = ({ className }: HeroSectionProps) => {
                       </motion.button>
                       <motion.button
                         className={`flex-1 rounded-full font-medium py-3 border transition-all duration-300 ${code.every(d => d !== "")
-                            ? "bg-black dark:bg-white text-white dark:text-black border-transparent hover:bg-black/90 dark:hover:bg-white/90 cursor-pointer"
-                            : "bg-gray-200 dark:bg-[#111] text-black/50 dark:text-white/50 border-black/10 dark:border-white/10 cursor-not-allowed"
+                          ? "bg-black dark:bg-white text-white dark:text-black border-transparent hover:bg-black/90 dark:hover:bg-white/90 cursor-pointer"
+                          : "bg-gray-200 dark:bg-[#111] text-black/50 dark:text-white/50 border-black/10 dark:border-white/10 cursor-not-allowed"
                           }`}
                         disabled={!code.every(d => d !== "")}
                       >
