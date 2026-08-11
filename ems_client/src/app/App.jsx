@@ -1,7 +1,7 @@
 import './App.css'
-import { Navbar } from './components/Molecules/Navbar'
-import EventCard from './components/Molecules/EventCard'
-import { HeroSection } from './components/ui/HeroSection'
+import { Navbar } from '../components/Molecules/Navbar'
+import EventCard from '../components/Molecules/EventCard'
+import { HeroSection } from '../components/ui/HeroSection'
 
 function App() {
   return (
