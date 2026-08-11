@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "../Organisms/ThemeToggler";
 
-const AnimatedNavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
+const AnimatedNavLink = ({ href, children }) => {
   const defaultTextColor = 'text-gray-600 dark:text-gray-300';
   const hoverTextColor = 'text-black dark:text-white';
   const textSizeClass = 'text-sm';
@@ -23,7 +23,7 @@ const AnimatedNavLink = ({ href, children }: { href: string; children: React.Rea
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [headerShapeClass, setHeaderShapeClass] = useState('rounded-full');
-  const shapeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shapeTimeoutRef = useRef(null);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -34,9 +34,7 @@ export function Navbar() {
       clearTimeout(shapeTimeoutRef.current);
     }
 
-    if (isOpen) {
-      setHeaderShapeClass('rounded-xl');
-    } else {
+    if (!isOpen) {
       shapeTimeoutRef.current = setTimeout(() => {
         setHeaderShapeClass('rounded-full');
       }, 300);
@@ -48,6 +46,8 @@ export function Navbar() {
       }
     };
   }, [isOpen]);
+
+  const currentHeaderShapeClass = isOpen ? 'rounded-xl' : headerShapeClass;
 
   const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
@@ -92,7 +92,7 @@ export function Navbar() {
       `fixed top-6 left-1/2 transform -translate-x-1/2 z-50
                        flex flex-col items-center
                        pl-6 pr-6 py-3 backdrop-blur-sm
-                       ${headerShapeClass}
+                       ${currentHeaderShapeClass}
                        border border-gray-300 dark:border-[#333] bg-white/70 dark:bg-[#1f1f1f57] shadow-sm dark:shadow-none
                        w-[calc(100%-2rem)] sm:w-auto
                        transition-[border-radius] duration-0 ease-in-out`

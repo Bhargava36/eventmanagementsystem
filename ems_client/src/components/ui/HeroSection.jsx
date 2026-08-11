@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -9,28 +9,6 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 
 import * as THREE from "three";
 
-type Uniforms = {
-  [key: string]: {
-    value: number[] | number[][] | number;
-    type: string;
-  };
-};
-
-interface ShaderProps {
-  source: string;
-  uniforms: {
-    [key: string]: {
-      value: number[] | number[][] | number;
-      type: string;
-    };
-  };
-  maxFps?: number;
-}
-
-interface HeroSectionProps {
-  className?: string;
-}
-
 export const CanvasRevealEffect = ({
   animationSpeed = 10,
   opacities = [0.3, 0.3, 0.3, 0.5, 0.5, 0.5, 0.8, 0.8, 0.8, 1],
@@ -38,18 +16,10 @@ export const CanvasRevealEffect = ({
   containerClassName,
   dotSize,
   showGradient = true,
-  reverse = false, // This controls the direction
-}: {
-  animationSpeed?: number;
-  opacities?: number[];
-  colors?: number[][];
-  containerClassName?: string;
-  dotSize?: number;
-  showGradient?: boolean;
-  reverse?: boolean; // This prop determines the direction
+  reverse = false,
 }) => {
   return (
-    <div className={cn("h-full relative w-full", containerClassName)}> {/* Removed bg-white */}
+    <div className={cn("h-full relative w-full", containerClassName)}>
       <div className="h-full w-full">
         <DotMatrix
           colors={colors ?? [[0, 255, 255]]}
@@ -57,7 +27,6 @@ export const CanvasRevealEffect = ({
           opacities={
             opacities ?? [0.3, 0.3, 0.3, 0.5, 0.5, 0.5, 0.8, 0.8, 0.8, 1]
           }
-          // Pass reverse state and speed via string flags in the empty shader prop
           shader={`
             ${reverse ? 'u_reverse_active' : 'false'}_;
             animation_speed_factor_${animationSpeed.toFixed(1)}_;
@@ -66,32 +35,20 @@ export const CanvasRevealEffect = ({
         />
       </div>
       {showGradient && (
-        // Adjust gradient colors if needed based on background (was bg-white, now likely uses containerClassName bg)
         <div className="absolute inset-0 bg-gradient-to-t from-white to-white/0 dark:from-black dark:to-black/0" />
       )}
     </div>
   );
 };
 
-
-interface DotMatrixProps {
-  colors?: number[][];
-  opacities?: number[];
-  totalSize?: number;
-  dotSize?: number;
-  shader?: string;
-  center?: ("x" | "y")[];
-}
-
-const DotMatrix: React.FC<DotMatrixProps> = ({
+const DotMatrix = ({
   colors = [[0, 0, 0]],
   opacities = [0.04, 0.04, 0.04, 0.04, 0.04, 0.08, 0.08, 0.08, 0.08, 0.14],
   totalSize = 20,
   dotSize = 2,
-  shader = "", // This shader string will now contain the animation logic
+  shader = "",
   center = ["x", "y"],
 }) => {
-  // ... uniforms calculation remains the same for colors, opacities, etc.
   const uniforms = React.useMemo(() => {
     let colorsArray = [
       colors[0],
@@ -142,15 +99,14 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
         type: "uniform1f",
       },
       u_reverse: {
-        value: shader.includes("u_reverse_active") ? 1 : 0, // Convert boolean to number (1 or 0)
-        type: "uniform1i", // Use 1i for bool in WebGL1/GLSL100, or just bool for GLSL300+ if supported
+        value: shader.includes("u_reverse_active") ? 1 : 0,
+        type: "uniform1i",
       },
     };
-  }, [colors, opacities, totalSize, dotSize, shader]); // Add shader to dependencies
+  }, [colors, opacities, totalSize, dotSize, shader]);
 
   return (
     <Shader
-      // The main animation logic is now built *outside* the shader prop
       source={`
         precision mediump float;
         in vec2 fragCoord;
@@ -162,7 +118,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
         uniform float u_dot_size;
         uniform vec2 u_resolution;
         uniform vec2 u_mouse;
-        uniform int u_reverse; // Changed from bool to int
+        uniform int u_reverse;
 
         out vec4 fragColor;
 
@@ -191,7 +147,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
             vec2 st2 = vec2(int(st.x / u_total_size), int(st.y / u_total_size));
 
             float frequency = 5.0;
-            float show_offset = random(st2); // Used for initial opacity random pick and color
+            float show_offset = random(st2);
             float rand = random(st2 * floor((u_time / frequency) + show_offset + frequency));
             opacity *= u_opacities[int(rand * 10.0)];
             opacity *= 1.0 - step(u_dot_size / u_total_size, fract(st.x / u_total_size));
@@ -199,112 +155,54 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
 
             vec3 color = u_colors[int(show_offset * 6.0)];
 
-            // --- Animation Timing Logic ---
-            float animation_speed_factor = 0.5; // Extract speed from shader string
+            float animation_speed_factor = 0.5;
             vec2 center_grid = u_resolution / 2.0 / u_total_size;
             float dist_from_center = distance(center_grid, st2);
 
-            // Calculate timing offset for Intro (from center)
             float timing_offset_intro = dist_from_center * 0.01 + (random(st2) * 0.15);
 
-            // Calculate timing offset for Outro (from edges)
-            // Max distance from center to a corner of the grid
             float max_grid_dist = distance(center_grid, vec2(0.0, 0.0));
             float timing_offset_outro = (max_grid_dist - dist_from_center) * 0.02 + (random(st2 + 42.0) * 0.2);
-
 
             float current_timing_offset;
             if (u_reverse == 1) {
                 current_timing_offset = timing_offset_outro;
-                 // Outro logic: opacity starts high, goes to 0 when time passes offset
                  opacity *= 1.0 - step(current_timing_offset, u_time * animation_speed_factor);
-                 // Clamp for fade-out transition
                  opacity *= clamp((step(current_timing_offset + 0.1, u_time * animation_speed_factor)) * 1.25, 1.0, 1.25);
             } else {
                 current_timing_offset = timing_offset_intro;
-                 // Intro logic: opacity starts 0, goes to base opacity when time passes offset
                  opacity *= step(current_timing_offset, u_time * animation_speed_factor);
-                 // Clamp for fade-in transition
                  opacity *= clamp((1.0 - step(current_timing_offset + 0.1, u_time * animation_speed_factor)) * 1.25, 1.0, 1.25);
             }
 
-            // --- Mouse Interaction ---
-            // Calculate mouse pixel coordinates, mapping [-1, 1] device coordinates to resolution
-            // Y is inverted in Three.js pointer vs standard CSS
             vec2 mouse_pixel = vec2((u_mouse.x * 0.5 + 0.5) * u_resolution.x, (-u_mouse.y * 0.5 + 0.5) * u_resolution.y);
             float dist_to_mouse = distance(mouse_pixel, st);
-            float mouse_effect = smoothstep(300.0, 0.0, dist_to_mouse); // 300px radius effect
+            float mouse_effect = smoothstep(300.0, 0.0, dist_to_mouse);
             
-            // Add mouse effect to current opacity, clamping to 1.0 max
             opacity += mouse_effect * 0.6;
             opacity = clamp(opacity, 0.0, 1.0);
 
             fragColor = vec4(color, opacity);
-            fragColor.rgb *= fragColor.a; // Premultiply alpha
+            fragColor.rgb *= fragColor.a;
         }`}
       uniforms={uniforms}
-      maxFps={60}
     />
   );
 };
 
-
 const ShaderMaterial = ({
   source,
   uniforms,
-  maxFps = 60,
-}: {
-  source: string;
-  hovered?: boolean;
-  maxFps?: number;
-  uniforms: Uniforms;
 }) => {
   const { size } = useThree();
-  const ref = useRef<THREE.Mesh>(null);
+  const ref = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0 });
-  let lastFrameTime = 0;
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseRef.current.x = (e.clientX / window.innerWidth) * 2 - 1;
-      mouseRef.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
-  useFrame((state) => {
-    if (!ref.current) return;
-    const timestamp = state.clock.getElapsedTime();
-
-    lastFrameTime = timestamp;
-
-    const material: any = ref.current.material;
-    const timeLocation = material.uniforms.u_time;
-    timeLocation.value = timestamp;
-
-    if (material.uniforms.u_mouse) {
-      material.uniforms.u_mouse.value.set(mouseRef.current.x, mouseRef.current.y);
-    }
-  });
-
-  useEffect(() => {
-    if (ref.current) {
-      const material: any = ref.current.material;
-      const updatedUniforms = getUniforms();
-      for (const key in updatedUniforms) {
-        if (material.uniforms[key] && key !== "u_time") {
-          material.uniforms[key].value = updatedUniforms[key].value;
-        }
-      }
-    }
-  }, [uniforms]);
-
-  const getUniforms = () => {
-    const preparedUniforms: any = {};
+  const getUniforms = useCallback(() => {
+    const preparedUniforms = {};
 
     for (const uniformName in uniforms) {
-      const uniform: any = uniforms[uniformName];
+      const uniform = uniforms[uniformName];
 
       switch (uniform.type) {
         case "uniform1f":
@@ -324,7 +222,7 @@ const ShaderMaterial = ({
           break;
         case "uniform3fv":
           preparedUniforms[uniformName] = {
-            value: uniform.value.map((v: number[]) =>
+            value: uniform.value.map((v) =>
               new THREE.Vector3().fromArray(v)
             ),
             type: "3fv",
@@ -346,11 +244,44 @@ const ShaderMaterial = ({
     preparedUniforms["u_mouse"] = { value: new THREE.Vector2(0, 0), type: "2f" };
     preparedUniforms["u_resolution"] = {
       value: new THREE.Vector2(size.width * 2, size.height * 2),
-    }; // Initialize u_resolution
+    };
     return preparedUniforms;
-  };
+  }, [size.width, size.height, uniforms]);
 
-  // Shader material
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      mouseRef.current.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseRef.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
+  useFrame((state) => {
+    if (!ref.current) return;
+    const timestamp = state.clock.getElapsedTime();
+
+    const material = ref.current.material;
+    const timeLocation = material.uniforms.u_time;
+    timeLocation.value = timestamp;
+
+    if (material.uniforms.u_mouse) {
+      material.uniforms.u_mouse.value.set(mouseRef.current.x, mouseRef.current.y);
+    }
+  });
+
+  useEffect(() => {
+    if (ref.current) {
+      const material = ref.current.material;
+      const updatedUniforms = getUniforms();
+      for (const key in updatedUniforms) {
+        if (material.uniforms[key] && key !== "u_time") {
+          material.uniforms[key].value = updatedUniforms[key].value;
+        }
+      }
+    }
+  }, [getUniforms, uniforms]);
+
   const material = useMemo(() => {
     const materialObject = new THREE.ShaderMaterial({
       vertexShader: `
@@ -375,44 +306,40 @@ const ShaderMaterial = ({
     });
 
     return materialObject;
-  }, [size.width, size.height, source]);
+  }, [getUniforms, source]);
 
   return (
-    <mesh ref={ref as any}>
+    <mesh ref={ref}>
       <planeGeometry args={[2, 2]} />
       <primitive object={material} attach="material" />
     </mesh>
   );
 };
 
-const Shader: React.FC<ShaderProps> = ({ source, uniforms, maxFps = 60 }) => {
+const Shader = ({ source, uniforms }) => {
   return (
     <Canvas className="absolute inset-0  h-full w-full">
-      <ShaderMaterial source={source} uniforms={uniforms} maxFps={maxFps} />
+      <ShaderMaterial source={source} uniforms={uniforms} />
     </Canvas>
   );
 };
 
-// ... existing components (CanvasRevealEffect, DotMatrix, etc.)
-
-export const HeroSection = ({ className }: HeroSectionProps) => {
+export const HeroSection = ({ className }) => {
   const { theme } = useTheme();
   const [email, setEmail] = useState("");
-  const [step, setStep] = useState<"email" | "code" | "success">("email");
+  const [step, setStep] = useState("email");
   const [code, setCode] = useState(["", "", "", "", "", ""]);
-  const codeInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const codeInputRefs = useRef([]);
   const [initialCanvasVisible, setInitialCanvasVisible] = useState(true);
   const [reverseCanvasVisible, setReverseCanvasVisible] = useState(false);
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = (e) => {
     e.preventDefault();
     if (email) {
       setStep("code");
     }
   };
 
-  // Focus first input when code screen appears
   useEffect(() => {
     if (step === "code") {
       setTimeout(() => {
@@ -421,30 +348,25 @@ export const HeroSection = ({ className }: HeroSectionProps) => {
     }
   }, [step]);
 
-  const handleCodeChange = (index: number, value: string) => {
+  const handleCodeChange = (index, value) => {
     if (value.length <= 1) {
       const newCode = [...code];
       newCode[index] = value;
       setCode(newCode);
 
-      // Focus next input if value is entered
       if (value && index < 5) {
         codeInputRefs.current[index + 1]?.focus();
       }
 
-      // Check if code is complete
       if (index === 5 && value) {
         const isComplete = newCode.every(digit => digit.length === 1);
         if (isComplete) {
-          // First show the new reverse canvas
           setReverseCanvasVisible(true);
 
-          // Then hide the original canvas after a small delay
           setTimeout(() => {
             setInitialCanvasVisible(false);
           }, 50);
 
-          // Transition to success screen after animation
           setTimeout(() => {
             setStep("success");
           }, 2000);
@@ -453,7 +375,7 @@ export const HeroSection = ({ className }: HeroSectionProps) => {
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (index, e) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
       codeInputRefs.current[index - 1]?.focus();
     }
@@ -462,7 +384,6 @@ export const HeroSection = ({ className }: HeroSectionProps) => {
   const handleBackClick = () => {
     setStep("email");
     setCode(["", "", "", "", "", ""]);
-    // Reset animations if going back
     setReverseCanvasVisible(false);
     setInitialCanvasVisible(true);
   };
@@ -470,7 +391,6 @@ export const HeroSection = ({ className }: HeroSectionProps) => {
   return (
     <div className={cn("flex w-[100%] flex-col min-h-screen bg-white dark:bg-black relative transition-colors duration-300", className)}>
       <div className="absolute inset-0 z-0">
-        {/* Initial canvas (forward animation) */}
         {initialCanvasVisible && (
           <div className="absolute inset-0">
             <CanvasRevealEffect
@@ -489,7 +409,6 @@ export const HeroSection = ({ className }: HeroSectionProps) => {
           </div>
         )}
 
-        {/* Reverse canvas (appears when code is complete) */}
         {reverseCanvasVisible && (
           <div className="absolute inset-0">
             <CanvasRevealEffect
@@ -512,12 +431,8 @@ export const HeroSection = ({ className }: HeroSectionProps) => {
         <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white to-white/0 dark:from-black dark:to-black/0 pointer-events-none" />
       </div>
 
-      {/* Content Layer */}
       <div className="relative z-10 flex flex-col flex-1">
-
-        {/* Main content container */}
         <div className="flex flex-1 flex-col lg:flex-row ">
-          {/* Left side (form) */}
           <div className="flex-1 flex flex-col justify-center items-center">
             <div className="w-full mt-[150px] max-w-3xl">
               <AnimatePresence mode="wait">
@@ -538,7 +453,6 @@ export const HeroSection = ({ className }: HeroSectionProps) => {
                         Streamline registrations, manage attendees, and deliver exceptional experiences from a single powerful dashboard.
                       </p>
                     </div>
-
 
                     <div className="space-y-4">
                       <button className="backdrop-blur-[2px] w-full flex items-center justify-center gap-3 bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 text-black dark:text-white border border-gray-300 dark:border-white/10 rounded-full py-3 px-4 transition-colors shadow-sm dark:shadow-none">
@@ -711,7 +625,6 @@ export const HeroSection = ({ className }: HeroSectionProps) => {
               </AnimatePresence>
             </div>
           </div>
-
         </div>
       </div>
     </div>

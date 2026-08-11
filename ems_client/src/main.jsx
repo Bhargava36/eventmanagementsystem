@@ -5,7 +5,7 @@ import App from './App'
 import { ThemeProvider } from './Contexts/ThemeContext'
 import { BrowserRouter } from 'react-router-dom'
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <ThemeProvider>
