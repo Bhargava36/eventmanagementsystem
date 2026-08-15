@@ -59,12 +59,10 @@ export function Navbar() {
   );
 
   const navLinksData = [
-    { label: 'Manifesto', href: '#1' },
-    { label: 'Careers', href: '#2' },
+    { label: 'Login', href: '/' },
+    { label: 'Register', href: '/register' },
     { label: 'Discover', href: '#3' },
     { label: 'Manifesto', href: '#1' },
-    { label: 'Careers', href: '#2' },
-    { label: 'Discover', href: '#3' },
   ];
 
   const loginButtonElement = (
@@ -105,7 +103,7 @@ export function Navbar() {
 
         <nav className="hidden sm:flex items-center space-x-4 sm:space-x-6 text-sm">
           {navLinksData.map((link) => (
-            <AnimatedNavLink key={link.href} href={link.href}>
+            <AnimatedNavLink key={link.label} href={link.href}>
               {link.label}
             </AnimatedNavLink>
           ))}
@@ -130,9 +128,9 @@ export function Navbar() {
                        ${isOpen ? 'max-h-[1000px] opacity-100 pt-4' : 'max-h-0 opacity-0 pt-0 pointer-events-none'}`}>
         <nav className="flex flex-col items-center space-y-4 text-base w-full">
           {navLinksData.map((link) => (
-            <a key={link.href} href={link.href} className="text-gray-200 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors w-full text-center">
+            <Link key={link.href} to={link.href} className="text-gray-200 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors w-full text-center">
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
         <div className="flex flex-col items-center space-y-4 mt-4 w-full">
