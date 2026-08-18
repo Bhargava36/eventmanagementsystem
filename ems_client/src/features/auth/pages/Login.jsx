@@ -6,6 +6,7 @@ import {
   Lock,
   UserRound,
   Eye,
+  Mail,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../components/Molecules/WaveBackgorund";
@@ -23,7 +24,7 @@ function Login() {
   return (
     <div className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
         <WaveBackground />
-      <div className="flex gap-3 m-8 text-lg font-semibold items-center">
+      <div className="flex gap-3 m-4 sm:m-8 text-lg font-semibold items-center">
         <div className="w-10 h-10 flex items-center justify-center">
           {logoElement}
         </div>
@@ -35,64 +36,64 @@ function Login() {
         </div>
       </div>
 
-      <div className="flex flex-row mx-30">
-        <div className="flex flex-col w-7/12 p-10">
+      <div className="flex flex-col lg:flex-row mx-4 sm:mx-8 lg:mx-30 gap-6 lg:gap-0">
+        <div className="hidden lg:flex flex-col w-full lg:w-7/12 p-0 lg:p-10">
           <p className="text-sm font-semibold tracking-widest text-emerald-700 dark:text-emerald-400 mb-4">
             ONE PLATFORM. ALL EVENTS.
           </p>
 
-          <h1 className="text-5xl font-bold">
+          <h1 className="text-3xl lg:text-5xl font-bold">
             Super Admin Control
           </h1>
-          <h1 className="text-5xl font-bold ">
+          <h1 className="text-3xl lg:text-5xl font-bold ">
             <span className="text-emerald-700 dark:text-emerald-400">
               Center
             </span>
           </h1>
 
-          <p className="text-gray-700 dark:text-gray-300 mt-6 text-lg">
+          <p className="text-gray-700 dark:text-gray-300 mt-4 lg:mt-6 text-base lg:text-lg">
             Secure. Monitor. Manage. Take complete control of your event 
           </p>
-          <p className="text-gray-700 dark:text-gray-300 text-lg">
+          <p className="text-gray-700 dark:text-gray-300 text-base lg:text-lg">
             management platform.
           </p>
 
-          <div className="flex flex-col gap-6 mt-10 ">
-            <div className="flex items-center gap-5">
-              <ChartNoAxesCombined className="w-16 h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl" />
-              <div className="flex flex-col">
-                <h3 className="text-xl font-semibold">Real-time Insights</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-md">
+          <div className="flex flex-col gap-4 lg:gap-6 mt-6 lg:mt-10 ">
+            <div className="flex items-center gap-3 lg:gap-5">
+              <ChartNoAxesCombined className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <h3 className="text-base lg:text-xl font-semibold\">Real-time Insights</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">
                   Track registration, engagement & performance.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-5">
-              <ShieldCheck className="w-16 h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl" />
-              <div className="flex flex-col">
-                <h3 className="text-xl font-semibold">Role Based Access</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-md">
+            <div className="flex items-center gap-3 lg:gap-5">
+              <ShieldCheck className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0\" />
+              <div className="flex flex-col min-w-0">
+                <h3 className="text-base lg:text-xl font-semibold">Role Based Access</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">
                   Secure access for every role in the system.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-5">
-              <Settings className="w-16 h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl" />
-              <div className="flex flex-col">
-                <h3 className="text-xl font-semibold">System Configuration</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-md">
+            <div className="flex items-center gap-3 lg:gap-5">
+              <Settings className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <h3 className="text-base lg:text-xl font-semibold">System Configuration</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">
                   Customize and manage everything with ease.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-5">
-              <Lock className="w-16 h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl" />
-              <div className="flex flex-col">
-                <h3 className="text-xl font-semibold">Security & Logs</h3>
-                <p className="text-gray-600 dark:text-gray-400 text-md">
+            <div className="flex items-center gap-3 lg:gap-5">
+              <Lock className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <h3 className="text-base lg:text-xl font-semibold">Security & Logs</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">
                   Monitor activities and ensure platform security.
                 </p>
               </div>
@@ -100,33 +101,33 @@ function Login() {
           </div>
         </div>
 
-        <div className="flex flex-col w-5/12 px-10">
-          <div className="bg-gray-50 dark:bg-white/5 border-2 border-emerald-700 dark:border-emerald-500 rounded-2xl p-8 shadow-sm">
-            <div className="mb-8">
+        <div className="flex flex-col w-full lg:w-5/12 px-4 sm:px-6 lg:px-10">
+          <div className="bg-gray-50 dark:bg-white/5 border-2 border-emerald-700 dark:border-emerald-500 rounded-2xl p-6 sm:p-8 shadow-sm mb-6">
+            <div className="mb-6 sm:mb-8">
             <div className="border-2 border-emerald-500 w-13 p-3.5 mb-4 rounded-full ml-auto mr-auto flex items-center justify-center">
               {logoElement}
             </div>
-              <h1 className="text-3xl font-bold mb-2 text-center">Welcome <span className="text-emerald-700 dark:text-emerald-500">Back.</span></h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm text-center">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-center">Welcome <span className="text-emerald-700 dark:text-emerald-500">Back.</span></h1>
+              <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm text-center">
                 Sign in to access your admin dashboard
               </p>
             </div>
 
             <div className="mb-5">
-              <div className="relative w-full mb-6 mt-2">
-                <UserRound className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
+               <div className="relative w-full mb-6">
+                <Mail className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
                 <input
                   type="text"
-                  id="username"
+                  id="email"
                   placeholder=" "
                   required
-                  className="peer w-full border-0 border-b-2 border-gray-700 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
+                  className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
                 <label
-                  htmlFor="username"
-                  className="absolute left-8 top-2 text-gray-500 transition-all duration-200
+                  htmlFor="email"
+                  className="absolute left-8 top-2 text-gray-500 dark:text-gray-400 transition-all duration-200
                              peer-placeholder-shown:top-2
                              peer-placeholder-shown:text-base
                              peer-focus:-top-4
@@ -135,7 +136,7 @@ function Login() {
                              peer-valid:-top-4
                              peer-valid:text-sm"
                 >
-                  Username
+                  Email Address
                 </label>
             </div>
             </div>
