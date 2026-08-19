@@ -324,7 +324,7 @@ const Shader = ({ source, uniforms }) => {
   );
 };
 
-export const HeroSection = ({ className }) => {
+const HeroSection = ({ className }) => {
   const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [step, setStep] = useState("email");
@@ -630,3 +630,6 @@ export const HeroSection = ({ className }) => {
     </div>
   );
 };
+
+
+export default HeroSection;

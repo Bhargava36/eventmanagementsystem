@@ -27,7 +27,7 @@ const Sidebar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar/dashboard', badge: null },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
     { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: '12' },
     { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: '4', dot: true },
     { name: 'Feedback', icon: MessageCircleQuestion, path: '/sidebar/feedback', badge: null },
@@ -38,17 +38,17 @@ const Sidebar = () => {
     <aside
       className={`relative ${
         isMobile ? 'w-[280px]' : collapsed ? 'w-[80px]' : 'w-[280px]'
-      } h-screen shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all duration-300`}
+      } h-screen relative z-10 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all duration-800`}
     >
       {!isMobile && (
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute top-8 -right-5 w-8 h-9 rounded-r-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center shadow-md hover:scale-105 transition-transform z-10 cursor-pointer"
+          className="absolute top-8 -right-8 -z-10 w-8 h-9 rounded-r-full text-white bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center shadow-md hover:bg-transparent hover:dark:text-white hover:text-black hover:border-2 hover:border-emerald-500 transition-transform transition-all duration-500 ease-in-out z-10 cursor-pointer"
         >
           {collapsed ? (
-            <ChevronRight className="w-4 h-4 text-white" />
+            <ChevronRight className="w-4 h-4  " />
           ) : (
-            <ChevronLeft className="w-4 h-4 text-white" />
+            <ChevronLeft className="w-4 h-4" />
           )}
         </button>
       )}
@@ -96,6 +96,7 @@ const Sidebar = () => {
             <NavLink
               key={item.name}
               to={item.path}
+              end={item.end}
               title={!isMobile && collapsed ? item.name : ''}
               onClick={() => isMobile && setMobileOpen(false)}
               className={({ isActive }) =>

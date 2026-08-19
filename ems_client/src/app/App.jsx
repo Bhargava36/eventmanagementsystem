@@ -1,5 +1,6 @@
 import { Navbar } from '../components/Molecules/Navbar';
 import { Route, Routes } from 'react-router-dom';
+import HeroSection from '../components/ui/HeroSection';
 import Login from '../features/auth/pages/Login';
 import Register from '../features/auth/pages/Register';
 import Sidebar from '../components/Organisms/SideBar';
@@ -9,15 +10,20 @@ import NotificationPage from '../features/auth/pages/NotificationPage';
 import EventsDashboard from '../features/auth/pages/EventsDashboard';
 import SuperAdminProfile from '../features/auth/pages/SuperAdminProfile';
 import EventInfo from '../features/auth/pages/EventInfo';
+import PublicLayout from '../components/Templates/PublicLayout';
 function App() {
   return (
     <div>
-        <Navbar/>
+        
       <Routes>
-        <Route path='/' element={<Login />} />
-        <Route path='/register' element={<Register />} />
+        <Route  element={<PublicLayout />} >
+            <Route path='/' element={<HeroSection />} />
+            <Route path='/login' element={<Login />} />
+            <Route path='/register' element={<Register />} />
+        </Route>
+        
         <Route path='/sidebar' element={<Sidebar />}>
-          <Route path='dashboard' element={<SuperAdminDashboard />} />
+          <Route index element={<SuperAdminDashboard />} />
           <Route path='feedback' element={<FeedbackDashboard />} />
           <Route path='notification' element={<NotificationPage />} />
           <Route path='events' element={<EventsDashboard />} />

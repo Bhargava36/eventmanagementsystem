@@ -59,16 +59,16 @@ export function Navbar() {
   );
 
   const navLinksData = [
-    { label: 'Login', href: '/' },
+    { label: 'Home', href: '/' },
     { label: 'Register', href: '/register' },
-    { label: 'Discover', href: '#3' },
+    { label: 'Sidebar', href: '/sidebar' },
     { label: 'Manifesto', href: '#1' },
   ];
 
   const loginButtonElement = (
-    <button className="px-4 py-2 sm:px-3 text-xs sm:text-sm border border-gray-300 dark:border-[#333] bg-white/50 dark:bg-[rgba(31,31,31,0.62)] text-gray-700 dark:text-gray-300 rounded-full hover:border-gray-400 dark:hover:border-white/50 hover:text-black dark:hover:text-white transition-colors duration-200 w-full sm:w-auto">
+    <Link to="/login" className="px-4 py-2 sm:px-3 text-xs sm:text-sm border border-gray-300 dark:border-[#333] bg-white/50 dark:bg-[rgba(31,31,31,0.62)] text-gray-700 dark:text-gray-300 rounded-full hover:border-gray-400 dark:hover:border-white/50 hover:text-black dark:hover:text-white transition-colors duration-200 w-full sm:w-auto">
       LogIn
-    </button>
+    </Link>
   );
 
   const signupButtonElement = (
@@ -79,9 +79,9 @@ export function Navbar() {
                      opacity-20 dark:opacity-20 filter blur-2xl pointer-events-none
                      transition-all duration-300 ease-out
                      group-hover:opacity-30 dark:group-hover:opacity-60 group-hover:blur-xl group-hover:-m-3"></div>
-      <button className="relative z-10 px-4 py-2 sm:px-3 text-xs sm:text-sm font-semibold border border-transparent dark:border-white/10 text-white dark:text-black bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-100 dark:to-gray-300 rounded-full hover:from-gray-900 hover:to-black dark:hover:from-gray-200 dark:hover:to-gray-400 transition-all duration-200 w-full sm:w-auto">
+      <Link to="/register" className="relative z-10 px-4 py-2 sm:px-3 text-xs sm:text-sm font-semibold border border-transparent dark:border-white/10 text-white dark:text-black bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-100 dark:to-gray-300 rounded-full hover:from-gray-900 hover:to-black dark:hover:from-gray-200 dark:hover:to-gray-400 transition-all duration-200 w-full sm:w-auto">
         Signup
-      </button>
+      </Link>
     </div>
   );
 
