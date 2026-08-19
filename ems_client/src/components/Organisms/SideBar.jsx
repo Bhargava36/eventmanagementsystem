@@ -41,7 +41,7 @@ const SidebarContent = ({
   <aside
     className={`relative ${
       isMobile ? 'w-[280px]' : collapsed ? 'w-[80px]' : 'w-[280px]'
-    } h-screen relative z-10 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all duration-800`}
+    } h-screen relative z-10 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all duration-500`}
   >
     {!isMobile && (
       <button

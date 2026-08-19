@@ -1,5 +1,5 @@
 import { Navbar } from '../components/Molecules/Navbar';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import HeroSection from '../components/ui/HeroSection';
 import Login from '../features/auth/pages/Login';
 import Register from '../features/auth/pages/Register';
@@ -28,8 +28,8 @@ function App() {
           <Route path='notification' element={<NotificationPage />} />
           <Route path='events' element={<EventsDashboard />} />
           <Route path='profile' element={<SuperAdminProfile />} />
+          <Route path='eventinfo' element={<EventInfo />} />
         </Route>
-        <Route path='/eventinfo' element={<EventInfo />} />
       </Routes>
     </div>
   );

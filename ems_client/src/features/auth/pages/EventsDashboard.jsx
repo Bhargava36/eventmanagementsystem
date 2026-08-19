@@ -8,7 +8,7 @@ import {
   Eye,
   ChevronDown,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const stats = [
   { title: 'Total Events', value: '48', icon: Calendar, change: '+16% from last month' },
@@ -105,11 +105,7 @@ function EventsDashboard() {
     'Completed',
   ];
 
-const navigate = useNavigate();
 
-  const handleButtonClick = () => {
-    navigate('/eventinfo'); 
-  };
 
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors">
@@ -244,11 +240,10 @@ const navigate = useNavigate();
                       </span>
                     </td>
                     <td className="px-4 sm:px-6 py-3 sm:py-4">
-                      <button className="flex items-center gap-1 sm:gap-1.5 text-xs px-2 sm:px-3 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-500 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 font-medium transition-colors whitespace-nowrap cursor-pointer" onClick={handleButtonClick}>
+                      <Link to="/sidebar/eventinfo" className="flex items-center gap-1 w-24 sm:gap-1.5 px-1 sm:px-2 py-1.5 text-xs rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-500 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 font-medium transition-colors whitespace-nowrap cursor-pointer" >
                         <Eye className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                         <span className="hidden sm:inline">View Info</span>
-
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}
