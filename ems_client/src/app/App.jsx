@@ -12,6 +12,7 @@ import EventInfo from '../features/auth/pages/EventInfo';
 function App() {
   return (
     <div>
+        <Navbar/>
       <Routes>
         <Route path='/' element={<Login />} />
         <Route path='/register' element={<Register />} />

@@ -17,11 +17,40 @@ export default function WaveBackground() {
     let time = 0;
     let animationId;
 
+    // Mouse coordinates for interactive wave displacement
+    const mouse = {
+      x: -1000,
+      y: -1000,
+      targetX: -1000,
+      targetY: -1000,
+    };
+
     // emerald-500 for dark, emerald-700 for light
     const color =
       theme === "dark"
         ? "16, 185, 129" // emerald-500
         : "4, 120, 87";   // emerald-700
+
+    const handleMouseMove = (e) => {
+      mouse.targetX = e.clientX;
+      mouse.targetY = e.clientY;
+    };
+
+    const handleMouseLeave = () => {
+      mouse.targetX = -1000;
+      mouse.targetY = -1000;
+    };
+
+    const handleTouchMove = (e) => {
+      if (e.touches && e.touches[0]) {
+        mouse.targetX = e.touches[0].clientX;
+        mouse.targetY = e.touches[0].clientY;
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseleave", handleMouseLeave);
+    window.addEventListener("touchmove", handleTouchMove);
 
     const handleResize = () => {
       width = canvas.width = window.innerWidth;
@@ -32,44 +61,90 @@ export default function WaveBackground() {
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
 
-      const spacingX = 20;
-      const spacingY = 20;
-      const cols = Math.ceil(width / spacingX);
-      const rows = Math.ceil(height / spacingY);
+      // Smooth mouse position interpolation (spring effect)
+      mouse.x += (mouse.targetX - mouse.x) * 0.08;
+      mouse.y += (mouse.targetY - mouse.y) * 0.08;
+
+      const spacingX = 18;
+      const spacingY = 18;
+      const cols = Math.ceil(width / spacingX) + 2;
+      const rows = Math.ceil(height / spacingY) + 2;
+
+      const maxRadius = 200; // Subtle interaction radius around cursor
 
       for (let i = 0; i < cols; i++) {
         for (let j = 0; j < rows; j++) {
-          const x = i * spacingX;
+          const baseX = i * spacingX;
           const baseY = j * spacingY;
 
           // Multiple sine waves layered for organic motion
-          const wave1 = Math.sin(i * 0.15 + time * 0.02) * 20;
-          const wave2 = Math.cos(j * 0.1 + time * 0.015) * 15;
-          const wave3 = Math.sin((i + j) * 0.08 + time * 0.025) * 10;
+          const wave1 = Math.sin(i * 0.12 + time * 0.02) * 18;
+          const wave2 = Math.cos(j * 0.09 + time * 0.015) * 14;
+          const wave3 = Math.sin((i + j) * 0.07 + time * 0.025) * 10;
 
-          const y = baseY + wave1 + wave2 + wave3;
+          let x = baseX;
+          let y = baseY + wave1 + wave2 + wave3;
 
           // Only draw in the lower portion for wave effect
-          const heightThreshold = height * 0.55;
+          const heightThreshold = height * 0.45;
           if (baseY < heightThreshold) continue;
+
+          // Gentle displacement relative to cursor
+          const dx = x - mouse.x;
+          const dy = y - mouse.y;
+          const dist = Math.hypot(dx, dy);
+
+          let mouseEffect = 0;
+          if (dist < maxRadius) {
+            mouseEffect = (1 - dist / maxRadius);
+            const angle = Math.atan2(dy, dx);
+            const pushDist = Math.pow(mouseEffect, 2) * 50;
+            x += Math.cos(angle) * pushDist;
+            y += Math.sin(angle) * pushDist;
+          }
 
           // Fade dots based on wave crest
           const distFromBottom = height - baseY;
           const maxDist = height - heightThreshold;
-          const fade = 0.8 - distFromBottom / maxDist;
+          const fade = Math.max(0, 0.85 - distFromBottom / maxDist);
 
-          const waveIntensity =
-            (Math.sin(i * 0.12 + time * 0.03) + 1) / 2;
-          const opacity =
-            Math.max(0, Math.min(1, fade * 0.8 + waveIntensity * 0.3));
+          const waveIntensity = (Math.sin(i * 0.1 + time * 0.035) + 1) / 2;
 
-          const radius = 0.8 + waveIntensity * 1.2;
+          // Subtle interactive scaling for dot radius and opacity
+          const baseRadius = 0.8 + waveIntensity * 1.2;
+          const radius = baseRadius + mouseEffect * 0.9;
+
+          const baseOpacity = Math.max(0, Math.min(1, fade * 0.75 + waveIntensity * 0.25));
+          const opacity = Math.min(0.85, baseOpacity + mouseEffect * 0.18);
 
           ctx.beginPath();
           ctx.arc(x, y, radius, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(${color}, ${opacity})`;
           ctx.fill();
+
+          // Very soft glow ring for points directly under cursor
+          if (mouseEffect > 0.5) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius * 1.3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${color}, ${mouseEffect * 0.08})`;
+            ctx.fill();
+          }
         }
+      }
+
+      // Very subtle ambient light aura trailing the mouse cursor
+      if (mouse.x > 0 && mouse.y > 0) {
+        const gradient = ctx.createRadialGradient(
+          mouse.x, mouse.y, 0,
+          mouse.x, mouse.y, 130
+        );
+        gradient.addColorStop(0, `rgba(${color}, 0.05)`);
+        gradient.addColorStop(0.5, `rgba(${color}, 0.015)`);
+        gradient.addColorStop(1, `rgba(${color}, 0)`);
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(mouse.x, mouse.y, 130, 0, Math.PI * 2);
+        ctx.fill();
       }
 
       time += 1;
@@ -81,6 +156,9 @@ export default function WaveBackground() {
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("touchmove", handleTouchMove);
     };
   }, [theme]);
 
