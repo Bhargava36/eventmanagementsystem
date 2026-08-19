@@ -32,8 +32,8 @@ export default function WaveBackground() {
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
 
-      const spacingX = 14;
-      const spacingY = 14;
+      const spacingX = 20;
+      const spacingY = 20;
       const cols = Math.ceil(width / spacingX);
       const rows = Math.ceil(height / spacingY);
 
@@ -56,7 +56,7 @@ export default function WaveBackground() {
           // Fade dots based on wave crest
           const distFromBottom = height - baseY;
           const maxDist = height - heightThreshold;
-          const fade = 1 - distFromBottom / maxDist;
+          const fade = 0.8 - distFromBottom / maxDist;
 
           const waveIntensity =
             (Math.sin(i * 0.12 + time * 0.03) + 1) / 2;
@@ -87,7 +87,7 @@ export default function WaveBackground() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 -z-10 h-full w-full pointer-events-none"
+      className="absolute inset-0 z-0 h-full w-full pointer-events-none"
     />
   );
 }
