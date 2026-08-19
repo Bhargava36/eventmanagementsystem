@@ -210,7 +210,7 @@ function Register() {
                   Confirm Password
                 </label>
             </div> 
-              <button className="w-full bg-emerald-700 dark:bg-emerald- text-white p-2 rounded-lg hover:bg-emerald-700 transition duration-300 flex items-center justify-center gap-2 font-medium">
+              <button className="w-full bg-emerald-700 dark:bg-emerald-500 text-white p-2 rounded-lg hover:bg-emerald-700 transition duration-300 flex items-center justify-center gap-2 font-medium">
                 Create Account <ArrowRight className="w-4 h-4" />
               </button>
 
