@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "../Organisms/ThemeToggler";
-
+import {motion} from "framer-motion";
 const AnimatedNavLink = ({ href, children }) => {
   const defaultTextColor = 'text-gray-600 dark:text-gray-300';
   const hoverTextColor = 'text-black dark:text-white';
@@ -86,7 +86,7 @@ export function Navbar() {
   );
 
   return (
-    <header className={cn(
+    <motion.header className={cn(
       `fixed top-6 left-1/2 transform -translate-x-1/2 z-50
                        flex flex-col items-center
                        pl-6 pr-6 py-3 backdrop-blur-sm
@@ -94,7 +94,16 @@ export function Navbar() {
                        border border-gray-300 dark:border-[#333] bg-white/70 dark:bg-[#1f1f1f57] shadow-sm dark:shadow-none
                        w-[calc(100%-2rem)] sm:w-auto
                        transition-[border-radius] duration-0 ease-in-out`
-    )}>
+    )}
+    animate={{
+              y: [-20, 0],
+            }}
+            transition={{
+              duration: 0.6,
+              repeat: 0,
+              ease: "easeInOut",
+            }}
+    >
 
       <div className="flex items-center justify-between w-full gap-x-6 sm:gap-x-8">
         <div className="flex items-center">
@@ -141,6 +150,6 @@ export function Navbar() {
           {signupButtonElement}
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }

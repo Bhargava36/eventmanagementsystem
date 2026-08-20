@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../components/Molecules/WaveBackgorund";
-
+import {motion} from "framer-motion";
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
       <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -22,8 +22,23 @@ const logoElement = (
 
 function Login() {
   return (
-    <div className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300">
-        <WaveBackground />
+    <motion.div className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300"
+      animate={{
+              y: [-100,0],
+            }}
+            transition={{
+              duration: 0.5,repeat: 0,ease: "easeInOut",
+            }}
+    
+    >
+        <motion.div
+        initial={{opacity:0,y:400}}
+            animate={{opacity:1,y:0}}
+            exit={{opacity:0,y:-400}}
+            transition={{duration: 1,delay:0.1,repeat: 0,ease: "easeInOut"}}
+        >
+          <WaveBackground />
+        </motion.div>
       <div className="flex gap-3 m-4 sm:m-8 text-lg font-semibold items-center">
         <div className="w-10 h-10 flex items-center justify-center">
           {logoElement}
@@ -38,38 +53,73 @@ function Login() {
 
       <div className="flex flex-col lg:flex-row mx-4 sm:mx-8 lg:mx-30 gap-6 lg:gap-0">
         <div className="hidden lg:flex flex-col w-full lg:w-7/12 p-0 lg:p-10">
-          <p className="text-sm font-semibold tracking-widest text-emerald-700 dark:text-emerald-400 mb-4">
+          <motion.p className="text-sm font-semibold tracking-widest text-emerald-700 dark:text-emerald-400 mb-4"
+            initial={{opacity:0,x:-100}}
+            animate={{opacity:1,x:0}}
+            exit={{opacity:0, x:100}}
+            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+          >
             ONE PLATFORM. ALL EVENTS.
-          </p>
+          </motion.p>
 
-          <h1 className="text-3xl lg:text-5xl font-bold">
+          <motion.h1 className="text-3xl lg:text-5xl font-bold"
+            initial={{opacity:0,y:-50}}
+            animate={{opacity:1,y:0}}
+            exit={{opacity:0, y:50}}
+            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+          >
             Super Admin Control
-          </h1>
-          <h1 className="text-3xl lg:text-5xl font-bold ">
+          </motion.h1>
+          <motion.h1 className="text-3xl lg:text-5xl font-bold "
+          initial={{opacity:0,x:50}}
+            animate={{opacity:1,x:0}}
+            exit={{opacity:0, x:-50}}
+            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+          >
             <span className="text-emerald-700 dark:text-emerald-400">
               Center
             </span>
-          </h1>
+          </motion.h1>
 
-          <p className="text-gray-700 dark:text-gray-300 mt-4 lg:mt-6 text-base lg:text-lg">
+          <motion.p className="text-gray-700 dark:text-gray-300 mt-4 lg:mt-6 text-base lg:text-lg"
+            initial={{opacity:0,y:100}}
+            animate={{opacity:1,y:0}}
+            exit={{opacity:0, y:-100}}
+            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+          >
             Secure. Monitor. Manage. Take complete control of your event 
-          </p>
-          <p className="text-gray-700 dark:text-gray-300 text-base lg:text-lg">
+          </motion.p>
+          <motion.p className="text-gray-700 dark:text-gray-300 text-base lg:text-lg"
+          initial={{opacity:0,y:100}}
+            animate={{opacity:1,y:0}}
+            exit={{opacity:0, y:-100}}
+            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+          >
             management platform.
-          </p>
+          </motion.p>
 
           <div className="flex flex-col gap-4 lg:gap-6 mt-6 lg:mt-10 ">
-            <div className="flex items-center gap-3 lg:gap-5">
+            <motion.div
+            initial={{opacity:0, scale: 0}}
+            animate={{opacity:1, scale: 1}}
+            exit={{opacity:0,  scale: 0}}
+            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+            className="flex items-center gap-3 lg:gap-5">
               <ChartNoAxesCombined className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0" />
               <div className="flex flex-col min-w-0">
-                <h3 className="text-base lg:text-xl font-semibold\">Real-time Insights</h3>
+                <h3 className="text-base lg:text-xl font-semibold">Real-time Insights</h3>
                 <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">
                   Track registration, engagement & performance.
                 </p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex items-center gap-3 lg:gap-5">
+            <motion.div 
+            initial={{opacity:0, scale: 0}}
+            animate={{opacity:1, scale: 1}}
+            exit={{opacity:0, scale: 0}}
+            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+            className="flex items-center gap-3 lg:gap-5">
               <ShieldCheck className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0\" />
               <div className="flex flex-col min-w-0">
                 <h3 className="text-base lg:text-xl font-semibold">Role Based Access</h3>
@@ -77,9 +127,14 @@ function Login() {
                   Secure access for every role in the system.
                 </p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex items-center gap-3 lg:gap-5">
+            <motion.div 
+            initial={{opacity:0, scale: 0}}
+            animate={{opacity:1, scale: 1}}
+            exit={{opacity:0, scale: 0}}
+            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+            className="flex items-center gap-3 lg:gap-5">
               <Settings className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0" />
               <div className="flex flex-col min-w-0">
                 <h3 className="text-base lg:text-xl font-semibold">System Configuration</h3>
@@ -87,9 +142,14 @@ function Login() {
                   Customize and manage everything with ease.
                 </p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="flex items-center gap-3 lg:gap-5">
+            <motion.div 
+            initial={{opacity:0, scale: 0}}
+            animate={{opacity:1, scale: 1}}
+            exit={{opacity:0, scale: 0}}
+            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+            className="flex items-center gap-3 lg:gap-5">
               <Lock className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0" />
               <div className="flex flex-col min-w-0">
                 <h3 className="text-base lg:text-xl font-semibold">Security & Logs</h3>
@@ -97,7 +157,7 @@ function Login() {
                   Monitor activities and ensure platform security.
                 </p>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
 
@@ -199,7 +259,7 @@ function Login() {
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
