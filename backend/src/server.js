@@ -9,6 +9,7 @@ require('./config/db');
 const superAdminRoute = require("./modules/superAdmin/superAdminRoute");
 const eventsRoute = require("./modules/events/eventsRoute");
 const adminRoute = require("./modules/admins/adminRoute");
+const teamRoute = require("./modules/teams/teamsRoute");
 
 const app = express();
 
@@ -19,6 +20,8 @@ app.use('/api/super_admin', superAdminRoute);
 app.use('/api/events', eventsRoute);
 
 app.use('/api/admin', adminRoute);
+
+app.use('/api/teams', teamRoute);
 
 app.listen(3000, () => {
     console.log("Server is running on port 3000");
