@@ -5,6 +5,7 @@ function PublicLayout() {
     <>
         <Navbar/>
         <Outlet/>
+
     </>
   );
 }
