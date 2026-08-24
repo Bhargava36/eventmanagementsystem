@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useContext } from "react";
 import { ThemeContext } from "../../Contexts/ThemeContext";
-
+import {motion} from "framer-motion";
 export default function WaveBackground() {
   const canvasRef = useRef(null);
   const { theme } = useContext(ThemeContext); // 'dark' or 'light'
@@ -163,7 +163,11 @@ export default function WaveBackground() {
   }, [theme]);
 
   return (
-    <canvas
+    <motion.canvas
+    initial={{opacity:1,y:400}}
+            animate={{opacity:1,y:0}}
+            exit={{opacity:1,y:-400}}
+            transition={{duration: 1,delay:0.1,repeat: 0,ease: "easeInOut"}}
       ref={canvasRef}
       className="absolute inset-0 z-0 h-full w-full pointer-events-none"
     />

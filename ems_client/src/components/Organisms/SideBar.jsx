@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
   Calendar,
@@ -37,134 +38,171 @@ const SidebarContent = ({
   collapsed,
   setCollapsed,
   setMobileOpen,
-}) => (
-  <aside
-    className={`relative ${
-      isMobile ? 'w-[280px]' : collapsed ? 'w-[80px]' : 'w-[280px]'
-    } h-screen relative z-10 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all duration-500`}
-  >
-    {!isMobile && (
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute top-8 -right-8 -z-10 w-8 h-9 rounded-r-full text-white bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center shadow-md hover:bg-transparent hover:dark:text-white hover:text-black hover:border-2 hover:border-emerald-500 transition-transform transition-all duration-500 ease-in-out z-10 cursor-pointer"
-      >
-        {collapsed ? (
-          <ChevronRight className="w-4 h-4  " />
-        ) : (
-          <ChevronLeft className="w-4 h-4" />
-        )}
-      </button>
-    )}
+}) => {
+  const [showText, setShowText] = useState(!collapsed);
 
-    {isMobile && (
-      <button
-        onClick={() => setMobileOpen(false)}
-        className="absolute top-4 right-4 w-8 h-8 rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center shadow-md hover:scale-105 transition-transform z-10 cursor-pointer"
-      >
-        <CircleX className="w-7 h-7 text-white" />
-      </button>
-    )}
+  useEffect(() => {
+    if (collapsed) {
+      setShowText(false);
+    } else {
+      const timer = setTimeout(() => {
+        setShowText(true);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [collapsed]);
 
-    <div
-      className={`flex items-center gap-3 mb-8 mt-2 ${
-        !isMobile && collapsed ? 'justify-center' : ''
-      }`}
+  const canShowText = isMobile || showText;
+
+  return (
+    <aside
+      className={`relative ${
+        isMobile ? 'w-[280px]' : collapsed ? 'w-[80px]' : 'w-[280px]'
+      } h-screen relative z-10 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
     >
-      <div className="relative shrink-0">
-        <div
-          className={`${
-            !isMobile && collapsed ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg'
-          } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300`}
+      {!isMobile && (
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute top-8 -right-8 -z-10 w-8 h-9 rounded-r-full text-white bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center shadow-md hover:bg-transparent hover:dark:text-white hover:text-black hover:border-2 hover:border-emerald-500 transition-transform transition-all duration-500 ease-in-out z-10 cursor-pointer"
         >
-          SA
-        </div>
-        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white dark:border-black"></span>
-      </div>
-      {(isMobile || !collapsed) && (
-        <div className="overflow-hidden">
-          <h3 className="font-bold text-base whitespace-nowrap">Super Admin</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-            Administrator
-          </p>
-        </div>
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <ChevronLeft className="w-4 h-4" />
+          )}
+        </button>
       )}
-    </div>
 
-    <div className="border-t border-gray-200 dark:border-[#1A2440] mb-4"></div>
+      {isMobile && (
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center shadow-md hover:scale-105 transition-transform z-10 cursor-pointer"
+        >
+          <CircleX className="w-7 h-7 text-white" />
+        </button>
+      )}
 
-    <nav className="space-y-2 flex-1">
-      {menuItems.map((item) => {
-        const Icon = item.icon;
-        return (
-          <NavLink
-            key={item.name}
-            to={item.path}
-            end={item.end}
-            title={!isMobile && collapsed ? item.name : ''}
-            onClick={() => isMobile && setMobileOpen(false)}
-            className={({ isActive }) =>
-              `w-full flex items-center ${
-                !isMobile && collapsed ? 'justify-center' : 'justify-between'
-              } px-4 py-3 rounded-full transition-all duration-200 cursor-pointer ${
-                isActive
-                  ? 'bg-emerald-700 dark:bg-emerald-500 text-white shadow-md'
-                  : 'hover:bg-emerald-50 dark:hover:bg-emerald-800'
-              }`
-            }
+      <div
+        className={`flex items-center gap-3 mb-8 mt-2 ${
+          !isMobile && collapsed ? 'justify-center' : ''
+        }`}
+      >
+        <div className="relative shrink-0">
+          <div
+            className={`${
+              !isMobile && collapsed ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg'
+            } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300`}
           >
-            {({ isActive }) => (
-              <>
-                <div
-                  className={`flex items-center ${
-                    !isMobile && collapsed ? '' : 'gap-3'
-                  }`}
-                >
-                  <div className="relative shrink-0">
-                    <Icon className="w-5 h-5" />
-                    {item.dot && (
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                    )}
-                  </div>
-                  {(isMobile || !collapsed) && (
-                    <span className="font-medium text-sm whitespace-nowrap">
-                      {item.name}
-                    </span>
-                  )}
-                </div>
-                {(isMobile || !collapsed) && item.badge && (
-                  <span
-                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                      isActive
-                        ? 'bg-white text-emerald-700'
-                        : 'bg-white dark:bg-[#0F1729] text-emerald-700 dark:text-emerald-500'
+            SA
+          </div>
+          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white dark:border-black"></span>
+        </div>
+        {canShowText && (
+          <motion.div
+            initial={{ opacity: 0, x: -5 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.2, delay:0.5 }}
+            className="overflow-hidden"
+          >
+            <h3 className="font-bold text-base whitespace-nowrap">Super Admin</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              Administrator
+            </p>
+          </motion.div>
+        )}
+      </div>
+
+      <div className="border-t border-gray-200 dark:border-[#1A2440] mb-4"></div>
+
+      <nav className="space-y-2 flex-1">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              end={item.end}
+              title={!isMobile && collapsed ? item.name : ''}
+              onClick={() => isMobile && setMobileOpen(false)}
+              className={({ isActive }) =>
+                `w-full flex items-center ${
+                  !isMobile && collapsed ? 'justify-center' : 'justify-between'
+                } px-4 py-3 rounded-full transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? 'bg-emerald-700 dark:bg-emerald-500 text-white shadow-md'
+                    : 'hover:bg-emerald-50 dark:hover:bg-emerald-800'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <div
+                    className={`flex items-center ${
+                      !isMobile && collapsed ? '' : 'gap-3'
                     }`}
                   >
-                    {item.badge}
-                  </span>
-                )}
-              </>
-            )}
-          </NavLink>
-        );
-      })}
-    </nav>
+                    <div className="relative shrink-0">
+                      <Icon className="w-5 h-5" />
+                      {item.dot && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                      )}
+                    </div>
+                    {canShowText && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay:0.5 }}
+                        className="font-medium text-sm whitespace-nowrap"
+                      >
+                        {item.name}
+                      </motion.span>
+                    )}
+                  </div>
+                  {canShowText && item.badge && (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 , delay:0.5}}
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        isActive
+                          ? 'bg-white text-emerald-700'
+                          : 'bg-white dark:bg-[#0F1729] text-emerald-700 dark:text-emerald-500'
+                      }`}
+                    >
+                      {item.badge}
+                    </motion.span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          );
+        })}
+      </nav>
 
-    <div className="mt-auto">
-      <div className="border-t border-gray-200 dark:border-[#1A2440] my-4"></div>
-      <button
-        title={!isMobile && collapsed ? 'Logout' : ''}
-        className={`w-full flex items-center ${
-          !isMobile && collapsed ? 'justify-center' : 'gap-3'
-        } px-4 py-3 rounded-full transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer`}
-      >
-        <LogOut className="w-5 h-5 shrink-0" />
-        {(isMobile || !collapsed) && (
-          <span className="font-medium text-sm whitespace-nowrap">Logout</span>
-        )}
-      </button>
-    </div>
-  </aside>
-);
+      <div className="mt-auto">
+        <div className="border-t border-gray-200 dark:border-[#1A2440] my-4"></div>
+        <button
+          title={!isMobile && collapsed ? 'Logout' : ''}
+          className={`w-full flex items-center ${
+            !isMobile && collapsed ? 'justify-center' : 'gap-3'
+          } px-4 py-3 rounded-full transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer`}
+        >
+          <LogOut className="w-5 h-5 shrink-0" />
+          {canShowText && (
+            <motion.span
+              initial={{ opacity: 0, x: -5 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.2, delay: 1 }}
+              className="font-medium text-sm whitespace-nowrap"
+            >
+              Logout
+            </motion.span>
+          )}
+        </button>
+      </div>
+    </aside>
+  );
+};
 
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);

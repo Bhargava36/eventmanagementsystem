@@ -73,23 +73,16 @@ function Login() {
   };
 
   return (
-    <motion.div className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300"
+    <motion.div className="relative w-full  min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300"
       animate={{
               y: [-100,0],
             }}
             transition={{
               duration: 0.5,repeat: 0,ease: "easeInOut",
             }}
-    
     >
-        <motion.div
-        initial={{opacity:0,y:400}}
-            animate={{opacity:1,y:0}}
-            exit={{opacity:0,y:-400}}
-            transition={{duration: 1,delay:0.1,repeat: 0,ease: "easeInOut"}}
-        >
+        
           <WaveBackground />
-        </motion.div>
       <div className="flex gap-3 m-4 sm:m-8 text-lg font-semibold items-center">
         <div className="w-10 h-10 flex items-center justify-center">
           {logoElement}
@@ -114,7 +107,7 @@ function Login() {
           </motion.p>
 
           <motion.h1 className="text-3xl lg:text-5xl font-bold"
-            initial={{opacity:0,y:-50}}
+            initial={{opacity:0,y:50}}
             animate={{opacity:1,y:0}}
             exit={{opacity:0, y:50}}
             transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
@@ -122,9 +115,9 @@ function Login() {
             Super Admin Control
           </motion.h1>
           <motion.h1 className="text-3xl lg:text-5xl font-bold "
-          initial={{opacity:0,x:50}}
-            animate={{opacity:1,x:0}}
-            exit={{opacity:0, x:-50}}
+          initial={{opacity:0,y:50}}
+            animate={{opacity:1,y:0}}
+            exit={{opacity:0, y:50}}
             transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
           >
             <span className="text-emerald-700 dark:text-emerald-400">
@@ -151,10 +144,10 @@ function Login() {
 
           <div className="flex flex-col gap-4 lg:gap-6 mt-6 lg:mt-10 ">
             <motion.div
-            initial={{opacity:0, scale: 0}}
-            animate={{opacity:1, scale: 1}}
-            exit={{opacity:0,  scale: 0}}
-            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+            initial={{opacity:0, y: 100}}
+            animate={{opacity:1, y: 0}}
+            exit={{opacity:0,  y: 100}}
+            transition={{duration: 0.5,delay:0.3,repeat: 0,ease: "easeInOut"}}
             className="flex items-center gap-3 lg:gap-5">
               <ChartNoAxesCombined className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0" />
               <div className="flex flex-col min-w-0">
@@ -166,10 +159,10 @@ function Login() {
             </motion.div>
 
             <motion.div 
-            initial={{opacity:0, scale: 0}}
-            animate={{opacity:1, scale: 1}}
-            exit={{opacity:0, scale: 0}}
-            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+              initial={{opacity:0, y: 100}}
+            animate={{opacity:1, y: 0}}
+            exit={{opacity:0,  y: 100}}
+            transition={{duration: 0.5,delay:0.5,repeat: 0,ease: "easeInOut"}}
             className="flex items-center gap-3 lg:gap-5">
               <ShieldCheck className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0\" />
               <div className="flex flex-col min-w-0">
@@ -181,10 +174,10 @@ function Login() {
             </motion.div>
 
             <motion.div 
-            initial={{opacity:0, scale: 0}}
-            animate={{opacity:1, scale: 1}}
-            exit={{opacity:0, scale: 0}}
-            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+              initial={{opacity:0, y: 100}}
+            animate={{opacity:1, y: 0}}
+            exit={{opacity:0,  y: 100}}
+            transition={{duration: 0.5,delay:0.7,repeat: 0,ease: "easeInOut"}}
             className="flex items-center gap-3 lg:gap-5">
               <Settings className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0" />
               <div className="flex flex-col min-w-0">
@@ -196,10 +189,10 @@ function Login() {
             </motion.div>
 
             <motion.div 
-            initial={{opacity:0, scale: 0}}
-            animate={{opacity:1, scale: 1}}
-            exit={{opacity:0, scale: 0}}
-            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+              initial={{opacity:0, y: 100}}
+            animate={{opacity:1, y: 0}}
+            exit={{opacity:0,  y: 100}}
+            transition={{duration: 0.5,delay:0.9,repeat: 0,ease: "easeInOut"}}
             className="flex items-center gap-3 lg:gap-5">
               <Lock className="w-12 lg:w-16 h-12 lg:h-16 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0" />
               <div className="flex flex-col min-w-0">
@@ -212,8 +205,13 @@ function Login() {
           </div>
         </div>
 
-        <div className="flex flex-col w-full lg:w-5/12 px-4 sm:px-6 lg:px-10">
-          <form  onSubmit={handleLogin} className="bg-gray-50 dark:bg-white/5 border-2 border-emerald-700 dark:border-emerald-500 rounded-2xl p-6 sm:p-8 shadow-sm mb-6">
+<motion.div 
+          initial={{opacity:0, y: 100}}
+          animate={{opacity:1, y: 0}}
+          exit={{opacity:0,  y: 100}}
+          transition={{duration: 0.5,delay:1.1,repeat: 0,ease: "easeInOut"}}
+          className="flex flex-col w-full lg:w-5/12 px-4 sm:px-6  lg:px-10">
+          <form  onSubmit={handleLogin} className="bg-gray-50 dark:bg-white/5 border-2 backdrop-blur-sm border-emerald-700 dark:border-emerald-500 rounded-2xl p-6 sm:p-8 shadow-sm mb-6">
             <div className="mb-6 sm:mb-8">
             <div className="border-2 border-emerald-500 w-13 p-3.5 mb-4 rounded-full ml-auto mr-auto flex items-center justify-center">
               {logoElement}
@@ -312,7 +310,7 @@ function Login() {
               </div>
             </div>
           </form>
-        </div>
+        </motion.div>
       </div>
     </motion.div>
   );
