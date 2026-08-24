@@ -30,15 +30,9 @@ const registerAdmin = (req,res) => {
 };
 
 const loginAdminController = (req,res) => {
-    const {Email,Password} = req.body;
+    const {email,password} = req.body;
 
-    if(!Email || !Password){
-        return res.status(400).json({
-            message: "All fields are required, Check it once"
-        });
-    }
-
-    superAdminService.loginAdmin(Email, async(err,result) => {
+    superAdminService.loginAdmin(email, async(err,result) => {
         if(err){
             return res.status(500).json({
                 message: "Database error",
@@ -53,7 +47,8 @@ const loginAdminController = (req,res) => {
         }
         const admin = result[0];
 
-        const isMatch = await bcrypt.compare(Password, admin.Password);
+        const isMatch = await bcrypt.compare(password, admin.Password);
+
         if(!isMatch) {
              return res.status(401).json({
                 message: "Invalid UserName or Password"

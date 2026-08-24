@@ -51,7 +51,6 @@ function Login() {
       if(!res.ok) {
         throw new Error(data.message || data.error || "Login failed"); 
       }
-      console.log("Login successful:", data);
 
       if(data.token) {
         localStorage.setItem("token", data.token);
@@ -223,6 +222,11 @@ function Login() {
             </div>
 
             <div className="mb-5">
+                {error && (
+            <div className="mb-4 p-2.5 bg-red-500/20 border border-red-500/40 rounded-xl text-red-200 text-xs text-center font-medium">
+              {error}
+            </div>
+          )}
                <div className="relative w-full mb-6">
                 <Mail className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
@@ -286,8 +290,11 @@ function Login() {
                 Forgot Password?
             </div>
 
-            <button className="w-full bg-emerald-700 hover:bg-[#b58e4e] dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold py-3 rounded-lg transition duration-300">
-              Sign In
+            <button 
+            type="submit"
+            disabled = {loading}
+            className="w-full bg-emerald-700 hover:bg-[#b58e4e] dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold py-3 rounded-lg transition duration-300">
+              {loading ? "signing in..." : "sign in"}
             </button>
 
             <div className="flex items-center my-6">

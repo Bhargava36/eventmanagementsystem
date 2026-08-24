@@ -45,11 +45,9 @@ function Register() {
       const data = await res.json();
 
       if(!res.ok) {
-        console.log("Backend super admin error details:", data);
         throw new Error(data.error || "Failed to create super admin account");
       }
 
-      console.log("Successfully created super admin account:", data);
       alert("super admin Account created successfully!");
 
       setFormData(initialForm);
@@ -59,7 +57,6 @@ function Register() {
     }
 
     catch(error) {
-      console.error("Error creating super admin account:", error);
       alert(error.message);
     }
 
@@ -84,7 +81,7 @@ function Register() {
           </span>
         </div>
       </div>
-        <div className="flex flex-col lg:flex-row mx-4 sm:mx-8 lg:mx-30 gap-6 lg:gap-0">
+        <motion.div className="flex flex-col lg:flex-row mx-4 sm:mx-8 lg:mx-30 gap-6 lg:gap-0">
           <div className="hidden lg:flex flex-col w-full lg:w-7/12 px-6 lg:px-0">
             <motion.div
               initial={{opacity:0, y: 100}}
@@ -191,7 +188,8 @@ function Register() {
               <h1 className="text-xl sm:text-2xl font-bold text-emerald-700 dark:text-emerald-500">Super Admin</h1>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Fill in your details to create your admin account</p>
             </div>
-<form autoComplete="off"  className="px-4 sm:px-6 pb-4 sm:pb-10 pt-4" onSubmit={handleRegister} >
+          <form autoComplete="off"  className="px-4 sm:px-6 pb-4 sm:pb-10 pt-4" onSubmit={handleRegister} >
+              <div className="relative w-full mb-6">
                 <UserRound className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
                 <input
@@ -355,7 +353,7 @@ function Register() {
             </div>
             </form>
           </motion.div>
-        </div>
+        </motion.div>
       </motion.div>
   );
 }
