@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ChartNoAxesCombined,
   ShieldCheck,
@@ -11,6 +11,7 @@ import {
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../components/Molecules/WaveBackgorund";
 import {motion} from "framer-motion";
+import { useState } from "react";
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
       <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -21,6 +22,56 @@ const logoElement = (
   );
 
 function Login() {
+
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState("");
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if(!email || !password) {
+      setError("Required to fill all fields");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await fetch("http://localhost:3000/api/super_admin/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({email, password}),
+      });
+
+      const data = await res.json();
+
+      if(!res.ok) {
+        throw new Error(data.message || data.error || "Login failed"); 
+      }
+      console.log("Login successful:", data);
+
+      if(data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      if(data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+
+      alert("Logging Successfully!");
+      navigate("/sidebar");
+    }
+    catch(err) {
+      setError(err.message || "Login failed, try again later");
+    }
+    finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300"
       animate={{
@@ -162,7 +213,7 @@ function Login() {
         </div>
 
         <div className="flex flex-col w-full lg:w-5/12 px-4 sm:px-6 lg:px-10">
-          <div className="bg-gray-50 dark:bg-white/5 border-2 border-emerald-700 dark:border-emerald-500 rounded-2xl p-6 sm:p-8 shadow-sm mb-6">
+          <form  onSubmit={handleLogin} className="bg-gray-50 dark:bg-white/5 border-2 border-emerald-700 dark:border-emerald-500 rounded-2xl p-6 sm:p-8 shadow-sm mb-6">
             <div className="mb-6 sm:mb-8">
             <div className="border-2 border-emerald-500 w-13 p-3.5 mb-4 rounded-full ml-auto mr-auto flex items-center justify-center">
               {logoElement}
@@ -182,6 +233,8 @@ function Login() {
                   id="email"
                   placeholder=" "
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
@@ -210,6 +263,8 @@ function Login() {
                   id="password"
                   placeholder=" "
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="peer w-full border-0 border-b-2 border-gray-700 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
@@ -256,7 +311,7 @@ function Login() {
                 <p>Secure access for authorized administrators only</p>
               </div>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </motion.div>

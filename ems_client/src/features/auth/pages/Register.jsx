@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ShieldCheck, Users, BarChart3, Settings, Shield, UserPlus, UserRound, Mail, Lock, Eye, ArrowRight,Phone } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../components/Molecules/WaveBackgorund";
+import { useState } from "react";
 const logoElement = (
   <div className="relative w-5 h-5 flex items-center justify-center">
     <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -12,6 +13,56 @@ const logoElement = (
 );
 
 function Register() {
+  const navigate = useNavigate();
+  const initialForm = {
+    UserName : "",
+    Email: "",
+    Password: "",
+    PhoneNumber: "",
+  };
+
+  const [formData, setFormData] = useState(initialForm);
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+
+    if(formData.Password !== confirmPassword) {
+      alert("Password do not match !");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:3000/api/super_admin/register", {
+        method : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if(!res.ok) {
+        console.log("Backend super admin error details:", data);
+        throw new Error(data.error || "Failed to create super admin account");
+      }
+
+      console.log("Successfully created super admin account:", data);
+      alert("super admin Account created successfully!");
+
+      setFormData(initialForm);
+      setConfirmPassword("");
+
+      navigate("/login");
+    }
+
+    catch(error) {
+      console.error("Error creating super admin account:", error);
+      alert(error.message);
+    }
+
+  };
 
   return (
       <div className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black">
@@ -82,8 +133,8 @@ function Register() {
               <h1 className="text-xl sm:text-2xl font-bold text-emerald-700 dark:text-emerald-500">Super Admin</h1>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Fill in your details to create your admin account</p>
             </div>
-            <div className="px-4 sm:px-6 pb-4 sm:pb-10 pt-4">
-            <div className="relative w-full mb-6 mt-2">
+            <form className="px-4 sm:px-6 pb-4 sm:pb-10 pt-4" onSubmit={handleRegister} >
+              <div className="relative w-full mb-6 mt-2">
                 <UserRound className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
                 <input
@@ -91,6 +142,8 @@ function Register() {
                   id="username"
                   placeholder=" "
                   required
+                  value={formData.UserName}
+                  onChange={(e) => setFormData({ ...formData, UserName: e.target.value})}
                   className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
@@ -107,9 +160,9 @@ function Register() {
                 >
                   Username
                 </label>
-            </div>
+              </div>
 
-            <div className="relative w-full mb-6">
+              <div className="relative w-full mb-6">
                 <Phone className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
                 <input
@@ -117,6 +170,8 @@ function Register() {
                   id="phone"
                   placeholder=" "
                   required
+                  value={formData.PhoneNumber}
+                  onChange={(e) => setFormData({ ...formData, PhoneNumber: e.target.value})}
                   className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
@@ -133,9 +188,9 @@ function Register() {
                 >
                   Phone Number
                 </label>
-            </div>
+              </div>
 
-             <div className="relative w-full mb-6">
+              <div className="relative w-full mb-6">
                 <Mail className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
                 <input
@@ -143,6 +198,8 @@ function Register() {
                   id="email"
                   placeholder=" "
                   required
+                  value={formData.Email}
+                  onChange={(e) => setFormData({ ...formData, Email: e.target.value})}
                   className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
@@ -159,8 +216,8 @@ function Register() {
                 >
                   Email Address
                 </label>
-            </div>
-            <div className="relative w-full mb-6">
+              </div>
+              <div className="relative w-full mb-6">
                 <Lock className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
                 <input
@@ -168,6 +225,8 @@ function Register() {
                   id="password"
                   placeholder=" "
                   required
+                  value={formData.Password}
+                  onChange={(e) => setFormData({ ...formData, Password: e.target.value})}
                   className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
@@ -184,8 +243,8 @@ function Register() {
                 >
                   Password
                 </label>
-            </div>
-            <div className="relative w-full mb-6">
+              </div>
+              <div className="relative w-full mb-6">
                 <Lock className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
                 <input
@@ -193,6 +252,8 @@ function Register() {
                   id="confirmPassword"
                   placeholder=" "
                   required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
@@ -209,8 +270,10 @@ function Register() {
                 >
                   Confirm Password
                 </label>
-            </div> 
-              <button className="w-full bg-emerald-700 dark:bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-800 dark:hover:bg-emerald-700 transition duration-300 flex items-center justify-center gap-2 font-medium">
+              </div> 
+              <button 
+                type="submit"
+                className="w-full bg-emerald-700 dark:bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-800 dark:hover:bg-emerald-700 transition duration-300 flex items-center justify-center gap-2 font-medium">
                 Create Account <ArrowRight className="w-4 h-4" />
               </button>
 
@@ -233,7 +296,7 @@ function Register() {
                     Secure access for authorized Super Admins only.
                 </p>
             </div>
-            </div>
+            </form>
           </div>
         </div>
       </div>

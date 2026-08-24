@@ -3,15 +3,15 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 const registerAdmin = (req,res) => {
-    const {UserName, Email, Password, ConfirmPassword, PhoneNumber} = req.body;
+    const {UserName, Email, Password, PhoneNumber} = req.body;
 
-    if(!UserName || !Email || !Password || !ConfirmPassword || !PhoneNumber){
+    if(!UserName || !Email || !Password || !PhoneNumber){
         return res.status(400).json({message: "All fields are required"});
     }
 
-    if(Password !== ConfirmPassword){
-        return res.status(400).json({message:"Password should not match"});
-    }
+    // if(Password !== ConfirmPassword){
+    //     return res.status(400).json({message:"Password should not match"});
+    // }
 
     superAdminService.createAdmin(UserName,Email,Password,PhoneNumber,(err,result) => {
         if(err){
@@ -22,7 +22,8 @@ const registerAdmin = (req,res) => {
         }
         else {
             return res.status(201).json({
-                message: "Super Admin Registered Successfully!"
+                message: "Super Admin Registered Successfully!",
+                result : result
             });
         }
     });
