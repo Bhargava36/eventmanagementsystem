@@ -22,7 +22,7 @@ const logoElement = (
 
 function Login() {
   return (
-    <motion.div className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300"
+    <motion.div className="relative w-full  min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300"
       animate={{
               y: [-100,0],
             }}

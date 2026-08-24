@@ -20,7 +20,7 @@ function Register() {
       animate={{opacity:1, y: 0}}
       exit={{opacity:0,  y: 100}}
       transition={{duration: 0.5,delay:0.2,repeat: 0,ease: "easeInOut"}}
-      className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black">
+      className="relative w-full min-h-screen overflow-y-auto pb-15 bg-white dark:bg-black">
                 <WaveBackground />
         <div className="flex gap-3 m-4 sm:m-8 text-lg font-semibold items-center">
         <div className="w-10 h-10 flex items-center justify-center">
@@ -45,56 +45,93 @@ function Register() {
               <Shield className="w-20 lg:w-24 h-20 lg:h-24 text-emerald-700 dark:text-emerald-500 p-4 rounded-2xl -ml-5 -mt-16 lg:-mt-19" />
             </motion.div>
             <motion.h1
-            intitial={{opacity:0, x: 100}}
+            initial={{opacity:0, x: 100}}
             animate={{opacity:1, x: 0}}
             exit={{opacity:0,  x: 100}}
-            transition={{duration: 0.5,delay:0.7,repeat: 0,ease: "easeInOut"}}
+            transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
             className="text-4xl lg:text-6xl font-bold text-black dark:text-white">Create Your</motion.h1>
             <motion.h1
-            intitial={{opacity:0, y: 100}}
+            initial={{opacity:0, y: 100}}
             animate={{opacity:1, y: 0}}
             exit={{opacity:0,  y: 100}}
-            transition={{duration: 0.5,delay:0.9,repeat: 0,ease: "easeInOut"}}
-            className="text-3xl lg:text-4xl font-bold text-emerald-700 dark:text-emerald-400">Super Admin Account</motion.h1>
-            <motion.p className="text-gray-600 dark:text-gray-400 mt-4 text-lg lg:text-xl">
+            transition={{duration: 0.5,delay:0.2,repeat: 0,ease: "easeInOut"}}
+            className="text-3xl lg:text-4xl font-bold text-emerald-700 dark:text-emerald-400">
+              Super Admin Account
+              </motion.h1>
+            <motion.p 
+            initial={{opacity:0, y: 100}}
+            animate={{opacity:1, y: 0}}
+            exit={{opacity:0,  y: 100}}
+            transition={{duration: 0.5,delay:0.2,repeat: 0,ease: "easeInOut"}}
+            className="text-gray-600 dark:text-gray-400 mt-4 text-lg lg:text-xl">
               Join the event management platform and
             </motion.p>
-            <motion.p className="text-gray-600 dark:text-gray-400">
+            <motion.p 
+            initial={{opacity:0, y: 100}}
+            animate={{opacity:1, y: 0}}
+            exit={{opacity:0,  y: 100}}
+            transition={{duration: 0.5,delay:0.2,repeat: 0,ease: "easeInOut"}}
+            className="text-gray-600 dark:text-gray-400">
               take full control of your events.
             </motion.p>
             <div className="flex flex-col gap-6 lg:gap-10 mt-6 lg:mt-10">
-              <div className="flex items-center gap-4 lg:gap-10">
+              <motion.div 
+              initial={{opacity:0, y: 100}}
+            animate={{opacity:1, y: 0}}
+            exit={{opacity:0,  y: 100}}
+            transition={{duration: 0.5,delay:0.3,repeat: 0,ease: "easeInOut"}}
+            className="flex items-center gap-4 lg:gap-10">
                 <ShieldCheck className="w-12 lg:w-15 h-12 lg:h-15 bg-gray-100 dark:bg-white/15 text-emerald-700 dark:text-emerald-500 p-3 rounded-2xl shrink-0" />
                 <div className="flex flex-col min-w-0">
-                  <h3 className="text-base lg:text-lg font-semibold">Secure & Protected</h3>
+                  <h3 className="text-base dark:text-gray-200 lg:text-lg font-semibold">Secure & Protected</h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">Your data is encrypted and protected with industry-standard security.</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-4 lg:gap-10">
+              </motion.div>
+              <motion.div 
+              initial={{opacity:0, y: 100}}
+            animate={{opacity:1, y: 0}}
+            exit={{opacity:0,  y: 100}}
+            transition={{duration: 0.5,delay:0.5,repeat: 0,ease: "easeInOut"}}
+            className="flex items-center gap-4 lg:gap-10">
                 <Users className="w-12 lg:w-15 h-12 lg:h-15 bg-gray-100 dark:bg-white/15 text-emerald-700 dark:text-emerald-500 p-3 rounded-2xl shrink-0" />
                 <div className="flex flex-col min-w-0">
-                  <h3 className="text-base lg:text-lg font-semibold">Role-Based Access</h3>
+                  <h3 className="text-base dark:text-gray-200 lg:text-lg font-semibold">Role-Based Access</h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">Manage users and permissions with granular role controls.</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-4 lg:gap-10">
+              </motion.div>
+              <motion.div 
+              initial={{opacity:0, y: 100}}
+            animate={{opacity:1, y: 0}}
+            exit={{opacity:0,  y: 100}}
+            transition={{duration: 0.5,delay:0.7,repeat: 0,ease: "easeInOut"}}
+            className="flex items-center gap-4 lg:gap-10">
                 <BarChart3 className="w-12 lg:w-15 h-12 lg:h-15 bg-gray-100 dark:bg-white/15 text-emerald-700 dark:text-emerald-500 p-3 rounded-2xl shrink-0" />
                 <div className="flex flex-col min-w-0">
-                  <h3 className="text-base lg:text-lg font-semibold">Real-time Insights</h3>
+                  <h3 className="text-base dark:text-gray-200 lg:text-lg font-semibold">Real-time Insights</h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">Get real-time analytics and reports to make smarter decisions.</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-4 lg:gap-10">
+              </motion.div>
+              <motion.div 
+              initial={{opacity:0, y: 100}}
+            animate={{opacity:1, y: 0}}
+            exit={{opacity:0,  y: 100}}
+            transition={{duration: 0.5,delay:0.9,repeat: 0,ease: "easeInOut"}}
+            className="flex items-center gap-4 lg:gap-10">
                 <Settings className="w-12 lg:w-15 h-12 lg:h-15 bg-gray-100 dark:bg-white/15 text-emerald-700 dark:text-emerald-500 p-3 rounded-2xl shrink-0" />
                 <div className="flex flex-col min-w-0">
-                  <h3 className="text-base lg:text-lg font-semibold">Easy Configuration</h3>
+                  <h3 className="text-base dark:text-gray-200 lg:text-lg font-semibold">Easy Configuration</h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">Set up your system quickly and customize it to your needs.</p>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 w-full lg:w-5/12 border-2 border-emerald-700 dark:bg-black/40 rounded-2xl bg-white/40 p-4 sm:p-6">
+          <motion.div 
+          initial={{opacity:0, y: 100}}
+        animate={{opacity:1, y: 0}}
+        exit={{opacity:0,  y: 100}}
+        transition={{duration: 0.5,delay:0.5,repeat: 0,ease: "easeInOut"}}
+        className="flex flex-col gap-2 w-full lg:w-5/12 border-2 border-emerald-700 backdrop-blur-sm dark:bg-black/40 rounded-2xl bg-white/40 p-4 sm:p-6">
             <div className="border-2 border-emerald-500 w-13 p-3.5 mt-5 rounded-full ml-auto mr-auto flex items-center justify-center">
               {logoElement}
             </div>
@@ -103,7 +140,7 @@ function Register() {
               <h1 className="text-xl sm:text-2xl font-bold text-emerald-700 dark:text-emerald-500">Super Admin</h1>
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Fill in your details to create your admin account</p>
             </div>
-            <div className="px-4 sm:px-6 pb-4 sm:pb-10 pt-4">
+            <form autoComplete="off"  className="px-4 sm:px-6 pb-4 sm:pb-10 pt-4">
             <div className="relative w-full mb-6 mt-2">
                 <UserRound className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
@@ -254,8 +291,8 @@ function Register() {
                     Secure access for authorized Super Admins only.
                 </p>
             </div>
-            </div>
-          </div>
+            </form>
+          </motion.div>
         </div>
       </motion.div>
   );
