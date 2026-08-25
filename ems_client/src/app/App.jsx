@@ -24,6 +24,8 @@ function App() {
           <Route path='/' element={<HeroSection />} />
           <Route path='/login' element={<Login />} />
           <Route path='/register' element={<Register />} />
+          <Route path='/admin/register' element={<AdminRegister />} />
+          <Route path='/admin/login' element={<AdminLogin />} />
         </Route>
 
         <Route path='/sidebar' element={<Sidebar />}>
@@ -34,8 +36,7 @@ function App() {
           <Route path='profile' element={<SuperAdminProfile />} />
           <Route path='eventinfo' element={<EventInfo />} />
         </Route>
-        <Route path='/admin/register' element={<AdminRegister />} />
-        <Route path='/admin/login' element={<AdminLogin />} />
+        
         <Route path='/teams' element={<TeamsDashboard />} />
         <Route path='/teamdetails' element={<TeamDetails />} />
       </Routes>

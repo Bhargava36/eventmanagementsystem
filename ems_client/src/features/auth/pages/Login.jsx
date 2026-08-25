@@ -6,11 +6,12 @@ import {
   Lock,
   UserRound,
   Eye,
+  EyeOff,
   Mail,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../components/Molecules/WaveBackgorund";
-import {motion} from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
@@ -26,6 +27,7 @@ function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState("");
 
@@ -261,13 +263,14 @@ function Login() {
                 <Lock className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
+                  name="password"
                   placeholder=" "
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="peer w-full border-0 border-b-2 border-gray-700 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
+                  className="peer w-full border-0 border-b-2 border-gray-700 bg-transparent pl-8 pr-10 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
                 <label
@@ -283,6 +286,37 @@ function Login() {
                 >
                   Password
                 </label>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-2.5 p-1 text-gray-500 hover:text-emerald-500 dark:text-gray-400 dark:hover:text-emerald-400 focus:outline-none transition-colors cursor-pointer"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {showPassword ? (
+                      <motion.div
+                        key="eye-off-login"
+                        initial={{ opacity: 0, scale: 0.6, rotate: -30 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        exit={{ opacity: 0, scale: 0.6, rotate: 30 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <EyeOff className="w-5 h-5" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="eye-login"
+                        initial={{ opacity: 0, scale: 0.6, rotate: 30 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        exit={{ opacity: 0, scale: 0.6, rotate: -30 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Eye className="w-5 h-5" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </button>
             </div>
             </div>
 
