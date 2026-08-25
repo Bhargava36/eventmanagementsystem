@@ -11,17 +11,21 @@ import EventsDashboard from '../features/auth/pages/EventsDashboard';
 import SuperAdminProfile from '../features/auth/pages/SuperAdminProfile';
 import EventInfo from '../features/auth/pages/EventInfo';
 import PublicLayout from '../components/Templates/PublicLayout';
+import AdminRegister from '../features/auth/pages/AdminRegister';
+import AdminLogin from '../features/auth/pages/AdminLogin';
+import TeamsDashboard from '../features/auth/pages/TeamsDashboard';
+import TeamDetails from '../features/auth/pages/TeamDetails';
 function App() {
   return (
     <div>
-        
+
       <Routes>
-        <Route  element={<PublicLayout />} >
-            <Route path='/' element={<HeroSection />} />
-            <Route path='/login' element={<Login />} />
-            <Route path='/register' element={<Register />} />
+        <Route element={<PublicLayout />} >
+          <Route path='/' element={<HeroSection />} />
+          <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
         </Route>
-        
+
         <Route path='/sidebar' element={<Sidebar />}>
           <Route index element={<SuperAdminDashboard />} />
           <Route path='feedback' element={<FeedbackDashboard />} />
@@ -30,6 +34,10 @@ function App() {
           <Route path='profile' element={<SuperAdminProfile />} />
           <Route path='eventinfo' element={<EventInfo />} />
         </Route>
+        <Route path='/admin/register' element={<AdminRegister />} />
+        <Route path='/admin/login' element={<AdminLogin />} />
+        <Route path='/teams' element={<TeamsDashboard />} />
+        <Route path='/teamdetails' element={<TeamDetails />} />
       </Routes>
     </div>
   );
