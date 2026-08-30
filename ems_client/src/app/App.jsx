@@ -34,7 +34,7 @@ function App() {
           <Route path='notification' element={<NotificationPage />} />
           <Route path='events' element={<EventsDashboard />} />
           <Route path='profile' element={<SuperAdminProfile />} />
-          <Route path='eventinfo' element={<EventInfo />} />
+          <Route path='eventinfo/:id' element={<EventInfo />} />
         </Route>
         
         <Route path='/teams' element={<TeamsDashboard />} />
