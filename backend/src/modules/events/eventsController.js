@@ -2,15 +2,15 @@ const eventsService = require('./eventsService');
 
 const createEvent = (req, res) => {
 
-    const { EventName, Description, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, SuperAdminId, AdminId, PrimaryColor, SecondaryColor, TertiaryColor } = req.body;
+    const { EventName, Description, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor } = req.body;
 
-    if (!EventName || !StartDate || !EndDate || !SuperAdminId || !AdminId) {
+    if (!EventName || !StartDate || !EndDate) {
         return res.status(400).json({
-            message: "EventName, StartDate, EndDate and SuperAdminId, AdminId are required"
+            message: "EventName, StartDate, EndDate are required"
         });
     }
 
-    eventsService.createEvent( EventName, Description, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, SuperAdminId, AdminId, PrimaryColor, SecondaryColor, TertiaryColor, (err, result) => {
+    eventsService.createEvent( EventName, Description, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, (err, result) => {
 
             if (err) {
                 return res.status(500).json({
@@ -73,7 +73,7 @@ const updateEvent = (req, res) => {
 
     const id = req.params.id;
 
-    const { EventName, Description, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, PrimaryColor, SecondaryColor, TertiaryColor } = req.body;
+    const { EventName, Description, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor } = req.body;
 
     if (!EventName || !StartDate || !EndDate) {
 
@@ -82,7 +82,7 @@ const updateEvent = (req, res) => {
         });
     }
 
-    eventsService.updateEventById( id, EventName, Description, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, PrimaryColor, SecondaryColor, TertiaryColor, (err, result) => {
+    eventsService.updateEventById( id, EventName, Description, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, (err, result) => {
 
             if (err) {
 
