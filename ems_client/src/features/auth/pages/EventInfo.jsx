@@ -139,9 +139,6 @@ function EventInfo() {
 
                     <div className="w-full sm:w-auto">
                         <button
-                            onClick={() =>
-                                navigate(`/sidebar/events/edit/${event.Id}`)
-                            }
                             className="w-full sm:w-auto flex items-center justify-center gap-2 border border-emerald-700 dark:border-emerald-500 text-emerald-700 dark:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer"
                         >
                             <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
