@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ChartNoAxesCombined,
   ShieldCheck,
@@ -6,11 +6,13 @@ import {
   Lock,
   UserRound,
   Eye,
+  EyeOff,
   Mail,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../components/Molecules/WaveBackgorund";
-import {motion} from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
       <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -21,6 +23,56 @@ const logoElement = (
   );
 
 function Login() {
+
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState("");
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if(!email || !password) {
+      setError("Required to fill all fields");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await fetch("http://localhost:3000/api/super_admin/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({email, password}),
+      });
+
+      const data = await res.json();
+
+      if(!res.ok) {
+        throw new Error(data.message || data.error || "Login failed"); 
+      }
+
+      if(data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      if(data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
+
+      alert("Logging Successfully!");
+      navigate("/sidebar");
+    }
+    catch(err) {
+      setError(err.message || "Login failed, try again later");
+    }
+    finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div className="relative w-full  min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300"
       animate={{
@@ -154,13 +206,13 @@ function Login() {
           </div>
         </div>
 
-        <motion.div 
+<motion.div 
           initial={{opacity:0, y: 100}}
           animate={{opacity:1, y: 0}}
           exit={{opacity:0,  y: 100}}
           transition={{duration: 0.5,delay:1.1,repeat: 0,ease: "easeInOut"}}
           className="flex flex-col w-full lg:w-5/12 px-4 sm:px-6  lg:px-10">
-          <div className="bg-gray-50 dark:bg-white/5 border-2 backdrop-blur-sm border-emerald-700 dark:border-emerald-500 rounded-2xl p-6 sm:p-8 shadow-sm mb-6">
+          <form  onSubmit={handleLogin} className="bg-gray-50 dark:bg-white/5 border-2 backdrop-blur-sm border-emerald-700 dark:border-emerald-500 rounded-2xl p-6 sm:p-8 shadow-sm mb-6">
             <div className="mb-6 sm:mb-8">
             <div className="border-2 border-emerald-500 w-13 p-3.5 mb-4 rounded-full ml-auto mr-auto flex items-center justify-center">
               {logoElement}
@@ -172,6 +224,11 @@ function Login() {
             </div>
 
             <div className="mb-5">
+                {error && (
+            <div className="mb-4 p-2.5 bg-red-500/20 border border-red-500/40 rounded-xl text-red-200 text-xs text-center font-medium">
+              {error}
+            </div>
+          )}
                <div className="relative w-full mb-6">
                 <Mail className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
@@ -180,6 +237,8 @@ function Login() {
                   id="email"
                   placeholder=" "
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
@@ -204,11 +263,14 @@ function Login() {
                 <Lock className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
+                  name="password"
                   placeholder=" "
                   required
-                  className="peer w-full border-0 border-b-2 border-gray-700 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="peer w-full border-0 border-b-2 border-gray-700 bg-transparent pl-8 pr-10 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
                 />
 
                 <label
@@ -224,6 +286,37 @@ function Login() {
                 >
                   Password
                 </label>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2 top-2.5 p-1 text-gray-500 hover:text-emerald-500 dark:text-gray-400 dark:hover:text-emerald-400 focus:outline-none transition-colors cursor-pointer"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {showPassword ? (
+                      <motion.div
+                        key="eye-off-login"
+                        initial={{ opacity: 0, scale: 0.6, rotate: -30 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        exit={{ opacity: 0, scale: 0.6, rotate: 30 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <EyeOff className="w-5 h-5" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="eye-login"
+                        initial={{ opacity: 0, scale: 0.6, rotate: 30 }}
+                        animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                        exit={{ opacity: 0, scale: 0.6, rotate: -30 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Eye className="w-5 h-5" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </button>
             </div>
             </div>
 
@@ -231,8 +324,11 @@ function Login() {
                 Forgot Password?
             </div>
 
-            <button className="w-full bg-emerald-700 hover:bg-[#b58e4e] dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold py-3 rounded-lg transition duration-300">
-              Sign In
+            <button 
+            type="submit"
+            disabled = {loading}
+            className="w-full bg-emerald-700 hover:bg-[#b58e4e] dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold py-3 rounded-lg transition duration-300">
+              {loading ? "signing in..." : "sign in"}
             </button>
 
             <div className="flex items-center my-6">
@@ -254,7 +350,7 @@ function Login() {
                 <p>Secure access for authorized administrators only</p>
               </div>
             </div>
-          </div>
+          </form>
         </motion.div>
       </div>
     </motion.div>

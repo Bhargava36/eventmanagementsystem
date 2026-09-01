@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useContext } from "react";
 import { ThemeContext } from "../../Contexts/ThemeContext";
-import {motion} from "framer-motion";
+import { motion } from "framer-motion";
+
 export default function WaveBackground() {
   const canvasRef = useRef(null);
   const { theme } = useContext(ThemeContext); // 'dark' or 'light'
@@ -12,8 +13,17 @@ export default function WaveBackground() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    let width = 0;
+    let height = 0;
+
+    const updateDimensions = () => {
+      const rect = canvas.getBoundingClientRect();
+      width = canvas.width = rect.width || window.innerWidth;
+      height = canvas.height = rect.height || window.innerHeight;
+    };
+
+    updateDimensions();
+
     let time = 0;
     let animationId;
 
@@ -31,9 +41,15 @@ export default function WaveBackground() {
         ? "16, 185, 129" // emerald-500
         : "4, 120, 87";   // emerald-700
 
+    const updateMousePos = (clientX, clientY) => {
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      mouse.targetX = clientX - rect.left;
+      mouse.targetY = clientY - rect.top;
+    };
+
     const handleMouseMove = (e) => {
-      mouse.targetX = e.clientX;
-      mouse.targetY = e.clientY;
+      updateMousePos(e.clientX, e.clientY);
     };
 
     const handleMouseLeave = () => {
@@ -43,8 +59,7 @@ export default function WaveBackground() {
 
     const handleTouchMove = (e) => {
       if (e.touches && e.touches[0]) {
-        mouse.targetX = e.touches[0].clientX;
-        mouse.targetY = e.touches[0].clientY;
+        updateMousePos(e.touches[0].clientX, e.touches[0].clientY);
       }
     };
 
@@ -53,8 +68,7 @@ export default function WaveBackground() {
     window.addEventListener("touchmove", handleTouchMove);
 
     const handleResize = () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      updateDimensions();
     };
     window.addEventListener("resize", handleResize);
 
@@ -62,8 +76,8 @@ export default function WaveBackground() {
       ctx.clearRect(0, 0, width, height);
 
       // Smooth mouse position interpolation (spring effect)
-      mouse.x += (mouse.targetX - mouse.x) * 0.08;
-      mouse.y += (mouse.targetY - mouse.y) * 0.08;
+      mouse.x += (mouse.targetX - mouse.x) * 0.12;
+      mouse.y += (mouse.targetY - mouse.y) * 0.12;
 
       const spacingX = 18;
       const spacingY = 18;
@@ -78,7 +92,7 @@ export default function WaveBackground() {
           const baseY = j * spacingY;
 
           // Multiple sine waves layered for organic motion
-          const wave1 = Math.sin(i * 0.12 + time * 0.02) * 18;
+          const wave1 = Math.sin(i * 0.12 + time * 0.02) * 48;
           const wave2 = Math.cos(j * 0.09 + time * 0.015) * 14;
           const wave3 = Math.sin((i + j) * 0.07 + time * 0.025) * 10;
 
@@ -86,7 +100,7 @@ export default function WaveBackground() {
           let y = baseY + wave1 + wave2 + wave3;
 
           // Only draw in the lower portion for wave effect
-          const heightThreshold = height * 0.45;
+          const heightThreshold = height * 0.55;
           if (baseY < heightThreshold) continue;
 
           // Gentle displacement relative to cursor
@@ -122,7 +136,7 @@ export default function WaveBackground() {
           ctx.fillStyle = `rgba(${color}, ${opacity})`;
           ctx.fill();
 
-          // Very soft glow ring for points directly under cursor
+          // Soft glow ring for points directly under cursor
           if (mouseEffect > 0.5) {
             ctx.beginPath();
             ctx.arc(x, y, radius * 1.3, 0, Math.PI * 2);
@@ -132,7 +146,7 @@ export default function WaveBackground() {
         }
       }
 
-      // Very subtle ambient light aura trailing the mouse cursor
+      // Ambient light aura trailing the mouse cursor exactly at mouse.x, mouse.y
       if (mouse.x > 0 && mouse.y > 0) {
         const gradient = ctx.createRadialGradient(
           mouse.x, mouse.y, 0,
@@ -164,10 +178,10 @@ export default function WaveBackground() {
 
   return (
     <motion.canvas
-    initial={{opacity:1,y:400}}
-            animate={{opacity:1,y:0}}
-            exit={{opacity:1,y:-400}}
-            transition={{duration: 1,delay:0.1,repeat: 0,ease: "easeInOut"}}
+      initial={{ opacity: 1, y: 400 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 1, y: -400 }}
+      transition={{ duration: 1, delay: 0.1, repeat: 0, ease: "easeInOut" }}
       ref={canvasRef}
       className="absolute inset-0 z-0 h-full w-full pointer-events-none"
     />

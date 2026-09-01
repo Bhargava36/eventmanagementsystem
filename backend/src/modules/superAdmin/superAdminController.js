@@ -3,15 +3,15 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 const registerAdmin = (req,res) => {
-    const {UserName, Email, Password, ConfirmPassword, PhoneNumber} = req.body;
+    const {UserName, Email, Password, PhoneNumber} = req.body;
 
-    if(!UserName || !Email || !Password || !ConfirmPassword || !PhoneNumber){
+    if(!UserName || !Email || !Password || !PhoneNumber){
         return res.status(400).json({message: "All fields are required"});
     }
 
-    if(Password !== ConfirmPassword){
-        return res.status(400).json({message:"Password should not match"});
-    }
+    // if(Password !== ConfirmPassword){
+    //     return res.status(400).json({message:"Password should not match"});
+    // }
 
     superAdminService.createAdmin(UserName,Email,Password,PhoneNumber,(err,result) => {
         if(err){
@@ -22,22 +22,17 @@ const registerAdmin = (req,res) => {
         }
         else {
             return res.status(201).json({
-                message: "Super Admin Registered Successfully!"
+                message: "Super Admin Registered Successfully!",
+                result : result
             });
         }
     });
 };
 
 const loginAdminController = (req,res) => {
-    const {Email,Password} = req.body;
+    const {email,password} = req.body;
 
-    if(!Email || !Password){
-        return res.status(400).json({
-            message: "All fields are required, Check it once"
-        });
-    }
-
-    superAdminService.loginAdmin(Email, async(err,result) => {
+    superAdminService.loginAdmin(email, async(err,result) => {
         if(err){
             return res.status(500).json({
                 message: "Database error",
@@ -52,7 +47,8 @@ const loginAdminController = (req,res) => {
         }
         const admin = result[0];
 
-        const isMatch = await bcrypt.compare(Password, admin.Password);
+        const isMatch = await bcrypt.compare(password, admin.Password);
+
         if(!isMatch) {
              return res.status(401).json({
                 message: "Invalid UserName or Password"

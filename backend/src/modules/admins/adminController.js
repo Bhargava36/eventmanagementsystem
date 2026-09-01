@@ -49,6 +49,7 @@ const loginAdminController = (req,res) => {
         const admin = result[0];
 
         const isMatch = await bcrypt.compare(Password, admin.Password);
+        
         if(!isMatch) {
              return res.status(401).json({
                 message: "Invalid UserName or Password"
