@@ -3,13 +3,13 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
 const registerAdmin = (req,res) => {
-    const {AdminName, Email, Password, Mobile} = req.body;
+    const {AdminName, Email, Password, Mobile, EventId} = req.body;
 
-    if(!AdminName || !Email || !Password || !Mobile){
+    if(!AdminName || !Email || !Password || !Mobile || !EventId){
         return res.status(400).json({message: "All fields are required"});
     }
 
-    adminService.createAdmin(AdminName, Email, Password, Mobile, (err, result) => {
+    adminService.createAdmin(AdminName, Email, Password, Mobile, EventId, (err, result) => {
         if(err){
             return res.status(500).json({
                 message: "Registration failed",
@@ -122,6 +122,26 @@ const getAdminById = (req, res) => {
     });
 };
 
+const getAdminByEventId = (req, res) => {
+
+    const EventId = req.params.EventId;
+
+    adminService.getAdminByEventId(EventId, (err, result) => {
+
+        if(err) {
+            return res.status(500).json({
+                message: "Failed to get admins by event",
+                error: err
+            });
+        }
+
+        return res.status(200).json({
+            message: "Admins fetched successfully",
+            admins: result
+        });
+    });
+};
+
 const deleteAdmin = (req, res) => {
 
     const id = req.params.id;
@@ -146,5 +166,6 @@ module.exports = {
     loginAdminController,
     getAllAdmin,
     getAdminById,
+    getAdminByEventId,
     deleteAdmin
 };

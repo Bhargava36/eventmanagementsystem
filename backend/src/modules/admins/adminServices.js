@@ -1,12 +1,12 @@
 const db = require('../../config/db');
 const bcrypt = require('bcrypt');
 
-const createAdmin = async (AdminName, Email, Password, Mobile, callback) => {
+const createAdmin = async (AdminName, Email, Password, Mobile, EventId, callback) => {
     try {
         const hashedPassword = await bcrypt.hash(Password,10);
 
-        const query = "insert into admins (AdminName, Email, Password, Mobile) values (?,?,?,?)";
-        db.query(query, [AdminName, Email, hashedPassword, Mobile], (err, result) => {
+        const query = "insert into admins (AdminName, Email, Password, Mobile, EventId) values (?,?,?,?,?)";
+        db.query(query, [AdminName, Email, hashedPassword, Mobile, EventId], (err, result) => {
             if (err) {
                 return callback(err, null);
             }
@@ -58,6 +58,20 @@ const getAdminById = (id, callback) => {
     });
 };
 
+const getAdminByEventId = (EventId, callback) => {
+
+    const query = `SELECT admins.Id, admins.AdminName, admins.Email, admins.Mobile, admins.EventId, events.EventName FROM admins JOIN events ON admins.EventId = events.Id WHERE admins.EventId = ?`;
+
+    db.query(query, [EventId], (err, result) => {
+
+        if (err) {
+            return callback(err, null);
+        }
+
+        return callback(null, result);
+    });
+};
+
 const deleteAdmin = (id, callback) => {
 
     const query = ` DELETE FROM admins WHERE Id = ? `;
@@ -79,5 +93,6 @@ module.exports = {
     loginAdmin,
     getAllAdmin,
     getAdminById,
+    getAdminByEventId,
     deleteAdmin
 };

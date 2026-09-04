@@ -7,7 +7,7 @@ const adminController = require("./adminController");
 router.post('/register', adminController.registerAdmin);
 router.post('/login', adminController.loginAdminController);
 router.get('/', adminController.getAllAdmin);
+router.get('/event/:EventId', adminController.getAdminByEventId);
 router.get('/:id', adminController.getAdminById);
 router.delete('/:id', adminController.deleteAdmin);
-
 module.exports = router;
