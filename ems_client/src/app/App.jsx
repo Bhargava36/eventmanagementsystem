@@ -11,7 +11,7 @@ import SuperAdminProfile from '../features/auth/pages/SuperAdmin/SuperAdminProfi
 import AdminSidebar from '../components/Organisms/AdminSidebar';
 import EventInfo from '../features/auth/pages/SuperAdmin/EventInfo';
 import PublicLayout from '../components/Templates/PublicLayout';
-import AdminRegister from '../features/auth/pages/Admin/AdminRegister';
+// import AdminRegister from '../features/auth/pages/Admin/AdminRegister';
 import AdminLogin from '../features/auth/pages/Admin/AdminLogin';
 import TeamsDashboard from '../features/auth/pages/Admin/TeamsDashboard';
 import TeamDetails from '../features/auth/pages/Admin/TeamDetails';
@@ -27,7 +27,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/register" element={<AdminRegister />} />
+          {/* <Route path="/admin/register" element={<AdminRegister />} /> */}
         </Route>
 
         <Route path="/sidebar" element={<Sidebar />}>
