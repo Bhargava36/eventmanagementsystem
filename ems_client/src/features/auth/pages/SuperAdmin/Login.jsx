@@ -10,7 +10,7 @@ import {
   Mail,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-import WaveBackground from "../../../components/Molecules/WaveBackgorund";
+import WaveBackground from "../../../../components/Molecules/WaveBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 const logoElement = (

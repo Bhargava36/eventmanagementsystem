@@ -1,37 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import {useNavigate} from 'react-router-dom';
-import { NavLink, Outlet } from 'react-router-dom';
+import { useNavigate, NavLink, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
-  Calendar,
-  Bell,
+  Users,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  MessageCircleQuestion,
   CircleUserRound,
-  PanelLeftClose,
   PanelLeftOpen,
-  CircleX
+  CircleX,
 } from 'lucide-react';
 
 const logoElement = (
-    <div className="relative w-5 h-5 flex items-center justify-center">
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
-    </div>
-  );
-
+  <div className="relative w-5 h-5 flex items-center justify-center">
+    <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
+    <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
+    <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
+    <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
+  </div>
+);
 
 const menuItems = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
-  { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: '12' },
-  { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: '4', dot: true },
-  { name: 'Feedback', icon: MessageCircleQuestion, path: '/sidebar/feedback', badge: null },
-  { name: 'Profile', icon: CircleUserRound, path: '/sidebar/profile', badge: null },
+  { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', badge: null, end: false },
+  { name: 'Teams', icon: Users, path: '/admin/teams', badge: null, end: false },
+  { name: 'Profile', icon: CircleUserRound, path: '/admin/profile', badge: null, end: false },
 ];
 
 const SidebarContent = ({
@@ -71,11 +64,7 @@ const SidebarContent = ({
           onClick={() => setCollapsed(!collapsed)}
           className="absolute top-8 -right-8 -z-10 w-8 h-9 rounded-r-full text-white bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center shadow-md hover:bg-transparent hover:dark:text-white hover:text-black hover:border-2 hover:border-emerald-500 transition-transform transition-all duration-500 ease-in-out z-10 cursor-pointer"
         >
-          {collapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       )}
 
@@ -99,7 +88,7 @@ const SidebarContent = ({
               !isMobile && collapsed ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg'
             } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300`}
           >
-            SA
+            A
           </div>
           <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white dark:border-black"></span>
         </div>
@@ -107,10 +96,10 @@ const SidebarContent = ({
           <motion.div
             initial={{ opacity: 0, x: -5 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.2, delay:0.5 }}
+            transition={{ duration: 0.2, delay: 0.5 }}
             className="overflow-hidden"
           >
-            <h3 className="font-bold text-base whitespace-nowrap">Super Admin</h3>
+            <h3 className="font-bold text-base whitespace-nowrap">Admin</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
               Administrator
             </p>
@@ -149,35 +138,18 @@ const SidebarContent = ({
                   >
                     <div className="relative shrink-0">
                       <Icon className="w-5 h-5" />
-                      {item.dot && (
-                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                      )}
                     </div>
                     {canShowText && (
                       <motion.span
                         initial={{ opacity: 0, x: -5 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay:0.5 }}
+                        transition={{ duration: 0.3, delay: 0.5 }}
                         className="font-medium text-sm whitespace-nowrap"
                       >
                         {item.name}
                       </motion.span>
                     )}
                   </div>
-                  {canShowText && item.badge && (
-                    <motion.span
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3 , delay:0.5}}
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        isActive
-                          ? 'bg-white text-emerald-700'
-                          : 'bg-white dark:bg-[#0F1729] text-emerald-700 dark:text-emerald-500'
-                      }`}
-                    >
-                      {item.badge}
-                    </motion.span>
-                  )}
                 </>
               )}
             </NavLink>

@@ -39,8 +39,8 @@ const teamsData = [
 function TeamsDashboard() {
 
     const navigate = useNavigate();
-    const handleTeamClick = () => {
-        navigate('/teamdetails');
+    const handleTeamClick = (teamId) => {
+        navigate(`/admin/teams/${teamId}`);
     };
 
     return (
@@ -159,7 +159,7 @@ function TeamsDashboard() {
                                     <td className="px-4 py-3 sm:py-4">
                                         <div className="flex items-center justify-center gap-1 sm:gap-2">
                                             <button className="p-1 sm:p-1.5 border-gray-200 dark:border-gray-800 border-1 rounded-lg hover:border-1 hover:border-emerald-500 hover:text-emerald-500 text-gray-500 dark:text-gray-400 transition-colors cursor-pointer"
-                                                onClick={handleTeamClick}
+                                                onClick={() => handleTeamClick(team.id)}
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>

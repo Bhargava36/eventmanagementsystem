@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ShieldCheck, Users, BarChart3, Settings, Shield, UserPlus, UserRound, Mail, Lock, Eye, EyeOff, ArrowRight, Phone } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
-import WaveBackground from "../../../components/Molecules/WaveBackgorund";
+import WaveBackground from "../../../../components/Molecules/WaveBackground";
 import { useState , useNavigate} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 const logoElement = (

@@ -31,7 +31,7 @@ const teamMembers = [
 function TeamDetails() {
     const navigate = useNavigate();
     const handleBack = () => {
-        navigate('/teams');
+        navigate('/admin/teams');
     };
 
     return (
