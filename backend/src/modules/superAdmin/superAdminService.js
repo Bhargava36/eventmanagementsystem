@@ -32,7 +32,33 @@ const loginAdmin = (Email, callback) => {
     });
 };
 
+const getAdminProfile = (id, callback) => {
+    const query = "SELECT Id, UserName, Email, PhoneNumber FROM superadmin WHERE Id = ?";
+
+    db.query(query, [id], (err, result) => {
+        if (err) {
+            return callback(err, null);
+        }
+
+        return callback(null, result);
+    });
+};
+
+const updateAdmin = (id, UserName, Email, PhoneNumber, callback) => {
+    const query = `UPDATE superadmin SET UserName = ?, Email = ?, PhoneNumber = ? WHERE Id = ?`;
+    db.query(query, [UserName, Email, PhoneNumber, id], (err, result) => {
+            if (err) {
+                return callback(err, null);
+            } else {
+                return callback(null, result);
+            }
+        }
+    );
+};
+
 module.exports = {
     createAdmin,
-    loginAdmin
+    loginAdmin,
+    getAdminProfile,
+    updateAdmin
 };

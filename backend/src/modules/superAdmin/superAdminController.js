@@ -79,7 +79,59 @@ const loginAdminController = (req,res) => {
     });
 };
 
+const getAdminProfile = (req, res) => {
+    const { id } = req.params;
+
+    superAdminService.getAdminProfile(id, (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                message: "Failed to fetch profile",
+                error: err
+            });
+        }
+
+        if (result.length === 0) {
+            return res.status(404).json({
+                message: "Super Admin not found"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Profile fetched successfully",
+            admin: result[0]
+        });
+    });
+};
+
+const updateAdmin = (req,res) => {
+    const { id } = req.params;
+    const { UserName, Email, PhoneNumber } = req.body;
+
+    if(!UserName || !Email || !PhoneNumber){
+        return res.status(400).json({
+            message: "All fields are required"
+        });
+    }
+
+    superAdminService.updateAdmin(id, UserName, Email, PhoneNumber, (err,result) => {
+            if(err){
+                return res.status(500).json({
+                    message: "Profile update failed",
+                    error: err
+                });
+            }
+
+            return res.status(200).json({
+                message: "Profile updated successfully",
+                result: result
+            });
+        }
+    );
+};
+
 module.exports = {
     registerAdmin,
-    loginAdminController
+    loginAdminController,
+    getAdminProfile,
+    updateAdmin
 };
