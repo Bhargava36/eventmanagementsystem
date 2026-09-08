@@ -107,11 +107,6 @@ function SuperAdminProfile() {
 
   const personalInfo = [
     {
-      icon: User,
-      label: 'Full Name',
-      value: profile.UserName,
-    },
-    {
       icon: AtSign,
       label: 'Username',
       value: profile.UserName,
@@ -136,12 +131,7 @@ function SuperAdminProfile() {
       label: 'Account Type',
       value: 'Super Admin',
     },
-    {
-      icon: CheckCircle2,
-      label: 'Status',
-      value: 'Active',
-      isStatus: true,
-    },
+
   ];
 
   return (
