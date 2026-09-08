@@ -274,7 +274,7 @@ function SuperAdminDashboard() {
               hidden: {},
               visible: { transition: { staggerChildren: 0.07 } },
             }}
-            className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-3 sm:gap-4"
+            className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-3 gap-3 sm:gap-4"
           >
             {currentEvent.stats.map((stat, i) => {
               const Icon = stat.icon;
