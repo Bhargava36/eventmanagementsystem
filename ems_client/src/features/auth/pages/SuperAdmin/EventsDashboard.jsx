@@ -49,6 +49,9 @@ function EventsDashboard() {
     PrimaryColor: "",
     SecondaryColor: "",
     TertiaryColor: "",
+    PrimaryTextColor: "",
+    SecondaryTextColor: "",
+    TertiaryTextColor: "",
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -618,6 +621,67 @@ function EventsDashboard() {
                     </div>
 
                   </div>
+
+                  <div>
+
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Primary Text Color
+                    </label>
+
+                    <div className="flex gap-2">
+
+                      <input
+                        type="text"
+                        name="PrimaryTextColor"
+                        value={formData.PrimaryTextColor}
+                        onChange={handleChange}
+                        className="flex-1 px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
+                      />
+
+                    </div>
+
+                  </div>
+
+                  <div>
+
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Secondary Text Color
+                    </label>
+
+                    <div className="flex gap-2">
+
+                      <input
+                        type="text"
+                        name="SecondaryTextColor"
+                        value={formData.SecondaryTextColor}
+                        onChange={handleChange}
+                        className="flex-1 px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
+                      />
+
+                    </div>
+
+                  </div>
+
+                  <div>
+
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Tertiary Text Color
+                    </label>
+
+                    <div className="flex gap-2">
+
+                      <input
+                        type="text"
+                        name="TertiaryTextColor"
+                        value={formData.TertiaryTextColor}
+                        onChange={handleChange}
+                        className="flex-1 px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
+                      />
+
+                    </div>
+
+                  </div>
+
 
                 </div>
 

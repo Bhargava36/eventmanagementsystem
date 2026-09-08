@@ -22,6 +22,7 @@ function SuperAdminProfile() {
     UserName: '',
     Email: '',
     PhoneNumber: '',
+    created_at: '',
   });
 
   useEffect(() => {
@@ -45,6 +46,7 @@ function SuperAdminProfile() {
         UserName: data.admin.UserName || '',
         Email: data.admin.Email || '',
         PhoneNumber: data.admin.PhoneNumber || '',
+        created_at: data.admin.created_at || '',
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -56,6 +58,7 @@ function SuperAdminProfile() {
       UserName: profile.UserName || '',
       Email: profile.Email || '',
       PhoneNumber: profile.PhoneNumber || '',
+      created_at: profile.created_at || '',
     });
 
     setShowEdit(true);
@@ -131,6 +134,11 @@ function SuperAdminProfile() {
       label: 'Account Type',
       value: 'Super Admin',
     },
+    {
+      icon: Calendar,
+      label: 'Joined On',
+      value: profile.created_at,
+    }
 
   ];
 
@@ -202,7 +210,7 @@ function SuperAdminProfile() {
 
                 <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
                   <Calendar className="w-4 h-4 text-emerald-700 dark:text-emerald-500 shrink-0" />
-                  <span>Joined on 15 Jan, 2025</span>
+                  <span>{profile.created_at}</span>
                 </div>
 
               </div>

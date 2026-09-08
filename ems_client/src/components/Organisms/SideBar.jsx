@@ -26,13 +26,7 @@ const logoElement = (
   );
 
 
-const menuItems = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
-  { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: '12' },
-  { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: '4', dot: true },
-  { name: 'Feedback', icon: MessageCircleQuestion, path: '/sidebar/feedback', badge: null },
-  { name: 'Profile', icon: CircleUserRound, path: '/sidebar/profile', badge: null },
-];
+
 
 const SidebarContent = ({
   isMobile = false,
@@ -42,6 +36,31 @@ const SidebarContent = ({
 }) => {
   const [showText, setShowText] = useState(!collapsed);
   const navigate = useNavigate();
+  const [count, setCount] = useState([]);
+
+  useEffect(() => {
+    fetchEventCount();
+  },[]);
+
+  const fetchEventCount = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/events/");
+      const data = await response.json();
+      setCount(data.events);
+    } catch (error) {
+      console.error('Error fetching event count:', error);
+    }
+  };
+
+  const totalEvents = count.length;
+
+  const menuItems = [
+  { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
+  { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: totalEvents, dot: false },
+  { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: '4', dot: true },
+  { name: 'Feedback', icon: MessageCircleQuestion, path: '/sidebar/feedback', badge: null },
+  { name: 'Profile', icon: CircleUserRound, path: '/sidebar/profile', badge: null },
+];
 
   useEffect(() => {
     if (collapsed) {

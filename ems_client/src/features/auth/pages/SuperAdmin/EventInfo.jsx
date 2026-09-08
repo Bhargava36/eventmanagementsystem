@@ -49,6 +49,9 @@ function EventInfo() {
         PrimaryColor: '',
         SecondaryColor: '',
         TertiaryColor: '',
+        PrimaryTextColor: '',
+        SecondaryTextColor: '',
+        TertiaryTextColor: '',
     });
 
     const handleBack = () => {
@@ -90,6 +93,9 @@ function EventInfo() {
                 PrimaryColor: data.events[0].PrimaryColor || '',
                 SecondaryColor: data.events[0].SecondaryColor || '',
                 TertiaryColor: data.events[0].TertiaryColor || '',
+                PrimaryTextColor: data.events[0].PrimaryTextColor || '',
+                SecondaryTextColor: data.events[0].SecondaryTextColor || '',
+                TertiaryTextColor: data.events[0].TertiaryTextColor || '',
             });
         } 
         catch (error) {
@@ -579,6 +585,72 @@ function EventInfo() {
                                     />
                                 </div>
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Primary Text Color
+                                </label>
+                                <div className="flex gap-3">
+                                    <input
+                                        type="color"
+                                        name="PrimaryTextColor"
+                                        value={formData.PrimaryTextColor}
+                                        onChange={handleInputChange}
+                                        className="w-12 h-10 rounded cursor-pointer"
+                                    />
+                                    <input
+                                        type="text"
+                                        name="PrimaryTextColor"
+                                        value={formData.PrimaryTextColor}
+                                        onChange={handleInputChange}
+                                        className="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Secondary Text Color
+                                </label>
+                                <div className="flex gap-3">
+                                    <input
+                                        type="color"
+                                        name="SecondaryTextColor"
+                                        value={formData.SecondaryTextColor}
+                                        onChange={handleInputChange}
+                                        className="w-12 h-10 rounded cursor-pointer"
+                                    />
+                                    <input
+                                        type="text"
+                                        name="SecondaryTextColor"
+                                        value={formData.SecondaryTextColor}
+                                        onChange={handleInputChange}
+                                        className="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Tertiary Text Color
+                                </label>
+                                <div className="flex gap-3">
+                                    <input
+                                        type="color"
+                                        name="TertiaryTextColor"
+                                        value={formData.TertiaryTextColor}
+                                        onChange={handleInputChange}
+                                        className="w-12 h-10 rounded cursor-pointer"
+                                    />
+                                    <input
+                                        type="text"
+                                        name="TertiaryTextColor"
+                                        value={formData.TertiaryTextColor}
+                                        onChange={handleInputChange}
+                                        className="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
@@ -876,6 +948,78 @@ function EventInfo() {
 
                                         <span className="text-sm text-gray-900 dark:text-white">
                                             {event.TertiaryColor || '-'}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                                <div>
+
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                        Primary Text Color
+                                    </p>
+
+                                    <div className="flex items-center gap-2">
+
+                                        <div
+                                            className="w-8 h-8 rounded-md border"
+                                            style={{
+                                                backgroundColor:
+                                                    event.PrimaryTextColor,
+                                            }}
+                                        />
+
+                                        <span className="text-sm text-gray-900 dark:text-white">
+                                            {event.PrimaryTextColor || '-'}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                                <div>
+
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                        Secondary Text Color
+                                    </p>
+
+                                    <div className="flex items-center gap-2">
+
+                                        <div
+                                            className="w-8 h-8 rounded-md border"
+                                            style={{
+                                                backgroundColor:
+                                                    event.SecondaryTextColor,
+                                            }}
+                                        />
+
+                                        <span className="text-sm text-gray-900 dark:text-white">
+                                            {event.SecondaryTextColor || '-'}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                                <div>
+
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                        Tertiary Text Color
+                                    </p>
+
+                                    <div className="flex items-center gap-2">
+
+                                        <div
+                                            className="w-8 h-8 rounded-md border"
+                                            style={{
+                                                backgroundColor:
+                                                    event.TertiaryTextColor,
+                                            }}
+                                        />
+
+                                        <span className="text-sm text-gray-900 dark:text-white">
+                                            {event.TertiaryTextColor || '-'}
                                         </span>
 
                                     </div>

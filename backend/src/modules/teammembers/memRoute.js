@@ -8,7 +8,8 @@ router.post('/register', memController.registerUser);
 router.post('/login', memController.loginUser);
 router.get('/', memController.getAllUsers);
 router.get('/:id', memController.getUsersById);
-router.get('/teams/:teamid',memController.getUsersByTeamId)
+router.get('/teams/:teamid',memController.getUsersByTeamId);
+router.get('/count', memController.getUserCount);
 router.put('/:id', memController.updateUserById);
 
 module.exports = router;

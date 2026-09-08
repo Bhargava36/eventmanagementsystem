@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Users,
   UsersRound,
@@ -13,11 +13,6 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const stats = [
-  { title: 'Total Users', value: '12,153', icon: Users, change: '+12.5%' },
-  { title: 'Total Teams', value: '2,342', icon: UsersRound, change: '+8.7%' },
-  { title: 'Total Events', value: '248', icon: Calendar, change: '+15.3%' },
-];
 
 const events = [
   {
@@ -86,6 +81,61 @@ const recentActivities = [
 ];
 
 function SuperAdminDashboard() {
+  const [usersCount, setUsersCount] = useState([]);
+  const [teamsCount, setTeamsCount] = useState([]);
+  const [eventsCount, setEventsCount] = useState([]);
+
+  useEffect(() => {
+    fetchUsersCount();
+    fetchTeamsCount();
+    fetchEventsCount();
+  }, []);
+
+  const fetchUsersCount = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/members/');
+      const data = await response.json();
+      setUsersCount(data.teammembers);
+    } catch (error) {
+      console.error('Error fetching users count:', error);
+
+    }
+  };
+
+  const totalUsers = usersCount?.length || 0;
+
+  const fetchTeamsCount = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/teams/');
+      const data = await response.json();
+      setTeamsCount(data.teams);
+    } catch (error) {
+      console.error('Error fetching teams count:', error);
+
+    }
+  };
+
+  const totalTeams = teamsCount?.length || 0;
+
+  const fetchEventsCount = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/events/');
+      const data = await response.json();
+      setEventsCount(data.events);
+    } catch (error) {
+      console.error('Error fetching events count:', error);
+
+    }
+  };
+
+  const totalEvents = eventsCount.length;
+
+  const stats = [
+    { title: 'Total Users', value: totalUsers, icon: Users, change: '+12.5%' },
+    { title: 'Total Teams', value: totalTeams, icon: UsersRound, change: '+8.7%' },
+    { title: 'Total Events', value: totalEvents, icon: Calendar, change: '+15.3%' },
+  ];
+
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors overflow-x-hidden">
       <motion.div
@@ -193,11 +243,10 @@ function SuperAdminDashboard() {
                   },
                 }}
                 whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className={`p-4 sm:p-6 rounded-xl border transition-all hover:shadow-md ${
-                  event.status === 'Active'
-                    ? 'border-emerald-700 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/10'
-                    : 'border-gray-200 dark:border-gray-800'
-                }`}
+                className={`p-4 sm:p-6 rounded-xl border transition-all hover:shadow-md ${event.status === 'Active'
+                  ? 'border-emerald-700 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/10'
+                  : 'border-gray-200 dark:border-gray-800'
+                  }`}
               >
                 <div className="flex items-start justify-between mb-4 gap-2">
                   <div className="min-w-0 flex-1">
@@ -209,13 +258,12 @@ function SuperAdminDashboard() {
                     </p>
                   </div>
                   <span
-                    className={`text-xs px-2 sm:px-3 py-1 rounded-full whitespace-nowrap shrink-0 font-medium ${
-                      event.status === 'Active'
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500'
-                        : event.status === 'Upcoming'
+                    className={`text-xs px-2 sm:px-3 py-1 rounded-full whitespace-nowrap shrink-0 font-medium ${event.status === 'Active'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500'
+                      : event.status === 'Upcoming'
                         ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500'
                         : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                    }`}
+                      }`}
                   >
                     {event.status}
                   </span>
@@ -356,11 +404,10 @@ function SuperAdminDashboard() {
                       </td>
                       <td className="py-3">
                         <span
-                          className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                            reg.status === 'Confirmed'
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500'
-                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500'
-                          }`}
+                          className={`text-xs px-2.5 py-1 rounded-full font-medium ${reg.status === 'Confirmed'
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500'
+                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500'
+                            }`}
                         >
                           {reg.status}
                         </span>

@@ -1,10 +1,10 @@
 const db = require('../../config/db');
 
-const createEvent = (EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, callback) => {
+const createEvent = (EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor,PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, callback) => {
 
-    const query = ` INSERT INTO events ( EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const query = ` INSERT INTO events ( EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    const values = [EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor];
+    const values = [EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor];
 
 
     db.query(query, values, (err, result) => {
@@ -43,9 +43,9 @@ const getEventById = (id, callback) => {
     });
 };
 
-const updateEventById = (id, EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, callback) => {
-    const query = ` Update Events SET EventName = ?, Description = ?, Highlights = ?, StartDate = ?, EndDate = ?, RegistrationStart = ?, RegistrationEnd = ?, Location = ?, EventType = ?, EventStatus = ?, HackathonMode = ? WHERE Id = ? `;
-    db.query(query, [EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, id, PrimaryColor, SecondaryColor, TertiaryColor ], (err, result) => {
+const updateEventById = (id, EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, callback) => {
+    const query = ` Update Events SET EventName = ?, Description = ?, Highlights = ?, StartDate = ?, EndDate = ?, RegistrationStart = ?, RegistrationEnd = ?, Location = ?, EventType = ?, EventStatus = ?, HackathonMode = ?, PrimaryColor = ?, SecondaryColor = ?, TertiaryColor = ?, PrimaryTextColor = ?, SecondaryTextColor = ?, TertiaryTextColor = ? WHERE Id = ? `;
+    db.query(query, [EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, id], (err, result) => {
 
         if (err) {
             return callback(err, null);
@@ -78,5 +78,4 @@ module.exports = {
     getEventById,
     updateEventById,
     deleteEvent
-
 };

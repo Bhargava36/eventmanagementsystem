@@ -3,19 +3,18 @@ const bcrypt = require('bcrypt');
 
 const createUser = async (Name, Email, Password, Role, PhoneNumber, TeamId, Gender, callback) => {
     try {
-        const hashedPassword = await bcrypt.hash(Password,10);
+        const hashedPassword = await bcrypt.hash(Password, 10);
 
         const query = "insert into teammembers (Name, Email, Password, Role, PhoneNumber, TeamId, Gender) values (?,?,?,?,?,?,?)";
-        db.query(query, [Name, Email, Role, PhoneNumber, TeamId, Gender, hashedPassword ], (err, result) => {
+
+        db.query(query, [Name, Email, hashedPassword, Role, PhoneNumber, TeamId, Gender], (err, result) => {
             if (err) {
                 return callback(err, null);
-            }
-            else {
+            } else {
                 return callback(null, result);
             }
         });
-    }
-    catch (err) {
+    } catch (err) {
         return callback(err, null);
     }
 };
@@ -70,6 +69,16 @@ const getusersByTeamId = (id, callback) => {
     });
 };
 
+const getUserCount = (callback) => {
+    const query = ` SELECT COUNT(*) AS userCount FROM teammembers `;
+    db.query(query, (err, result) => {
+        if (err) {
+            return callback(err, null);
+        }
+        return callback(null, result[0]);
+    });
+};
+
 const updateUserById = (id, Name, Email, Password, Role, PhoneNumber, TeamId, Gender, callback) => {
     const query = ` Update teammembers SET Name = ?, Email = ?, Password = ?, Role = ?, PhoneNumber = ?, TeamId = ?, Gender = ? WHERE Id = ? `;
     db.query(query, [Name, Email, Password, Role, PhoneNumber, TeamId, Gender, id], (err, result) => {
@@ -89,5 +98,6 @@ module.exports = {
     getAllUsers,
     getusersById,
     getusersByTeamId,
+    getUserCount,
     updateUserById
 };

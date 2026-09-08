@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const registerUser = (req,res) => {
     const {Name, Email, Password, Role, PhoneNumber, TeamId, Gender} = req.body;
 
-    if(!Name || !Email || !Password || !Role || !PhoneNumber || !TeamId || !Gender){
+    if(!Name || !Email || !Password || !Role || !PhoneNumber || !Gender){
         return res.status(400).json({message: "All fields are required"});
     }
 
@@ -150,6 +150,21 @@ const getUsersByTeamId = (req, res) => {
     });
 };
 
+const getUserCount = (req, res) => {
+    memberService.getUserCount((err, result) => {
+        if (err) {
+            return res.status(500).json({
+                message: "Failed to get user count",
+                error: err
+            });
+        }
+
+        return res.status(200).json({
+            message: "User count fetched successfully",
+            count: result.userCount
+        });
+    });
+};
 
 const updateUserById = (req, res) => {
 
@@ -193,5 +208,6 @@ module.exports = {
     getAllUsers,
     getUsersById,
     getUsersByTeamId,
+    getUserCount,
     updateUserById
 };
