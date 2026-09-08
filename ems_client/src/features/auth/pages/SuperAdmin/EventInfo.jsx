@@ -73,23 +73,23 @@ function EventInfo() {
                     data.message || 'Failed to fetch event'
                 );
             }
-            setEvent(data.event);
+            setEvent(data.events[0]);
 
             setFormData({
-                EventName: data.event.EventName || '',
-                Description: data.event.Description || '',
-                Highlights: data.event.Highlights || '',
-                StartDate: data.event.StartDate || '',
-                EndDate: data.event.EndDate || '',
-                RegistrationStart: data.event.RegistrationStart || '',
-                RegistrationEnd: data.event.RegistrationEnd || '',
-                Location: data.event.Location || '',
-                EventType: data.event.EventType || '',
-                EventStatus: data.event.EventStatus || '',
-                HackathonMode: data.event.HackathonMode || '',
-                PrimaryColor: data.event.PrimaryColor || '',
-                SecondaryColor: data.event.SecondaryColor || '',
-                TertiaryColor: data.event.TertiaryColor || '',
+                EventName: data.events[0].EventName || '',
+                Description: data.events[0].Description || '',
+                Highlights: data.events[0].Highlights || '',
+                StartDate: data.events[0].StartDate || '',
+                EndDate: data.events[0].EndDate || '',
+                RegistrationStart: data.events[0].RegistrationStart || '',
+                RegistrationEnd: data.events[0].RegistrationEnd || '',
+                Location: data.events[0].Location || '',
+                EventType: data.events[0].EventType || '',
+                EventStatus: data.events[0].EventStatus || '',
+                HackathonMode: data.events[0].HackathonMode || '',
+                PrimaryColor: data.events[0].PrimaryColor || '',
+                SecondaryColor: data.events[0].SecondaryColor || '',
+                TertiaryColor: data.events[0].TertiaryColor || '',
             });
         } 
         catch (error) {
@@ -1071,7 +1071,6 @@ function EventInfo() {
                                             <input
                                                 type="text"
                                                 value={event.EventName}
-                                                readOnly
                                                 className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white"
                                             />
 
