@@ -18,14 +18,16 @@ import {
     FileText,
     UserCheck,
     Eye,
-    Trash2
+    Trash2,
+    SquarePen
 } from 'lucide-react';
+import img from '../../../../assets/img.png';
 
 const teamMembers = [
     { initials: 'AJ', name: 'Alice Johnson', role: 'Team Lead', batch: '3rd Year', email: 'alice@codecrafters.com', contact: '+91 98765 43210', roleColor: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-500', avatarColor: 'bg-blue-600 text-white' },
-    { initials: 'BS', name: 'Bob Smith', role: 'Developer', batch: '3rd Year', email: 'bob@codecrafters.com', contact: '+91 98765 43211', roleColor: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-500', avatarColor: 'bg-blue-600 text-white' },
-    { initials: 'CD', name: 'Charlie Davis', role: 'UI/UX Designer', batch: '3rd Year', email: 'charlie@codecrafters.com', contact: '+91 98765 43212', roleColor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500', avatarColor: 'bg-emerald-600 text-white' },
-    { initials: 'DS', name: 'Diana Sharma', role: 'Backend Developer', batch: '3rd Year', email: 'diana@codecrafters.com', contact: '+91 98765 43213', roleColor: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500', avatarColor: 'bg-yellow-500 text-white' },
+    { initials: 'BS', name: 'Bob Smith', role: 'Team Member', batch: '3rd Year', email: 'bob@codecrafters.com', contact: '+91 98765 43211', roleColor: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-500', avatarColor: 'bg-blue-600 text-white' },
+    { initials: 'CD', name: 'Charlie Davis', role: 'Team Member', batch: '3rd Year', email: 'charlie@codecrafters.com', contact: '+91 98765 43212', roleColor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500', avatarColor: 'bg-emerald-600 text-white' },
+    { initials: 'DS', name: 'Diana Sharma', role: 'Team Member', batch: '3rd Year', email: 'diana@codecrafters.com', contact: '+91 98765 43213', roleColor: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500', avatarColor: 'bg-yellow-500 text-white' },
 ];
 
 function TeamDetails() {
@@ -52,10 +54,6 @@ function TeamDetails() {
                         <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
                                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Code Crafters</h1>
-                                <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500 flex items-center gap-1">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                    Active
-                                </span>
                             </div>
                             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">Building solutions, creating impact.</p>
                             <div className="flex items-center gap-2">
@@ -83,16 +81,11 @@ function TeamDetails() {
                             </div>
                             <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">4</span>
                         </div>
-                        <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-gray-800"></div>
-                        <div className="flex flex-col items-center xl:items-start gap-1">
-                            <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5">Status</span>
-                            <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500">Active</span>
-                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
                 <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm col-span-1">
                     <div className="flex items-center justify-between mb-4 sm:mb-5">
                         <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">Team Information</h2>
@@ -118,11 +111,7 @@ function TeamDetails() {
                             <span className="text-gray-500 dark:text-gray-400">College / University</span>
                             <span className="font-medium text-gray-900 dark:text-white">Aditya Institue of Technology and Management</span>
                         </div>
-                        <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
-                            <Briefcase className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
-                            <span className="text-gray-500 dark:text-gray-400">Department</span>
-                            <span className="font-medium text-gray-900 dark:text-white">Information Technology</span>
-                        </div>
+                        
                         <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                             <Mail className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
                             <span className="text-gray-500 dark:text-gray-400">Contact Email</span>
@@ -189,13 +178,9 @@ function TeamDetails() {
                     </div>
 
                     <div>
-                        <p className="text-xs font-semibold text-gray-900 dark:text-white mb-2">Responsibilities</p>
-                        <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-1.5 ml-4 list-disc marker:text-emerald-500">
-                            <li>Team coordination and management</li>
-                            <li>Project planning and milestone tracking</li>
-                            <li>Communication with organizers</li>
-                        </ul>
+                        <img src={img} alt="Team Lead" className="w-full h-auto rounded-lg border border-gray-200 dark:border-gray-800" />
                     </div>
+
                 </div>
 
                 <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm col-span-1 lg:col-span-2 xl:col-span-2">
@@ -244,7 +229,7 @@ function TeamDetails() {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm col-span-1 lg:col-span-2 xl:col-span-1">
+                <div className="h-8/12 bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm col-span-1 lg:col-span-2 xl:col-span-1">
                     <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 sm:mb-5">Additional Information</h2>
 
                     <div className="space-y-4 sm:space-y-5">
@@ -281,45 +266,18 @@ function TeamDetails() {
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 flex items-center justify-center shrink-0">
-                                <LinkIcon className="w-4 h-4" />
-                            </div>
-                            <div className="min-w-0 w-full">
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Presentation Link</p>
-                                <a href="#" className="text-xs sm:text-sm font-medium text-emerald-700 dark:text-emerald-500 hover:underline truncate block w-full flex items-center gap-1">
-                                    drive.google.com/.../codecrafters-ppt
-                                    <Eye className="w-3 h-3 shrink-0" />
-                                </a>
-                            </div>
+                        <div>
+                            <button className="w-full flex items-center justify-center mt-20 ml-6 gap-2 bg-emerald-700 dark:bg-emerald-500 px-10 py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer w-full sm:w-auto  shrink-0">
+                            <SquarePen className="w-4 h-4" /> 
+                            Update Team Details
+                            </button>
                         </div>
 
-                        <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 flex items-center justify-center shrink-0">
-                                <FileText className="w-4 h-4" />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Notes</p>
-                                <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">No additional notes.</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
+               
             </div>
 
-            <div className="mt-6 sm:mt-8 bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <p className="text-xs font-bold sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Permanently delete this team and all of its data.
-                        </p>
-                    </div>
-                    <button className="flex items-center justify-center gap-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-500 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer w-full sm:w-auto shrink-0">
-                        <Trash2 className="w-4 h-4" />
-                        Delete Team
-                    </button>
-                </div>
-            </div>
         </div>
     );
 }

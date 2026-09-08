@@ -20,20 +20,18 @@ import {
 
 const stats = [
     { title: 'Total Teams', value: '156', subtitle: 'Total Teams', icon: Users, color: 'text-emerald-700 dark:text-emerald-500' },
-    { title: 'Active Teams', value: '126', subtitle: '80.8% of total teams', icon: UserCheck, color: 'text-emerald-700 dark:text-emerald-500' },
     { title: 'Total Members', value: '842', subtitle: 'Across all teams', icon: Users, color: 'text-emerald-700 dark:text-emerald-500' },
-    { title: 'Events Joined', value: '425', subtitle: 'Total event participations', icon: Calendar, color: 'text-emerald-700 dark:text-emerald-500' },
 ];
 
 const teamsData = [
-    { id: '01', name: 'Code Crafters', tagline: 'Building solutions, creating impact.', leader: 'Alice Johnson', email: 'alice@code.com', members: 5, events: 4, date: '25 May 2025', status: 'Active', icon: Code },
-    { id: '02', name: 'Byte Builders', tagline: 'Code today, conquer tomorrow.', leader: 'Bob Smith', email: 'bob@byte.com', members: 4, events: 4, date: '24 May 2025', status: 'Active', initials: 'BB' },
-    { id: '03', name: 'InnovateX', tagline: 'Innovate. Build. Elevate.', leader: 'Charlie Brown', email: 'charlie@innovatex.com', members: 6, events: 3, date: '23 May 2025', status: 'Active', initials: 'IX' },
-    { id: '04', name: 'Design Squad', tagline: 'Designing the future, together.', leader: 'Diana Prince', email: 'diana@design.com', members: 4, events: 3, date: '22 May 2025', status: 'Inactive', initials: 'DS' },
-    { id: '05', name: 'Dev Dynasty', tagline: 'Develop. Deploy. Dominate.', leader: 'Ethan Hunt', email: 'ethan@dev.com', members: 3, events: 2, date: '21 May 2025', status: 'Active', initials: 'DD' },
-    { id: '06', name: 'Web Wizards', tagline: 'We code magic.', leader: 'Fiona Gallagher', email: 'fiona@web.com', members: 5, events: 3, date: '20 May 2025', status: 'Active', initials: 'WW' },
-    { id: '07', name: 'Cyber Phantom', tagline: 'Securing the digital world.', leader: 'Grace Lee', email: 'grace@cyber.com', members: 4, events: 2, date: '19 May 2025', status: 'Active', initials: 'CP' },
-    { id: '08', name: 'AI Avengers', tagline: 'Intelligence in action.', leader: 'Henry Stark', email: 'henry@ai.com', members: 3, events: 1, date: '18 May 2025', status: 'Inactive', initials: 'AI' },
+    { id: '01', name: 'Code Crafters', tagline: 'Building solutions, creating impact.', leader: 'Alice Johnson', email: 'alice@code.com', members: 5, date: '25 May 2025',icon: Code },
+    { id: '02', name: 'Byte Builders', tagline: 'Code today, conquer tomorrow.', leader: 'Bob Smith', email: 'bob@byte.com', members: 4, date: '24 May 2025',initials: 'BB' },
+    { id: '03', name: 'InnovateX', tagline: 'Innovate. Build. Elevate.', leader: 'Charlie Brown', email: 'charlie@innovatex.com', members: 6,date: '23 May 2025', initials: 'IX' },
+    { id: '04', name: 'Design Squad', tagline: 'Designing the future, together.', leader: 'Diana Prince', email: 'diana@design.com', members: 4, date: '22 May 2025', initials: 'DS' },
+    { id: '05', name: 'Dev Dynasty', tagline: 'Develop. Deploy. Dominate.', leader: 'Ethan Hunt', email: 'ethan@dev.com', members: 3, date: '21 May 2025', initials: 'DD' },
+    { id: '06', name: 'Web Wizards', tagline: 'We code magic.', leader: 'Fiona Gallagher', email: 'fiona@web.com', members: 5, date: '20 May 2025',initials: 'WW' },
+    { id: '07', name: 'Cyber Phantom', tagline: 'Securing the digital world.', leader: 'Grace Lee', email: 'grace@cyber.com', members: 4, date: '19 May 2025', initials: 'CP' },
+    { id: '08', name: 'AI Avengers', tagline: 'Intelligence in action.', leader: 'Henry Stark', email: 'henry@ai.com', members: 3, date: '18 May 2025',initials: 'AI' },
 ];
 
 function TeamsDashboard() {
@@ -68,7 +66,7 @@ function TeamsDashboard() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 {stats.map((stat, i) => {
                     const Icon = stat.icon;
                     return (
@@ -102,10 +100,6 @@ function TeamsDashboard() {
                                 className="w-full sm:w-60 pl-9 pr-4 py-1.5 sm:py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500"
                             />
                         </div>
-                        <button className="flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors whitespace-nowrap">
-                            All Status
-                            <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </button>
                         <button className="p-1.5 sm:p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0">
                             <Filter className="w-4 h-4" />
                         </button>
@@ -120,9 +114,7 @@ function TeamsDashboard() {
                                 <th className="px-4 py-3 sm:py-4 font-medium">Team Details</th>
                                 <th className="px-4 py-3 sm:py-4 font-medium">Team Leader</th>
                                 <th className="px-4 py-3 sm:py-4 font-medium text-center">Members</th>
-                                <th className="px-4 py-3 sm:py-4 font-medium text-center">Events Joined</th>
                                 <th className="px-4 py-3 sm:py-4 font-medium">Registered On</th>
-                                <th className="px-4 py-3 sm:py-4 font-medium">Status</th>
                                 <th className="px-4 py-3 sm:py-4 font-medium text-center">Actions</th>
                             </tr>
                         </thead>
@@ -146,16 +138,7 @@ function TeamsDashboard() {
                                         <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{team.email}</p>
                                     </td>
                                     <td className="px-4 py-3 sm:py-4 text-center text-gray-900 dark:text-white">{team.members}</td>
-                                    <td className="px-4 py-3 sm:py-4 text-center text-gray-900 dark:text-white">{team.events}</td>
                                     <td className="px-4 py-3 sm:py-4 text-gray-600 dark:text-gray-300">{team.date}</td>
-                                    <td className="px-4 py-3 sm:py-4">
-                                        <span className={`text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-medium ${team.status === 'Active'
-                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500'
-                                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500'
-                                            }`}>
-                                            {team.status}
-                                        </span>
-                                    </td>
                                     <td className="px-4 py-3 sm:py-4">
                                         <div className="flex items-center justify-center gap-1 sm:gap-2">
                                             <button className="p-1 sm:p-1.5 border-gray-200 dark:border-gray-800 border-1 rounded-lg hover:border-1 hover:border-emerald-500 hover:text-emerald-500 text-gray-500 dark:text-gray-400 transition-colors cursor-pointer"
