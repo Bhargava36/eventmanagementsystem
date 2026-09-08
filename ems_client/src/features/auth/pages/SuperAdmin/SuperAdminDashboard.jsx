@@ -17,7 +17,6 @@ const stats = [
   { title: 'Total Users', value: '12,153', icon: Users, change: '+12.5%' },
   { title: 'Total Teams', value: '2,342', icon: UsersRound, change: '+8.7%' },
   { title: 'Total Events', value: '248', icon: Calendar, change: '+15.3%' },
-  { title: 'Total Registrations', value: '18,642', icon: UserPlus, change: '+10.1%' },
 ];
 
 const events = [
@@ -61,10 +60,7 @@ const currentEvent = {
   stats: [
     { icon: Users, label: 'Users Registered', value: '3,120' },
     { icon: UsersRound, label: 'Teams Registered', value: '620' },
-    { icon: Calendar, label: 'Events Organized', value: '62' },
     { icon: UserPlus, label: 'Total Registrations', value: '8,420' },
-    { icon: Trophy, label: 'Ongoing Events', value: '18' },
-    { icon: CheckCircle2, label: 'Completion Rate', value: '78%' },
   ],
 };
 
@@ -115,7 +111,7 @@ function SuperAdminDashboard() {
             hidden: {},
             visible: { transition: { staggerChildren: 0.08 } },
           }}
-          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4"
         >
           {stats.map((stat, i) => {
             const Icon = stat.icon;
