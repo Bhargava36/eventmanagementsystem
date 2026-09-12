@@ -21,11 +21,7 @@ const logoElement = (
   </div>
 );
 
-const menuItems = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', badge: null, end: false },
-  { name: 'Teams', icon: Users, path: '/admin/teams', badge: null, end: false },
-  { name: 'Profile', icon: CircleUserRound, path: '/admin/profile', badge: null, end: false },
-];
+
 
 const SidebarContent = ({
   isMobile = false,
@@ -52,6 +48,16 @@ const SidebarContent = ({
   function handleLogout() {
     navigate('/');
   }
+
+  const admins = JSON.parse(
+    localStorage.getItem('user') 
+  );
+
+  const menuItems = [
+  { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', badge: null, end: false },
+  { name: 'Teams', icon: Users, path: '/admin/teams', badge: null, end: false },
+  { name: 'Profile', icon: CircleUserRound, path: `/admin/profile/${admins.Id}`, badge: null, end: false },
+];
 
   return (
     <aside
