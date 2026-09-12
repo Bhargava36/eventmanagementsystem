@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
     ShieldCheck,
     Users,
@@ -13,6 +13,7 @@ import {
     ArrowRight,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
+import { useState } from "react";
 
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
@@ -24,6 +25,57 @@ const logoElement = (
 );
 
 function AdminLogin() {
+
+    const navigate = useNavigate();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError("");
+
+        if (!email || !password) {
+            setError("Required to fill all fields");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const res = await fetch("http://localhost:3000/api/admin/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ Email: email, Password: password }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.message || data.error || "Login failed");
+            }
+            console.log("Login successful:", data);
+            if (data.token) {
+                localStorage.setItem("token", data.token);
+            }
+
+            if (data.admin) {
+                localStorage.setItem("user", JSON.stringify(data.admin));
+            }
+
+            alert("Logging Successfully!");
+            navigate("/admin");
+        }
+        catch (err) {
+            setError(err.message || "Login failed, try again later");
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+
+
     return (
         <div className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300 px-6">
 
@@ -141,8 +193,12 @@ function AdminLogin() {
                             </p>
                         </div>
 
-                        <form className="space-y-4 sm:space-y-5">
-
+                        <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
+                            {error && (
+                                <div className="mb-4 p-2.5 bg-red-500/20 border border-red-500/40 rounded-xl text-red-200 text-xs text-center font-medium">
+                                    {error}
+                                </div>
+                            )}
                             <div className="space-y-4">
                                 <div>
                                     <label
@@ -157,6 +213,9 @@ function AdminLogin() {
                                             type="email"
                                             id="email"
                                             placeholder="Enter your email address"
+                                            required
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
                                             className="w-full pl-10 sm:pl-11 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-700/20 dark:focus:ring-emerald-500/20 transition-all"
                                         />
                                     </div>
@@ -173,13 +232,18 @@ function AdminLogin() {
                                 <div className="relative">
                                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 dark:text-gray-500" />
                                     <input
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         id="password"
+                                        name="password"
                                         placeholder="Enter your password"
+                                        required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
                                         className="w-full pl-10 sm:pl-11 pr-11 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-700/20 dark:focus:ring-emerald-500/20 transition-all"
                                     />
                                     <button
                                         type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-emerald-700 dark:hover:text-emerald-500 transition-colors"
                                     >
                                     </button>
