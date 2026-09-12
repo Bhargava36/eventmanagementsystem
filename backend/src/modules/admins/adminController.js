@@ -25,7 +25,7 @@ const registerAdmin = (req,res) => {
 };
 
 const loginAdminController = (req,res) => {
-    const {Email,Password} = req.body;
+    const {Email, Password} = req.body;
 
     if(!Email || !Password){
         return res.status(400).json({
@@ -142,6 +142,25 @@ const getAdminByEventId = (req, res) => {
     });
 };
 
+const updateAdmin = (req, res) => {
+    const { id } = req.params;
+    const { AdminName, Email, Mobile, EventId } = req.body;
+
+    adminService.updateAdmin(id, AdminName, Email, Mobile, EventId, (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                message: "Failed to update admin",
+                error: err
+            });
+        }
+
+        return res.status(200).json({
+            message: "Admin updated successfully",
+            admin: result
+        });
+    });
+};
+
 const deleteAdmin = (req, res) => {
 
     const id = req.params.id;
@@ -167,5 +186,6 @@ module.exports = {
     getAllAdmin,
     getAdminById,
     getAdminByEventId,
+    updateAdmin,
     deleteAdmin
 };

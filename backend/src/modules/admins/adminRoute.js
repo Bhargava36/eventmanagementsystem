@@ -9,5 +9,6 @@ router.post('/login', adminController.loginAdminController);
 router.get('/', adminController.getAllAdmin);
 router.get('/event/:EventId', adminController.getAdminByEventId);
 router.get('/:id', adminController.getAdminById);
+router.put('/:id', adminController.updateAdmin);
 router.delete('/:id', adminController.deleteAdmin);
 module.exports = router;

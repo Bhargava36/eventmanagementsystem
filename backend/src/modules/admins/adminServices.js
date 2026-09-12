@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 
 const createAdmin = async (AdminName, Email, Password, Mobile, EventId, callback) => {
     try {
-        const hashedPassword = await bcrypt.hash(Password,10);
+        const hashedPassword = await bcrypt.hash(Password, 10);
 
         const query = "insert into admins (AdminName, Email, Password, Mobile, EventId) values (?,?,?,?,?)";
         db.query(query, [AdminName, Email, hashedPassword, Mobile, EventId], (err, result) => {
@@ -72,6 +72,17 @@ const getAdminByEventId = (EventId, callback) => {
     });
 };
 
+const updateAdmin = (id, AdminName, Email, Mobile, EventId, callback) => {
+    const query = `UPDATE admins SET AdminName = ?, Email = ?, Mobile = ?, EventId = ? WHERE Id = ?`;
+    db.query(query, [AdminName, Email, Mobile, EventId, id], (err, result) => {
+        if (err) {
+            return callback(err, null);
+        } else {
+            return callback(null, result);
+        }
+    });
+};
+
 const deleteAdmin = (id, callback) => {
 
     const query = ` DELETE FROM admins WHERE Id = ? `;
@@ -94,5 +105,6 @@ module.exports = {
     getAllAdmin,
     getAdminById,
     getAdminByEventId,
+    updateAdmin,
     deleteAdmin
 };
