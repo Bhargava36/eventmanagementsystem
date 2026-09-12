@@ -1,4 +1,6 @@
 import React from 'react';
+import Footer from '../../../../components/Organisms/Footer';
+
 import {
   Calendar,
   CheckCircle2,
@@ -1014,8 +1016,8 @@ function EventsDashboard() {
 
       </div>
 
+      <Footer />
     </div>
   );
 }
-
 export default EventsDashboard;

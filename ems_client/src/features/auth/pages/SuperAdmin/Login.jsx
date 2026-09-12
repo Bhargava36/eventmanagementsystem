@@ -13,6 +13,7 @@ import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../../components/Molecules/WaveBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import Footer from "../../../../components/Organisms/Footer";
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
       <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -352,9 +353,9 @@ function Login() {
             </div>
           </form>
         </motion.div>
-      </div>
-    </motion.div>
+
+    </div>
+</motion.div>
   );
 }
-
 export default Login;

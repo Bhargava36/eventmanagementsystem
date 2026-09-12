@@ -1,4 +1,6 @@
 import React from 'react';
+import Footer from '../../../../components/Organisms/Footer';
+
 import { MessageSquare, Star, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 const stats = [
@@ -161,8 +163,9 @@ function FeedbackDashboard() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
-
 export default FeedbackDashboard;

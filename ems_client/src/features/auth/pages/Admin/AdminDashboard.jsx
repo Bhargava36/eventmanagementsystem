@@ -1,4 +1,5 @@
 import React from 'react';
+import Footer from '../../../../components/Organisms/Footer';
 import {
   Users,
   UsersRound,
@@ -11,6 +12,8 @@ import {
   ClipboardList,
   CheckSquare
 } from 'lucide-react';
+
+
 
 const stats = [
   { title: 'Total Registrations', value: '3,120', icon: Users },
@@ -208,6 +211,7 @@ function AdminDashboard() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

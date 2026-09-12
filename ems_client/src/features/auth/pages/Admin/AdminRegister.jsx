@@ -1,3 +1,5 @@
+import Footer from '../../../../components/Organisms/Footer';
+
 import { Link } from "react-router-dom";
 import {
   ShieldCheck,
@@ -307,8 +309,9 @@ function AdminRegister() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
-
 export default AdminRegister;

@@ -17,6 +17,8 @@ import TeamsDashboard from '../features/auth/pages/Admin/TeamsDashboard';
 import TeamDetails from '../features/auth/pages/Admin/TeamDetails';
 import AdminDashboard from '../features/auth/pages/Admin/AdminDashboard';
 import AdminProfile from '../features/auth/pages/Admin/AdminProfile';
+import TeamLeadRegister from '../features/auth/pages/TeamLead/TeamLeadRegister';
+import TeamLeadDashboard from '../features/auth/pages/TeamLead/TeamLeadDashboard';
 
 function App() {
   return (
@@ -44,10 +46,11 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="teams" element={<TeamsDashboard />} />
           <Route path="teams/:id" element={<TeamDetails />} />
-          <Route path="profile" element={<AdminProfile />} />
+          <Route path="profile/:id" element={<AdminProfile />} />
         </Route>
 
-
+        <Route path="/teamlead/register" element={<TeamLeadRegister />} />
+        <Route path="/teamlead/dashboard" element={<TeamLeadDashboard />} />
       </Routes>
     </div>
   );

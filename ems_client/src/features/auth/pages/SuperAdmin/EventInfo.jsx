@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import Footer from '../../../../components/Organisms/Footer';
+
 import {
     ArrowLeft,
     Pencil,
@@ -1447,8 +1449,8 @@ function EventInfo() {
 
             )}
 
-        </div>
+      <Footer />
+    </div>
     );
 }
-
 export default EventInfo;

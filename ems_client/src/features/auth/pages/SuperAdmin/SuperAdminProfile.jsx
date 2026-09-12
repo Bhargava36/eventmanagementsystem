@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import Footer from '../../../../components/Organisms/Footer';
+
 import {
   Mail,
   Phone,
@@ -365,8 +367,9 @@ function SuperAdminProfile() {
           </div>
         </div>
       )}
+
+      <Footer />
     </div>
   );
 }
-
 export default SuperAdminProfile;

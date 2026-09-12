@@ -1,4 +1,6 @@
 import React from 'react';
+import Footer from '../../../../components/Organisms/Footer';
+
 import {
   Bell,
   Calendar,
@@ -197,8 +199,9 @@ function NotificationPage() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
-
 export default NotificationPage;

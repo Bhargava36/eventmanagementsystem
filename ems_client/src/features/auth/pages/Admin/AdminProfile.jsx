@@ -24,6 +24,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import Footer from "../../../../components/Organisms/Footer";
 import { useParams } from "react-router-dom";
 
 function AdminProfile() {
@@ -369,8 +370,8 @@ function AdminProfile() {
         </div>
       )}
 
+      <Footer />
     </div>
   );
 }
-
 export default AdminProfile;

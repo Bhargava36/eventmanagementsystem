@@ -1,4 +1,6 @@
 import React from 'react';
+import Footer from '../../../../components/Organisms/Footer';
+
 import { useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
@@ -278,8 +280,8 @@ function TeamDetails() {
                
             </div>
 
-        </div>
+      <Footer />
+    </div>
     );
 }
-
 export default TeamDetails;

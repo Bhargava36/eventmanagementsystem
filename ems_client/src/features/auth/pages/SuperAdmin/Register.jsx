@@ -3,6 +3,7 @@ import { ShieldCheck, Users, BarChart3, Settings, Shield, UserPlus, UserRound, M
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../../components/Molecules/WaveBackground";
 import { useState , useNavigate} from "react";
+import Footer from "../../../../components/Organisms/Footer";
 import { motion, AnimatePresence } from "framer-motion";
 const logoElement = (
   <div className="relative w-5 h-5 flex items-center justify-center">
@@ -412,9 +413,9 @@ function Register() {
             </div>
           </div>
         </motion.div>
-      </div>
-    </motion.div>
+
+    </div>
+</motion.div>
   );
 }
-
 export default Register;

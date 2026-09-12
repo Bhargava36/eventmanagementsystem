@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import Footer from '../../../../components/Organisms/Footer';
+
 import {
   Users,
   UsersRound,
@@ -469,8 +471,9 @@ function SuperAdminDashboard() {
           </motion.div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
-
 export default SuperAdminDashboard;

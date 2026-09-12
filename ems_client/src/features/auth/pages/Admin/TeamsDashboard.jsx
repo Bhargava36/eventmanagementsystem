@@ -1,4 +1,6 @@
 import React from 'react';
+import Footer from '../../../../components/Organisms/Footer';
+
 import { useNavigate } from 'react-router-dom';
 import {
     Search,
@@ -158,8 +160,9 @@ function TeamsDashboard() {
                     <ArrowRight className="w-4 h-4" />
                 </div>
             </div>
-        </div>
+
+      <Footer />
+    </div>
     );
 }
-
 export default TeamsDashboard;

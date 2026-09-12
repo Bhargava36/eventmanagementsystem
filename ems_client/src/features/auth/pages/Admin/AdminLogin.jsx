@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { useState } from "react";
+import Footer from "../../../../components/Organisms/Footer";
 
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
@@ -293,8 +294,8 @@ function AdminLogin() {
                     </div>
                 </div>
             </div>
-        </div>
+
+    </div>
     );
 }
-
 export default AdminLogin;
