@@ -2,7 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 
-const teamsController = require("./teamsController");
+const teamsController = require("./e_registrationController");
 
 router.post('/create', teamsController.createTeam);
 router.get( '/', teamsController.getAllTeams );

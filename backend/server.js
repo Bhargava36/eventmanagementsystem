@@ -10,7 +10,7 @@ require('./src/config/db');
 const superAdminRoute = require("./src/modules/superAdmin/superAdminRoute");
 const eventsRoute = require("./src/modules/events/eventsRoute");
 const adminRoute = require("./src/modules/admins/adminRoute");
-const teamRoute = require("./src/modules/teams/teamsRoute");
+const teamRoute = require("./src/modules/event_registrations/e_registrationRoute");
 const memRoute = require("./src/modules/teammembers/memRoute");
 
 const app = express();

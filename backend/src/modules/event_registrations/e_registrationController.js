@@ -1,4 +1,4 @@
-const teamsService = require('./teamsService');
+const teamsService = require('./e_registrationService');
 
 const createTeam = (req, res) => {
 

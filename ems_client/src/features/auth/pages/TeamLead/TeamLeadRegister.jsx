@@ -175,7 +175,7 @@ function TeamLeadRegister() {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 pt-1">
+              {/* <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 pt-1">
                 <div className="flex items-center gap-3 sm:w-36 shrink-0 pl-1 sm:pt-4">
                   <ImageIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" strokeWidth={1.5} />
                   <label className="text-gray-700 dark:text-gray-200 font-medium text-sm">Photo</label>
@@ -189,9 +189,9 @@ function TeamLeadRegister() {
                     <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">JPG, PNG up to 5MB</p>
                   </div>
                 </div>
-              </div>
+              </div> */}
 
-              <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 pt-1">
+              {/* <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 pt-1">
                 <div className="flex items-center gap-3 sm:w-36 shrink-0 pl-1 sm:pt-4">
                   <ImageIcon className="w-5 h-5 text-gray-600 dark:text-gray-400" strokeWidth={1.5} />
                   <label className="text-gray-700 dark:text-gray-200 font-medium text-sm">College ID</label>
@@ -205,7 +205,7 @@ function TeamLeadRegister() {
                     <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">JPG, PNG up to 5MB</p>
                   </div>
                 </div>
-              </div>
+              </div> */}
 
               <div className="pt-4">
                 <button 
