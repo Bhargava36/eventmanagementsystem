@@ -1,4 +1,5 @@
 import React from 'react';
+import {useNavigate} from 'react-router-dom';
 import Footer from '../../../../components/Organisms/Footer';
 import { 
   Search, 
@@ -39,6 +40,12 @@ const events = [
 ];
 
 function TeamLeadDashboard() {
+  const navigate = useNavigate();
+
+  function handleEventClick() {
+    navigate('/teamlead/eventinfo');
+  }
+
   return (
     <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-slate-100 p-4 md:p-6 lg:p-8 transition-colors duration-200">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -111,7 +118,9 @@ function TeamLeadDashboard() {
                   </div>
                 </div>
                 
-                <button className="flex items-center justify-center gap-1.5 w-full sm:w-auto px-4 py-2 rounded-xl border border-emerald-600/20 dark:border-emerald-500/20 bg-emerald-50/20 dark:bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-sm font-semibold hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-black transition-all duration-200 whitespace-nowrap self-stretch sm:self-center">
+                <button className="flex items-center justify-center gap-1.5 w-full sm:w-auto px-4 py-2 rounded-xl border border-emerald-600/20 dark:border-emerald-500/20 bg-emerald-50/20 dark:bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-sm font-semibold hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-black transition-all duration-200 whitespace-nowrap self-stretch sm:self-center cursor-pointer"
+                onClick={handleEventClick}
+                >
                   View Details <ArrowRight className="h-4 w-4" />
                 </button>
               </div>

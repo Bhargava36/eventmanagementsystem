@@ -20,6 +20,8 @@ import AdminProfile from '../features/auth/pages/Admin/AdminProfile';
 import TeamLeadRegister from '../features/auth/pages/TeamLead/TeamLeadRegister';
 import TeamLeadDashboard from '../features/auth/pages/TeamLead/TeamLeadDashboard';
 import TeamLeadLogin from '../features/auth/pages/TeamLead/TeamLeadLogin';
+import TeamLeadEventInfo from '../features/auth/pages/TeamLead/TeamLeadEventInfo';
+import MyTeams from '../features/auth/pages/TeamLead/MyTeams';
 
 function App() {
   return (
@@ -53,6 +55,8 @@ function App() {
         <Route path="/teamlead/register" element={<TeamLeadRegister />} />
         <Route path="/teamlead/login" element={<TeamLeadLogin />} />
         <Route path="/teamlead/dashboard" element={<TeamLeadDashboard />} />
+        <Route path="/teamlead/eventinfo" element={<TeamLeadEventInfo />} />
+        <Route path="/teamlead/myteams" element={<MyTeams />} /> 
       </Routes>
     </div>
   );
