@@ -4,10 +4,10 @@ import Footer from '../../../../components/Organisms/Footer';
 import { MessageSquare, Star, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 const stats = [
-  { title: 'Total Feedback', value: '128', icon: MessageSquare, change: '+18% from last month' },
-  { title: 'Average Rating', value: '4.3 / 5', icon: Star, change: '+0.4 from last month' },
-  { title: 'Positive Feedback', value: '89', icon: ThumbsUp, change: '69.5% of total feedback' },
-  { title: 'Negative Feedback', value: '22', icon: ThumbsDown, change: '17.2% of total feedback' },
+  { title: 'Total Feedback', value: '128', icon: MessageSquare},
+  { title: 'Average Rating', value: '4.3 / 5', icon: Star},
+  { title: 'Positive Feedback', value: '89', icon: ThumbsUp},
+  { title: 'Negative Feedback', value: '22', icon: ThumbsDown},
 ];
 
 const recentFeedback = [

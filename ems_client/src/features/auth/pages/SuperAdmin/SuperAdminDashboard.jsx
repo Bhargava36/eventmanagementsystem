@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Footer from '../../../../components/Organisms/Footer';
 
 import {
   Users,
@@ -133,9 +132,9 @@ function SuperAdminDashboard() {
   const totalEvents = eventsCount.length;
 
   const stats = [
-    { title: 'Total Users', value: totalUsers, icon: Users, change: '+12.5%' },
-    { title: 'Total Teams', value: totalTeams, icon: UsersRound, change: '+8.7%' },
-    { title: 'Total Events', value: totalEvents, icon: Calendar, change: '+15.3%' },
+    { title: 'Total Users', value: totalUsers, icon: Users},
+    { title: 'Total Teams', value: totalTeams, icon: UsersRound},
+    { title: 'Total Events', value: totalEvents, icon: Calendar, change: '+15.3%'},
   ];
 
   return (
@@ -195,9 +194,7 @@ function SuperAdminDashboard() {
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 dark:text-emerald-500" />
                   </div>
                 </div>
-                <p className="text-xs text-emerald-700 dark:text-emerald-500 mt-3 font-medium">
-                  {stat.change} vs last month
-                </p>
+               
               </motion.div>
             );
           })}
@@ -472,7 +469,6 @@ function SuperAdminDashboard() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }
