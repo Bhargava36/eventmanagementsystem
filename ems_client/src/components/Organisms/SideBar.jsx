@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {useNavigate} from 'react-router-dom';
 import { NavLink, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import ThemeToggle from './ThemeToggler';
 import {
   LayoutDashboard,
   Calendar,
@@ -135,6 +136,11 @@ const SidebarContent = ({
             </p>
           </motion.div>
         )}
+        {canShowText && (
+          <div className={`ml-auto ${isMobile ? 'mr-10' : ''} rounded-full bg-emerald-50 p-0.5 shadow-sm dark:bg-emerald-950/50`}>
+            <ThemeToggle />
+          </div>
+        )}
       </div>
 
       <div className="border-t border-gray-200 dark:border-[#1A2440] mb-4"></div>
@@ -205,6 +211,16 @@ const SidebarContent = ({
       </nav>
 
       <div className="mt-auto">
+        {!canShowText && (
+          <div className="flex justify-center mb-2">
+            <div
+              title="Toggle theme"
+              className="rounded-full bg-emerald-50 p-0.5 shadow-sm dark:bg-emerald-950/50"
+            >
+              <ThemeToggle />
+            </div>
+          </div>
+        )}
         <div className="border-t border-gray-200 dark:border-[#1A2440] my-4"></div>
         <button
           onClick={handleLogout}
