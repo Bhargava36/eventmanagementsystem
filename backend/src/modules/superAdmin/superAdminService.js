@@ -5,7 +5,7 @@ const createAdmin = async (UserName, Email, Password, PhoneNumber, callback) => 
     try {
         const hashedPassword = await bcrypt.hash(Password,10);
 
-        const query = "insert into superadmin (UserName, Email, Password, PhoneNumber, created_at) values (?,?,?,?,?)";
+        const query = "insert into superadmin (UserName, Email, Password, PhoneNumber, created_at) values (?,?,?,?, NOW())";
         db.query(query, [UserName, Email, hashedPassword, PhoneNumber], (err, result) => {
             if (err) {
                 return callback(err, null);

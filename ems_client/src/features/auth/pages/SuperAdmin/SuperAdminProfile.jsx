@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Footer from '../../../../components/Organisms/Footer';
-
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail,
   Phone,
@@ -146,7 +145,12 @@ function SuperAdminProfile() {
 
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-6 sm:pt-10 px-4 sm:px-6 md:px-10 gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: -15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-6 sm:pt-10 px-4 sm:px-6 md:px-10 gap-4"
+      >
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
             Super Admin Profile
@@ -157,26 +161,37 @@ function SuperAdminProfile() {
           </p>
         </div>
 
-        <button
+        <motion.button
           onClick={handleEdit}
-          className="flex items-center gap-2 bg-emerald-700 dark:bg-emerald-500 hover:bg-emerald-800 dark:hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-fit cursor-pointer"
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          className="flex items-center gap-2 bg-emerald-700 dark:bg-emerald-500 hover:bg-emerald-800 dark:hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-fit cursor-pointer shadow-sm"
         >
           <Pencil className="w-4 h-4" />
           Edit Profile
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
 
-        <div className="bg-white dark:bg-gray-950 rounded-xl p-5 sm:p-8 border border-gray-200 dark:border-gray-800 shadow-sm relative overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="bg-white dark:bg-gray-950 rounded-xl p-5 sm:p-8 border border-gray-200 dark:border-gray-800 shadow-sm relative overflow-hidden"
+        >
           <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-emerald-100/50 to-transparent dark:from-emerald-500/10 dark:to-transparent"></div>
 
           <div className="relative flex flex-col md:flex-row items-start md:items-center gap-5 sm:gap-6">
 
             <div className="flex flex-col items-center gap-3 shrink-0 w-full md:w-auto">
-              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center border-4 border-emerald-700 dark:border-emerald-500">
+              <motion.div
+                whileHover={{ scale: 1.06, rotate: 3 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center border-4 border-emerald-700 dark:border-emerald-500 shadow-inner cursor-pointer"
+              >
                 <Crown className="w-12 h-12 sm:w-16 sm:h-16 text-black dark:text-white" />
-              </div>
+              </motion.div>
 
               <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500 font-medium">
                 <Shield className="w-3.5 h-3.5" />
@@ -229,9 +244,14 @@ function SuperAdminProfile() {
             </div>
 
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.2 }}
+          className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden"
+        >
 
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
@@ -245,9 +265,12 @@ function SuperAdminProfile() {
               const Icon = info.icon;
 
               return (
-                <div
+                <motion.div
                   key={i}
-                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.25, delay: 0.25 + i * 0.04 }}
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 hover:bg-gray-50/70 dark:hover:bg-gray-900/50 transition-colors"
                 >
 
                   <div className="flex items-center gap-3 sm:min-w-[200px]">
@@ -274,12 +297,12 @@ function SuperAdminProfile() {
 
                   </div>
 
-                </div>
+                </motion.div>
               );
             })}
 
           </div>
-        </div>
+        </motion.div>
 
         <div className="text-center pt-2 pb-4">
           <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -289,86 +312,102 @@ function SuperAdminProfile() {
 
       </div>
 
-      {showEdit && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <AnimatePresence>
+        {showEdit && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs px-4"
+          >
 
-          <div className="w-full max-w-lg bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-xl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-lg bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xl"
+            >
 
-            <div className="p-5 sm:p-6 border-b border-gray-200 dark:border-gray-800">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Edit Profile
-              </h2>
-            </div>
-
-            <div className="p-5 sm:p-6 space-y-4">
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Username
-                </label>
-
-                <input
-                  type="text"
-                  name="UserName"
-                  value={formData.UserName}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-emerald-500"
-                />
+              <div className="p-5 sm:p-6 border-b border-gray-200 dark:border-gray-800">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Edit Profile
+                </h2>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email Address
-                </label>
+              <div className="p-5 sm:p-6 space-y-4">
 
-                <input
-                  type="email"
-                  name="Email"
-                  value={formData.Email}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-emerald-500"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Username
+                  </label>
+
+                  <input
+                    type="text"
+                    name="UserName"
+                    value={formData.UserName}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Email Address
+                  </label>
+
+                  <input
+                    type="email"
+                    name="Email"
+                    value={formData.Email}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Phone Number
+                  </label>
+
+                  <input
+                    type="text"
+                    name="PhoneNumber"
+                    value={formData.PhoneNumber}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-emerald-500"
+                  />
+                </div>
+
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Phone Number
-                </label>
+              <div className="flex justify-end gap-3 p-5 sm:p-6 border-t border-gray-200 dark:border-gray-800">
 
-                <input
-                  type="text"
-                  name="PhoneNumber"
-                  value={formData.PhoneNumber}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:border-emerald-500"
-                />
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowEdit(false)}
+                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium cursor-pointer"
+                >
+                  Cancel
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleSave}
+                  className="px-4 py-2 rounded-lg bg-emerald-700 dark:bg-emerald-500 hover:bg-emerald-800 dark:hover:bg-emerald-600 text-white text-sm font-medium cursor-pointer shadow-sm"
+                >
+                  Save Changes
+                </motion.button>
+
               </div>
 
-            </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-            <div className="flex justify-end gap-3 p-5 sm:p-6 border-t border-gray-200 dark:border-gray-800">
-
-              <button
-                onClick={() => setShowEdit(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium cursor-pointer"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 rounded-lg bg-emerald-700 dark:bg-emerald-500 hover:bg-emerald-800 dark:hover:bg-emerald-600 text-white text-sm font-medium cursor-pointer"
-              >
-                Save Changes
-              </button>
-
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      <Footer />
     </div>
   );
 }

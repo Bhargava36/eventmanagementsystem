@@ -370,7 +370,6 @@ function AdminProfile() {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 }

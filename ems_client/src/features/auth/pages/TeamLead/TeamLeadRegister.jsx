@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import teamLeadRegisterBg from '../../../../assets/teamlead_register_bg.png';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useToast from '../../../../Hooks/useToast';
 
 const logoElement = (
   <div className="relative h-6 w-6" aria-hidden="true">
@@ -33,6 +34,7 @@ const logoElement = (
 
 function TeamLeadRegister() {
   const navigate = useNavigate();
+  const toast = useToast();
   const initialForm = {
     LeadName: "",
     Email: "",
@@ -63,12 +65,12 @@ function TeamLeadRegister() {
         throw new Error(data.error || "Registration failed");
       }
 
-      alert("Team Lead Account created Successfully!");
+      toast.success("Team Lead Account created successfully!");
       setFormData(initialForm);
       navigate("/teamlead/login");
     }
     catch (err) {
-      alert(err.message);
+      toast.error(err.message || "Registration failed");
     }
   }
 

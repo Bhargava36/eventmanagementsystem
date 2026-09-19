@@ -22,6 +22,8 @@ import TeamLeadDashboard from '../features/auth/pages/TeamLead/TeamLeadDashboard
 import TeamLeadLogin from '../features/auth/pages/TeamLead/TeamLeadLogin';
 import TeamLeadEventInfo from '../features/auth/pages/TeamLead/TeamLeadEventInfo';
 import MyTeams from '../features/auth/pages/TeamLead/MyTeams';
+import ProtectedRoute from '../components/Organisms/ProtectedRoute';
+import Unauthorized from '../components/ui/Unauthorized';
 
 function App() {
   return (
@@ -35,28 +37,39 @@ function App() {
           {/* <Route path="/admin/register" element={<AdminRegister />} /> */}
         </Route>
 
-        <Route path="/sidebar" element={<Sidebar />}>
-          <Route index element={<SuperAdminDashboard />} />
-          <Route path="feedback" element={<FeedbackDashboard />} />
-          <Route path="notification" element={<NotificationPage />} />
-          <Route path="events" element={<EventsDashboard />} />
-          <Route path="profile" element={<SuperAdminProfile />} />
-          <Route path="eventinfo/:id" element={<EventInfo />} />
-        </Route>
-
-        <Route path="/admin" element={<AdminSidebar />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="teams" element={<TeamsDashboard />} />
-          <Route path="teams/:id" element={<TeamDetails />} />
-          <Route path="profile/:id" element={<AdminProfile />} />
-        </Route>
-
         <Route path="/teamlead/register" element={<TeamLeadRegister />} />
         <Route path="/teamlead/login" element={<TeamLeadLogin />} />
-        <Route path="/teamlead/dashboard" element={<TeamLeadDashboard />} />
-        <Route path="/teamlead/eventinfo" element={<TeamLeadEventInfo />} />
-        <Route path="/teamlead/myteams" element={<MyTeams />} /> 
+
+        <Route path="/unauthorized" element={<Unauthorized />} />
+
+        <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
+          <Route path="/sidebar" element={<Sidebar />}>
+            <Route index element={<SuperAdminDashboard />} />
+            <Route path="feedback" element={<FeedbackDashboard />} />
+            <Route path="notification" element={<NotificationPage />} />
+            <Route path="events" element={<EventsDashboard />} />
+            <Route path="profile" element={<SuperAdminProfile />} />
+            <Route path="eventinfo/:id" element={<EventInfo />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/admin" element={<AdminSidebar />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="teams" element={<TeamsDashboard />} />
+            <Route path="teams/:id" element={<TeamDetails />} />
+            <Route path="profile/:id" element={<AdminProfile />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['teamlead']} />}>
+          <Route path="/teamlead/dashboard" element={<TeamLeadDashboard />} />
+          <Route path="/teamlead/eventinfo" element={<TeamLeadEventInfo />} />
+          <Route path="/teamlead/myteams" element={<MyTeams />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );

@@ -280,7 +280,6 @@ function TeamDetails() {
                
             </div>
 
-      <Footer />
     </div>
     );
 }

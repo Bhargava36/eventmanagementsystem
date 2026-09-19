@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import ThemeToggle from './ThemeToggler';
+import useAuth from '../../Hooks/useAuth';
+import useToast from '../../Hooks/useToast';
 import {
   LayoutDashboard,
   Users,
@@ -31,6 +34,8 @@ const SidebarContent = ({
 }) => {
   const [showText, setShowText] = useState(!collapsed);
   const navigate = useNavigate();
+  const toast = useToast();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     if (collapsed) {
@@ -46,17 +51,17 @@ const SidebarContent = ({
   const canShowText = isMobile || showText;
 
   function handleLogout() {
-    navigate('/');
+    logout();
+    toast.success('Logged out successfully');
+    navigate('/admin/login');
   }
 
-  const admins = JSON.parse(
-    localStorage.getItem('user') 
-  );
+  const profilePath = user?.Id ? `/admin/profile/${user.Id}` : '/admin/dashboard';
 
   const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', badge: null, end: false },
   { name: 'Teams', icon: Users, path: '/admin/teams', badge: null, end: false },
-  { name: 'Profile', icon: CircleUserRound, path: `/admin/profile/${admins.Id}`, badge: null, end: false },
+  { name: 'Profile', icon: CircleUserRound, path: profilePath, badge: null, end: false },
 ];
 
   return (
@@ -164,7 +169,8 @@ const SidebarContent = ({
       </nav>
 
       <div className="mt-auto">
-        <div className="border-t border-gray-200 dark:border-[#1A2440] my-4"></div>
+        <ThemeToggle variant="sidebar" canShowText={canShowText} />
+        <div className="border-t border-gray-200 dark:border-[#1A2440] my-3"></div>
         <button
           onClick={handleLogout}
           title={!isMobile && collapsed ? 'Logout' : ''}

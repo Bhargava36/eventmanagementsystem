@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   ChartNoAxesCombined,
   ShieldCheck,
@@ -14,6 +14,8 @@ import WaveBackground from "../../../../components/Molecules/WaveBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import Footer from "../../../../components/Organisms/Footer";
+import useAuth from "../../../../Hooks/useAuth";
+import useToast from "../../../../Hooks/useToast";
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
       <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -26,6 +28,9 @@ const logoElement = (
 function Login() {
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login } = useAuth();
+  const toast = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +42,9 @@ function Login() {
     setError("");
 
     if(!email || !password) {
-      setError("Required to fill all fields");
+      const msg = "Required to fill all fields";
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -55,19 +62,17 @@ function Login() {
         throw new Error(data.message || data.error || "Login failed"); 
       }
 
-      if(data.token) {
-        localStorage.setItem("token", data.token);
-      }
+      const adminUser = data.admin || data.user || {};
+      login(data.token, adminUser, "super_admin");
 
-      if(data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-
-      alert("Logging Successfully!");
-      navigate("/sidebar");
+      toast.success("Logged in successfully!");
+      const from = location.state?.from?.pathname || "/sidebar";
+      navigate(from, { replace: true });
     }
     catch(err) {
-      setError(err.message || "Login failed, try again later");
+      const errMsg = err.message || "Login failed, try again later";
+      setError(errMsg);
+      toast.error(errMsg);
     }
     finally {
       setLoading(false);

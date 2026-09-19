@@ -211,7 +211,6 @@ function AdminDashboard() {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

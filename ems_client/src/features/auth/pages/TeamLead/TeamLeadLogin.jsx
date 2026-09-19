@@ -19,7 +19,9 @@ import {
 } from 'lucide-react';
 import teamLeadRegisterBg from '../../../../assets/teamlead_register_bg.png';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import useAuth from '../../../../Hooks/useAuth';
+import useToast from '../../../../Hooks/useToast';
 
 const logoElement = (
     <div className="relative h-6 w-6" aria-hidden="true">
@@ -32,6 +34,9 @@ const logoElement = (
 
 function TeamLeadLogin() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { login } = useAuth();
+    const toast = useToast();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +48,9 @@ function TeamLeadLogin() {
         setError('');
 
         if (!email || !password) {
-            setError("Required to fill all fields");
+            const msg = "Required to fill all fields";
+            setError(msg);
+            toast.error(msg);
             return;
         }
 
@@ -64,19 +71,17 @@ function TeamLeadLogin() {
             }
 
             console.log("Login successful:", data);
-            if (data.token) {
-                localStorage.setItem("token", data.token);
-            }
+            const teamleadUser = data.teamlead || data.user || {};
+            login(data.token, teamleadUser, "teamlead");
 
-            if (data.user) {
-                localStorage.setItem("user", JSON.stringify(data.user));
-            }
-
-            alert("Logging Successfully!");
-            navigate("/teamlead/dashboard");
+            toast.success("Logged in successfully!");
+            const from = location.state?.from?.pathname || "/teamlead/dashboard";
+            navigate(from, { replace: true });
         }
         catch (err) {
-            setError(err.message || "Login failed, try again later");
+            const errMsg = err.message || "Login failed, try again later";
+            setError(errMsg);
+            toast.error(errMsg);
         }
         finally {
             setLoading(false);

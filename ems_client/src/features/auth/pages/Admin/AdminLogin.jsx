@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
     ShieldCheck,
     Users,
@@ -15,6 +15,8 @@ import {
 import { FcGoogle } from "react-icons/fc";
 import { useState } from "react";
 import Footer from "../../../../components/Organisms/Footer";
+import useAuth from "../../../../Hooks/useAuth";
+import useToast from "../../../../Hooks/useToast";
 
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
@@ -28,6 +30,9 @@ const logoElement = (
 function AdminLogin() {
 
     const navigate = useNavigate();
+    const location = useLocation();
+    const { login } = useAuth();
+    const toast = useToast();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -39,7 +44,9 @@ function AdminLogin() {
         setError("");
 
         if (!email || !password) {
-            setError("Required to fill all fields");
+            const msg = "Required to fill all fields";
+            setError(msg);
+            toast.error(msg);
             return;
         }
 
@@ -57,19 +64,17 @@ function AdminLogin() {
                 throw new Error(data.message || data.error || "Login failed");
             }
             console.log("Login successful:", data);
-            if (data.token) {
-                localStorage.setItem("token", data.token);
-            }
+            const adminUser = data.admin || data.user || {};
+            login(data.token, adminUser, "admin");
 
-            if (data.admin) {
-                localStorage.setItem("user", JSON.stringify(data.admin));
-            }
-
-            alert("Logging Successfully!");
-            navigate("/admin");
+            toast.success("Logged in successfully!");
+            const from = location.state?.from?.pathname || "/admin";
+            navigate(from, { replace: true });
         }
         catch (err) {
-            setError(err.message || "Login failed, try again later");
+            const errMsg = err.message || "Login failed, try again later";
+            setError(errMsg);
+            toast.error(errMsg);
         }
         finally {
             setLoading(false);

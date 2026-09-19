@@ -1,6 +1,4 @@
-import React from 'react';
-import Footer from '../../../../components/Organisms/Footer';
-
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Calendar,
   CheckCircle2,
@@ -12,7 +10,8 @@ import {
   X,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import useToast from '../../../../Hooks/useToast';
 
 const getStatusStyles = (status) => {
   switch (status?.toLowerCase()) {
@@ -31,7 +30,7 @@ const getCategoryStyles = () =>
   'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-500';
 
 function EventsDashboard() {
-
+  const toast = useToast();
   const [eventData, setEventData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -60,8 +59,8 @@ function EventsDashboard() {
   };
 
   const [formData, setFormData] = useState(initialForm);
-  const [sortOpen, setSortOpen] = React.useState(false);
-  const [sortValue, setSortValue] = React.useState('Latest First');
+  const [sortOpen, setSortOpen] = useState(false);
+  const [sortValue, setSortValue] = useState('Latest First');
 
   const sortOptions = [
     'Latest First',
@@ -153,7 +152,7 @@ function EventsDashboard() {
         );
       }
 
-      alert("Event created successfully!");
+      toast.success("Event created successfully!");
 
       setFormData(initialForm);
       setShowCreateForm(false);
@@ -162,7 +161,7 @@ function EventsDashboard() {
 
     } catch (error) {
       console.error("Create event error:", error);
-      alert(error.message);
+      toast.error(error.message || "Failed to create event");
     }
   };
 
@@ -243,7 +242,12 @@ function EventsDashboard() {
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors">
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-6 sm:pt-10 px-4 sm:px-6 md:px-10 gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: -15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-6 sm:pt-10 px-4 sm:px-6 md:px-10 gap-4"
+      >
 
         <div>
 
@@ -257,21 +261,35 @@ function EventsDashboard() {
 
         </div>
 
-        <button
+        <motion.button
           onClick={() => setShowCreateForm(true)}
-          className="flex items-center gap-2 bg-emerald-700 dark:bg-emerald-500 hover:bg-emerald-800 dark:hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-fit"
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          className="flex items-center gap-2 bg-emerald-700 dark:bg-emerald-500 hover:bg-emerald-800 dark:hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-fit cursor-pointer shadow-sm"
         >
           <Plus className="w-4 h-4" />
           Create Event
-        </button>
+        </motion.button>
 
-      </div>
+      </motion.div>
 
 
-      {showCreateForm && (
-  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <AnimatePresence>
+        {showCreateForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+          >
 
-    <div className="w-full max-w-2xl bg-white dark:bg-gray-950 rounded-2xl shadow-2xl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.25 }}
+              className="w-full max-w-2xl bg-white dark:bg-gray-950 rounded-2xl shadow-2xl"
+            >
 
       <div className="flex items-center justify-between px-7 py-5 border-b border-gray-200 dark:border-gray-800">
 
@@ -700,15 +718,24 @@ function EventsDashboard() {
 
       </form>
 
-    </div>
-  </div>
-)}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+        >
 
-          <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <motion.div
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+          >
 
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Calendar className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
@@ -722,9 +749,12 @@ function EventsDashboard() {
               {totalEvents}
             </p>
 
-          </div>
+          </motion.div>
 
-          <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <motion.div
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+          >
 
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
@@ -738,9 +768,12 @@ function EventsDashboard() {
               {upcomingEvents}
             </p>
 
-          </div>
+          </motion.div>
 
-          <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <motion.div
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+          >
 
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Radio className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
@@ -754,9 +787,12 @@ function EventsDashboard() {
               {ongoingEvents}
             </p>
 
-          </div>
+          </motion.div>
 
-          <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <motion.div
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+          >
 
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Clock className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
@@ -770,11 +806,16 @@ function EventsDashboard() {
               {completedEvents}
             </p>
 
-          </div>
+          </motion.div>
 
-        </div>
+        </motion.div>
 
-        <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.2 }}
+          className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden"
+        >
 
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800">
 
@@ -896,11 +937,14 @@ function EventsDashboard() {
 
                 )}
 
-                {!loading && sortedEvents.map((event) => (
+                {!loading && sortedEvents.map((event, index) => (
 
-                  <tr
+                  <motion.tr
                     key={event.Id}
-                    className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.25, delay: Math.min(index * 0.04, 0.4) }}
+                    className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50/70 dark:hover:bg-gray-900/50 transition-colors"
                   >
 
                     <td className="px-4 sm:px-6 py-3 sm:py-4">
@@ -976,7 +1020,7 @@ function EventsDashboard() {
 
                     </td>
 
-                  </tr>
+                  </motion.tr>
 
                 ))}
 
@@ -994,11 +1038,10 @@ function EventsDashboard() {
 
           </div>
 
-        </div>
+        </motion.div>
 
       </div>
 
-      <Footer />
     </div>
   );
 }
