@@ -58,11 +58,11 @@ export function Footer() {
   };
 
   const logoElement = (
-    <div className="relative w-6 h-6 flex items-center justify-center">
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-900 dark:bg-white top-0 left-1/2 transform -translate-x-1/2 opacity-90" />
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-900 dark:bg-white left-0 top-1/2 transform -translate-y-1/2 opacity-90" />
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-900 dark:bg-white right-0 top-1/2 transform -translate-y-1/2 opacity-90" />
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-900 dark:bg-white bottom-0 left-1/2 transform -translate-x-1/2 opacity-90" />
+    <div className="relative w-5 h-5 flex items-center justify-center">
+      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-emerald-500 top-0 left-1/2 transform -translate-x-1/2 opacity-90" />
+      <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-90" />
+      <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-90" />
+      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-emerald-500 bottom-0 left-1/2 transform -translate-x-1/2 opacity-90" />
     </div>
   );
 
@@ -142,7 +142,7 @@ export function Footer() {
                     href={item.href}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-2.5 rounded-full border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:border-gray-400 dark:hover:border-white/40 bg-gray-50 dark:bg-white/5 transition-colors"
+                    className="p-2.5 rounded-full border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:border-gray-400 dark:hover:border-white/40 dark:bg-black/5 bg-gray-50 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 dark:hover:text-white transition-colors"
                     whileHover={{ scale: 1.1, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     aria-label={item.name}
@@ -165,7 +165,7 @@ export function Footer() {
                   <li key={item.name}>
                     <Link
                       to={item.href}
-                      className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors duration-200"
+                      className="text-gray-600 dark:text-gray-400  hover:text-emerald-700 dark:hover:text-emerald-600 transition-colors duration-200"
                     >
                       {item.name}
                     </Link>
@@ -183,7 +183,7 @@ export function Footer() {
                   <li key={item.name}>
                     <a
                       href={item.href}
-                      className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors duration-200"
+                      className="text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors duration-200"
                     >
                       {item.name}
                     </a>
@@ -201,7 +201,7 @@ export function Footer() {
                   <li key={item.name} className="flex items-center gap-1.5">
                     <a
                       href={item.href}
-                      className="text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors duration-200"
+                      className="text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors duration-200"
                     >
                       {item.name}
                     </a>
@@ -240,7 +240,7 @@ export function Footer() {
                 />
                 <button
                   type="submit"
-                  className="absolute right-1 top-1 text-white dark:text-black w-7 h-7 flex items-center justify-center rounded-full bg-black dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors shadow-sm"
+                  className="absolute right-1 top-1 text-white dark:text-white w-7 h-7 flex items-center justify-center rounded-full bg-emerald-600 dark:bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-colors shadow-sm"
                   aria-label="Subscribe"
                 >
                   <Mail className="w-3.5 h-3.5" />
@@ -265,23 +265,23 @@ export function Footer() {
           <p>© {new Date().getFullYear()} HackHub. All rights reserved.</p>
 
           <div className="flex items-center space-x-6">
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">
+            <a href="#" className="hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors">
               Privacy
             </a>
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">
+            <a href="#" className="hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors">
               Terms
             </a>
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">
+            <a href="#" className="hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors">
               Cookies
             </a>
-            <a href="#" className="hover:text-black dark:hover:text-white transition-colors">
+            <a href="#" className="hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors">
               Security
             </a>
           </div>
 
           <button
             onClick={scrollToTop}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white hover:border-gray-400 dark:hover:border-white/30 transition-all duration-200"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-600 hover:border-gray-400 dark:hover:border-white/30 transition-all duration-200"
           >
             <span>Back to top</span>
             <ArrowUp className="w-3 h-3" />

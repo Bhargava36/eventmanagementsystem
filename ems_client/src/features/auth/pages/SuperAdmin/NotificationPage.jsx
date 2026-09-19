@@ -1,6 +1,6 @@
 import React from 'react';
 import Footer from '../../../../components/Organisms/Footer';
-
+import { motion } from 'framer-motion';
 import {
   Bell,
   Calendar,
@@ -120,9 +120,13 @@ function NotificationPage() {
           <div className="flex flex-col gap-3 p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                <motion.h2 
+                initial={{scale: 0, opacity:0}}
+                animate={{scale: 1, opacity:1}}
+                transition={{duration: 0.5,delay:0.1,repeat: 0,ease: "easeInOut"}}
+                className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                   Recent Notifications
-                </h2>
+                </motion.h2>
                 <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500">
                   32 New
                 </span>
