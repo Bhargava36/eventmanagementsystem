@@ -2,15 +2,15 @@ const eventsService = require('./eventsService');
 
 const createEvent = (req, res) => {
 
-    const { EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor } = req.body;
+    const { EventName, Description, Facilities, Requirements, TeamSize, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor } = req.body;
 
-    if (!EventName || !StartDate || !EndDate) {
+    if (!EventName || !Description || !Facilities || !Requirements || !TeamSize || !StartDate || !EndDate || !RegistrationStart || !RegistrationEnd || !Location || !EventType || !EventStatus || !HackathonMode || !PrimaryColor || !SecondaryColor || !TertiaryColor || !PrimaryTextColor || !SecondaryTextColor || !TertiaryTextColor) {
         return res.status(400).json({
-            message: "EventName, StartDate, EndDate are required"
+            message: "All fields are required"
         });
     }
 
-    eventsService.createEvent( EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, (err, result) => {
+    eventsService.createEvent( EventName, Description, Facilities, Requirements, TeamSize, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, (err, result) => {
 
             if (err) {
                 return res.status(500).json({
@@ -73,7 +73,7 @@ const updateEvent = (req, res) => {
 
     const id = req.params.id;
 
-    const { EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor } = req.body;
+    const { EventName, Description, Facilities, Requirements, TeamSize, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor } = req.body;
 
     if (!EventName || !StartDate || !EndDate) {
 
@@ -82,7 +82,7 @@ const updateEvent = (req, res) => {
         });
     }
 
-    eventsService.updateEventById( id, EventName, Description, Highlights, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, (err, result) => {
+    eventsService.updateEventById( id, EventName, Description, Facilities, Requirements, TeamSize, StartDate, EndDate, RegistrationStart, RegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, (err, result) => {
 
             if (err) {
 

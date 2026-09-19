@@ -35,11 +35,14 @@ function EventsDashboard() {
   const [eventData, setEventData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
 
   const initialForm = {
     EventName: "",
     Description: "",
-    Highlights: "",
+    Facilities: "",
+    Requirements: "",
+    TeamSize: "",
     StartDate: "",
     EndDate: "",
     RegistrationStart: "",
@@ -266,41 +269,96 @@ function EventsDashboard() {
 
 
       {showCreateForm && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
 
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-950 rounded-2xl shadow-xl">
+    <div className="w-full max-w-2xl bg-white dark:bg-gray-950 rounded-2xl shadow-2xl">
 
-            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex items-center justify-between px-7 py-5 border-b border-gray-200 dark:border-gray-800">
 
-              <div>
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Create Event
+          </h2>
 
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Create Event
-                </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Create and configure your event
+          </p>
+        </div>
 
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Enter the event details
-                </p>
+        <button
+          type="button"
+          onClick={() => {
+            setFormData(initialForm);
+            setCurrentStep(1);
+            setShowCreateForm(false);
+          }}
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-900"
+        >
+          <X className="w-5 h-5 text-gray-500" />
+        </button>
+
+      </div>
+
+      <div className="px-7 pt-6">
+
+        <div className="flex items-center">
+
+          {[1, 2, 3, 4, 5].map((step) => (
+            <React.Fragment key={step}>
+
+              <div className="flex flex-col items-center">
+
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition ${
+                    currentStep >= step
+                      ? "bg-emerald-700 text-white"
+                      : "bg-gray-200 dark:bg-gray-800 text-gray-500"
+                  }`}
+                >
+                  {step}
+                </div>
 
               </div>
 
-              <button
-                onClick={() => setShowCreateForm(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+              {step < 5 && (
+                <div
+                  className={`h-1 flex-1 mx-2 rounded ${
+                    currentStep > step
+                      ? "bg-emerald-700"
+                      : "bg-gray-200 dark:bg-gray-800"
+                  }`}
+                />
+              )}
 
-            </div>
+            </React.Fragment>
+          ))}
 
-            <form
-              onSubmit={handleCreateEvent}
-              className="p-6 space-y-6"
-            >
+        </div>
 
+        <div className="mt-5">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {currentStep === 1 && "Basic Information"}
+            {currentStep === 2 && "Event Details"}
+            {currentStep === 3 && "Schedule"}
+            {currentStep === 4 && "Type & Location"}
+            {currentStep === 5 && "Event Colors"}
+          </h3>
+
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Step {currentStep} of 5
+          </p>
+        </div>
+
+      </div>
+
+      <form onSubmit={handleCreateEvent}>
+
+        <div className="px-7 py-6">
+
+          {currentStep === 1 && (
+            <div className="space-y-5">
 
               <div>
-
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Event Name
                 </label>
@@ -312,14 +370,11 @@ function EventsDashboard() {
                   onChange={handleChange}
                   placeholder="Enter event name"
                   required
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
                 />
-
               </div>
 
-
               <div>
-
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Description
                 </label>
@@ -328,36 +383,72 @@ function EventsDashboard() {
                   name="Description"
                   value={formData.Description}
                   onChange={handleChange}
-                  placeholder="Enter event description"
-                  rows="4"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Describe your event"
+                  rows="7"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
-
               </div>
 
+            </div>
+          )}
+
+          {currentStep === 2 && (
+            <div className="space-y-1">
 
               <div>
-
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Event Highlights
+                  Event Facilities
                 </label>
 
                 <textarea
-                  name="Highlights"
-                  value={formData.Highlights}
+                  name="Facilities"
+                  value={formData.Facilities}
                   onChange={handleChange}
-                  placeholder="Enter event highlights"
-                  rows="4"
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                  placeholder="Enter facilities provided for participants"
+                  rows="3"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
-
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Event Requirements
+                </label>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <textarea
+                  name="Requirements"
+                  value={formData.Requirements}
+                  onChange={handleChange}
+                  placeholder="Enter requirements for participants"
+                  rows="3"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Team Size
+                </label>
+
+                <input
+                  type="text"
+                  name="TeamSize"
+                  value={formData.TeamSize}
+                  onChange={handleChange}
+                  placeholder="Example: 2 - 4 members"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div className="space-y-5">
+
+              <div className="grid grid-cols-2 gap-5">
 
                 <div>
-
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Start Date
                   </label>
@@ -368,13 +459,11 @@ function EventsDashboard() {
                     value={formData.StartDate}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                   />
-
                 </div>
 
                 <div>
-
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     End Date
                   </label>
@@ -385,18 +474,11 @@ function EventsDashboard() {
                     value={formData.EndDate}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                   />
-
                 </div>
 
-              </div>
-
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
                 <div>
-
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Registration Start
                   </label>
@@ -406,13 +488,11 @@ function EventsDashboard() {
                     name="RegistrationStart"
                     value={formData.RegistrationStart}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                   />
-
                 </div>
 
                 <div>
-
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Registration End
                   </label>
@@ -422,35 +502,21 @@ function EventsDashboard() {
                     name="RegistrationEnd"
                     value={formData.RegistrationEnd}
                     onChange={handleChange}
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                   />
-
                 </div>
 
               </div>
 
+            </div>
+          )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {currentStep === 4 && (
+            <div className="space-y-5">
 
-                <div>
-
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Location
-                  </label>
-
-                  <input
-                    type="text"
-                    name="Location"
-                    value={formData.Location}
-                    onChange={handleChange}
-                    placeholder="Enter event location"
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                  />
-
-                </div>
+              <div className="grid grid-cols-2 gap-5">
 
                 <div>
-
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Event Type
                   </label>
@@ -460,71 +526,38 @@ function EventsDashboard() {
                     value={formData.EventType}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                   >
-
-                    <option value="">
-                      Select Event Type
-                    </option>
-
-                    <option value="Hackathon">
-                      Hackathon
-                    </option>
-
-                    <option value="Workshop">
-                      Workshop
-                    </option>
-
-                    <option value="Conference">
-                      Conference
-                    </option>
-
+                    <option value="">Select Event Type</option>
+                    <option value="Hackathon">Hackathon</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Conference">Conference</option>
                   </select>
+                </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Event Status
+                  </label>
+
+                  <select
+                    name="EventStatus"
+                    value={formData.EventStatus}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
+                  >
+                    <option value="">Select Event Status</option>
+                    <option value="Upcoming">Upcoming</option>
+                    <option value="Ongoing">Ongoing</option>
+                    <option value="Completed">Completed</option>
+                  </select>
                 </div>
 
               </div>
 
-
-              <div>
-
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Event Status
-                </label>
-
-                <select
-                  name="EventStatus"
-                  value={formData.EventStatus}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                >
-
-                  <option value="">
-                    Select Event Status
-                  </option>
-
-                  <option value="Upcoming">
-                    Upcoming
-                  </option>
-
-                  <option value="Ongoing">
-                    Ongoing
-                  </option>
-
-                  <option value="Completed">
-                    Completed
-                  </option>
-
-                </select>
-
-              </div>
-
-
-              {formData.EventType === 'Hackathon' && (
-
+              {formData.EventType === "Hackathon" && (
                 <div>
-
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Hackathon Mode
                   </label>
@@ -534,191 +567,142 @@ function EventsDashboard() {
                     value={formData.HackathonMode}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                   >
-
-                    <option value="">
-                      Select Hackathon Mode
-                    </option>
-
-                    <option value="Physical">
-                      Physical
-                    </option>
-
-                    <option value="Virtual">
-                      Virtual
-                    </option>
-
+                    <option value="">Select Hackathon Mode</option>
+                    <option value="Physical">Physical</option>
+                    <option value="Virtual">Virtual</option>
                   </select>
-
                 </div>
-
               )}
 
-
               <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Location
+                </label>
 
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  Event Colors
-                </h3>
+                <input
+                  type="text"
+                  name="Location"
+                  value={formData.Location}
+                  onChange={handleChange}
+                  placeholder="Enter event location"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
+                />
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            </div>
+          )}
 
-                  <div>
+          {currentStep === 5 && (
+            <div>
+
+              <div className="grid grid-cols-2 gap-5">
+
+                {[
+                  ["PrimaryColor", "Primary Color"],
+                  ["PrimaryTextColor", "Primary Text Color"],
+                  ["SecondaryColor", "Secondary Color"],
+                  ["SecondaryTextColor", "Secondary Text Color"],
+                  ["TertiaryColor", "Tertiary Color"],
+                  ["TertiaryTextColor", "Tertiary Text Color"],
+                ].map(([name, label]) => (
+                  <div key={name}>
 
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Primary Color
+                      {label}
                     </label>
 
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
+
+                      <input
+                        type="color"
+                        value={formData[name]}
+                        onChange={(e) =>
+                          handleChange({
+                            target: {
+                              name,
+                              value: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-12 h-11 rounded-lg cursor-pointer border-0 p-0"
+                      />
 
                       <input
                         type="text"
-                        name="PrimaryColor"
-                        value={formData.PrimaryColor}
+                        name={name}
+                        value={formData[name]}
                         onChange={handleChange}
-                        className="flex-1 px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
+                        className="flex-1 px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
                       />
 
                     </div>
 
                   </div>
-
-                  <div>
-
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Secondary Color
-                    </label>
-
-                    <div className="flex gap-2">
-
-                      <input
-                        type="text"
-                        name="SecondaryColor"
-                        value={formData.SecondaryColor}
-                        onChange={handleChange}
-                        className="flex-1 px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
-                      />
-
-                    </div>
-
-                  </div>
-
-                  <div>
-
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Tertiary Color
-                    </label>
-
-                    <div className="flex gap-2">
-
-                      <input
-                        type="text"
-                        name="TertiaryColor"
-                        value={formData.TertiaryColor}
-                        onChange={handleChange}
-                        className="flex-1 px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
-                      />
-
-                    </div>
-
-                  </div>
-
-                  <div>
-
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Primary Text Color
-                    </label>
-
-                    <div className="flex gap-2">
-
-                      <input
-                        type="text"
-                        name="PrimaryTextColor"
-                        value={formData.PrimaryTextColor}
-                        onChange={handleChange}
-                        className="flex-1 px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
-                      />
-
-                    </div>
-
-                  </div>
-
-                  <div>
-
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Secondary Text Color
-                    </label>
-
-                    <div className="flex gap-2">
-
-                      <input
-                        type="text"
-                        name="SecondaryTextColor"
-                        value={formData.SecondaryTextColor}
-                        onChange={handleChange}
-                        className="flex-1 px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
-                      />
-
-                    </div>
-
-                  </div>
-
-                  <div>
-
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Tertiary Text Color
-                    </label>
-
-                    <div className="flex gap-2">
-
-                      <input
-                        type="text"
-                        name="TertiaryTextColor"
-                        value={formData.TertiaryTextColor}
-                        onChange={handleChange}
-                        className="flex-1 px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
-                      />
-
-                    </div>
-
-                  </div>
-
-
-                </div>
+                ))}
 
               </div>
 
+            </div>
+          )}
 
-              <div className="flex justify-end gap-3 pt-5 border-t border-gray-200 dark:border-gray-800">
+        </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData(initialForm);
-                    setShowCreateForm(false);
-                  }}
-                  className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900"
-                >
-                  Cancel
-                </button>
+        <div className="flex items-center justify-between px-7 py-5 border-t border-gray-200 dark:border-gray-800">
 
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-medium"
-                >
-                  Create Event
-                </button>
+          <div>
+            {currentStep > 1 && (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(currentStep - 1)}
+                className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900"
+              >
+                Back
+              </button>
+            )}
+          </div>
 
-              </div>
+          <div className="flex gap-3">
 
-            </form>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData(initialForm);
+                setCurrentStep(1);
+                setShowCreateForm(false);
+              }}
+              className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900"
+            >
+              Cancel
+            </button>
+
+            {currentStep < 5 ? (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(currentStep + 1)}
+                className="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium"
+              >
+                Continue
+              </button>
+            ) : (
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium"
+              >
+                Create Event
+              </button>
+            )}
 
           </div>
 
         </div>
-      )}
 
+      </form>
+
+    </div>
+  </div>
+)}
 
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
 
@@ -810,9 +794,8 @@ function EventsDashboard() {
                   {sortValue}
 
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      sortOpen ? 'rotate-180' : ''
-                    }`}
+                    className={`w-4 h-4 transition-transform ${sortOpen ? 'rotate-180' : ''
+                      }`}
                   />
 
                 </button>
@@ -829,11 +812,10 @@ function EventsDashboard() {
                           setSortValue(option);
                           setSortOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                          sortValue === option
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${sortValue === option
                             ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-500 font-medium'
                             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
+                          }`}
                       >
                         {option}
                       </button>

@@ -20,26 +20,33 @@ import { useNavigate, useParams } from 'react-router-dom';
 function EventInfo() {
     const navigate = useNavigate();
     const { id } = useParams();
+
     const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [isEditing, setIsEditing] = useState(false);
+
     const [showAdminForm, setShowAdminForm] = useState(false);
     const [admins, setAdmins] = useState([]);
     const [adminLoading, setAdminLoading] = useState(true);
     const [adminSaving, setAdminSaving] = useState(false);
+
     const [adminForm, setAdminForm] = useState({
         AdminName: '',
         Email: '',
         Password: '',
         Mobile: ''
     });
+
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
+
     const [formData, setFormData] = useState({
         EventName: '',
         Description: '',
-        Highlights: '',
+        Facilities: '',
+        Requirements: '',
+        TeamSize: '',
         StartDate: '',
         EndDate: '',
         RegistrationStart: '',
@@ -69,43 +76,49 @@ function EventInfo() {
         try {
             setLoading(true);
             setError('');
+
             const res = await fetch(
                 `http://localhost:3000/api/events/${id}`
             );
+
             const data = await res.json();
+
             if (!res.ok) {
                 throw new Error(
                     data.message || 'Failed to fetch event'
                 );
             }
-            setEvent(data.events[0]);
+
+            const eventData = data.events[0];
+
+            setEvent(eventData);
 
             setFormData({
-                EventName: data.events[0].EventName || '',
-                Description: data.events[0].Description || '',
-                Highlights: data.events[0].Highlights || '',
-                StartDate: data.events[0].StartDate || '',
-                EndDate: data.events[0].EndDate || '',
-                RegistrationStart: data.events[0].RegistrationStart || '',
-                RegistrationEnd: data.events[0].RegistrationEnd || '',
-                Location: data.events[0].Location || '',
-                EventType: data.events[0].EventType || '',
-                EventStatus: data.events[0].EventStatus || '',
-                HackathonMode: data.events[0].HackathonMode || '',
-                PrimaryColor: data.events[0].PrimaryColor || '',
-                SecondaryColor: data.events[0].SecondaryColor || '',
-                TertiaryColor: data.events[0].TertiaryColor || '',
-                PrimaryTextColor: data.events[0].PrimaryTextColor || '',
-                SecondaryTextColor: data.events[0].SecondaryTextColor || '',
-                TertiaryTextColor: data.events[0].TertiaryTextColor || '',
+                EventName: eventData.EventName || '',
+                Description: eventData.Description || '',
+                Facilities: eventData.Facilities || '',
+                Requirements: eventData.Requirements || '',
+                TeamSize: eventData.TeamSize || '',
+                StartDate: eventData.StartDate || '',
+                EndDate: eventData.EndDate || '',
+                RegistrationStart: eventData.RegistrationStart || '',
+                RegistrationEnd: eventData.RegistrationEnd || '',
+                Location: eventData.Location || '',
+                EventType: eventData.EventType || '',
+                EventStatus: eventData.EventStatus || '',
+                HackathonMode: eventData.HackathonMode || '',
+                PrimaryColor: eventData.PrimaryColor || '',
+                SecondaryColor: eventData.SecondaryColor || '',
+                TertiaryColor: eventData.TertiaryColor || '',
+                PrimaryTextColor: eventData.PrimaryTextColor || '',
+                SecondaryTextColor: eventData.SecondaryTextColor || '',
+                TertiaryTextColor: eventData.TertiaryTextColor || '',
             });
-        } 
-        catch (error) {
+        } catch (error) {
             console.error('Fetch event error:', error);
             setError(error.message);
             setEvent(null);
-        } 
-        finally {
+        } finally {
             setLoading(false);
         }
     };
@@ -113,30 +126,34 @@ function EventInfo() {
     const fetchAdmins = async () => {
         try {
             setAdminLoading(true);
+
             const res = await fetch(
                 `http://localhost:3000/api/admin/event/${id}`
             );
+
             const data = await res.json();
+
             if (!res.ok) {
                 throw new Error(
                     data.message || 'Failed to fetch admins'
                 );
             }
+
             setAdmins(data.admins);
-        } 
-        catch (error) {
+        } catch (error) {
             console.error('Fetch admins error:', error);
             setAdmins([]);
-        } 
-        finally {
+        } finally {
             setAdminLoading(false);
         }
     };
 
     const handleCreateAdmin = async (e) => {
         e.preventDefault();
+
         try {
             setAdminSaving(true);
+
             const res = await fetch(
                 'http://localhost:3000/api/admin/register',
                 {
@@ -153,33 +170,38 @@ function EventInfo() {
                     })
                 }
             );
+
             const data = await res.json();
+
             if (!res.ok) {
                 throw new Error(
                     data.message || 'Admin creation failed'
                 );
             }
+
             alert('Admin created successfully');
+
             setAdminForm({
                 AdminName: '',
                 Email: '',
                 Password: '',
                 Mobile: ''
             });
+
             setShowAdminForm(false);
+
             fetchAdmins();
-        } 
-        catch (error) {
+        } catch (error) {
             console.error('Create admin error:', error);
             alert(error.message);
-        } 
-        finally {
+        } finally {
             setAdminSaving(false);
         }
     };
 
     const handleAdminInputChange = (e) => {
         const { name, value } = e.target;
+
         setAdminForm((prev) => ({
             ...prev,
             [name]: value
@@ -188,6 +210,7 @@ function EventInfo() {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+
         setFormData((prev) => ({
             ...prev,
             [name]: value,
@@ -196,8 +219,10 @@ function EventInfo() {
 
     const handleUpdateEvent = async (e) => {
         e.preventDefault();
+
         try {
             setSaving(true);
+
             const res = await fetch(
                 `http://localhost:3000/api/events/${id}`,
                 {
@@ -208,21 +233,24 @@ function EventInfo() {
                     body: JSON.stringify(formData),
                 }
             );
+
             const data = await res.json();
+
             if (!res.ok) {
                 throw new Error(
                     data.message || 'Failed to update event'
                 );
             }
+
             alert('Event updated successfully');
+
             setIsEditing(false);
+
             await fetchEventById();
-        } 
-        catch (error) {
+        } catch (error) {
             console.error('Update event error:', error);
             alert(error.message);
-        } 
-        finally {
+        } finally {
             setSaving(false);
         }
     };
@@ -231,24 +259,31 @@ function EventInfo() {
         const confirmDelete = window.confirm(
             'Are you sure you want to delete this event?'
         );
+
         if (!confirmDelete) {
             return;
         }
+
         try {
             setDeleting(true);
+
             const res = await fetch(
                 `http://localhost:3000/api/events/${id}`,
                 {
                     method: 'DELETE',
                 }
             );
+
             const data = await res.json();
+
             if (!res.ok) {
                 throw new Error(
                     data.message || 'Failed to delete event'
                 );
             }
+
             alert('Event deleted successfully');
+
             navigate('/sidebar/events');
         } catch (error) {
             console.error('Delete event error:', error);
@@ -274,6 +309,7 @@ function EventInfo() {
                 <p className="text-red-500">
                     {error}
                 </p>
+
                 <button
                     onClick={handleBack}
                     className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg"
@@ -290,6 +326,7 @@ function EventInfo() {
                 <p className="text-gray-600 dark:text-gray-300">
                     Event not found
                 </p>
+
                 <button
                     onClick={handleBack}
                     className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg"
@@ -302,37 +339,51 @@ function EventInfo() {
 
     return (
         <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors">
+
             <div className="pt-4 sm:pt-6 px-4 sm:px-6 md:px-8">
+
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4">
+
                     <span
                         onClick={handleBack}
                         className="hover:text-emerald-700 dark:hover:text-emerald-500 cursor-pointer"
                     >
                         Events
                     </span>
+
                     <span>›</span>
+
                     <span className="text-gray-900 dark:text-white">
                         Event Details
                     </span>
+
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+
                     <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
+
                         <button
                             onClick={handleBack}
                             className="p-2 rounded-lg bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 shrink-0"
                         >
                             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                         </button>
+
                         <div className="min-w-0">
+
                             <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-black dark:text-white">
                                 {event.EventName}
                             </h1>
+
                             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
                                 {event.Description}
                             </p>
+
                         </div>
+
                     </div>
+
                     <button
                         onClick={() => setShowAdminForm(true)}
                         className="w-full sm:w-auto flex items-center justify-center gap-2 border border-emerald-700 dark:border-emerald-500 text-emerald-700 dark:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 px-4 py-2 rounded-lg text-sm font-medium"
@@ -340,24 +391,34 @@ function EventInfo() {
                         <Plus className="w-4 h-4" />
                         Create Admin
                     </button>
+
                 </div>
+
             </div>
 
             {isEditing ? (
+
                 <div className="p-4 sm:p-6 md:p-8">
+
                     <form
                         onSubmit={handleUpdateEvent}
                         className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                     >
+
                         <div className="flex items-center justify-between mb-6">
+
                             <div>
+
                                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                                     Edit Event
                                 </h2>
+
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                                     Update event information
                                 </p>
+
                             </div>
+
                             <button
                                 type="button"
                                 onClick={() => setIsEditing(false)}
@@ -365,12 +426,17 @@ function EventInfo() {
                             >
                                 <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                             </button>
+
                         </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Event Name
                                 </label>
+
                                 <input
                                     type="text"
                                     name="EventName"
@@ -378,11 +444,15 @@ function EventInfo() {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
+
                             </div>
+
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Event Type
                                 </label>
+
                                 <input
                                     type="text"
                                     name="EventType"
@@ -390,37 +460,48 @@ function EventInfo() {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Event Status
                                 </label>
+
                                 <select
                                     name="EventStatus"
                                     value={formData.EventStatus}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
                                 >
+
                                     <option value="">
                                         Select Status
                                     </option>
+
                                     <option value="Upcoming">
                                         Upcoming
                                     </option>
+
                                     <option value="Ongoing">
                                         Ongoing
                                     </option>
+
                                     <option value="Completed">
                                         Completed
                                     </option>
+
                                 </select>
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Hackathon Mode
                                 </label>
+
                                 <input
                                     type="text"
                                     name="HackathonMode"
@@ -428,12 +509,15 @@ function EventInfo() {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
+
                             </div>
 
                             <div className="md:col-span-2">
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Description
                                 </label>
+
                                 <textarea
                                     name="Description"
                                     value={formData.Description}
@@ -441,26 +525,66 @@ function EventInfo() {
                                     rows="4"
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                                 />
-                            </div>
 
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Event Highlights
-                                </label>
-                                <textarea
-                                    name="Highlights"
-                                    value={formData.Highlights}
-                                    onChange={handleInputChange}
-                                    rows="5"
-                                    placeholder="Enter event highlights"
-                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                                />
                             </div>
 
                             <div>
+
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Facilities
+                                </label>
+
+                                <textarea
+                                    name="Facilities"
+                                    value={formData.Facilities}
+                                    onChange={handleInputChange}
+                                    rows="3"
+                                    placeholder="Enter event facilities"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                                />
+
+                            </div>
+
+                            <div>
+
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Requirements
+                                </label>
+
+                                <textarea
+                                    name="Requirements"
+                                    value={formData.Requirements}
+                                    onChange={handleInputChange}
+                                    rows="3"
+                                    placeholder="Enter event requirements"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                                />
+
+                            </div>
+
+                            <div>
+
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Team Size
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="TeamSize"
+                                    value={formData.TeamSize}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter team size"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+
+                            </div>
+
+                            <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Start Date
                                 </label>
+
                                 <input
                                     type="date"
                                     name="StartDate"
@@ -468,12 +592,15 @@ function EventInfo() {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     End Date
                                 </label>
+
                                 <input
                                     type="date"
                                     name="EndDate"
@@ -481,12 +608,15 @@ function EventInfo() {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Registration Start
                                 </label>
+
                                 <input
                                     type="date"
                                     name="RegistrationStart"
@@ -494,12 +624,15 @@ function EventInfo() {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Registration End
                                 </label>
+
                                 <input
                                     type="date"
                                     name="RegistrationEnd"
@@ -507,12 +640,15 @@ function EventInfo() {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Location
                                 </label>
+
                                 <input
                                     type="text"
                                     name="Location"
@@ -520,20 +656,25 @@ function EventInfo() {
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Primary Color
                                 </label>
+
                                 <div className="flex gap-3">
+
                                     <input
                                         type="color"
                                         name="PrimaryColor"
-                                        value={formData.PrimaryColor}
+                                        value={formData.PrimaryColor || '#000000'}
                                         onChange={handleInputChange}
                                         className="w-12 h-10 rounded cursor-pointer"
                                     />
+
                                     <input
                                         type="text"
                                         name="PrimaryColor"
@@ -541,21 +682,27 @@ function EventInfo() {
                                         onChange={handleInputChange}
                                         className="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                     />
+
                                 </div>
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Secondary Color
                                 </label>
+
                                 <div className="flex gap-3">
+
                                     <input
                                         type="color"
                                         name="SecondaryColor"
-                                        value={formData.SecondaryColor}
+                                        value={formData.SecondaryColor || '#000000'}
                                         onChange={handleInputChange}
                                         className="w-12 h-10 rounded cursor-pointer"
                                     />
+
                                     <input
                                         type="text"
                                         name="SecondaryColor"
@@ -563,21 +710,27 @@ function EventInfo() {
                                         onChange={handleInputChange}
                                         className="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                     />
+
                                 </div>
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Tertiary Color
                                 </label>
+
                                 <div className="flex gap-3">
+
                                     <input
                                         type="color"
                                         name="TertiaryColor"
-                                        value={formData.TertiaryColor}
+                                        value={formData.TertiaryColor || '#000000'}
                                         onChange={handleInputChange}
                                         className="w-12 h-10 rounded cursor-pointer"
                                     />
+
                                     <input
                                         type="text"
                                         name="TertiaryColor"
@@ -585,21 +738,27 @@ function EventInfo() {
                                         onChange={handleInputChange}
                                         className="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                     />
+
                                 </div>
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Primary Text Color
                                 </label>
+
                                 <div className="flex gap-3">
+
                                     <input
                                         type="color"
                                         name="PrimaryTextColor"
-                                        value={formData.PrimaryTextColor}
+                                        value={formData.PrimaryTextColor || '#000000'}
                                         onChange={handleInputChange}
                                         className="w-12 h-10 rounded cursor-pointer"
                                     />
+
                                     <input
                                         type="text"
                                         name="PrimaryTextColor"
@@ -607,21 +766,27 @@ function EventInfo() {
                                         onChange={handleInputChange}
                                         className="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                     />
+
                                 </div>
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Secondary Text Color
                                 </label>
+
                                 <div className="flex gap-3">
+
                                     <input
                                         type="color"
                                         name="SecondaryTextColor"
-                                        value={formData.SecondaryTextColor}
+                                        value={formData.SecondaryTextColor || '#000000'}
                                         onChange={handleInputChange}
                                         className="w-12 h-10 rounded cursor-pointer"
                                     />
+
                                     <input
                                         type="text"
                                         name="SecondaryTextColor"
@@ -629,21 +794,27 @@ function EventInfo() {
                                         onChange={handleInputChange}
                                         className="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                     />
+
                                 </div>
+
                             </div>
 
                             <div>
+
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Tertiary Text Color
                                 </label>
+
                                 <div className="flex gap-3">
+
                                     <input
                                         type="color"
                                         name="TertiaryTextColor"
-                                        value={formData.TertiaryTextColor}
+                                        value={formData.TertiaryTextColor || '#000000'}
                                         onChange={handleInputChange}
                                         className="w-12 h-10 rounded cursor-pointer"
                                     />
+
                                     <input
                                         type="text"
                                         name="TertiaryTextColor"
@@ -651,11 +822,15 @@ function EventInfo() {
                                         onChange={handleInputChange}
                                         className="flex-1 px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                     />
+
                                 </div>
+
                             </div>
+
                         </div>
 
                         <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
+
                             <button
                                 type="button"
                                 onClick={() => setIsEditing(false)}
@@ -663,93 +838,131 @@ function EventInfo() {
                             >
                                 Cancel
                             </button>
+
                             <button
                                 type="submit"
                                 disabled={saving}
                                 className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white"
                             >
                                 <Save className="w-4 h-4" />
+
                                 {saving
                                     ? 'Updating...'
                                     : 'Update Event'}
                             </button>
+
                         </div>
+
                     </form>
+
                 </div>
+
             ) : (
+
                 <div className="p-4 sm:p-6 md:p-8 grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+
                     <div className="xl:col-span-2 space-y-4 sm:space-y-6">
+
                         <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
                                 <div className="w-full min-h-[240px] rounded-xl bg-emerald-700 dark:bg-white flex items-center justify-center">
+
                                     <Calendar className="w-14 h-14 text-white dark:text-black" />
+
                                 </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
                                     <div className="flex items-start gap-3">
+
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             <LayoutGrid className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                         </div>
+
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Event Type
                                             </p>
+
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {event.EventType || '-'}
                                             </p>
                                         </div>
+
                                     </div>
+
                                     <div className="flex items-start gap-3">
+
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                         </div>
+
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Event Status
                                             </p>
+
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {event.EventStatus || '-'}
                                             </p>
                                         </div>
+
                                     </div>
+
                                     <div className="flex items-start gap-3">
+
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             <Eye className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                         </div>
+
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Hackathon Mode
                                             </p>
+
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {event.HackathonMode || '-'}
                                             </p>
                                         </div>
+
                                     </div>
+
                                     <div className="flex items-start gap-3">
+
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             <Calendar className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                         </div>
+
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Start Date
                                             </p>
+
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {event.StartDate}
                                             </p>
                                         </div>
+
                                     </div>
 
                                     <div className="flex items-start gap-3">
+
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             <Calendar className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                         </div>
+
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 End Date
                                             </p>
+
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {event.EndDate}
                                             </p>
                                         </div>
+
                                     </div>
 
                                     <div className="flex items-start gap-3">
@@ -759,7 +972,6 @@ function EventInfo() {
                                         </div>
 
                                         <div>
-
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Location
                                             </p>
@@ -767,7 +979,6 @@ function EventInfo() {
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {event.Location || '-'}
                                             </p>
-
                                         </div>
 
                                     </div>
@@ -779,7 +990,6 @@ function EventInfo() {
                                         </div>
 
                                         <div>
-
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Created On
                                             </p>
@@ -787,7 +997,6 @@ function EventInfo() {
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {event.CreatedAt}
                                             </p>
-
                                         </div>
 
                                     </div>
@@ -809,17 +1018,17 @@ function EventInfo() {
                             </p>
 
                             <h3 className="text-base font-semibold text-gray-900 dark:text-white mt-6 mb-3">
-                                Event Highlights
+                                Facilities
                             </h3>
 
                             <div className="space-y-2.5">
 
-                                {event.Highlights ? (
+                                {event.Facilities ? (
 
-                                    event.Highlights
+                                    event.Facilities
                                         .split('\n')
-                                        .filter((highlight) => highlight.trim() !== '')
-                                        .map((highlight, index) => (
+                                        .filter((item) => item.trim() !== '')
+                                        .map((item, index) => (
 
                                             <div
                                                 key={index}
@@ -829,7 +1038,7 @@ function EventInfo() {
                                                 <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-emerald-500 shrink-0 mt-0.5" />
 
                                                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                                                    {highlight}
+                                                    {item}
                                                 </p>
 
                                             </div>
@@ -839,7 +1048,45 @@ function EventInfo() {
                                 ) : (
 
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        No highlights added.
+                                        No facilities added.
+                                    </p>
+
+                                )}
+
+                            </div>
+
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-white mt-6 mb-3">
+                                Requirements
+                            </h3>
+
+                            <div className="space-y-2.5">
+
+                                {event.Requirements ? (
+
+                                    event.Requirements
+                                        .split('\n')
+                                        .filter((item) => item.trim() !== '')
+                                        .map((item, index) => (
+
+                                            <div
+                                                key={index}
+                                                className="flex items-start gap-2.5"
+                                            >
+
+                                                <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-emerald-500 shrink-0 mt-0.5" />
+
+                                                <p className="text-sm text-gray-700 dark:text-gray-300">
+                                                    {item}
+                                                </p>
+
+                                            </div>
+
+                                        ))
+
+                                ) : (
+
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        No requirements added.
                                     </p>
 
                                 )}
@@ -1095,6 +1342,18 @@ function EventInfo() {
                                 <div className="flex justify-between gap-4">
 
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Team Size
+                                    </p>
+
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                        {event.TeamSize || '-'}
+                                    </p>
+
+                                </div>
+
+                                <div className="flex justify-between gap-4">
+
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
                                         Location
                                     </p>
 
@@ -1217,6 +1476,7 @@ function EventInfo() {
                                             <input
                                                 type="text"
                                                 value={event.EventName}
+                                                readOnly
                                                 className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white"
                                             />
 
@@ -1449,8 +1709,10 @@ function EventInfo() {
 
             )}
 
-      <Footer />
-    </div>
+            <Footer />
+
+        </div>
     );
 }
+
 export default EventInfo;
