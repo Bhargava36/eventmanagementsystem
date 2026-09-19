@@ -196,7 +196,7 @@ function AdminLogin() {
 
                         <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
                             {error && (
-                                <div className="mb-4 p-2.5 bg-red-500/20 border border-red-500/40 rounded-xl text-red-200 text-xs text-center font-medium">
+                                <div className="mb-4 p-2.5 bg-red-500/20 border border-red-500/40 rounded-xl text-red-500 text-xs text-center font-medium">
                                     {error}
                                 </div>
                             )}
