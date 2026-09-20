@@ -16,8 +16,8 @@ const registerAdmin = (req,res) => {
     superAdminService.createAdmin(UserName,Email,Password,PhoneNumber,(err,result) => {
         if(err){
             return res.status(500).json({
-                message: "Registration failed",
-                error: err
+                message: err.message || "Registration failed",
+                error: err.sqlMessage || err.message || err
             });
         }
         else {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '../../../../components/Organisms/Footer';
 
 import {
@@ -16,10 +17,12 @@ import {
     Save,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import useToast from '../../../../Hooks/useToast';
 
 function EventInfo() {
     const navigate = useNavigate();
     const { id } = useParams();
+    const toast = useToast();
 
     const [event, setEvent] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -179,7 +182,7 @@ function EventInfo() {
                 );
             }
 
-            alert('Admin created successfully');
+            toast.success('Admin created successfully');
 
             setAdminForm({
                 AdminName: '',
@@ -193,7 +196,7 @@ function EventInfo() {
             fetchAdmins();
         } catch (error) {
             console.error('Create admin error:', error);
-            alert(error.message);
+            toast.error(error.message || 'Failed to create admin');
         } finally {
             setAdminSaving(false);
         }
@@ -242,14 +245,14 @@ function EventInfo() {
                 );
             }
 
-            alert('Event updated successfully');
+            toast.success('Event updated successfully');
 
             setIsEditing(false);
 
             await fetchEventById();
         } catch (error) {
             console.error('Update event error:', error);
-            alert(error.message);
+            toast.error(error.message || 'Failed to update event');
         } finally {
             setSaving(false);
         }
@@ -282,12 +285,12 @@ function EventInfo() {
                 );
             }
 
-            alert('Event deleted successfully');
+            toast.success('Event deleted successfully');
 
             navigate('/sidebar/events');
         } catch (error) {
             console.error('Delete event error:', error);
-            alert(error.message);
+            toast.error(error.message || 'Failed to delete event');
         } finally {
             setDeleting(false);
         }
@@ -340,7 +343,12 @@ function EventInfo() {
     return (
         <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors">
 
-            <div className="pt-4 sm:pt-6 px-4 sm:px-6 md:px-8">
+            <motion.div
+                initial={{ opacity: 0, y: -15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                className="pt-4 sm:pt-6 px-4 sm:px-6 md:px-8"
+            >
 
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4">
 
@@ -363,12 +371,14 @@ function EventInfo() {
 
                     <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
 
-                        <button
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={handleBack}
                             className="p-2 rounded-lg bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 shrink-0"
                         >
                             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-                        </button>
+                        </motion.button>
 
                         <div className="min-w-0">
 
@@ -384,21 +394,29 @@ function EventInfo() {
 
                     </div>
 
-                    <button
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => setShowAdminForm(true)}
                         className="w-full sm:w-auto flex items-center justify-center gap-2 border border-emerald-700 dark:border-emerald-500 text-emerald-700 dark:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 px-4 py-2 rounded-lg text-sm font-medium"
                     >
                         <Plus className="w-4 h-4" />
                         Create Admin
-                    </button>
+                    </motion.button>
 
                 </div>
 
-            </div>
+            </motion.div>
 
             {isEditing ? (
 
-                <div className="p-4 sm:p-6 md:p-8">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="p-4 sm:p-6 md:p-8"
+                >
 
                     <form
                         onSubmit={handleUpdateEvent}
@@ -588,7 +606,7 @@ function EventInfo() {
                                 <input
                                     type="date"
                                     name="StartDate"
-                                    value={formData.StartDate}
+                                    value={new Date(formData.StartDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
@@ -604,7 +622,7 @@ function EventInfo() {
                                 <input
                                     type="date"
                                     name="EndDate"
-                                    value={formData.EndDate}
+                                    value={new Date(formData.EndDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
@@ -620,7 +638,7 @@ function EventInfo() {
                                 <input
                                     type="date"
                                     name="RegistrationStart"
-                                    value={formData.RegistrationStart}
+                                    value={new Date(formData.RegistrationStart).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
@@ -636,7 +654,7 @@ function EventInfo() {
                                 <input
                                     type="date"
                                     name="RegistrationEnd"
-                                    value={formData.RegistrationEnd}
+                                    value={new Date(formData.RegistrationEnd).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
@@ -831,15 +849,19 @@ function EventInfo() {
 
                         <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
 
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 type="button"
                                 onClick={() => setIsEditing(false)}
                                 className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900"
                             >
                                 Cancel
-                            </button>
+                            </motion.button>
 
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 type="submit"
                                 disabled={saving}
                                 className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white"
@@ -849,13 +871,13 @@ function EventInfo() {
                                 {saving
                                     ? 'Updating...'
                                     : 'Update Event'}
-                            </button>
+                            </motion.button>
 
                         </div>
 
                     </form>
 
-                </div>
+                </motion.div>
 
             ) : (
 
@@ -863,13 +885,18 @@ function EventInfo() {
 
                     <div className="xl:col-span-2 space-y-4 sm:space-y-6">
 
-                        <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.1 }}
+                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                        >
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                                <div className="w-full min-h-[240px] rounded-xl bg-emerald-700 dark:bg-white flex items-center justify-center">
+                                <div className="w-full min-h-[240px] rounded-xl bg-emerald-700 dark:bg-emerald-700 flex items-center justify-center">
 
-                                    <Calendar className="w-14 h-14 text-white dark:text-black" />
+                                    <Calendar className="w-14 h-14 text-white dark:text-white" />
 
                                 </div>
 
@@ -941,7 +968,7 @@ function EventInfo() {
                                             </p>
 
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                {event.StartDate}
+                                                {new Date(event.StartDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                             </p>
                                         </div>
 
@@ -959,7 +986,7 @@ function EventInfo() {
                                             </p>
 
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                {event.EndDate}
+                                                {new Date(event.EndDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                             </p>
                                         </div>
 
@@ -995,7 +1022,7 @@ function EventInfo() {
                                             </p>
 
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                {event.CreatedAt}
+                                                {new Date(event.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                             </p>
                                         </div>
 
@@ -1005,9 +1032,14 @@ function EventInfo() {
 
                             </div>
 
-                        </div>
+                        </motion.div>
 
-                        <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.2 }}
+                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                        >
 
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                                 About This Event
@@ -1093,9 +1125,14 @@ function EventInfo() {
 
                             </div>
 
-                        </div>
+                        </motion.div>
 
-                        <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.3 }}
+                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                        >
 
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                                 Registration Details
@@ -1110,7 +1147,7 @@ function EventInfo() {
                                     </p>
 
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {event.RegistrationStart || '-'}
+                                        {new Date(event.RegistrationStart || '-').toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     </p>
 
                                 </div>
@@ -1122,7 +1159,7 @@ function EventInfo() {
                                     </p>
 
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {event.RegistrationEnd || '-'}
+                                        {new Date(event.RegistrationEnd || '-').toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     </p>
 
                                 </div>
@@ -1277,13 +1314,18 @@ function EventInfo() {
 
                             </div>
 
-                        </div>
+                        </motion.div>
 
                     </div>
 
                     <div className="space-y-4 sm:space-y-6">
 
-                        <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.15 }}
+                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                        >
 
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                                 Event Summary
@@ -1365,11 +1407,18 @@ function EventInfo() {
 
                             </div>
 
-                        </div>
+                        </motion.div>
 
-                        {showAdminForm && (
+                        <AnimatePresence>
+                            {showAdminForm && (
 
-                            <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.96, y: -10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.96, y: -10 }}
+                                    transition={{ duration: 0.25 }}
+                                    className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                                >
 
                                 <div className="flex items-center justify-between mb-6">
 
@@ -1508,11 +1557,17 @@ function EventInfo() {
 
                                 </form>
 
-                            </div>
+                                </motion.div>
 
-                        )}
+                            )}
+                        </AnimatePresence>
 
-                        <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.25 }}
+                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                        >
 
                             <div className="flex items-center justify-between mb-4">
 
@@ -1540,8 +1595,10 @@ function EventInfo() {
 
                                     {admins.map((admin) => (
 
-                                        <div
+                                        <motion.div
                                             key={admin.Id}
+                                            whileHover={{ x: 4 }}
+                                            transition={{ duration: 0.2 }}
                                             className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
                                         >
 
@@ -1577,7 +1634,7 @@ function EventInfo() {
 
                                             </div>
 
-                                        </div>
+                                        </motion.div>
 
                                     ))}
 
@@ -1585,9 +1642,14 @@ function EventInfo() {
 
                             )}
 
-                        </div>
+                        </motion.div>
 
-                        <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.35 }}
+                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                        >
 
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                                 Event Schedule
@@ -1606,7 +1668,7 @@ function EventInfo() {
                                         </p>
 
                                         <p className="text-xs text-emerald-700 mt-1">
-                                            {event.RegistrationStart || '-'}
+                                            {new Date(event.RegistrationStart || '-').toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                         </p>
 
                                     </div>
@@ -1624,7 +1686,7 @@ function EventInfo() {
                                         </p>
 
                                         <p className="text-xs text-emerald-700 mt-1">
-                                            {event.RegistrationEnd || '-'}
+                                            {new Date(event.RegistrationEnd || '-').toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                         </p>
 
                                     </div>
@@ -1642,7 +1704,7 @@ function EventInfo() {
                                         </p>
 
                                         <p className="text-xs text-emerald-700 mt-1">
-                                            {event.StartDate}
+                                            {new Date(event.StartDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                         </p>
 
                                     </div>
@@ -1660,7 +1722,7 @@ function EventInfo() {
                                         </p>
 
                                         <p className="text-xs text-emerald-700 mt-1">
-                                            {event.EndDate}
+                                            {new Date(event.EndDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                         </p>
 
                                     </div>
@@ -1669,9 +1731,14 @@ function EventInfo() {
 
                             </div>
 
-                        </div>
+                        </motion.div>
 
-                        <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.45 }}
+                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                        >
 
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                                 Actions
@@ -1679,15 +1746,19 @@ function EventInfo() {
 
                             <div className="space-y-3">
 
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={() => setIsEditing(true)}
                                     className="w-full flex items-center justify-center gap-2 bg-emerald-700 dark:bg-emerald-500 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-lg text-sm font-medium"
                                 >
                                     <Pencil className="w-4 h-4" />
                                     Edit Event
-                                </button>
+                                </motion.button>
 
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={handleDeleteEvent}
                                     disabled={deleting}
                                     className="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-500 px-4 py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
@@ -1697,11 +1768,11 @@ function EventInfo() {
                                     {deleting
                                         ? 'Deleting...'
                                         : 'Delete Event'}
-                                </button>
+                                </motion.button>
 
                             </div>
 
-                        </div>
+                        </motion.div>
 
                     </div>
 
@@ -1709,7 +1780,6 @@ function EventInfo() {
 
             )}
 
-            <Footer />
 
         </div>
     );

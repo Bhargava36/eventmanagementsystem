@@ -1,10 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ShieldCheck, Users, BarChart3, Settings, Shield, UserPlus, UserRound, Mail, Lock, Eye, EyeOff, ArrowRight, Phone } from 'lucide-react';
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../../components/Molecules/WaveBackground";
-import { useState , useNavigate} from "react";
+import { useState } from "react";
 import Footer from "../../../../components/Organisms/Footer";
 import { motion, AnimatePresence } from "framer-motion";
+import useToast from "../../../../Hooks/useToast";
 const logoElement = (
   <div className="relative w-5 h-5 flex items-center justify-center">
     <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -15,7 +16,8 @@ const logoElement = (
 );
 
 function Register() {
-  const navigate = useNavigate;
+  const navigate = useNavigate();
+  const toast = useToast();
   const initialForm = {
     UserName : "",
     Email: "",
@@ -27,16 +29,29 @@ function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setError("");
+
+    if (!formData.UserName || !formData.Email || !formData.Password || !formData.PhoneNumber) {
+      const msg = "Please fill in all fields.";
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
 
     if(formData.Password !== confirmPassword) {
-      alert("Password do not match !");
+      const msg = "Passwords do not match!";
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
     try {
+      setLoading(true);
       const res = await fetch("http://localhost:3000/api/super_admin/register", {
         method : "POST",
         headers: {
@@ -48,10 +63,10 @@ function Register() {
       const data = await res.json();
 
       if(!res.ok) {
-        throw new Error(data.error || "Failed to create super admin account");
+        throw new Error(data.error || data.message || "Failed to create super admin account");
       }
 
-      alert("super admin Account created successfully!");
+      toast.success("Super Admin account created successfully!");
 
       setFormData(initialForm);
       setConfirmPassword("");
@@ -59,8 +74,13 @@ function Register() {
       navigate("/login");
     }
 
-    catch(error) {
-      alert(error.message);
+    catch(err) {
+      const errMsg = err.message || "Registration failed. Please try again.";
+      setError(errMsg);
+      toast.error(errMsg);
+    }
+    finally {
+      setLoading(false);
     }
 
   };
@@ -190,7 +210,13 @@ function Register() {
             <h1 className="text-xl sm:text-2xl font-bold text-emerald-700 dark:text-emerald-500">Super Admin</h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Fill in your details to create your admin account</p>
           </div>
-          <div className="px-4 sm:px-6 pb-4 sm:pb-10 pt-4">
+          <form onSubmit={handleRegister} className="px-4 sm:px-6 pb-4 sm:pb-10 pt-4">
+            {error && (
+              <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 text-xs sm:text-sm">
+                {error}
+              </div>
+            )}
+
             <div className="relative w-full mb-6 mt-2">
               <UserRound className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
@@ -199,6 +225,8 @@ function Register() {
                 id="username"
                 placeholder=" "
                 required
+                value={formData.UserName}
+                onChange={(e) => setFormData({ ...formData, UserName: e.target.value })}
                 className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
               />
 
@@ -221,10 +249,12 @@ function Register() {
               <Phone className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
               <input
-                type="text"
+                type="tel"
                 id="phone"
                 placeholder=" "
                 required
+                value={formData.PhoneNumber}
+                onChange={(e) => setFormData({ ...formData, PhoneNumber: e.target.value })}
                 className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
               />
 
@@ -247,10 +277,12 @@ function Register() {
               <Mail className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400" />
 
               <input
-                type="text"
+                type="email"
                 id="email"
                 placeholder=" "
                 required
+                value={formData.Email}
+                onChange={(e) => setFormData({ ...formData, Email: e.target.value })}
                 className="peer w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200"
               />
 
@@ -388,9 +420,22 @@ function Register() {
                 </AnimatePresence>
               </button>
             </div>
-            <button className="w-full bg-emerald-700 dark:bg-emerald-600 text-white p-2 rounded-lg hover:bg-emerald-800 dark:hover:bg-emerald-700 transition duration-300 flex items-center justify-center gap-2 font-medium">
-              Create Account <ArrowRight className="w-4 h-4" />
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="w-full bg-emerald-700 dark:bg-emerald-600 text-white p-2.5 rounded-lg hover:bg-emerald-800 dark:hover:bg-emerald-700 transition duration-300 flex items-center justify-center gap-2 font-medium cursor-pointer disabled:opacity-50"
+            >
+              {loading ? "Creating Account..." : <>Create Account <ArrowRight className="w-4 h-4" /></>}
             </button>
+
+            <div className="text-center mt-3">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                Already have an account?{" "}
+                <Link to="/login" className="text-emerald-700 dark:text-emerald-400 font-semibold hover:underline">
+                  Log in
+                </Link>
+              </p>
+            </div>
 
             <div className="flex items-center mt-6">
               <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
@@ -398,7 +443,10 @@ function Register() {
               <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
             </div>
 
-            <button className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition duration-300 flex items-center justify-center gap-2">
+            <button 
+              type="button"
+              className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 font-semibold py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition duration-300 flex items-center justify-center gap-2 mt-4 cursor-pointer"
+            >
               <FcGoogle className="w-5 h-5" />
               Sign in with Google
             </button>
@@ -411,7 +459,7 @@ function Register() {
                 Secure access for authorized Super Admins only.
               </p>
             </div>
-          </div>
+          </form>
         </motion.div>
 
     </div>

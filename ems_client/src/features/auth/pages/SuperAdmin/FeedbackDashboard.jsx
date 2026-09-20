@@ -1,13 +1,12 @@
 import React from 'react';
-import Footer from '../../../../components/Organisms/Footer';
-
+import { motion } from 'framer-motion';
 import { MessageSquare, Star, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 const stats = [
-  { title: 'Total Feedback', value: '128', icon: MessageSquare},
-  { title: 'Average Rating', value: '4.3 / 5', icon: Star},
-  { title: 'Positive Feedback', value: '89', icon: ThumbsUp},
-  { title: 'Negative Feedback', value: '22', icon: ThumbsDown},
+  { title: 'Total Feedback', value: '128', icon: MessageSquare },
+  { title: 'Average Rating', value: '4.3 / 5', icon: Star },
+  { title: 'Positive Feedback', value: '89', icon: ThumbsUp },
+  { title: 'Negative Feedback', value: '22', icon: ThumbsDown },
 ];
 
 const recentFeedback = [
@@ -71,7 +70,12 @@ const renderStars = (rating) => (
 function FeedbackDashboard() {
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-6 sm:pt-10 px-4 sm:px-6 md:px-10 gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: -15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-6 sm:pt-10 px-4 sm:px-6 md:px-10 gap-4"
+      >
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
             Website Feedback
@@ -80,19 +84,32 @@ function FeedbackDashboard() {
             Monitor and manage feedback submitted by users about the website.
           </p>
         </div>
-        <button className="bg-emerald-700 dark:bg-emerald-500 hover:bg-emerald-800 dark:hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-fit">
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          className="bg-emerald-700 dark:bg-emerald-500 hover:bg-emerald-800 dark:hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-fit cursor-pointer shadow-sm"
+        >
           Export Report
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4"
+        >
           {stats.map((stat, i) => {
             const Icon = stat.icon;
             return (
-              <div
+              <motion.div
                 key={i}
-                className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: i * 0.08 }}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
@@ -104,17 +121,22 @@ function FeedbackDashboard() {
                   {stat.value}
                 </p>
                 <p className="text-xs text-emerald-700 dark:text-emerald-500 mt-3">{stat.change}</p>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
-        <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.25 }}
+          className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+        >
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
               Recent Feedback
             </h2>
-            <button className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-500 hover:underline">
+            <button className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-500 hover:underline cursor-pointer">
               View All Feedback
             </button>
           </div>
@@ -130,9 +152,12 @@ function FeedbackDashboard() {
               </thead>
               <tbody>
                 {recentFeedback.map((item, i) => (
-                  <tr
+                  <motion.tr
                     key={i}
-                    className="border-b border-gray-100 dark:border-gray-800/50"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.25, delay: 0.3 + i * 0.05 }}
+                    className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50/60 dark:hover:bg-gray-900/30 transition-colors"
                   >
                     <td className="py-3 sm:py-4">
                       <div className="flex items-center gap-2 sm:gap-3">
@@ -156,15 +181,14 @@ function FeedbackDashboard() {
                     <td className="py-3 sm:py-4 text-gray-600 dark:text-gray-300 whitespace-nowrap text-xs sm:text-sm">
                       {item.date}
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      <Footer />
     </div>
   );
 }

@@ -44,8 +44,8 @@ export const CanvasRevealEffect = ({
 const DotMatrix = ({
   colors = [[0, 0, 0]],
   opacities = [0.04, 0.04, 0.04, 0.04, 0.04, 0.08, 0.08, 0.08, 0.08, 0.14],
-  totalSize = 20,
-  dotSize = 2,
+  totalSize = 5,
+  dotSize = 40,
   shader = "",
   center = ["x", "y"],
 }) => {
@@ -397,13 +397,13 @@ const HeroSection = ({ className }) => {
               animationSpeed={3}
               containerClassName={theme === "dark" ? "bg-black" : "bg-white"}
               colors={theme === "dark" ? [
-                [255, 255, 255],
-                [255, 255, 255],
+                [167, 243, 208],
+                [167, 243, 208],
               ] : [
-                [0, 0, 0],
-                [0, 0, 0],
+                [4, 120, 87],
+                [4, 120, 87],
               ]}
-              dotSize={6}
+              dotSize={20}
               reverse={false}
             />
           </div>
@@ -415,13 +415,13 @@ const HeroSection = ({ className }) => {
               animationSpeed={4}
               containerClassName={theme === "dark" ? "bg-black" : "bg-white"}
               colors={theme === "dark" ? [
-                [255, 255, 255],
-                [255, 255, 255],
+                [167, 243, 208],
+                [167, 243, 208],
               ] : [
-                [100, 100, 100],
-                [100, 100, 100],
+                [4, 120, 87],
+                [4, 120, 87],
               ]}
-              dotSize={6}
+              dotSize={20}
               reverse={true}
             />
           </div>
@@ -446,11 +446,24 @@ const HeroSection = ({ className }) => {
                     className="space-y-6 text-center"
                   >
                     <div className="space-y-1">
-                      <h1 className="text-[3.25rem] font-bold leading-[1.1] tracking-tight text-black dark:text-white">
-                        Elevate Your Events
-                      </h1>
+                      <motion.h1 
+                      initial={{ opacity: 0, y: 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 50 }}
+                      transition={{ duration: 0.4,delay: 0.4, ease: "easeOut" }}
+                      className="text-[3.25rem] uppercase font-bold leading-[1.1] tracking-tight text-black dark:text-white">
+                        Ideas become events,
+                      </motion.h1>
+                      <motion.h1 
+                      initial={{ opacity: 0, y: 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 50 }}
+                      transition={{ duration: 0.4,delay: 0.5, ease: "easeOut" }}
+                      className="text-[3.25rem] uppercase font-bold leading-[1.1] tracking-tight text-black dark:text-white">
+                        Events become experiences.
+                      </motion.h1>
                       <p className="text-[1.25rem] text-black/70 dark:text-white/70 font-light mt-4">
-                        Streamline registrations, manage attendees, and deliver exceptional experiences from a single powerful dashboard.
+                        HackHub gives you everything you need to turn an idea into a packed, perfectly orchestrated event — registrations, attendees, schedules, communication, check-ins and insights.
                       </p>
                     </div>
 

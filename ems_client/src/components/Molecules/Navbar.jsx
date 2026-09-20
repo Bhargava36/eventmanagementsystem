@@ -7,7 +7,7 @@ import ThemeToggle from "../Organisms/ThemeToggler";
 import {motion} from "framer-motion";
 const AnimatedNavLink = ({ href, children }) => {
   const defaultTextColor = 'text-gray-600 dark:text-gray-300';
-  const hoverTextColor = 'text-black dark:text-white';
+  const hoverTextColor = 'text-emerald-600 dark:text-emerald-600';
   const textSizeClass = 'text-sm';
 
   return (
@@ -51,22 +51,20 @@ export function Navbar() {
 
   const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
+      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-emerald-600 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
+      <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
+      <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
+      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-emerald-600 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
     </div>
   );
 
   const navLinksData = [
     { label: 'Home', href: '/' },
-    { label: 'Register', href: '/register' },
-    { label: 'Sidebar', href: '/sidebar' },
-    { label: 'Manifesto', href: '#1' },
+    { label: 'SA Register', href: '/register' },
   ];
 
   const loginButtonElement = (
-    <Link to="/login" className="px-4 py-2 sm:px-3 text-xs sm:text-sm border border-gray-300 dark:border-[#333] bg-white/50 dark:bg-[rgba(31,31,31,0.62)] text-gray-700 dark:text-gray-300 rounded-full hover:border-gray-400 dark:hover:border-white/50 hover:text-black dark:hover:text-white transition-colors duration-200 w-full sm:w-auto">
+    <Link to="/login" className="px-4 py-2 sm:px-3 text-xs sm:text-sm border border-gray-300 dark:border-[#333] bg-white/50 dark:bg-[rgba(31,31,31,0.62)] text-gray-700 dark:text-gray-300 rounded-full hover:border-emerald-600 dark:hover:border-emerald-600 hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors duration-200 w-full sm:w-auto">
       LogIn
     </Link>
   );
@@ -79,7 +77,7 @@ export function Navbar() {
                      opacity-20 dark:opacity-20 filter blur-2xl pointer-events-none
                      transition-all duration-300 ease-out
                      group-hover:opacity-30 dark:group-hover:opacity-60 group-hover:blur-xl group-hover:-m-3"></div>
-      <Link to="/register" className="relative z-10 px-4 py-2 sm:px-3 text-xs sm:text-sm font-semibold border border-transparent dark:border-white/10 text-white dark:text-black bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-100 dark:to-gray-300 rounded-full hover:from-gray-900 hover:to-black dark:hover:from-gray-200 dark:hover:to-gray-400 transition-all duration-200 w-full sm:w-auto">
+      <Link to="/register" className="relative z-10 px-4 py-2 sm:px-3 text-xs sm:text-sm font-semibold border border-transparent dark:border-white/10 text-white dark:text-black bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-300 dark:to-gray-200 rounded-full hover:from-emerald-600 hover:to-emerald-600 dark:hover:from-emerald-600 dark:hover:to-emerald-700 dark:hover:text-white transition-all duration-200 w-full sm:w-auto">
         Signup
       </Link>
     </div>
@@ -106,8 +104,9 @@ export function Navbar() {
     >
 
       <div className="flex items-center justify-between w-full gap-x-6 sm:gap-x-8">
-        <div className="flex items-center">
+        <div className="flex gap-3 items-center">
           {logoElement}
+          <h5 className="text-md font-bold text-gray-600 dark:text-white">HACK_<span className="text-emerald-600">HUB</span></h5>
         </div>
 
         <nav className="hidden sm:flex items-center space-x-4 sm:space-x-6 text-sm">
@@ -137,7 +136,7 @@ export function Navbar() {
                        ${isOpen ? 'max-h-[1000px] opacity-100 pt-4' : 'max-h-0 opacity-0 pt-0 pointer-events-none'}`}>
         <nav className="flex flex-col items-center space-y-4 text-base w-full">
           {navLinksData.map((link) => (
-            <Link key={link.href} to={link.href} className="text-gray-200 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors w-full text-center">
+            <Link key={link.href} to={link.href} className="text-gray-200 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-700 transition-colors w-full text-center">
               {link.label}
             </Link>
           ))}

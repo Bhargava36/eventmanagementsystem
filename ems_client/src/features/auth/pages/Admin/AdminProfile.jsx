@@ -46,11 +46,8 @@ function AdminProfile() {
 
   const fetchAdminProfile = async () => {
     try {
-      console.log('Fetching profile for admin ID:', id);
       const res = await fetch(`http://localhost:3000/api/admin/${id}`);
-      console.log('Response status:', res.status);
       const data = await res.json();
-      console.log('Fetched profile data:', data);
       if (!res.ok) {
         throw new Error(data.message || 'Failed to fetch profile');
       }
@@ -150,7 +147,13 @@ function AdminProfile() {
     {
       icon: CalendarDays,
       label: 'Created At',
-      value: profile.createdAt
+      value: new Date(profile.createdAt).toLocaleDateString(
+        "en-GB", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+      }
+      )
     },
   ];
 
@@ -222,7 +225,13 @@ function AdminProfile() {
 
               <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
                 <Calendar className="w-4 h-4 text-emerald-700 dark:text-emerald-500 shrink-0" />
-                <span>{profile.createdAt}</span>
+                <span>{new Date(profile.createdAt).toLocaleDateString(
+                  "en-GB", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric"
+                }
+                )}</span>
               </div>
 
             </div>
@@ -370,7 +379,6 @@ function AdminProfile() {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 }

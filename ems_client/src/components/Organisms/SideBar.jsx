@@ -3,6 +3,8 @@ import {useNavigate} from 'react-router-dom';
 import { NavLink, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ThemeToggle from './ThemeToggler';
+import useAuth from '../../Hooks/useAuth';
+import useToast from '../../Hooks/useToast';
 import {
   LayoutDashboard,
   Calendar,
@@ -74,10 +76,14 @@ const SidebarContent = ({
     }
   }, [collapsed]);
 
+  const toast = useToast();
+  const { logout } = useAuth();
   const canShowText = isMobile || showText;
 
   function handleLogout() {
-    navigate('/');
+    logout();
+    toast.success('Logged out successfully');
+    navigate('/login');
   }
 
   return (
@@ -127,7 +133,7 @@ const SidebarContent = ({
           <motion.div
             initial={{ opacity: 0, x: -5 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.2, delay:0.5 }}
+            transition={{ duration: 0.2, delay:0.2 }}
             className="overflow-hidden"
           >
             <h3 className="font-bold text-base whitespace-nowrap">Super Admin</h3>
@@ -135,11 +141,6 @@ const SidebarContent = ({
               Administrator
             </p>
           </motion.div>
-        )}
-        {canShowText && (
-          <div className={`ml-auto ${isMobile ? 'mr-10' : ''} rounded-full bg-emerald-50 p-0.5 shadow-sm dark:bg-emerald-950/50`}>
-            <ThemeToggle />
-          </div>
         )}
       </div>
 
@@ -182,7 +183,7 @@ const SidebarContent = ({
                       <motion.span
                         initial={{ opacity: 0, x: -5 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay:0.5 }}
+                        transition={{ duration: 0.1, delay:0.1 }}
                         className="font-medium text-sm whitespace-nowrap"
                       >
                         {item.name}
@@ -193,7 +194,7 @@ const SidebarContent = ({
                     <motion.span
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.3 , delay:0.5}}
+                      transition={{ duration: 0.1 , delay:0.1}}
                       className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                         isActive
                           ? 'bg-white text-emerald-700'
@@ -211,17 +212,9 @@ const SidebarContent = ({
       </nav>
 
       <div className="mt-auto">
-        {!canShowText && (
-          <div className="flex justify-center mb-2">
-            <div
-              title="Toggle theme"
-              className="rounded-full bg-emerald-50 p-0.5 shadow-sm dark:bg-emerald-950/50"
-            >
-              <ThemeToggle />
-            </div>
-          </div>
-        )}
-        <div className="border-t border-gray-200 dark:border-[#1A2440] my-4"></div>
+        <div className="border-t border-gray-200 dark:border-[#1A2440] my-3"></div>
+        <ThemeToggle variant="sidebar" canShowText={canShowText} />
+
         <button
           onClick={handleLogout}
           title={!isMobile && collapsed ? 'Logout' : ''}

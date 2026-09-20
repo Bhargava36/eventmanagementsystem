@@ -161,7 +161,6 @@ function TeamsDashboard() {
                 </div>
             </div>
 
-      <Footer />
     </div>
     );
 }

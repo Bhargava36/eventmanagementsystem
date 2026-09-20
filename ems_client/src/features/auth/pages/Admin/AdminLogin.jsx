@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
     ShieldCheck,
     Users,
@@ -15,6 +15,8 @@ import {
 import { FcGoogle } from "react-icons/fc";
 import { useState } from "react";
 import Footer from "../../../../components/Organisms/Footer";
+import useAuth from "../../../../Hooks/useAuth";
+import useToast from "../../../../Hooks/useToast";
 
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
@@ -28,8 +30,12 @@ const logoElement = (
 function AdminLogin() {
 
     const navigate = useNavigate();
+    const location = useLocation();
+    const { login } = useAuth();
+    const toast = useToast();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [eventName, setEventName] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -38,8 +44,10 @@ function AdminLogin() {
         e.preventDefault();
         setError("");
 
-        if (!email || !password) {
-            setError("Required to fill all fields");
+        if (!email || !password || !eventName) {
+            const msg = "Required to fill all fields";
+            setError(msg);
+            toast.error(msg);
             return;
         }
 
@@ -48,7 +56,7 @@ function AdminLogin() {
             const res = await fetch("http://localhost:3000/api/admin/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ Email: email, Password: password }),
+                body: JSON.stringify({ Email: email, Password: password, EventName: eventName }),
             });
 
             const data = await res.json();
@@ -56,20 +64,17 @@ function AdminLogin() {
             if (!res.ok) {
                 throw new Error(data.message || data.error || "Login failed");
             }
-            console.log("Login successful:", data);
-            if (data.token) {
-                localStorage.setItem("token", data.token);
-            }
+            const adminUser = data.admin || data.user || {};
+            login(data.token, adminUser, "admin");
 
-            if (data.admin) {
-                localStorage.setItem("user", JSON.stringify(data.admin));
-            }
-
-            alert("Logging Successfully!");
-            navigate("/admin");
+            toast.success("Logged in successfully!");
+            const from = location.state?.from?.pathname || "/admin";
+            navigate(from, { replace: true });
         }
         catch (err) {
-            setError(err.message || "Login failed, try again later");
+            const errMsg = err.message || "Login failed, try again later";
+            setError(errMsg);
+            toast.error(errMsg);
         }
         finally {
             setLoading(false);
@@ -250,6 +255,30 @@ function AdminLogin() {
                                     </button>
                                 </div>
                             </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label
+                                        htmlFor="EventName"
+                                        className="block text-xs sm:text-sm font-semibold text-gray-900 dark:text-white mb-1.5 sm:mb-2"
+                                    >
+                                        Event Name
+                                    </label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 dark:text-gray-500" />
+                                        <input
+                                            type="text"
+                                            id="EventName"
+                                            placeholder="Enter your Event"
+                                            required
+                                            value={eventName}
+                                            onChange={(e) => setEventName(e.target.value)}
+                                            className="w-full pl-10 sm:pl-11 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500 focus:ring-2 focus:ring-emerald-700/20 dark:focus:ring-emerald-500/20 transition-all"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
 
                             <div className="flex items-end justify-end pt-1">
                                 <p className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-500 cursor-pointer hover:text-emerald-800 dark:hover:text-emerald-600 hover:underline">Forgot password</p>
