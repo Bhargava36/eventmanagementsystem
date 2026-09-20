@@ -1,24 +1,22 @@
 import React from 'react';
 import Footer from '../../../../components/Organisms/Footer';
 import {
-  Calendar,
   UserPlus,
   User,
   Mail,
   Lock,
   Eye,
   EyeOff,
-  Image as ImageIcon,
-  CloudUpload,
   GraduationCap,
   Users,
   MapPin,
   Map,
   LogIn,
-  ChevronDown
+  Compass,
+  Code,
+  Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
-import teamLeadRegisterBg from '../../../../assets/teamlead_register_bg.png';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,7 +29,7 @@ const logoElement = (
   </div>
 );
 
-function TeamLeadRegister() {
+function UserRegister() {
   const navigate = useNavigate();
   const initialForm = {
     LeadName: "",
@@ -73,58 +71,91 @@ function TeamLeadRegister() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white dark:bg-gray-950">
-      <div className="flex flex-1 flex-col lg:flex-row overflow-hidden">
-        <div className="relative lg:w-1/2 flex flex-col bg-emerald-50/50 dark:bg-emerald-950/20 p-6 lg:p-8 xl:p-10 border-r border-gray-100 dark:border-gray-900">
-
-          <div className="mb-4 flex  items-center gap-3 text-lg font-semibold lg:mb-8">
-            <div className="flex h-10 w-10 items-center justify-center bg-white/60 dark:border-gray-800 dark:bg-gray-900/40">
+    <div className="min-h-screen flex flex-col bg-black">
+      <div className="flex flex-1 flex-col lg:flex-row overflow-hidden px-5">
+        <div className="relative lg:w-1/2 flex flex-col overflow-hidden bg-black p-6 lg:p-8 xl:p-10 border-r border-gray-900">
+          <div className="relative z-10 mb-4 flex items-center gap-3 text-lg font-semibold lg:mb-8">
+            <div className="flex h-10 w-10 items-center justify-center">
               {logoElement}
             </div>
             <div className="flex flex-col leading-tight">
-              <span className="text-base font-bold tracking-wide text-gray-900 dark:text-white">HACK_HUB</span>
-              <span className="text-xs font-medium tracking-wide text-gray-500 dark:text-gray-400">
+              <span className="text-base font-bold tracking-wide text-white">HACK_HUB</span>
+              <span className="text-xs font-medium tracking-wide text-gray-500">
                 EMS
               </span>
             </div>
           </div>
 
-          <div className="relative z-10 mb-8 lg:mb-12">
-            <h2 className="text-4xl lg:text-5xl xl:text-6xl font-bold text-gray-900 dark:text-white leading-tight mb-4">
-              Create Your Team, <br />
-              Make It <span className="text-emerald-700 dark:text-emerald-500">Happen!</span>
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300 text-base max-w-md">
-              Register as a team lead and get started with managing events seamlessly.
-            </p>
-          </div>
+          <div className="relative z-10 mt-8 shrink-0 lg:mt-10">
+    <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-white leading-tight mb-3">
+      Join the Next <span className="text-emerald-500">Generation of Hackers</span>
+    </h2>
+    <p className="text-gray-400 text-sm lg:text-base max-w-lg">
+      Create your participant account to discover hackathons, collaborate with top talent, and build the future.
+    </p>
+  </div>
 
-          <div className="relative z-10 flex-1 w-full mt-auto flex items-end justify-center min-h-[300px]">
-            <img
-              src={teamLeadRegisterBg}
-              alt="Team management workspace"
-              className="w-full h-full max-h-[500px] object-cover rounded-2xl shadow-2xl border border-white/50 dark:border-gray-800/50"
-            />
-          </div>
+  <div className="relative z-10 flex-1 w-full flex flex-col justify-center gap-8 lg:gap-14 min-h-0">
+    <div className="flex gap-4 items-start">
+      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-900/60 rounded-xl flex items-center justify-center shrink-0 border border-gray-800">
+        <Compass className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-500" />
+      </div>
+      <div>
+        <h3 className="text-base lg:text-lg font-semibold text-white mb-0.5">Discover Hackathons</h3>
+        <p className="text-gray-400 text-xs lg:text-sm">Find and register for top tech events, workshops, and coding competitions worldwide.</p>
+      </div>
+    </div>
+
+    <div className="flex gap-4 items-start">
+      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-900/60 rounded-xl flex items-center justify-center shrink-0 border border-gray-800">
+        <Users className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-500" />
+      </div>
+      <div>
+        <h3 className="text-base lg:text-lg font-semibold text-white mb-0.5">Form Your Squad</h3>
+        <p className="text-gray-400 text-xs lg:text-sm">Connect with developers, designers, and creators to build your dream team seamlessly.</p>
+      </div>
+    </div>
+
+    <div className="flex gap-4 items-start">
+      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-900/60 rounded-xl flex items-center justify-center shrink-0 border border-gray-800">
+        <Code className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-500" />
+      </div>
+      <div>
+        <h3 className="text-base lg:text-lg font-semibold text-white mb-0.5">Manage Submissions</h3>
+        <p className="text-gray-400 text-xs lg:text-sm">Submit your projects, track your judging status, and organize your event workflows.</p>
+      </div>
+    </div>
+
+    <div className="flex gap-4 items-start">
+      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-900/60 rounded-xl flex items-center justify-center shrink-0 border border-gray-800">
+        <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-500" />
+      </div>
+      <div>
+        <h3 className="text-base lg:text-lg font-semibold text-white mb-0.5">Showcase Skills</h3>
+        <p className="text-gray-400 text-xs lg:text-sm">Build your digital portfolio, earn badges, and climb the global hacker leaderboard.</p>
+      </div>
+    </div>  
+      </div>
+
         </div>
 
-        <div className="lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 py-12 lg:py-8 bg-white dark:bg-gray-950 overflow-y-auto">
-          <div className="max-w-2xl w-full mx-auto">
+        <div className="lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 py-10 lg:py-8 bg-[#020303] overflow-y-auto">
+          <div className="max-w-2xl w-full mx-auto rounded-2xl border border-emerald-500/80 bg-black/70 p-6 sm:p-8 lg:p-10">
             <div className="mb-10 text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start gap-3 mb-3">
-                <div className="bg-emerald-50 dark:bg-emerald-500/10 p-3 rounded-full">
-                  <UserPlus className="w-7 h-7 text-emerald-700 dark:text-emerald-500" />
+                <div className="bg-emerald-500/10 p-3 rounded-full">
+                  <UserPlus className="w-7 h-7 text-emerald-500" />
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Team Lead <span className="text-emerald-700 dark:text-emerald-500">Register</span>
+                <h2 className="text-3xl font-bold text-white">
+                  User <span className="text-emerald-500">Register</span>
                 </h2>
               </div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">
+              <p className="text-gray-400 text-sm">
                 Fill in your details to create your team lead account
               </p>
             </div>
 
-            <form onSubmit={handleRegister} className="space-y-5 lg:space-y-6">
+            <form onSubmit={handleRegister} className="space-y-5 lg:space-y-6 [&_label]:text-gray-300 [&_input]:!border-gray-700 [&_input]:!bg-[#0b1118] [&_input]:!text-white [&_input]:placeholder-gray-500 [&_svg]:text-gray-300">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <div className="flex items-center gap-3 sm:w-36 shrink-0 pl-1">
                   <User className="w-5 h-5 text-gray-600 dark:text-gray-400" strokeWidth={1.5} />
@@ -302,8 +333,7 @@ function TeamLeadRegister() {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }
-export default TeamLeadRegister;
+export default UserRegister;

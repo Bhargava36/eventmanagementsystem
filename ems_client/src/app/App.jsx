@@ -17,11 +17,11 @@ import TeamsDashboard from '../features/auth/pages/Admin/TeamsDashboard';
 import TeamDetails from '../features/auth/pages/Admin/TeamDetails';
 import AdminDashboard from '../features/auth/pages/Admin/AdminDashboard';
 import AdminProfile from '../features/auth/pages/Admin/AdminProfile';
-import TeamLeadRegister from '../features/auth/pages/TeamLead/TeamLeadRegister';
-import TeamLeadDashboard from '../features/auth/pages/TeamLead/TeamLeadDashboard';
-import TeamLeadLogin from '../features/auth/pages/TeamLead/TeamLeadLogin';
-import TeamLeadEventInfo from '../features/auth/pages/TeamLead/TeamLeadEventInfo';
-import MyTeams from '../features/auth/pages/TeamLead/MyTeams';
+import UserRegister from '../features/auth/pages/Users/UserRegister';
+import TeamLeadDashboard from '../features/auth/pages/Users/TeamLeadDashboard';
+import TeamLeadLogin from '../features/auth/pages/Users/TeamLeadLogin';
+import TeamLeadEventInfo from '../features/auth/pages/Users/TeamLeadEventInfo';
+import MyTeams from '../features/auth/pages/Users/MyTeams';
 
 function App() {
   return (
@@ -52,7 +52,7 @@ function App() {
           <Route path="profile/:id" element={<AdminProfile />} />
         </Route>
 
-        <Route path="/teamlead/register" element={<TeamLeadRegister />} />
+        <Route path="/user/register" element={<UserRegister />} />
         <Route path="/teamlead/login" element={<TeamLeadLogin />} />
         <Route path="/teamlead/dashboard" element={<TeamLeadDashboard />} />
         <Route path="/teamlead/eventinfo" element={<TeamLeadEventInfo />} />

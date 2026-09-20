@@ -91,7 +91,6 @@ function AdminDashboard() {
         </div>
 
         <div className="bg-white dark:bg-gray-950 rounded-xl border border-emerald-700 dark:border-emerald-500 shadow-sm overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-50 to-transparent dark:from-emerald-500/10 dark:to-transparent pointer-events-none"></div>
           
           <div className="p-4 sm:p-6 relative z-10">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 gap-4">
