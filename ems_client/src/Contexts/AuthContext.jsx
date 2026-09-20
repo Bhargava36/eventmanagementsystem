@@ -34,7 +34,7 @@ export function getDefaultDashboard(role) {
     case 'admin':
       return '/admin/dashboard';
     case 'teamlead':
-      return '/teamlead/dashboard';
+      return '/user/dashboard';
     default:
       return '/';
   }
@@ -47,7 +47,7 @@ export function getRoleLoginPath(role) {
     case 'admin':
       return '/admin/login';
     case 'teamlead':
-      return '/teamlead/login';
+      return '/user/login';
     default:
       return '/login';
   }

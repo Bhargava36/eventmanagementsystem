@@ -65,7 +65,7 @@ function UserRegister() {
 
       toast.success("Team Lead Account created successfully!");
       setFormData(initialForm);
-      navigate("/teamlead/login");
+      navigate("/user/login");
     }
     catch (err) {
       toast.error(err.message || "Registration failed");

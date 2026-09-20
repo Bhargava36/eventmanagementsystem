@@ -17,10 +17,11 @@ import TeamsDashboard from '../features/auth/pages/Admin/TeamsDashboard';
 import TeamDetails from '../features/auth/pages/Admin/TeamDetails';
 import AdminDashboard from '../features/auth/pages/Admin/AdminDashboard';
 import AdminProfile from '../features/auth/pages/Admin/AdminProfile';
+import UserSidebar from '../components/Organisms/UserSidebar';
 import UserRegister from '../features/auth/pages/Users/UserRegister';
 import UserLogin from '../features/auth/pages/Users/UserLogin';
-import TeamLeadDashboard from '../features/auth/pages/Users/TeamLeadDashboard';
-import TeamLeadEventInfo from '../features/auth/pages/Users/TeamLeadEventInfo';
+import UserDashboard from '../features/auth/pages/Users/UserDashboard';
+import EventRedirectPage from '../features/auth/pages/Users/EventRedirectPage';
 import MyTeams from '../features/auth/pages/Users/MyTeams';
 import ProtectedRoute from '../components/Organisms/ProtectedRoute';
 import Unauthorized from '../components/ui/Unauthorized';
@@ -34,6 +35,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/user/login" element={<UserLogin />} />
+          <Route path="/user/register" element={<UserRegister />} />
           {/* <Route path="/admin/register" element={<AdminRegister />} /> */}
         </Route>
 
@@ -61,14 +64,19 @@ function App() {
           </Route>
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['user']} />}>
-          <Route path="/teamlead/dashboard" element={<TeamLeadDashboard />} />
-          <Route path="/teamlead/eventinfo" element={<TeamLeadEventInfo />} />
-          <Route path="/teamlead/myteams" element={<MyTeams />} />
-
+        <Route element={<ProtectedRoute allowedRoles={['teamlead']} redirectPath="/user/login" />}>
+         <Route path="/user" element={<UserSidebar />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<UserDashboard />} />
+            <Route path="teams" element={<MyTeams />} />
+            <Route path="events" element={<EventRedirectPage />} />
+          </Route>
         </Route>
-        <Route path="/user/register" element={<UserRegister />} />
-        <Route path="/user/login" element={<UserLogin />} />
+
+
+          
+
+       
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

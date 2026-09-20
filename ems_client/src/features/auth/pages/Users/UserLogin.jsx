@@ -73,7 +73,7 @@ function UserLogin() {
             login(data.token, teamleadUser, "teamlead");
 
             toast.success("Logged in successfully!");
-            const from = location.state?.from?.pathname || "/teamlead/dashboard";
+            const from = location.state?.from?.pathname || "/user/dashboard";
             navigate(from, { replace: true });
         }
         catch (err) {

@@ -45,21 +45,21 @@ function EventDetails() {
 const navigate = useNavigate();
 
   function handleHomeClick() {
-    navigate('/teamlead/dashboard');
+    navigate('/user/dashboard');
   }
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-slate-100 p-4 md:p-6 lg:p-8 transition-colors duration-200 font-sans w-full ">
       <div className="w-full max-w-[1920px] mx-auto space-y-6">
         
-        <button className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-700 dark:border-emerald-500 text-emerald-700 dark:text-emerald-500 text-sm font-medium hover:bg-emerald-700 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-black transition-colors cursor-pointer"
+        <button className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-emerald-700 dark:border-emerald-500 text-emerald-700 dark:text-emerald-500 text-sm font-medium hover:bg-emerald-700 hover:text-white dark:hover:bg-emerald-500 dark:hover:text-black transition-colors cursor-pointer"
         onClick={handleHomeClick}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Home
+          Back to Dashboard
         </button>
 
-        <section className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 md:gap-8 lg:gap-10 shadow-sm w-full">
+        <section className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 md:gap-8 lg:gap-10 shadow-md shadow-slate-300/30 dark:shadow-black/50 w-full">
           <div className="w-full lg:w-[40%] h-56 sm:h-64 lg:h-auto min-h-[280px] rounded-2xl bg-white dark:bg-black relative overflow-hidden flex flex-col items-center justify-center border border-emerald-700/20 dark:border-emerald-500/30 group">
             <div className="absolute inset-0"></div>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-transparent rounded-full"></div>
@@ -99,7 +99,7 @@ const navigate = useNavigate();
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 w-full">
           
           <div className="lg:col-span-7 flex flex-col gap-5 lg:gap-6">
-            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-sm flex items-start gap-5 w-full">
+            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-md shadow-slate-300/30 dark:shadow-black/50 flex items-start gap-5 w-full">
               <div className="p-3 rounded-2xl bg-emerald-700/10 dark:bg-emerald-500/10 shrink-0">
                 <FileText className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
               </div>
@@ -111,7 +111,7 @@ const navigate = useNavigate();
               </div>
             </div>
 
-            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-sm flex items-start gap-5 w-full">
+            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-md shadow-slate-300/30 dark:shadow-black/50 flex items-start gap-5 w-full">
               <div className="p-3 rounded-2xl bg-emerald-700/10 dark:bg-emerald-500/10 shrink-0">
                 <Lightbulb className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
               </div>
@@ -130,7 +130,7 @@ const navigate = useNavigate();
               </div>
             </div>
 
-            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-sm flex items-start gap-5 w-full">
+            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-md shadow-slate-300/30 dark:shadow-black/50 flex items-start gap-5 w-full">
               <div className="p-3 rounded-2xl bg-emerald-700/10 dark:bg-emerald-500/10 shrink-0">
                 <Tag className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
               </div>
@@ -140,7 +140,7 @@ const navigate = useNavigate();
               </div>
             </div>
 
-            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-sm flex items-start gap-5 w-full">
+            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-md shadow-slate-300/30 dark:shadow-black/50 flex items-start gap-5 w-full">
               <div className="p-3 rounded-2xl bg-emerald-700/10 dark:bg-emerald-500/10 shrink-0">
                 <ClipboardCheck className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
               </div>
@@ -159,7 +159,7 @@ const navigate = useNavigate();
           </div>
 
           <div className="lg:col-span-5 flex flex-col gap-5 lg:gap-7">
-            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-sm flex items-start gap-5 w-full">
+            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-md shadow-slate-300/30 dark:shadow-black/50 flex items-start gap-5 w-full">
               <div className="p-3 rounded-2xl bg-emerald-700/10 dark:bg-emerald-500/10 shrink-0">
                 <Users className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
               </div>
@@ -169,7 +169,7 @@ const navigate = useNavigate();
               </div>
             </div>
 
-            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-sm flex items-start gap-5 w-full">
+            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-md shadow-slate-300/30 dark:shadow-black/50 flex items-start gap-5 w-full">
               <div className="p-3 rounded-2xl bg-emerald-700/10 dark:bg-emerald-500/10 shrink-0">
                 <Clock className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
               </div>
@@ -180,7 +180,7 @@ const navigate = useNavigate();
               </div>
             </div>
 
-            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-sm flex items-start gap-5 w-full">
+            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-md shadow-slate-300/30 dark:shadow-black/50 flex items-start gap-5 w-full">
               <div className="p-3 rounded-2xl bg-emerald-700/10 dark:bg-emerald-500/10 shrink-0">
                 <MapPin className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
               </div>
@@ -191,7 +191,7 @@ const navigate = useNavigate();
               </div>
             </div>
 
-            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-sm flex items-start gap-5 w-full">
+            <div className="bg-white dark:bg-black border border-emerald-700/20 dark:border-emerald-500/20 rounded-3xl p-6 shadow-md shadow-slate-300/30 dark:shadow-black/50 flex items-start gap-5 w-full">
               <div className="p-3 rounded-2xl bg-emerald-700/10 dark:bg-emerald-500/10 shrink-0">
                 <CalendarCheck className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
               </div>
