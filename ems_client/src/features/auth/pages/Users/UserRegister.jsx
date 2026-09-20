@@ -34,7 +34,7 @@ function UserRegister() {
   const navigate = useNavigate();
   const toast = useToast();
   const initialForm = {
-    LeadName: "",
+    UserName: "",
     Email: "",
     Password: "",
     College: "",
@@ -49,7 +49,7 @@ function UserRegister() {
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:3000/api/teamlead/create", {
+      const res = await fetch("http://localhost:3000/api/users/create", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -63,7 +63,7 @@ function UserRegister() {
         throw new Error(data.error || "Registration failed");
       }
 
-      toast.success("Team Lead Account created successfully!");
+      toast.success("User Account created successfully!");
       setFormData(initialForm);
       navigate("/user/login");
     }
@@ -153,7 +153,7 @@ function UserRegister() {
                 </h2>
               </div>
               <p className="text-gray-400 text-sm">
-                Fill in your details to create your team lead account
+                Fill in your details to create your user account
               </p>
             </div>
 
@@ -166,8 +166,8 @@ function UserRegister() {
                 <div className="flex-1">
                   <input
                     type="text"
-                    value={formData.LeadName}
-                    onChange={(e) => setFormData({...formData, LeadName: e.target.value }) }
+                    value={formData.UserName}
+                    onChange={(e) => setFormData({...formData, UserName: e.target.value }) }
                     placeholder="Enter your full name"
                     className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 dark:focus:ring-emerald-500/20 focus:border-emerald-700 dark:focus:border-emerald-500 transition-all text-sm"
                   />
@@ -328,7 +328,7 @@ function UserRegister() {
 
               <div className="text-center mt-6">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Already have an account? <a href="#" className="text-emerald-700 dark:text-emerald-500 font-semibold hover:underline">Login</a>
+                  Already have an account? <a href="/user/login" className="text-emerald-700 dark:text-emerald-500 font-semibold hover:underline">Login</a>
                 </p>
               </div>
             </form>
