@@ -18,8 +18,8 @@ import TeamDetails from '../features/auth/pages/Admin/TeamDetails';
 import AdminDashboard from '../features/auth/pages/Admin/AdminDashboard';
 import AdminProfile from '../features/auth/pages/Admin/AdminProfile';
 import UserRegister from '../features/auth/pages/Users/UserRegister';
+import UserLogin from '../features/auth/pages/Users/UserLogin';
 import TeamLeadDashboard from '../features/auth/pages/Users/TeamLeadDashboard';
-import TeamLeadLogin from '../features/auth/pages/Users/TeamLeadLogin';
 import TeamLeadEventInfo from '../features/auth/pages/Users/TeamLeadEventInfo';
 import MyTeams from '../features/auth/pages/Users/MyTeams';
 import ProtectedRoute from '../components/Organisms/ProtectedRoute';
@@ -37,7 +37,6 @@ function App() {
           {/* <Route path="/admin/register" element={<AdminRegister />} /> */}
         </Route>
 
-        <Route path="/teamlead/login" element={<TeamLeadLogin />} />
 
         <Route path="/unauthorized" element={<Unauthorized />} />
 
@@ -69,6 +68,7 @@ function App() {
 
         </Route>
         <Route path="/user/register" element={<UserRegister />} />
+        <Route path="/user/login" element={<UserLogin />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
