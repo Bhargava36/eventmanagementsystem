@@ -46,11 +46,8 @@ function AdminProfile() {
 
   const fetchAdminProfile = async () => {
     try {
-      console.log('Fetching profile for admin ID:', id);
       const res = await fetch(`http://localhost:3000/api/admin/${id}`);
-      console.log('Response status:', res.status);
       const data = await res.json();
-      console.log('Fetched profile data:', data);
       if (!res.ok) {
         throw new Error(data.message || 'Failed to fetch profile');
       }
