@@ -54,7 +54,7 @@ function UserLogin() {
 
         try {
             setLoading(true);
-            const res = await fetch("http://localhost:3000/api/teamlead/login", {
+            const res = await fetch("http://localhost:3000/api/users/login", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -69,8 +69,8 @@ function UserLogin() {
             }
 
             console.log("Login successful:", data);
-            const teamleadUser = data.teamlead || data.user || {};
-            login(data.token, teamleadUser, "teamlead");
+            const teamleadUser = data.users || data.user || {};
+            login(data.token, teamleadUser, "user");
 
             toast.success("Logged in successfully!");
             const from = location.state?.from?.pathname || "/user/dashboard";
