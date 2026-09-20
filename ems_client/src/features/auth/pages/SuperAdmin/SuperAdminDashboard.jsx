@@ -88,7 +88,7 @@ function SuperAdminDashboard() {
 
   useEffect(() => {
     fetchUsersCount();
-    fetchTeamsCount();
+    // fetchTeamsCount();
     fetchEventsCount();
   }, []);
 
@@ -105,18 +105,18 @@ function SuperAdminDashboard() {
 
   const totalUsers = usersCount?.length || 0;
 
-  const fetchTeamsCount = async () => {
-    try {
-      const response = await fetch('http://localhost:3000/api/teams/');
-      const data = await response.json();
-      setTeamsCount(data.teams);
-    } catch (error) {
-      console.error('Error fetching teams count:', error);
+  // const fetchTeamsCount = async () => {
+  //   try {
+  //     const response = await fetch('http://localhost:3000/api/teams/');
+  //     const data = await response.json();
+  //     setTeamsCount(data.teams);
+  //   } catch (error) {
+  //     console.error('Error fetching teams count:', error);
 
-    }
-  };
+  //   }
+  // };
 
-  const totalTeams = teamsCount?.length || 0;
+  // const totalTeams = teamsCount?.length || 0;
 
   const fetchEventsCount = async () => {
     try {
@@ -133,7 +133,7 @@ function SuperAdminDashboard() {
 
   const stats = [
     { title: 'Total Users', value: totalUsers, icon: Users},
-    { title: 'Total Teams', value: totalTeams, icon: UsersRound},
+    { title: 'Total Teams', value: 35, icon: UsersRound},
     { title: 'Total Events', value: totalEvents, icon: Calendar, change: '+15.3%'},
   ];
 

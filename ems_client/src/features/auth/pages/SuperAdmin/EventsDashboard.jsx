@@ -92,8 +92,6 @@ function EventsDashboard() {
         );
       }
 
-      console.log("Events from backend:", data);
-
       setEventData(data.events || []);
 
     } catch (error) {
@@ -129,7 +127,6 @@ function EventsDashboard() {
     e.preventDefault();
 
     try {
-      console.log("Sending event:", formData);
 
       const res = await fetch(
         "http://localhost:3000/api/events/create",
@@ -143,8 +140,6 @@ function EventsDashboard() {
       );
 
       const data = await res.json();
-
-      console.log("Create event response:", data);
 
       if (!res.ok) {
         throw new Error(
@@ -206,16 +201,16 @@ function EventsDashboard() {
       case "Oldest First":
         return sortedEvents.sort(
           (a, b) =>
-            new Date(a.CreatedAt) -
-            new Date(b.CreatedAt)
+            new Date(a.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) -
+            new Date(b.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})
         );
 
       case "Latest First":
       default:
         return sortedEvents.sort(
           (a, b) =>
-            new Date(b.CreatedAt) -
-            new Date(a.CreatedAt)
+            new Date(b.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) -
+            new Date(a.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})
         );
     }
   };
@@ -403,6 +398,7 @@ function EventsDashboard() {
                   onChange={handleChange}
                   placeholder="Describe your event"
                   rows="7"
+                  required
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
               </div>
@@ -424,6 +420,7 @@ function EventsDashboard() {
                   onChange={handleChange}
                   placeholder="Enter facilities provided for participants"
                   rows="3"
+                  required
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
               </div>
@@ -439,6 +436,7 @@ function EventsDashboard() {
                   onChange={handleChange}
                   placeholder="Enter requirements for participants"
                   rows="3"
+                  required
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
                 />
               </div>
@@ -454,6 +452,7 @@ function EventsDashboard() {
                   value={formData.TeamSize}
                   onChange={handleChange}
                   placeholder="Example: 2 - 4 members"
+                  required
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
@@ -506,6 +505,7 @@ function EventsDashboard() {
                     name="RegistrationStart"
                     value={formData.RegistrationStart}
                     onChange={handleChange}
+                    required
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -520,6 +520,7 @@ function EventsDashboard() {
                     name="RegistrationEnd"
                     value={formData.RegistrationEnd}
                     onChange={handleChange}
+                    required
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                   />
                 </div>
@@ -605,6 +606,7 @@ function EventsDashboard() {
                   value={formData.Location}
                   onChange={handleChange}
                   placeholder="Enter event location"
+                  required
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                 />
               </div>
@@ -652,6 +654,7 @@ function EventsDashboard() {
                         name={name}
                         value={formData[name]}
                         onChange={handleChange}
+                        required
                         className="flex-1 px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
                       />
 
@@ -986,7 +989,7 @@ function EventsDashboard() {
                     <td className="px-3 sm:px-4 py-3 sm:py-4 text-gray-600 dark:text-gray-300 hidden md:table-cell">
 
                       <p className="text-xs sm:text-sm whitespace-nowrap">
-                        {event.StartDate}
+                        {new Date(event.StartDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                       </p>
 
                     </td>

@@ -606,7 +606,7 @@ function EventInfo() {
                                 <input
                                     type="date"
                                     name="StartDate"
-                                    value={formData.StartDate}
+                                    value={new Date(formData.StartDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
@@ -622,7 +622,7 @@ function EventInfo() {
                                 <input
                                     type="date"
                                     name="EndDate"
-                                    value={formData.EndDate}
+                                    value={new Date(formData.EndDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
@@ -638,7 +638,7 @@ function EventInfo() {
                                 <input
                                     type="date"
                                     name="RegistrationStart"
-                                    value={formData.RegistrationStart}
+                                    value={new Date(formData.RegistrationStart).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
@@ -654,7 +654,7 @@ function EventInfo() {
                                 <input
                                     type="date"
                                     name="RegistrationEnd"
-                                    value={formData.RegistrationEnd}
+                                    value={new Date(formData.RegistrationEnd).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                                 />
@@ -968,7 +968,7 @@ function EventInfo() {
                                             </p>
 
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                {event.StartDate}
+                                                {new Date(event.StartDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                             </p>
                                         </div>
 
@@ -986,7 +986,7 @@ function EventInfo() {
                                             </p>
 
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                {event.EndDate}
+                                                {new Date(event.EndDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                             </p>
                                         </div>
 
@@ -1022,7 +1022,7 @@ function EventInfo() {
                                             </p>
 
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                {event.CreatedAt}
+                                                {new Date(event.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                             </p>
                                         </div>
 
@@ -1147,7 +1147,7 @@ function EventInfo() {
                                     </p>
 
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {event.RegistrationStart || '-'}
+                                        {new Date(event.RegistrationStart || '-').toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     </p>
 
                                 </div>
@@ -1159,7 +1159,7 @@ function EventInfo() {
                                     </p>
 
                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {event.RegistrationEnd || '-'}
+                                        {new Date(event.RegistrationEnd || '-').toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                     </p>
 
                                 </div>
@@ -1668,7 +1668,7 @@ function EventInfo() {
                                         </p>
 
                                         <p className="text-xs text-emerald-700 mt-1">
-                                            {event.RegistrationStart || '-'}
+                                            {new Date(event.RegistrationStart || '-').toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                         </p>
 
                                     </div>
@@ -1686,7 +1686,7 @@ function EventInfo() {
                                         </p>
 
                                         <p className="text-xs text-emerald-700 mt-1">
-                                            {event.RegistrationEnd || '-'}
+                                            {new Date(event.RegistrationEnd || '-').toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                         </p>
 
                                     </div>
@@ -1704,7 +1704,7 @@ function EventInfo() {
                                         </p>
 
                                         <p className="text-xs text-emerald-700 mt-1">
-                                            {event.StartDate}
+                                            {new Date(event.StartDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                         </p>
 
                                     </div>
@@ -1722,7 +1722,7 @@ function EventInfo() {
                                         </p>
 
                                         <p className="text-xs text-emerald-700 mt-1">
-                                            {event.EndDate}
+                                            {new Date(event.EndDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                         </p>
 
                                     </div>

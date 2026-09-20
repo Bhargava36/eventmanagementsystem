@@ -24,62 +24,67 @@ const registerAdmin = (req,res) => {
     });
 };
 
-const loginAdminController = (req,res) => {
-    const {Email, Password} = req.body;
+const loginAdminController = (req, res) => {
+    const { Email, Password, EventName } = req.body;
 
-    if(!Email || !Password){
+    if (!Email || !Password || !EventName) {
         return res.status(400).json({
-            message: "All fields are required, Check it once"
+            message: "Email, Password and Event Name are required"
         });
     }
 
-    adminService.loginAdmin(Email, async(err,result) => {
-        if(err){
+    adminService.loginAdmin(Email, EventName, async (err, result) => {
+        if (err) {
             return res.status(500).json({
                 message: "Database error",
                 error: err
             });
         }
-        
-        if(result.length === 0){
+
+        if (result.length === 0) {
             return res.status(401).json({
-                message: "Invalid UserName or Password"
+                message: "Invalid Email, Password or Event Name"
             });
         }
+
         const admin = result[0];
 
         const isMatch = await bcrypt.compare(Password, admin.Password);
-        
-        if(!isMatch) {
-             return res.status(401).json({
-                message: "Invalid UserName or Password"
+
+        if (!isMatch) {
+            return res.status(401).json({
+                message: "Invalid Email, Password or Event Name"
             });
         }
 
         const token = jwt.sign(
             {
-            Id: admin.Id,
-            AdminName: admin.AdminName,
-            role: "admin" 
+                Id: admin.Id,
+                AdminName: admin.AdminName,
+                EventId: admin.EventId,
+                EventName: admin.EventName,
+                role: "admin"
             },
             process.env.JWT_SECRECT,
             {
                 expiresIn: process.env.JWT_EXPIRES_IN
             }
         );
+
         return res.status(200).json({
-            message:"Login Successful",
+            message: "Login Successful",
             token,
             admin: {
                 Id: admin.Id,
                 AdminName: admin.AdminName,
                 Email: admin.Email,
-                Mobile: admin.Mobile
+                Mobile: admin.Mobile,
+                EventId: admin.EventId,
+                EventName: admin.EventName
             }
         });
     });
 };
-
 const getAllAdmin = (req, res) => {
 
     adminService.getAllAdmin((err, result) => {

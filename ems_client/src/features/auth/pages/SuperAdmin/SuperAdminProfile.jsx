@@ -138,7 +138,7 @@ function SuperAdminProfile() {
     {
       icon: Calendar,
       label: 'Joined On',
-      value: profile.created_at,
+      value: new Date(profile.created_at).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})
     }
 
   ];
@@ -227,7 +227,7 @@ function SuperAdminProfile() {
 
                 <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
                   <Calendar className="w-4 h-4 text-emerald-700 dark:text-emerald-500 shrink-0" />
-                  <span>{profile.created_at}</span>
+                  <span>{new Date(profile.created_at).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}</span>
                 </div>
 
               </div>
