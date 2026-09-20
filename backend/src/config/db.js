@@ -62,9 +62,9 @@ const migrationQueries = [
         INDEX idx_admins_event (EventId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
-    `CREATE TABLE IF NOT EXISTS teamlead (
+    `CREATE TABLE IF NOT EXISTS users (
         Id INT AUTO_INCREMENT PRIMARY KEY,
-        LeadName VARCHAR(255) NOT NULL,
+        UserName VARCHAR(255) NOT NULL,
         Email VARCHAR(255) NOT NULL UNIQUE,
         Password VARCHAR(255) NOT NULL,
         College VARCHAR(255),
