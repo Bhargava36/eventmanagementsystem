@@ -20,15 +20,15 @@ const createAdmin = async (AdminName, Email, Password, Mobile, EventId, callback
     }
 };
 
-const loginAdmin = (Email, callback) => {
-    const query = "select Id, AdminName, Email, Mobile, Password from admins where Email = ?";
-    db.query(query, [Email], (err, result) => {
+const loginAdmin = (Email, EventName, callback) => {
+    const query = `SELECT admins.Id, admins.AdminName, admins.Email, admins.Mobile, admins.Password, admins.EventId, events.EventName FROM admins JOIN events ON admins.EventId = events.Id WHERE admins.Email = ? AND TRIM(events.EventName) = TRIM(?)`;
+
+    db.query(query, [Email, EventName], (err, result) => {
         if (err) {
             return callback(err, null);
         }
-        else {
-            return callback(null, result);
-        }
+
+        return callback(null, result);
     });
 };
 
@@ -47,7 +47,7 @@ const getAllAdmin = (callback) => {
 };
 
 const getAdminById = (id, callback) => {
-    const query = ` SELECT * FROM admins where Id = ?`;
+    const query = `SELECT admins.Id, admins.AdminName, admins.Email, admins.Mobile, admins.EventId, admins.createdAt, events.EventName FROM admins JOIN events ON admins.EventId = events.Id WHERE admins.Id = ?`;
 
     db.query(query, [id], (err, result) => {
         if (err) {
@@ -58,11 +58,11 @@ const getAdminById = (id, callback) => {
     });
 };
 
-const getAdminByEventId = (EventId, callback) => {
+const getAdminByEventId = (EventId, AdminId, callback) => {
 
-    const query = `SELECT admins.Id, admins.AdminName, admins.Email, admins.Mobile, admins.EventId, events.EventName FROM admins JOIN events ON admins.EventId = events.Id WHERE admins.EventId = ?`;
+    const query = `SELECT admins.Id, admins.AdminName, admins.Email, admins.Mobile, admins.EventId, admins.createdAt, events.EventName FROM admins JOIN events ON admins.EventId = events.Id WHERE admins.EventId = ? AND admins.Id = ?`;
 
-    db.query(query, [EventId], (err, result) => {
+    db.query(query, [EventId, AdminId], (err, result) => {
 
         if (err) {
             return callback(err, null);
