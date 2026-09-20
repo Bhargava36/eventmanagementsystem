@@ -18,11 +18,10 @@ import TeamDetails from '../features/auth/pages/Admin/TeamDetails';
 import AdminDashboard from '../features/auth/pages/Admin/AdminDashboard';
 import AdminProfile from '../features/auth/pages/Admin/AdminProfile';
 import UserRegister from '../features/auth/pages/Users/UserRegister';
-import TeamLeadRegister from '../features/auth/pages/TeamLead/TeamLeadRegister';
-import TeamLeadDashboard from '../features/auth/pages/TeamLead/TeamLeadDashboard';
-import TeamLeadLogin from '../features/auth/pages/TeamLead/TeamLeadLogin';
-import TeamLeadEventInfo from '../features/auth/pages/TeamLead/TeamLeadEventInfo';
-import MyTeams from '../features/auth/pages/TeamLead/MyTeams';
+import TeamLeadDashboard from '../features/auth/pages/Users/TeamLeadDashboard';
+import TeamLeadLogin from '../features/auth/pages/Users/TeamLeadLogin';
+import TeamLeadEventInfo from '../features/auth/pages/Users/TeamLeadEventInfo';
+import MyTeams from '../features/auth/pages/Users/MyTeams';
 import ProtectedRoute from '../components/Organisms/ProtectedRoute';
 import Unauthorized from '../components/ui/Unauthorized';
 
@@ -38,8 +37,6 @@ function App() {
           {/* <Route path="/admin/register" element={<AdminRegister />} /> */}
         </Route>
 
-<Route path="/teamlead/register" element={<TeamLeadRegister />} />
-        <Route path="/user/register" element={<UserRegister />} />
         <Route path="/teamlead/login" element={<TeamLeadLogin />} />
 
         <Route path="/unauthorized" element={<Unauthorized />} />
@@ -65,12 +62,13 @@ function App() {
           </Route>
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['teamlead']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['user']} />}>
           <Route path="/teamlead/dashboard" element={<TeamLeadDashboard />} />
           <Route path="/teamlead/eventinfo" element={<TeamLeadEventInfo />} />
           <Route path="/teamlead/myteams" element={<MyTeams />} />
-        </Route>
 
+        </Route>
+        <Route path="/user/register" element={<UserRegister />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

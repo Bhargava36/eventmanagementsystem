@@ -14,7 +14,6 @@ import {
   PanelLeftOpen,
   CircleX,
 } from 'lucide-react';
-import ThemeToggle from './ThemeToggler';
 
 const logoElement = (
   <div className="relative w-5 h-5 flex items-center justify-center">
