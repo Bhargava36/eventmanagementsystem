@@ -201,16 +201,16 @@ function EventsDashboard() {
       case "Oldest First":
         return sortedEvents.sort(
           (a, b) =>
-            new Date(a.CreatedAt) -
-            new Date(b.CreatedAt)
+            new Date(a.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) -
+            new Date(b.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})
         );
 
       case "Latest First":
       default:
         return sortedEvents.sort(
           (a, b) =>
-            new Date(b.CreatedAt) -
-            new Date(a.CreatedAt)
+            new Date(b.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) -
+            new Date(a.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})
         );
     }
   };
@@ -989,7 +989,7 @@ function EventsDashboard() {
                     <td className="px-3 sm:px-4 py-3 sm:py-4 text-gray-600 dark:text-gray-300 hidden md:table-cell">
 
                       <p className="text-xs sm:text-sm whitespace-nowrap">
-                        {event.StartDate}
+                        {new Date(event.StartDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                       </p>
 
                     </td>

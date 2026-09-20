@@ -58,12 +58,10 @@ const getAdminById = (id, callback) => {
     });
 };
 
-const getAdminByEventId = (EventId, AdminId, callback) => {
+const getAdminByEventId = (EventId, callback) => {
+    const query = ` SELECT admins.Id, admins.Email, admins.Mobile, admins.EventId, admins.createdAt, events.EventName FROM admins JOIN events ON admins.EventId = events.Id WHERE admins.EventId = ?`;
 
-    const query = `SELECT admins.Id, admins.AdminName, admins.Email, admins.Mobile, admins.EventId, admins.createdAt, events.EventName FROM admins JOIN events ON admins.EventId = events.Id WHERE admins.EventId = ? AND admins.Id = ?`;
-
-    db.query(query, [EventId, AdminId], (err, result) => {
-
+    db.query(query, [EventId], (err, result) => {
         if (err) {
             return callback(err, null);
         }
