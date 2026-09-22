@@ -1,4 +1,4 @@
-import AdminProfile from "../../features/auth/pages/AdminProfile";
+import AdminProfile from "../../features/auth/pages/Admin/AdminProfile";
 import { Navbar } from "../Molecules/Navbar";
 import { Footer } from "../Organisms/Footer";
 import { Outlet } from "react-router-dom";

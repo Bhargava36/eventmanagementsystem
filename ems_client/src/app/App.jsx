@@ -64,7 +64,7 @@ function App() {
           </Route>
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['teamlead']} redirectPath="/user/login" />}>
+        <Route element={<ProtectedRoute allowedRoles={['user']} redirectPath="/user/login" />}>
          <Route path="/user" element={<UserSidebar />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<UserDashboard />} />
