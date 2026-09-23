@@ -14,52 +14,6 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-
-const events = [
-  {
-    name: 'Avishkaar Season 1',
-    date: 'Jan 1 - Mar 31, 2023',
-    status: 'Completed',
-    users: '1,240',
-    teams: '210',
-    events: '32',
-  },
-  {
-    name: 'Avishkaar Season 2',
-    date: 'Jan 1 - Mar 31, 2024',
-    status: 'Completed',
-    users: '2,450',
-    teams: '450',
-    events: '48',
-  },
-  {
-    name: 'Avishkaar Season 3',
-    date: 'Jan 1 - Mar 31, 2025',
-    status: 'Active',
-    users: '3,120',
-    teams: '620',
-    events: '62',
-  },
-  {
-    name: 'Avishkaar Season 4',
-    date: 'Jan 1 - Mar 31, 2026',
-    status: 'Upcoming',
-    users: '—',
-    teams: '—',
-    events: '—',
-  },
-];
-
-const currentEvent = {
-  name: 'Avishkaar Season 3',
-  date: 'Jan 1 - Mar 31, 2025',
-  stats: [
-    { icon: Users, label: 'Users Registered', value: '3,120' },
-    { icon: UsersRound, label: 'Teams Registered', value: '620' },
-    { icon: UserPlus, label: 'Total Registrations', value: '8,420' },
-  ],
-};
-
 const recentRegistrations = [
   {
     team: 'Code Warriors',
@@ -82,28 +36,48 @@ const recentActivities = [
 ];
 
 function SuperAdminDashboard() {
-  const [usersCount, setUsersCount] = useState([]);
-  const [teamsCount, setTeamsCount] = useState([]);
-  const [eventsCount, setEventsCount] = useState([]);
+  const [usersCount, setUsersCount] = useState(0);
+  // const [teamsCount, setTeamsCount] = useState([]);
+  const [eventsCount, setEventsCount] = useState(0);
+  const [events, setEvents] = useState([]);
 
   useEffect(() => {
     fetchUsersCount();
     // fetchTeamsCount();
     fetchEventsCount();
+    fetchEvents();
   }, []);
 
   const fetchUsersCount = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/members/');
+
+      const response = await fetch(
+        'http://localhost:3000/api/users/count'
+      );
+
       const data = await response.json();
-      setUsersCount(data.teammembers);
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || 'Failed to fetch users count'
+        );
+      }
+
+      console.log('Users Count:', data);
+
+      setUsersCount(data.count || 0);
+
     } catch (error) {
-      console.error('Error fetching users count:', error);
+
+      console.error(
+        'Error fetching users count:',
+        error
+      );
 
     }
   };
 
-  const totalUsers = usersCount?.length || 0;
+  // const totalUsers = usersCount || 0;
 
   // const fetchTeamsCount = async () => {
   //   try {
@@ -120,21 +94,85 @@ function SuperAdminDashboard() {
 
   const fetchEventsCount = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/events/');
+
+      const response = await fetch(
+        'http://localhost:3000/api/events/count'
+      );
+
       const data = await response.json();
-      setEventsCount(data.events);
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || 'Failed to fetch events count'
+        );
+      }
+
+      console.log('Events Count:', data);
+
+      setEventsCount(data.count || 0);
+
     } catch (error) {
-      console.error('Error fetching events count:', error);
+
+      console.error(
+        'Error fetching events count:',
+        error
+      );
 
     }
   };
 
-  const totalEvents = eventsCount.length;
+
+  const fetchEvents = async () => {
+    try {
+
+      const response = await fetch(
+        'http://localhost:3000/api/events/'
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || 'Failed to fetch events'
+        );
+      }
+
+      console.log('Events:', data);
+
+      setEvents(data.events || []);
+
+    } catch (error) {
+
+      console.error(
+        'Error fetching events:',
+        error
+      );
+
+    }
+  };
+
+  const currentEvent = events.find(
+    (event) => event.EventStatus?.toLowerCase() === 'ongoing'
+  );
 
   const stats = [
-    { title: 'Total Users', value: totalUsers, icon: Users},
-    { title: 'Total Teams', value: 35, icon: UsersRound},
-    { title: 'Total Events', value: totalEvents, icon: Calendar, change: '+15.3%'},
+    {
+      title: 'Total Users',
+      value: usersCount,
+      icon: Users,
+    },
+
+    {
+      title: 'Total Teams',
+      value: 35,
+      icon: UsersRound,
+    },
+
+    {
+      title: 'Total Events',
+      value: eventsCount,
+      icon: Calendar,
+    },
   ];
 
   return (
@@ -194,7 +232,7 @@ function SuperAdminDashboard() {
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 dark:text-emerald-500" />
                   </div>
                 </div>
-               
+
               </motion.div>
             );
           })}
@@ -219,140 +257,269 @@ function SuperAdminDashboard() {
             </motion.button>
           </div>
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ amount: 0.15 }}
-            variants={{
-              hidden: {},
-              visible: { transition: { staggerChildren: 0.1 } },
-            }}
-            className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4 sm:gap-5"
-          >
-            {events.map((event, i) => (
-              <motion.div
-                key={i}
-                variants={{
-                  hidden: { opacity: 0, y: 25, scale: 0.97 },
-                  visible: {
-                    opacity: 1,
-                    y: 0,
-                    scale: 1,
-                    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1.0] },
-                  },
-                }}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                className={`p-4 sm:p-6 rounded-xl border transition-all hover:shadow-md ${event.status === 'Active'
-                  ? 'border-emerald-700 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/10'
-                  : 'border-gray-200 dark:border-gray-800'
-                  }`}
-              >
-                <div className="flex items-start justify-between mb-4 gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">
-                      {event.name}
-                    </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {event.date}
-                    </p>
-                  </div>
-                  <span
-                    className={`text-xs px-2 sm:px-3 py-1 rounded-full whitespace-nowrap shrink-0 font-medium ${event.status === 'Active'
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500'
-                      : event.status === 'Upcoming'
-                        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500'
-                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                      }`}
-                  >
-                    {event.status}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-center pt-4 border-t border-gray-200 dark:border-gray-800">
-                  <div>
-                    <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                      {event.users}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Users</p>
-                  </div>
-                  <div>
-                    <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                      {event.teams}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Teams</p>
-                  </div>
-                  <div>
-                    <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                      {event.events}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Events</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
+          {events.length === 0 ? (
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ amount: 0.15 }}
-          transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1.0] }}
-          className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-2">
-            <div>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                {currentEvent.name} – Overview
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                {currentEvent.date}
+            <div className="text-center py-10">
+
+              <Calendar className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No events found
               </p>
-            </div>
-            <span className="text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500 w-fit font-medium">
-              Current Event
-            </span>
-          </div>
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ amount: 0.2 }}
-            variants={{
-              hidden: {},
-              visible: { transition: { staggerChildren: 0.07 } },
-            }}
-            className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-3 gap-3 sm:gap-4"
-          >
-            {currentEvent.stats.map((stat, i) => {
-              const Icon = stat.icon;
-              return (
+            </div>
+
+          ) : (
+
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ amount: 0.15 }}
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.1 } },
+              }}
+              className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4 sm:gap-5"
+            >
+              {events.map((event, i) => (
                 <motion.div
-                  key={i}
+                  key={event.Id || i}
                   variants={{
-                    hidden: { opacity: 0, y: 20, scale: 0.95 },
+                    hidden: { opacity: 0, y: 25, scale: 0.97 },
                     visible: {
                       opacity: 1,
                       y: 0,
                       scale: 1,
-                      transition: { duration: 0.35, ease: 'easeOut' },
+                      transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1.0] },
                     },
                   }}
-                  whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
-                  className="p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 transition-all hover:shadow-md cursor-pointer"
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                  className={`p-4 sm:p-6 rounded-xl border transition-all hover:shadow-md ${event.status === 'Active'
+                    ? 'border-emerald-700 dark:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/10'
+                    : 'border-gray-200 dark:border-gray-800'
+                    }`}
                 >
-                  <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit mb-2">
-                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-700 dark:text-emerald-500" />
+                  <div className="flex items-start justify-between mb-4 gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">
+                        {event.EventName}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {new Date(event.StartDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} {'-'} {new Date(event.EndDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-xs px-2 sm:px-3 py-1 rounded-full whitespace-nowrap shrink-0 font-medium ${event.EventStatus === 'ongoing'
+
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500'
+
+                        : event.EventStatus === 'upcoming'
+
+                          ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500'
+
+                          : event.EventStatus === 'completed'
+
+                            ? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+
+                            : event.EventStatus === 'cancelled'
+
+                              ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-500'
+
+                              : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                        }`}
+                    >
+
+                      {event.EventStatus}
+
+                    </span>
+
                   </div>
-                  <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                    {stat.value}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{stat.label}</p>
+                  <div className="grid grid-cols-2 gap-2 text-center pt-4 border-t border-gray-200 dark:border-gray-800">
+
+                    <div>
+                      <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                        {/* {event.UserCount} */} {'-'}
+                      </p>
+
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Users
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                        {/* {event.TeamCount} */} {'-'}
+                      </p>
+
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Teams
+                      </p>
+                    </div>
+
+                  </div>
                 </motion.div>
-              );
-            })}
-          </motion.div>
+              ))}
+            </motion.div>
+          )}
         </motion.div>
 
+        {currentEvent ? (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ amount: 0.15 }}
+            transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1.0] }}
+            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5 gap-2">
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  {currentEvent.EventName} – Overview
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                  {new Date(currentEvent.StartDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} - {new Date(currentEvent.EndDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                </p>
+              </div>
+              <span className="text-xs px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500 w-fit font-medium">
+                Current Event
+              </span>
+            </div>
+
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ amount: 0.2 }}
+              variants={{
+                hidden: {},
+                visible: { transition: { staggerChildren: 0.07 } },
+              }}
+              className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-3 gap-3 sm:gap-4"
+            >
+              <motion.div
+                variants={{
+                  hidden: {
+                    opacity: 0,
+                    y: 20,
+                    scale: 0.95
+                  },
+
+                  visible: {
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    transition: {
+                      duration: 0.35,
+                      ease: 'easeOut'
+                    }
+                  }
+                }}
+
+                className="p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+              >
+
+                <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit mb-2">
+
+                  <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-700 dark:text-emerald-500" />
+
+                </div>
+
+                <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                  {currentEvent.UserCount || 0}
+                </p>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Users Registered
+                </p>
+
+              </motion.div>
+              <motion.div
+                variants={{
+                  hidden: {
+                    opacity: 0,
+                    y: 20,
+                    scale: 0.95
+                  },
+
+                  visible: {
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    transition: {
+                      duration: 0.35,
+                      ease: 'easeOut'
+                    }
+                  }
+                }}
+
+                className="p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+              >
+
+                <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit mb-2">
+
+                  <UsersRound className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-700 dark:text-emerald-500" />
+
+                </div>
+
+                <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                  {currentEvent.TeamCount || 0}
+                </p>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Teams Registered
+                </p>
+
+              </motion.div>
+              <motion.div
+                variants={{
+                  hidden: {
+                    opacity: 0,
+                    y: 20,
+                    scale: 0.95
+                  },
+
+                  visible: {
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    transition: {
+                      duration: 0.35,
+                      ease: 'easeOut'
+                    }
+                  }
+                }}
+
+                className="p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+              >
+
+                <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit mb-2">
+
+                  <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-700 dark:text-emerald-500" />
+
+                </div>
+
+                <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                  {currentEvent.EventType || '—'}
+                </p>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Event Type
+                </p>
+
+              </motion.div>
+
+            </motion.div>
+          </motion.div>
+        ) : (
+          <div className="bg-white dark:bg-gray-950 rounded-xl p-6 border border-gray-200 dark:border-gray-800 text-center">
+
+            <Calendar className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No current event
+            </p>
+
+          </div>
+        )}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <motion.div
             initial={{ opacity: 0, x: -25 }}
