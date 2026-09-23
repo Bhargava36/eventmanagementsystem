@@ -5,18 +5,18 @@ import {
   Phone,
   MapPin,
   Calendar,
-  User,
-  AtSign,
   Globe,
+  AtSign,
   Shield,
-  CheckCircle2,
-  Clock,
   Pencil,
   BadgeCheck,
   Crown,
 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 function SuperAdminProfile() {
+
+  const { id } = useParams();
   const [profile, setProfile] = useState(null);
   const [showEdit, setShowEdit] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,29 +27,33 @@ function SuperAdminProfile() {
   });
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (id) {
+      fetchProfile();
+    }
+  }, [id]);
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch(
-        'http://localhost:3000/api/super_admin/profile/7'
-      );
-
+      const response = await fetch(`http://localhost:3000/api/super_admin/profile/${id}`);
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch profile');
       }
+      const admin = data.admin;
 
-      setProfile(data.admin);
+      if (!admin) {
+        throw new Error('Super Admin data not found');
+      }
+
+      setProfile(admin);
       setFormData({
-        UserName: data.admin.UserName || '',
-        Email: data.admin.Email || '',
-        PhoneNumber: data.admin.PhoneNumber || '',
-        created_at: data.admin.created_at || '',
+        UserName: admin.UserName || '',
+        Email: admin.Email || '',
+        PhoneNumber: admin.PhoneNumber || '',
+        created_at: admin.created_at || '',
       });
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error fetching profile:', error);
     }
   };
@@ -74,27 +78,26 @@ function SuperAdminProfile() {
 
   const handleSave = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/super_admin/profile/${profile.Id}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        }
+      const response = await fetch(`http://localhost:3000/api/super_admin/profile/${profile.Id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          UserName: formData.UserName,
+          Email: formData.Email,
+          PhoneNumber: formData.PhoneNumber
+        })
+      }
       );
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Profile update failed');
       }
-
       await fetchProfile();
-
       setShowEdit(false);
-    } catch (error) {
+    }
+    catch (error) {
       console.error('Error updating profile:', error);
     }
   };
@@ -138,7 +141,7 @@ function SuperAdminProfile() {
     {
       icon: Calendar,
       label: 'Joined On',
-      value: new Date(profile.created_at).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})
+      value: new Date(profile.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
     }
 
   ];
@@ -227,7 +230,7 @@ function SuperAdminProfile() {
 
                 <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
                   <Calendar className="w-4 h-4 text-emerald-700 dark:text-emerald-500 shrink-0" />
-                  <span>{new Date(profile.created_at).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}</span>
+                  <span>{new Date(profile.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</span>
                 </div>
 
               </div>
