@@ -21,8 +21,10 @@ import UserSidebar from '../components/Organisms/UserSidebar';
 import UserRegister from '../features/auth/pages/Users/UserRegister';
 import UserLogin from '../features/auth/pages/Users/UserLogin';
 import UserDashboard from '../features/auth/pages/Users/UserDashboard';
+import ProblemStatementsPage from '../features/auth/pages/Users/ProblemStatements';
 import EventRedirectPage from '../features/auth/pages/Users/EventRedirectPage';
 import MyTeams from '../features/auth/pages/Users/MyTeams';
+import UserProfile from '../features/auth/pages/Users/UserProfile';
 import ProtectedRoute from '../components/Organisms/ProtectedRoute';
 import Unauthorized from '../components/ui/Unauthorized';
 
@@ -51,6 +53,7 @@ function App() {
             <Route path="events" element={<EventsDashboard />} />
             <Route path="profile" element={<SuperAdminProfile />} />
             <Route path="eventinfo/:id" element={<EventInfo />} />
+            <Route path="profile/:id" element={<SuperAdminProfile />} />
           </Route>
         </Route>
 
@@ -70,6 +73,8 @@ function App() {
             <Route path="dashboard" element={<UserDashboard />} />
             <Route path="teams" element={<MyTeams />} />
             <Route path="events" element={<EventRedirectPage />} />
+            <Route path="problem-statements" element={<ProblemStatementsPage />} />
+            <Route path="profile" element={<UserProfile/>} />
           </Route>
         </Route>
 
