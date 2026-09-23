@@ -8,8 +8,9 @@ require('dotenv').config();
     database: process.env.DB_NAME,
     port: Number(process.env.DB_PORT),
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    connectionLimit: 20,
+    queueLimit: 0,
+    connectTimeout: 10000, // 10 seconds
 });
 
 const migrationQueries = [

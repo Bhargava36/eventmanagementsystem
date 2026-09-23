@@ -1,4 +1,3 @@
-import AdminProfile from "../../features/auth/pages/Admin/AdminProfile";
 import { Navbar } from "../Molecules/Navbar";
 import { Footer } from "../Organisms/Footer";
 import { Outlet } from "react-router-dom";
@@ -11,7 +10,6 @@ function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
-      <AdminProfile />
     </div>
   );
 }
