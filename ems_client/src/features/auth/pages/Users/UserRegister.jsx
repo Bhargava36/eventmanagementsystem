@@ -73,9 +73,9 @@ function UserRegister() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-black">
-      <div className="flex flex-1 flex-col lg:flex-row overflow-hidden px-5">
-        <div className="relative lg:w-1/2 flex flex-col overflow-hidden bg-black p-6 lg:p-8 xl:p-10 border-r border-gray-900">
+    <div className="min-h-screen flex flex-col bg-[#edf3f0] text-slate-900 dark:bg-black dark:text-white">
+      <div className="flex flex-1 flex-col lg:flex-row overflow-hidden px-5 py-6 lg:px-8 xl:px-10">
+        <div className="relative lg:w-1/2 flex flex-col overflow-hidden bg-[#edf3f0] p-6 lg:p-8 xl:p-10 border-r border-slate-200 dark:bg-black dark:border-gray-900">
           <div className="relative z-10 mb-4 flex items-center gap-3 text-lg font-semibold lg:mb-8">
             <div className="flex h-10 w-10 items-center justify-center">
               {logoElement}
@@ -89,67 +89,67 @@ function UserRegister() {
           </div>
 
           <div className="relative z-10 mt-8 shrink-0 lg:mt-10">
-    <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-white leading-tight mb-3">
-      Join the Next <span className="text-emerald-500">Generation of Hackers</span>
+    <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-slate-900 leading-tight mb-3 dark:text-white">
+      Join the Next <span className="text-emerald-700 dark:text-emerald-500">Generation of Hackers</span>
     </h2>
-    <p className="text-gray-400 text-sm lg:text-base max-w-lg">
+    <p className="text-slate-600 text-sm lg:text-base max-w-lg dark:text-gray-400">
       Create your participant account to discover hackathons, collaborate with top talent, and build the future.
     </p>
   </div>
 
   <div className="relative z-10 flex-1 w-full flex flex-col justify-center gap-8 lg:gap-14 min-h-0">
     <div className="flex gap-4 items-start">
-      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-900/60 rounded-xl flex items-center justify-center shrink-0 border border-gray-800">
-        <Compass className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-500" />
+      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white/80 rounded-xl flex items-center justify-center shrink-0 border border-slate-200 shadow-sm dark:bg-gray-900/60 dark:border-gray-800">
+        <Compass className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-700 dark:text-emerald-500" />
       </div>
       <div>
-        <h3 className="text-base lg:text-lg font-semibold text-white mb-0.5">Discover Hackathons</h3>
-        <p className="text-gray-400 text-xs lg:text-sm">Find and register for top tech events, workshops, and coding competitions worldwide.</p>
+        <h3 className="text-base lg:text-lg font-semibold text-slate-900 mb-0.5 dark:text-white">Discover Hackathons</h3>
+        <p className="text-slate-600 text-xs lg:text-sm dark:text-gray-400">Find and register for top tech events, workshops, and coding competitions worldwide.</p>
       </div>
     </div>
 
     <div className="flex gap-4 items-start">
-      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-900/60 rounded-xl flex items-center justify-center shrink-0 border border-gray-800">
-        <Users className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-500" />
+      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white/80 rounded-xl flex items-center justify-center shrink-0 border border-slate-200 shadow-sm dark:bg-gray-900/60 dark:border-gray-800">
+        <Users className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-700 dark:text-emerald-500" />
       </div>
       <div>
-        <h3 className="text-base lg:text-lg font-semibold text-white mb-0.5">Form Your Squad</h3>
-        <p className="text-gray-400 text-xs lg:text-sm">Connect with developers, designers, and creators to build your dream team seamlessly.</p>
+        <h3 className="text-base lg:text-lg font-semibold text-slate-900 mb-0.5 dark:text-white">Form Your Squad</h3>
+        <p className="text-slate-600 text-xs lg:text-sm dark:text-gray-400">Connect with developers, designers, and creators to build your dream team seamlessly.</p>
       </div>
     </div>
 
     <div className="flex gap-4 items-start">
-      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-900/60 rounded-xl flex items-center justify-center shrink-0 border border-gray-800">
-        <Code className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-500" />
+      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white/80 rounded-xl flex items-center justify-center shrink-0 border border-slate-200 shadow-sm dark:bg-gray-900/60 dark:border-gray-800">
+        <Code className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-700 dark:text-emerald-500" />
       </div>
       <div>
-        <h3 className="text-base lg:text-lg font-semibold text-white mb-0.5">Manage Submissions</h3>
-        <p className="text-gray-400 text-xs lg:text-sm">Submit your projects, track your judging status, and organize your event workflows.</p>
+        <h3 className="text-base lg:text-lg font-semibold text-slate-900 mb-0.5 dark:text-white">Manage Submissions</h3>
+        <p className="text-slate-600 text-xs lg:text-sm dark:text-gray-400">Submit your projects, track your judging status, and organize your event workflows.</p>
       </div>
     </div>
 
     <div className="flex gap-4 items-start">
-      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gray-900/60 rounded-xl flex items-center justify-center shrink-0 border border-gray-800">
-        <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-500" />
+      <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white/80 rounded-xl flex items-center justify-center shrink-0 border border-slate-200 shadow-sm dark:bg-gray-900/60 dark:border-gray-800">
+        <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-emerald-700 dark:text-emerald-500" />
       </div>
       <div>
-        <h3 className="text-base lg:text-lg font-semibold text-white mb-0.5">Showcase Skills</h3>
-        <p className="text-gray-400 text-xs lg:text-sm">Build your digital portfolio, earn badges, and climb the global hacker leaderboard.</p>
+        <h3 className="text-base lg:text-lg font-semibold text-slate-900 mb-0.5 dark:text-white">Showcase Skills</h3>
+        <p className="text-slate-600 text-xs lg:text-sm dark:text-gray-400">Build your digital portfolio, earn badges, and climb the global hacker leaderboard.</p>
       </div>
     </div>  
       </div>
 
         </div>
 
-        <div className="lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 py-10 lg:py-8 bg-[#020303] overflow-y-auto">
-          <div className="max-w-2xl w-full mx-auto rounded-2xl border border-emerald-500/80 bg-black/70 p-6 sm:p-8 lg:p-10">
+        <div className="lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 py-10 lg:py-8 bg-[#edf3f0] dark:bg-[#020303] overflow-y-auto">
+          <div className="max-w-2xl w-full mx-auto rounded-2xl border border-emerald-700/30 bg-white/90 p-6 shadow-[0_10px_30px_rgba(16,185,129,0.08)] dark:border-emerald-500/80 dark:bg-black/70 dark:shadow-none sm:p-8 lg:p-10">
             <div className="mb-10 text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start gap-3 mb-3">
-                <div className="bg-emerald-500/10 p-3 rounded-full">
-                  <UserPlus className="w-7 h-7 text-emerald-500" />
+                <div className="bg-emerald-100 p-3 rounded-full border border-emerald-200 dark:border-emerald-800/60 dark:bg-emerald-500/10">
+                  <UserPlus className="w-7 h-7 text-emerald-700 dark:text-emerald-500" />
                 </div>
-                <h2 className="text-3xl font-bold text-white">
-                  User <span className="text-emerald-500">Register</span>
+                <h2 className="text-3xl font-bold text-slate-900 dark:text-white">
+                  User <span className="text-emerald-700 dark:text-emerald-500">Register</span>
                 </h2>
               </div>
               <p className="text-gray-400 text-sm">
@@ -157,7 +157,7 @@ function UserRegister() {
               </p>
             </div>
 
-            <form onSubmit={handleRegister} className="space-y-5 lg:space-y-6 [&_label]:text-gray-300 [&_input]:!border-gray-700 [&_input]:!bg-[#0b1118] [&_input]:!text-white [&_input]:placeholder-gray-500 [&_svg]:text-gray-300">
+            <form onSubmit={handleRegister} className="space-y-5 lg:space-y-6 [&_label]:text-slate-700 [&_input]:!border-slate-200 [&_input]:!bg-white [&_input]:!text-slate-900 [&_input]:placeholder-slate-400 [&_svg]:text-slate-600 dark:[&_label]:text-gray-300 dark:[&_input]:!border-gray-700 dark:[&_input]:!bg-[#0b1118] dark:[&_input]:!text-white dark:[&_input]:placeholder-gray-500 dark:[&_svg]:text-gray-300">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 <div className="flex items-center gap-3 sm:w-36 shrink-0 pl-1">
                   <User className="w-5 h-5 text-gray-600 dark:text-gray-400" strokeWidth={1.5} />
@@ -319,7 +319,7 @@ function UserRegister() {
               <div className="pt-4">
                 <button
                   type="submit"
-                  className="w-full bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-700/20 dark:shadow-emerald-500/20"
+                  className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-700/20 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:shadow-emerald-500/20"
                 >
                   <LogIn className="w-5 h-5" />
                   <span>Register</span>
@@ -328,7 +328,7 @@ function UserRegister() {
 
               <div className="text-center mt-6">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Already have an account? <a href="/user/login" className="text-emerald-700 dark:text-emerald-500 font-semibold hover:underline">Login</a>
+                  Already have an account? <a href="/user/login" className="text-emerald-700 font-semibold hover:underline dark:text-emerald-500">Login</a>
                 </p>
               </div>
             </form>
