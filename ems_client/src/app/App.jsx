@@ -17,6 +17,7 @@ import TeamsDashboard from '../features/auth/pages/Admin/TeamsDashboard';
 import TeamDetails from '../features/auth/pages/Admin/TeamDetails';
 import AdminDashboard from '../features/auth/pages/Admin/AdminDashboard';
 import AdminProfile from '../features/auth/pages/Admin/AdminProfile';
+import CoreTeam from '../features/auth/pages/Admin/CoreTeam';
 import UserSidebar from '../components/Organisms/UserSidebar';
 import UserRegister from '../features/auth/pages/Users/UserRegister';
 import UserLogin from '../features/auth/pages/Users/UserLogin';
@@ -61,6 +62,7 @@ function App() {
           <Route path="/admin" element={<AdminSidebar />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="core-team" element={<CoreTeam />} />
             <Route path="teams" element={<TeamsDashboard />} />
             <Route path="teams/:id" element={<TeamDetails />} />
             <Route path="profile/:id" element={<AdminProfile />} />

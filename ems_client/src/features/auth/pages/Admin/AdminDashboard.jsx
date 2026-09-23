@@ -28,9 +28,9 @@ const assignedEvent = {
   status: 'Active',
   progress: 75,
   subMetrics: [
-    { label: 'Technical Tracks', value: '12' },
-    { label: 'Workshops', value: '8' },
-    { label: 'Mentors Assigned', value: '45' },
+    { label: 'No. of Student Coordinators', value: '12' },
+    { label: 'No. of Faculty Coordinators', value: '8' },
+    { label: 'No. of Volunteers', value: '45' },
   ]
 };
 

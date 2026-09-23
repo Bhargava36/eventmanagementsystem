@@ -109,11 +109,6 @@ function MyTeams() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end sm:justify-center">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-700/20 bg-slate-100 text-slate-600 transition-colors group-hover:border-emerald-700/20 group-hover:text-emerald-700 dark:border-emerald-500/30 dark:bg-slate-950 dark:text-slate-300 dark:group-hover:border-emerald-500/30 dark:group-hover:text-emerald-500">
-                      <ChevronRight className="h-4 w-4" />
-                    </div>
-                  </div>
                 </div>
               </button>
             );

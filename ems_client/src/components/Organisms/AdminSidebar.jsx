@@ -7,6 +7,7 @@ import useToast from '../../Hooks/useToast';
 import {
   LayoutDashboard,
   Users,
+  UsersRound,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -60,6 +61,7 @@ const SidebarContent = ({
 
   const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', badge: null, end: false },
+  { name: 'Core Team', icon: UsersRound, path: '/admin/core-team', badge: null, end: false },
   { name: 'Teams', icon: Users, path: '/admin/teams', badge: null, end: false },
   { name: 'Profile', icon: CircleUserRound, path: profilePath, badge: null, end: false },
 ];
@@ -116,11 +118,7 @@ const SidebarContent = ({
             </p>
           </motion.div>
         )}
-        {canShowText && (
-          <div className={`ml-auto ${isMobile ? 'mr-10' : ''} rounded-full bg-emerald-50 p-0.5 shadow-sm dark:bg-emerald-950/50`}>
-            <ThemeToggle />
-          </div>
-        )}
+       
       </div>
 
       <div className="border-t border-gray-200 dark:border-[#1A2440] mb-4"></div>
