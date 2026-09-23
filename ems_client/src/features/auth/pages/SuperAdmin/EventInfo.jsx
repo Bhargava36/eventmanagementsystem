@@ -92,30 +92,28 @@ function EventInfo() {
                 );
             }
 
-            const eventData = data.events[0];
-
-            setEvent(eventData);
+            setEvent(data.event);
 
             setFormData({
-                EventName: eventData.EventName || '',
-                Description: eventData.Description || '',
-                Facilities: eventData.Facilities || '',
-                Requirements: eventData.Requirements || '',
-                TeamSize: eventData.TeamSize || '',
-                StartDate: eventData.StartDate || '',
-                EndDate: eventData.EndDate || '',
-                RegistrationStart: eventData.RegistrationStart || '',
-                RegistrationEnd: eventData.RegistrationEnd || '',
-                Location: eventData.Location || '',
-                EventType: eventData.EventType || '',
-                EventStatus: eventData.EventStatus || '',
-                HackathonMode: eventData.HackathonMode || '',
-                PrimaryColor: eventData.PrimaryColor || '',
-                SecondaryColor: eventData.SecondaryColor || '',
-                TertiaryColor: eventData.TertiaryColor || '',
-                PrimaryTextColor: eventData.PrimaryTextColor || '',
-                SecondaryTextColor: eventData.SecondaryTextColor || '',
-                TertiaryTextColor: eventData.TertiaryTextColor || '',
+                EventName: data.event.EventName || '',
+                Description: data.event.Description || '',
+                Facilities: data.event.Facilities || '',
+                Requirements: data.event.Requirements || '',
+                TeamSize: data.event.TeamSize || '',
+                StartDate: data.event.StartDate || '',
+                EndDate: data.event.EndDate || '',
+                RegistrationStart: data.event.RegistrationStart || '',
+                RegistrationEnd: data.event.RegistrationEnd || '',
+                Location: data.event.Location || '',
+                EventType: data.event.EventType || '',
+                EventStatus: data.event.EventStatus || '',
+                HackathonMode: data.event.HackathonMode || '',
+                PrimaryColor: data.event.PrimaryColor || '',
+                SecondaryColor: data.event.SecondaryColor || '',
+                TertiaryColor: data.event.TertiaryColor || '',
+                PrimaryTextColor: data.event.PrimaryTextColor || '',
+                SecondaryTextColor: data.event.SecondaryTextColor || '',
+                TertiaryTextColor: data.event.TertiaryTextColor || '',
             });
         } catch (error) {
             console.error('Fetch event error:', error);
