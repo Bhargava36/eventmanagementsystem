@@ -44,14 +44,13 @@ const getAdminProfile = (id, callback) => {
     });
 };
 
-const updateAdmin = (id, UserName, Email, PhoneNumber, created_at, callback) => {
-    const query = `UPDATE superadmin SET UserName = ?, Email = ?, PhoneNumber = ?, created_at = ? WHERE Id = ?`;
-    db.query(query, [UserName, Email, PhoneNumber, created_at, id], (err, result) => {
+const updateAdmin = ( id, UserName, Email, PhoneNumber, callback) => {
+    const query = ` UPDATE superadmin SET UserName = ?, Email = ?, PhoneNumber = ? WHERE Id = ?`;
+    db.query( query, [ UserName, Email, PhoneNumber, id ], (err, result) => {
             if (err) {
                 return callback(err, null);
-            } else {
-                return callback(null, result);
             }
+            return callback(null, result);
         }
     );
 };
@@ -61,4 +60,4 @@ module.exports = {
     loginAdmin,
     getAdminProfile,
     updateAdmin
-};
+};  
