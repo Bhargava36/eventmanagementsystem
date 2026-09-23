@@ -47,26 +47,49 @@ const getAllEvents = (req, res) => {
 };
 
 const getEventById = (req, res) => {
-    const id = req.params.id;
+
+    const { id } = req.params;
+
     eventsService.getEventById(id, (err, result) => {
-        if(err) {
+
+        if (err) {
+
+            console.error("Get Event By ID Error:", err);
+
             return res.status(500).json({
-                message: "Failed to get events by id",
-                error: err
+                message: "Failed to get event by id",
+                error: err.message
             });
         }
 
-        if(result.length === 0) {
+        if (result.length === 0) {
+
             return res.status(404).json({
                 message: "Event not found"
             });
         }
 
         return res.status(200).json({
-            message: "Events fetched successfully",
-            events: result
+            message: "Event fetched successfully",
+            event: result[0]
         });
     });
+};
+
+const getEventCount = (req, res) => {
+  eventsService.getEventCount((err, result) => {
+    if (err) {
+      return res.status(500).json({
+        message: 'Failed to get event count',
+        error: err.message
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Event count fetched successfully',
+      count: result.eventCount
+    });
+  });
 };
 
 const updateEvent = (req, res) => {
@@ -122,6 +145,7 @@ module.exports = {
     createEvent,
     getAllEvents,
     getEventById,
+    getEventCount,
     updateEvent,
     deleteEvent
 };
