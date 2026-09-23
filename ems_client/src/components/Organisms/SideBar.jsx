@@ -40,6 +40,7 @@ const SidebarContent = ({
   const [showText, setShowText] = useState(!collapsed);
   const navigate = useNavigate();
   const [count, setCount] = useState([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchEventCount();
@@ -56,13 +57,13 @@ const SidebarContent = ({
   };
 
   const totalEvents = count.length;
-
+  const profilePath = user?.Id ? `/sidebar/profile/${user.Id}` : '/sidebar';
   const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
   { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: totalEvents, dot: false },
   { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: '4', dot: true },
   { name: 'Feedback', icon: MessageCircleQuestion, path: '/sidebar/feedback', badge: null },
-  { name: 'Profile', icon: CircleUserRound, path: '/sidebar/profile', badge: null },
+  { name: 'Profile', icon: CircleUserRound, path: profilePath, badge: null },
 ];
 
   useEffect(() => {
