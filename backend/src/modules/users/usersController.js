@@ -95,7 +95,7 @@ const getAllTeamLead = (req, res) => {
         }
 
         return res.status(200).json({
-            message: "teamleads fetched successfully",
+            message: "users fetched successfully",
             events: result
         });
     });
@@ -124,6 +124,24 @@ const getTeamLeadById = (req, res) => {
     });
 };
 
+const getUserCount = (req, res) => {
+
+    leadService.getUserCount((err, result) => {
+
+        if (err) {
+            return res.status(500).json({
+                message: 'Failed to get user count',
+                error: err.message
+            });
+        }
+
+        return res.status(200).json({
+            message: 'User count fetched successfully',
+            count: result.userCount
+        });
+    });
+};
+
 const updateTeamLead = (req, res) => {
     const { id } = req.params;
     const { LeadName, Email, College, Location, State } = req.body;
@@ -148,5 +166,6 @@ module.exports = {
     loginTeamLead,
     getAllTeamLead,
     getTeamLeadById,
+    getUserCount,
     updateTeamLead
 };

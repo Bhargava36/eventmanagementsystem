@@ -57,6 +57,16 @@ const getTeamLeadById = (id, callback) => {
     });
 };
 
+const getUserCount = (callback) => {
+    const query = ` SELECT COUNT(*) AS userCount FROM users `;
+    db.query(query, (err, result) => {
+        if (err) {
+            return callback(err, null);
+        }
+        return callback(null, result[0]);
+    });
+};
+
 const updateTeamLead = (id, UserName, Email,College, Location, State, callback) => {
     const query = `UPDATE users SET UserName = ?, Email = ?, College = ?, Location = ?, State = ? WHERE Id = ?`;
     db.query(query, [UserName, Email, College, Location, State, id], (err, result) => {
@@ -72,6 +82,7 @@ module.exports = {
     createTeamLead,
     loginTeamLead,
     getAllTeamLead,
+    getUserCount,
     getTeamLeadById,
     updateTeamLead
 };
