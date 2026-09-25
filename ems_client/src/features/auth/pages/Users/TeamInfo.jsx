@@ -1,4 +1,5 @@
 import {
+    ArrowLeft,
     Users,
     Trophy,
     CalendarDays,
@@ -10,6 +11,7 @@ import {
     Gift,
 }
 from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 
 const teamMembers = [
@@ -86,11 +88,22 @@ const prizeDetails = [
 ]
 
 function TeamInfo() {
+    const navigate = useNavigate();
+
     return(
-        <div className="min-h-screen w-full bg-slate-100 p-3 sm:p-4 md:p-6 dark:bg-black">
+        <div className="min-h-screen w-full bg-slate-100 p-3 text-slate-900 sm:p-4 md:p-6 dark:bg-black dark:text-white">
+            <button
+                type="button"
+                onClick={() => navigate('/user/teams')}
+                className="mb-4 inline-flex cursor-pointer items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-500"
+            >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Teams
+            </button>
+
              <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
                 <div className="lg:col-span-2 min-w-0">
-                    <div className="border border-gray-200 rounded-xl bg-white p-4 sm:p-5 dark:bg-black dark:border-gray-800 shadow-sm dark:bg-gray-950">
+                    <div className="border border-emerald-700/20 rounded-xl bg-white p-4 sm:p-5 dark:border-emerald-500/30 dark:bg-gray-950 shadow-sm">
                         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                             <div className="flex items-center gap-3 sm:gap-5 min-w-0">
                                 <div className="bg-emerald-100 dark:bg-emerald-500/20 p-5 sm:p-7 rounded-lg shrink-0">
@@ -125,7 +138,7 @@ function TeamInfo() {
                         </div>
                     </div>
 
-                    <div className="border border-gray-200 rounded-xl bg-white p-4 sm:p-5 dark:bg-black dark:border-gray-800 shadow-sm dark:bg-gray-950 mt-3">
+                    <div className="border border-emerald-700/20 rounded-xl bg-white p-4 sm:p-5 dark:border-emerald-500/30 dark:bg-gray-950 shadow-sm mt-3">
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
                             <div className="flex gap-2 min-w-0">
                                 <div className="shrink-0">
@@ -171,15 +184,15 @@ function TeamInfo() {
                         </div>
                     </div>
 
-                    <div className="border border-gray-200 rounded-xl bg-white p-4 sm:p-5 dark:bg-black dark:border-gray-800 shadow-sm dark:bg-gray-950 mt-5">
+                    <div className="border border-emerald-700/20 rounded-xl bg-white p-4 sm:p-5 dark:border-emerald-500/30 dark:bg-gray-950 shadow-sm mt-5">
                         <div className="flex gap-3">
                             <Stamp className="w-7 h-7 shrink-0"/>
                             <h1 className="font-bold text-lg">Problem Statement</h1>
                         </div>
 
-                        <div className="border border-blue-100 rounded-xl bg-blue-50 p-4 sm:p-5 dark:bg-black dark:border-blue-100/20 shadow-sm dark:bg-blue-500/10 mt-3">
+                        <div className="border border-emerald-700/20 rounded-xl bg-blue-50 p-4 sm:p-5 dark:bg-blue-500/10 dark:border-emerald-500/30 shadow-sm mt-3">
                             <h3 className="text-blue-400 font-medium">Problem Statement Title</h3>
-                            <h1 className="font-bold text-lg ">
+                                    <h1 className="font-bold text-lg dark:text-white">
                                 Smart Waste Management System for Smart Cities
                             </h1>
                             <p className="text-slate-500 dark:text-slate-400 pt-2 ">
@@ -193,7 +206,7 @@ function TeamInfo() {
                         </div>
                     </div>
 
-                    <div className="border border-gray-200 rounded-xl bg-slate-50 p-4 sm:p-5 dark:bg-black dark:border-gray-800 shadow-sm dark:bg-gray-950 mt-5">
+                    <div className="border border-emerald-700/20 rounded-xl bg-slate-50 p-4 sm:p-5 dark:bg-gray-950 dark:border-emerald-500/30 shadow-sm mt-5">
                         <div className="flex gap-3">
                             <Users className="w-7 h-7 shrink-0"/>
                             <h1 className="font-bold text-lg">Team Members</h1>
@@ -203,7 +216,7 @@ function TeamInfo() {
                             {teamMembers.map((member,i) =>(
                                 <div
                                     key={i}
-                                    className="rounded-xl border border-slate-200 bg-white p-4 text-center dark:bg-black dark:border-gray-800 shadow-sm dark:bg-gray-950"
+                                    className="rounded-xl border border-emerald-700/20 bg-white p-4 text-center dark:bg-gray-950 dark:border-emerald-500/30 shadow-sm"
                                 >
                                     <div className="w-10 h-10 flex items-center justify-center rounded-full font-semibold bg-violet-200 text-violet-400 p-2 mx-auto dark:bg-violet-500/20">
                                         {member.initial}
@@ -229,8 +242,8 @@ function TeamInfo() {
 
                 {/*right side part*/}
                 <div className="min-w-0">
-                    <div className="border border-gray-200 rounded-xl bg-white p-4 sm:p-5 dark:bg-black dark:border-gray-800 shadow-sm dark:bg-gray-950 h-fit">
-                        <div className="flex justify-between items-center bg-blue-950 rounded-xl gap-3">
+                    <div className="border border-emerald-700/20 rounded-xl bg-white p-4 sm:p-5 dark:border-emerald-500/30 dark:bg-gray-950 shadow-sm h-fit">
+                        <div className="mb-5 flex justify-between items-center bg-blue-950 rounded-xl gap-3">
                             <div className="p-3 min-w-0">
                                 <h1 className="text-white font-bold text-lg break-words">
                                     Innovation Conclave <span className="text-lime-400">2026</span>
@@ -275,7 +288,7 @@ function TeamInfo() {
                         </div>
                     </div>
 
-                    <div className="border border-gray-200 rounded-xl bg-white p-4 sm:p-5 dark:bg-black dark:border-gray-800 shadow-sm dark:bg-gray-950 mt-3">
+                    <div className="border border-emerald-700/20 rounded-xl bg-white p-4 sm:p-5 dark:border-emerald-500/30 dark:bg-gray-950 shadow-sm mt-3">
                         <div className="flex gap-2">
                             <span>
                                 <Trophy className="text-yellow-500 w-6 h-6 fill-yellow-300" />
@@ -298,7 +311,7 @@ function TeamInfo() {
                         </div>
                     </div>
 
-                    <div className="border border-gray-200 rounded-xl bg-white p-4 sm:p-5 dark:bg-black dark:border-gray-800 shadow-sm dark:bg-gray-950 mt-3">
+                    <div className="border border-emerald-700/20 rounded-xl bg-white p-4 sm:p-5 dark:border-emerald-500/30 dark:bg-gray-950 shadow-sm mt-3">
                         <div className="flex gap-2">
                             <Gift className="shrink-0"/>
                             <span className="font-semibold text-lg">Prize Details</span>

@@ -25,6 +25,7 @@ import UserDashboard from '../features/auth/pages/Users/UserDashboard';
 import ProblemStatementsPage from '../features/auth/pages/Users/ProblemStatements';
 import EventRedirectPage from '../features/auth/pages/Users/EventRedirectPage';
 import MyTeams from '../features/auth/pages/Users/MyTeams';
+import TeamInfo from '../features/auth/pages/Users/TeamInfo';
 import UserProfile from '../features/auth/pages/Users/UserProfile';
 import ProtectedRoute from '../components/Organisms/ProtectedRoute';
 import Unauthorized from '../components/ui/Unauthorized';
@@ -74,7 +75,8 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<UserDashboard />} />
             <Route path="teams" element={<MyTeams />} />
-            <Route path="events" element={<EventRedirectPage />} />
+            <Route path="teamInfo" element={<TeamInfo />} />
+            <Route path="events/:id" element={<EventRedirectPage />} />
             <Route path="problem-statements" element={<ProblemStatementsPage />} />
             <Route path="profile" element={<UserProfile/>} />
           </Route>
