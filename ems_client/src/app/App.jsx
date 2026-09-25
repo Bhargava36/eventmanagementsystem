@@ -78,7 +78,7 @@ function App() {
             <Route path="teamInfo" element={<TeamInfo />} />
             <Route path="events/:id" element={<EventRedirectPage />} />
             <Route path="problem-statements" element={<ProblemStatementsPage />} />
-            <Route path="profile" element={<UserProfile/>} />
+            <Route path="profile/:id" element={<UserProfile/>} />
           </Route>
         </Route>
 
