@@ -5,13 +5,18 @@ import {
   UsersRound,
   CalendarDays,
   Clock,
+  Trophy,
   ArrowRight,
   CheckCircle2,
   AlertCircle,
   Activity,
   ClipboardList,
-  CheckSquare
+  CheckSquare,
+  Plus,
+  X,
+  Trash2
 } from 'lucide-react';
+import { useState } from 'react';
 
 
 
@@ -51,13 +56,44 @@ const recentActivities = [
 ];
 
 function AdminDashboard() {
+  const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
+  const [prizes, setPrizes] = useState([{ name: '', amount: '' }]);
+  const [declaredPrizes, setDeclaredPrizes] = useState([]);
+
+  function handlePrizeChange(index, field, value) {
+    setPrizes((currentPrizes) => currentPrizes.map((prize, prizeIndex) => (
+      prizeIndex === index ? { ...prize, [field]: value } : prize
+    )));
+  }
+
+  function addPrize() {
+    setPrizes((currentPrizes) => [...currentPrizes, { name: '', amount: '' }]);
+  }
+
+  function handleDeclarePrizes(event) {
+    event.preventDefault();
+    setDeclaredPrizes(prizes);
+    setPrizes([{ name: '', amount: '' }]);
+    setIsPrizeModalOpen(false);
+  }
+
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors">
-      <div className="pt-4 sm:pt-6 px-4 sm:px-6 md:px-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-white">Dashboard</h1>
-        <p className="text-emerald-700 dark:text-emerald-500 text-sm sm:text-base mt-1">
-          Overview of your assigned event and recent activities
-        </p>
+      <div className="flex items-start justify-between gap-4 px-4 pt-4 sm:px-6 sm:pt-6 md:px-8">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-white">Dashboard</h1>
+          <p className="text-emerald-700 dark:text-emerald-500 text-sm sm:text-base mt-1">
+            Overview of your assigned event and recent activities
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsPrizeModalOpen(true)}
+          className="flex shrink-0 items-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-emerald-800 sm:px-4 sm:text-sm dark:bg-emerald-500 dark:text-black dark:hover:bg-emerald-600"
+        >
+          <Plus className="h-4 w-4" />
+          Add Prize Money
+        </button>
       </div>
 
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
@@ -127,6 +163,47 @@ function AdminDashboard() {
 
           </div>
         </div>
+
+        {declaredPrizes.length > 0 && (
+          <section>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white sm:text-xl">
+                  Declared Prizes
+                </h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Prize money for {assignedEvent.name}
+                </p>
+              </div>
+              <Trophy className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {declaredPrizes.map((prize, index) => (
+                <article
+                  key={`${prize.name}-${index}`}
+                  className="relative overflow-hidden rounded-xl border border-emerald-700/20 bg-white p-5 shadow-sm dark:border-emerald-500/30 dark:bg-gray-950"
+                >
+                  <div className="absolute inset-x-0 top-0 h-1 bg-emerald-700 dark:bg-emerald-500" />
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-500">
+                        Prize {index + 1}
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
+                        {prize.name}
+                      </h3>
+                    </div>
+                    <Trophy className="h-5 w-5 shrink-0 text-yellow-500" />
+                  </div>
+                  <p className="mt-4 text-2xl font-bold text-emerald-700 dark:text-emerald-500">
+                    ₹ {Number(prize.amount).toLocaleString('en-IN')}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
@@ -210,6 +287,109 @@ function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {isPrizeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-emerald-700/20 bg-white shadow-xl dark:border-emerald-500/30 dark:bg-gray-950">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Add Prize Money
+                </h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Add one or more prizes for the assigned event.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPrizeModalOpen(false)}
+                aria-label="Close modal"
+                className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-900 dark:hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleDeclarePrizes} className="space-y-4 p-5">
+              {prizes.map((prize, index) => (
+                <div key={index} className="rounded-xl border border-gray-200 p-4 dark:border-gray-800">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      Prize {index + 1}
+                    </p>
+                    {prizes.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setPrizes((currentPrizes) => currentPrizes.filter((_, prizeIndex) => prizeIndex !== index))}
+                        aria-label={`Delete prize ${index + 1}`}
+                        title="Delete prize"
+                        className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor={`prize-name-${index}`} className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Prize Name
+                      </label>
+                      <input
+                        id={`prize-name-${index}`}
+                        value={prize.name}
+                        onChange={(event) => handlePrizeChange(index, 'name', event.target.value)}
+                        placeholder="First Prize"
+                        required
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-emerald-700 dark:border-gray-700 dark:bg-black dark:text-white dark:focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`prize-money-${index}`} className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Prize Money
+                      </label>
+                      <input
+                        id={`prize-money-${index}`}
+                        type="number"
+                        min="0"
+                        value={prize.amount}
+                        onChange={(event) => handlePrizeChange(index, 'amount', event.target.value)}
+                        placeholder="25000"
+                        required
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-emerald-700 dark:border-gray-700 dark:bg-black dark:text-white dark:focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addPrize}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 transition-colors hover:text-emerald-800 dark:text-emerald-500 dark:hover:text-emerald-400"
+              >
+                <Plus className="h-4 w-4" />
+                Add Another Prize
+              </button>
+
+              <div className="flex justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => setIsPrizeModalOpen(false)}
+                  className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-emerald-800 dark:bg-emerald-500 dark:text-black dark:hover:bg-emerald-600"
+                >
+                  Declare Prizes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
