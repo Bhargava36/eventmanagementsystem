@@ -69,6 +69,8 @@ function UserLogin() {
             }
 
             console.log("Login successful:", data);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            localStorage.setItem("token", data.token);
             const teamleadUser = data.users || data.user || {};
             login(data.token, teamleadUser, "user");
 
@@ -152,7 +154,7 @@ function UserLogin() {
 
                         <form onSubmit={handleLogin} className="space-y-5 lg:space-y-6 [&_label]:text-slate-700 [&_input]:!border-slate-200 [&_input]:!bg-white [&_input]:!text-slate-900 [&_input]:placeholder-slate-400 [&_svg]:text-slate-600 dark:[&_label]:text-gray-300 dark:[&_input]:!border-gray-700 dark:[&_input]:!bg-[#0b1118] dark:[&_input]:!text-white dark:[&_input]:placeholder-gray-500 dark:[&_svg]:text-gray-300">
                             {error && (
-                                <div className="mb-4 p-2.5 bg-red-500/20 border border-red-500/40 rounded-xl text-red-200 text-xs text-center font-medium">
+                                <div className="mb-4 p-2.5 bg-red-500/20 border border-red-500/40 rounded-xl text-red-500 text-xs text-center font-medium">
                                     {error}
                                 </div>
                             )}
@@ -186,7 +188,7 @@ function UserLogin() {
                                         name='password'
                                         value={password}
                                         onChange={(e) => setPassword( e.target.value )}
-                                        placeholder="Create a password"
+                                        placeholder="Enter a password"
                                         className="w-full pl-4 pr-10 py-3 sm:py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-sm dark:border-gray-700 dark:bg-[#0b1118] dark:text-white dark:placeholder-gray-500 dark:focus:ring-emerald-500/20 dark:focus:border-emerald-500"
                                     />
                                     <button
