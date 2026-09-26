@@ -11,6 +11,7 @@ import {
   Users,
   MapPin,
   Map,
+  Phone,
   LogIn,
   Compass,
   Code,
@@ -40,6 +41,7 @@ function UserRegister() {
     College: "",
     Location: "",
     State: "",
+    Mobile: ""
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -233,6 +235,22 @@ function UserRegister() {
                       )}
                     </AnimatePresence>
                   </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-3 sm:w-36 shrink-0 pl-1">
+                  <Phone className="w-5 h-5 text-gray-600 dark:text-gray-400" strokeWidth={1.5} />
+                  <label className="text-gray-700 dark:text-gray-200 font-medium text-sm">Mobile</label>
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={formData.Mobile}
+                    onChange={(e) => setFormData({...formData, Mobile: e.target.value }) }
+                    placeholder="Enter your Mobile number"
+                    className="w-full px-4 py-3 sm:py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 dark:focus:ring-emerald-500/20 focus:border-emerald-700 dark:focus:border-emerald-500 transition-all text-sm"
+                  />
                 </div>
               </div>
 
