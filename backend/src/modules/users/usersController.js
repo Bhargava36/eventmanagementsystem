@@ -1,15 +1,15 @@
-const leadService = require('./usersServices');
+const userService = require('./usersServices');
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-const createTeamLead = (req, res) => {
-    const {UserName, Email, Password, College, Location, State } = req.body;
+const createUser = (req, res) => {
+    const {UserName, Email, Password, College, Location, State, Mobile } = req.body;
 
-    if( !UserName || !Email || !Password || !College || !Location || !State) {
+    if( !UserName || !Email || !Password || !College || !Location || !State || !Mobile) {
         return res.status(400).json({message: "All fields are required"});
     }
 
-    leadService.createTeamLead(UserName, Email, Password, College, Location, State, (err, result) => {
+    userService.createUser(UserName, Email, Password, College, Location, State, Mobile, (err, result) => {
         if(err){
             return res.status(500).json({
                 message: "Registration failed",
@@ -24,7 +24,7 @@ const createTeamLead = (req, res) => {
     });
 };
 
-const loginTeamLead = (req, res) => {
+const loginUser = (req, res) => {
     const {Email, Password} = req.body;
 
     if(!Email || !Password){
@@ -33,7 +33,7 @@ const loginTeamLead = (req, res) => {
         });
     }
 
-    leadService.loginTeamLead(Email, async(err, result) => {
+    userService.loginUser(Email, async(err, result) => {
         if(err){
             return res.status(500).json({
                 message: "Database error",
@@ -76,20 +76,21 @@ const loginTeamLead = (req, res) => {
                 Email: users.Email,
                 College: users.College,
                 Location: users.Location,
-                State: users.State
+                State: users.State,
+                Mobile: users.Mobile
             }
         });
     });
 };
 
-const getAllTeamLead = (req, res) => {
+const getAllUsers = (req, res) => {
 
-    leadService.getAllTeamLead((err, result) => {
+    userService.getAllUsers((err, result) => {
 
         if (err) {
 
             return res.status(500).json({
-                message: "Failed to get teamleads",
+                message: "Failed to get users",
                 error: err
             });
         }
@@ -101,9 +102,10 @@ const getAllTeamLead = (req, res) => {
     });
 };
 
-const getTeamLeadById = (req, res) => {
+const getUserById = (req, res) => {
     const id = req.params.id;
-    leadService.getTeamLeadById(id, (err, result) => {
+
+    userService.getUserById(id, (err, result) => {
         if(err) {
             return res.status(500).json({
                 message: "Failed to get users by id",
@@ -126,7 +128,7 @@ const getTeamLeadById = (req, res) => {
 
 const getUserCount = (req, res) => {
 
-    leadService.getUserCount((err, result) => {
+    userService.getUserCount((err, result) => {
 
         if (err) {
             return res.status(500).json({
@@ -142,11 +144,11 @@ const getUserCount = (req, res) => {
     });
 };
 
-const updateTeamLead = (req, res) => {
+const updateUser = (req, res) => {
     const { id } = req.params;
-    const { LeadName, Email, College, Location, State } = req.body;
+    const { UserName, Email, College, Location, State, Mobile } = req.body;
 
-    leadService.updateTeamLead(id, LeadName, Email, College, Location, State, (err, result) => {
+    userService.updateUser(id, UserName, Email, College, Location, State, Mobile, (err, result) => {
         if (err) {
             return res.status(500).json({
                 message: "Failed to update users",
@@ -162,10 +164,10 @@ const updateTeamLead = (req, res) => {
 };
 
 module.exports = {
-    createTeamLead,
-    loginTeamLead,
-    getAllTeamLead,
-    getTeamLeadById,
+    createUser,
+    loginUser,
+    getAllUsers,
+    getUserById,
     getUserCount,
-    updateTeamLead
+    updateUser
 };
