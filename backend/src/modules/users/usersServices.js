@@ -1,11 +1,11 @@
 const db = require("../../config/db");
 const bcrypt = require('bcrypt');
 
-const createTeamLead = async (UserName, Email, Password, College, Location, State, callback) => {
+const createUser = async (UserName, Email, Password, College, Location, State,Mobile, callback) => {
     try {
         const hashedPassword = await bcrypt.hash(Password, 10);
-        const query = `insert into users (UserName, Email, Password, College, Location, State) values (?,?,?,?,?,?)`;
-        db.query(query, [UserName, Email, hashedPassword, College, Location, State], (err, result) => {
+        const query = `insert into users (UserName, Email, Password, College, Location, State, Mobile) values (?,?,?,?,?,?,?)`;
+        db.query(query, [UserName, Email, hashedPassword, College, Location, State, Mobile], (err, result) => {
            if (err) {
                 return callback(err, null);
             }
@@ -19,8 +19,8 @@ const createTeamLead = async (UserName, Email, Password, College, Location, Stat
     }
 };
 
-const loginTeamLead = (Email, callback) => {
-    const query = "Select Id, UserName, Email, Password, College, Location, State from users where Email = ?";
+const loginUser = (Email, callback) => {
+    const query = "Select Id, UserName, Email, Password, College, Location, State, Mobile from users where Email = ?";
     db.query(query, [Email], (err, result) => {
         if (err) {
             return callback(err, null);
@@ -31,7 +31,7 @@ const loginTeamLead = (Email, callback) => {
     });
 };
 
-const getAllTeamLead = (callback) => {
+const getAllUsers = (callback) => {
 
     const query = ` SELECT * FROM users ORDER BY CreatedAt DESC `;
 
@@ -45,7 +45,7 @@ const getAllTeamLead = (callback) => {
     });
 };
 
-const getTeamLeadById = (id, callback) => {
+const getUserById = (id, callback) => {
     const query = ` SELECT * FROM users where Id = ?`;
 
     db.query(query, [id], (err, result) => {
@@ -67,9 +67,9 @@ const getUserCount = (callback) => {
     });
 };
 
-const updateTeamLead = (id, UserName, Email,College, Location, State, callback) => {
-    const query = `UPDATE users SET UserName = ?, Email = ?, College = ?, Location = ?, State = ? WHERE Id = ?`;
-    db.query(query, [UserName, Email, College, Location, State, id], (err, result) => {
+const updateUser = (id, UserName, Email,College, Location, State,Mobile, callback) => {
+    const query = `UPDATE users SET UserName = ?, Email = ?, College = ?, Location = ?, State = ?, Mobile = ? WHERE Id = ?`;
+    db.query(query, [UserName, Email, College, Location, State, Mobile, id], (err, result) => {
         if (err) {
             return callback(err, null);
         } else {
@@ -79,10 +79,10 @@ const updateTeamLead = (id, UserName, Email,College, Location, State, callback) 
 };
 
 module.exports = {
-    createTeamLead,
-    loginTeamLead,
-    getAllTeamLead,
+    createUser,
+    loginUser,
+    getAllUsers,
     getUserCount,
-    getTeamLeadById,
-    updateTeamLead
+    getUserById,
+    updateUser
 };
