@@ -37,13 +37,13 @@ const recentActivities = [
 
 function SuperAdminDashboard() {
   const [usersCount, setUsersCount] = useState(0);
-  // const [teamsCount, setTeamsCount] = useState([]);
+  const [teamsCount, setTeamsCount] = useState(0);
   const [eventsCount, setEventsCount] = useState(0);
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
     fetchUsersCount();
-    // fetchTeamsCount();
+    fetchTeamsCount();
     fetchEventsCount();
     fetchEvents();
   }, []);
@@ -77,20 +77,34 @@ function SuperAdminDashboard() {
     }
   };
 
-  // const totalUsers = usersCount || 0;
+  const fetchTeamsCount = async () => {
+    try {
 
-  // const fetchTeamsCount = async () => {
-  //   try {
-  //     const response = await fetch('http://localhost:3000/api/teams/');
-  //     const data = await response.json();
-  //     setTeamsCount(data.teams);
-  //   } catch (error) {
-  //     console.error('Error fetching teams count:', error);
+      const response = await fetch(
+        'http://localhost:3000/api/teams/count'
+      );
 
-  //   }
-  // };
+      const data = await response.json();
 
-  // const totalTeams = teamsCount?.length || 0;
+      if (!response.ok) {
+        throw new Error(
+          data.message || 'Failed to fetch teams count'
+        );
+      }
+
+      console.log('Teams Count:', data);
+
+      setTeamsCount(data.count || 0);
+
+    } catch (error) {
+
+      console.error(
+        'Error fetching Teams count:',
+        error
+      );
+
+    }
+  };
 
   const fetchEventsCount = async () => {
     try {
@@ -120,7 +134,6 @@ function SuperAdminDashboard() {
 
     }
   };
-
 
   const fetchEvents = async () => {
     try {
@@ -164,7 +177,7 @@ function SuperAdminDashboard() {
 
     {
       title: 'Total Teams',
-      value: 35,
+      value: teamsCount,
       icon: UsersRound,
     },
 
