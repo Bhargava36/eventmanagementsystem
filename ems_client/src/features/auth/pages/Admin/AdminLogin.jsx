@@ -53,30 +53,54 @@ function AdminLogin() {
 
         try {
             setLoading(true);
+
             const res = await fetch("http://localhost:3000/api/admin/login", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ Email: email, Password: password, EventName: eventName }),
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    Email: email,
+                    Password: password,
+                    EventName: eventName
+                }),
             });
 
             const data = await res.json();
 
+            console.log("ADMIN LOGIN RESPONSE:", data);
+
             if (!res.ok) {
-                throw new Error(data.message || data.error || "Login failed");
+                throw new Error(
+                    data.message || data.error || "Login failed"
+                );
             }
+
             const adminUser = data.admin || data.user || {};
+
+            console.log("ADMIN USER:", adminUser);
+            console.log("EVENT ID FROM LOGIN:", adminUser.eventId);
+
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("admin", JSON.stringify(adminUser));
+
             login(data.token, adminUser, "admin");
 
             toast.success("Logged in successfully!");
+
             const from = location.state?.from?.pathname || "/admin";
+
             navigate(from, { replace: true });
-        }
-        catch (err) {
-            const errMsg = err.message || "Login failed, try again later";
+
+        } catch (err) {
+
+            const errMsg =
+                err.message || "Login failed, try again later";
+
             setError(errMsg);
             toast.error(errMsg);
-        }
-        finally {
+
+        } finally {
             setLoading(false);
         }
     };
@@ -324,7 +348,7 @@ function AdminLogin() {
                 </div>
             </div>
 
-    </div>
+        </div>
     );
 }
 export default AdminLogin;
