@@ -1,7 +1,7 @@
 const mysql = require('mysql2');
 require('dotenv').config();
 
- const db = mysql.createPool({
+const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -46,11 +46,6 @@ const migrationQueries = [
         TertiaryTextColor VARCHAR(50),
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
-    `ALTER TABLE events 
-        ADD COLUMN IF NOT EXISTS Facilities TEXT,
-        ADD COLUMN IF NOT EXISTS Requirements TEXT,
-        ADD COLUMN IF NOT EXISTS TeamSize VARCHAR(50)`,
 
     `CREATE TABLE IF NOT EXISTS admins (
         Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -115,18 +110,37 @@ const migrationQueries = [
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
-    `CREATE TABLE IF NOT EXISTS teammembers (
+    `CREATE TABLE IF NOT EXISTS event_prizes (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        PrizeRank INT NOT NULL,
+        Prize VARCHAR(500) NOT NULL,
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        UNIQUE (EventId, PrizeRank)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `DROP TABLE IF EXISTS teammembers`,
+
+    `DROP TABLE IF EXISTS teamlead`,
+
+    `CREATE TABLE IF NOT EXISTS team_members (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         Name VARCHAR(255) NOT NULL,
-        Email VARCHAR(255) NOT NULL,
+        Email VARCHAR(255) NOT NULL UNIQUE,
         Password VARCHAR(255) NOT NULL,
-        Role VARCHAR(100),
+        Role ENUM('TeamLead', 'TeamMember') NOT NULL,
         PhoneNumber VARCHAR(50),
         TeamId INT,
-        Gender VARCHAR(50),
+        Gender VARCHAR(20),
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_members_team (TeamId)
+
+        INDEX idx_team_members_team (TeamId),
+
+        FOREIGN KEY (TeamId)
+            REFERENCES teams(Id)
+            ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+
 ];
 
 let isMigrating = false;
