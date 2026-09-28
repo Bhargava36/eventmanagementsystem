@@ -16,16 +16,7 @@ import {
   X,
   Trash2
 } from 'lucide-react';
-import { useState } from 'react';
-
-
-
-const stats = [
-  { title: 'Total Registrations', value: '3,120', icon: Users },
-  { title: 'Registered Teams', value: '620', icon: UsersRound },
-  { title: 'Pending Approvals', value: '45', icon: ClipboardList},
-  { title: 'Days Remaining', value: '14', icon: Clock},
-];
+import { useState, useEffect } from 'react';
 
 const assignedEvent = {
   name: 'Avishkaar Season 3',
@@ -56,9 +47,53 @@ const recentActivities = [
 ];
 
 function AdminDashboard() {
+  const admin = JSON.parse(localStorage.getItem("admin"));
+  const eventId = admin?.EventId;
   const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
   const [prizes, setPrizes] = useState([{ name: '', amount: '' }]);
   const [declaredPrizes, setDeclaredPrizes] = useState([]);
+  const [usersCount, setUsersCount] = useState(0);
+  const [teamsCount, setTeamsCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [remainingDays, setRemainingDays] = useState(0);
+  const [event, setEvent] = useState(null);
+
+  useEffect(() => {
+    if (eventId) {
+      fetchEvent();
+    }
+  }, [eventId]);
+
+  const fetchEvent = async () => {
+  try {
+    console.log("ADMIN FROM LOCAL STORAGE:", admin);
+    console.log("EVENT ID:", eventId);
+
+    const response = await fetch(
+      `http://localhost:3000/api/events/${eventId}`
+    );
+
+    const data = await response.json();
+
+    console.log("EVENT API STATUS:", response.status);
+    console.log("EVENT API RESPONSE:", data);
+
+    if (!response.ok) {
+      throw new Error(data.message || "Event not found");
+    }
+
+    setEvent(data.event);
+
+    setUsersCount(data.usersCount || 0);
+    setTeamsCount(data.teamsCount || 0);
+    setPendingCount(data.pendingCount || 0);
+    setRemainingDays(data.remainingDays || 0);
+
+  } catch (error) {
+    console.error("FETCH EVENT ERROR:", error);
+  }
+};
+
 
   function handlePrizeChange(index, field, value) {
     setPrizes((currentPrizes) => currentPrizes.map((prize, prizeIndex) => (
@@ -76,6 +111,14 @@ function AdminDashboard() {
     setPrizes([{ name: '', amount: '' }]);
     setIsPrizeModalOpen(false);
   }
+
+
+  const stats = [
+    { title: 'Total Registrations', value: usersCount, icon: Users },
+    { title: 'Registered Teams', value: teamsCount, icon: UsersRound },
+    { title: 'Pending Approvals', value: pendingCount, icon: ClipboardList },
+    { title: 'Days Remaining', value: remainingDays, icon: Clock },
+  ];
 
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors">
@@ -127,7 +170,7 @@ function AdminDashboard() {
         </div>
 
         <div className="bg-white dark:bg-gray-950 rounded-xl border border-emerald-700 dark:border-emerald-500 shadow-sm overflow-hidden relative">
-          
+
           <div className="p-4 sm:p-6 relative z-10">
             <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 gap-4">
               <div>
@@ -238,11 +281,10 @@ function AdminDashboard() {
                       </td>
                       <td className="py-3 sm:py-4 text-right">
                         <span
-                          className={`text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-medium inline-block ${
-                            reg.status === 'Approved'
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500'
-                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500'
-                          }`}
+                          className={`text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full font-medium inline-block ${reg.status === 'Approved'
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500'
+                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500'
+                            }`}
                         >
                           {reg.status}
                         </span>
