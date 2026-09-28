@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { Calendar, Trophy, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import useTheme from "@/Hooks/useTheme";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
@@ -431,88 +432,96 @@ const HeroSection = ({ className }) => {
         <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white to-white/0 dark:from-black dark:to-black/0 pointer-events-none" />
       </div>
 
-      <div className="relative z-10 flex flex-col flex-1">
-        <div className="flex flex-1 flex-col lg:flex-row ">
-          <div className="flex-1 flex flex-col justify-center items-center">
-            <div className="w-full mt-[150px] max-w-3xl">
-              <AnimatePresence mode="wait">
+      <div className="relative z-10 flex flex-col flex-1 items-center justify-center">
+        <div className="w-full max-w-5xl mx-auto flex flex-col items-center justify-center relative min-h-[calc(100vh-140px)] mt-[100px] sm:mt-[120px] mb-12 px-4 sm:px-6">
+          
+          {/* Central Hero Content */}
+          <div className="w-full max-w-4xl text-center">
+            <AnimatePresence mode="wait">
                 {step === "email" ? (
                   <motion.div
                     key="email-step"
-                    initial={{ opacity: 0, x: -100 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -100 }}
                     transition={{ duration: 0.4, ease: "easeOut" }}
-                    className="space-y-6 text-center"
+                    className="space-y-8 text-center"
                   >
-                    <div className="space-y-1">
+                    <div className="space-y-4">
                       <motion.h1 
-                      initial={{ opacity: 0, y: 50 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 50 }}
-                      transition={{ duration: 0.4,delay: 0.4, ease: "easeOut" }}
-                      className="text-[3.25rem] uppercase font-bold leading-[1.1] tracking-tight text-black dark:text-white">
-                        Ideas become events,
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 30 }}
+                        transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
+                        className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-black dark:text-white leading-[1.12]"
+                      >
+                        Where builders connect, <br className="hidden sm:inline" />
+                        and bold ideas take flight.
                       </motion.h1>
-                      <motion.h1 
-                      initial={{ opacity: 0, y: 50 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 50 }}
-                      transition={{ duration: 0.4,delay: 0.5, ease: "easeOut" }}
-                      className="text-[3.25rem] uppercase font-bold leading-[1.1] tracking-tight text-black dark:text-white">
-                        Events become experiences.
-                      </motion.h1>
-                      <p className="text-[1.25rem] text-black/70 dark:text-white/70 font-light mt-4">
-                        HackHub gives you everything you need to turn an idea into a packed, perfectly orchestrated event — registrations, attendees, schedules, communication, check-ins and insights.
+
+                      <p className="text-lg sm:text-xl text-black/70 dark:text-white/70 font-normal max-w-2xl mx-auto leading-relaxed pt-1">
+                        Find exciting hackathons, team up with passionate creators, and build projects you're truly proud of.
                       </p>
                     </div>
 
-                    <div className="space-y-4">
-                      <button className="backdrop-blur-[2px] w-full flex items-center justify-center gap-3 bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 text-black dark:text-white border border-gray-300 dark:border-white/10 rounded-full py-3 px-4 transition-colors shadow-sm dark:shadow-none">
-                        <svg className="w-5 h-5 text-current" viewBox="0 0 24 24">
-                          <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                          <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                          <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                          <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                        </svg>
-                        <span>Continue with Google</span>
-                      </button>
+                    {/* Luxury Action CTAs */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+                      {/* Explore Events - Luxury Primary Button */}
+                      <Link
+                        to="/user/login"
+                        className="relative group overflow-hidden w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white font-semibold text-sm sm:text-base tracking-wide shadow-[0_10px_25px_-5px_rgba(5,150,105,0.4)] hover:shadow-[0_20px_35px_-8px_rgba(5,150,105,0.6)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-out"
+                      >
+                        {/* Shimmer light sweep */}
+                        <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+                        
+                        <span className="relative z-10">Explore Events</span>
+                        <span className="relative z-10 transition-transform duration-300 ease-out group-hover:translate-x-1.5 font-bold">
+                          →
+                        </span>
+                      </Link>
 
-                      <div className="flex items-center gap-4">
-                        <div className="h-px bg-black/10 dark:bg-white/10 flex-1" />
-                        <span className="text-black/40 dark:text-white/40 text-sm">or</span>
-                        <div className="h-px bg-black/10 dark:bg-white/10 flex-1" />
-                      </div>
-
-                      <form onSubmit={handleEmailSubmit}>
-                        <div className="relative">
-                          <input
-                            type="email"
-                            placeholder="Enter your work email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full backdrop-blur-[1px] bg-white dark:bg-transparent text-black dark:text-white border border-gray-300 dark:border-white/10 rounded-full py-3 px-4 focus:outline-none focus:border-gray-400 dark:focus:border-white/30 text-center shadow-sm dark:shadow-none"
-                            required
-                          />
-                          <button
-                            type="submit"
-                            className="absolute right-1.5 top-1.5 text-white dark:text-white w-9 h-9 flex items-center justify-center rounded-full bg-black dark:bg-white/10 hover:bg-black/80 dark:hover:bg-white/20 transition-colors group overflow-hidden shadow-sm dark:shadow-none"
-                          >
-                            <span className="relative w-full h-full block overflow-hidden">
-                              <span className="absolute inset-0 flex items-center justify-center transition-transform duration-300 group-hover:translate-x-full">
-                                →
-                              </span>
-                              <span className="absolute inset-0 flex items-center justify-center transition-transform duration-300 -translate-x-full group-hover:translate-x-0">
-                                →
-                              </span>
-                            </span>
-                          </button>
-                        </div>
-                      </form>
+                      {/* Member Login - Sleek Luxury Secondary Button */}
+                      <Link
+                        to="/user/login"
+                        className="relative group w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-full border border-black/15 dark:border-white/20 bg-black/[0.03] dark:bg-white/[0.04] hover:bg-black/[0.07] dark:hover:bg-white/[0.1] text-black dark:text-white font-medium text-sm sm:text-base tracking-wide backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm hover:shadow-md"
+                      >
+                        <span>Member Login</span>
+                      </Link>
                     </div>
 
-                    <p className="text-xs text-black/40 dark:text-white/40 pt-10">
-                      By signing up, you agree to the <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">MSA</Link>, <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Product Terms</Link>, <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Policies</Link>, <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Privacy Notice</Link>, and <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Cookie Notice</Link>.
+                    {/* Secondary Access Links */}
+                    <div className="flex items-center justify-center gap-4 text-xs sm:text-sm text-black/60 dark:text-white/60 pt-1">
+                      <Link to="/user/register" className="hover:text-emerald-600 dark:hover:text-emerald-400 underline underline-offset-4 transition-colors">
+                        New member? Create an account
+                      </Link>
+                      <span className="text-black/30 dark:text-white/30">•</span>
+                      <Link to="/admin/login" className="hover:text-emerald-600 dark:hover:text-emerald-400 underline underline-offset-4 transition-colors">
+                        Organizer portal
+                      </Link>
+                    </div>
+
+                    {/* Subtle Metrics Strip */}
+                    <div className="pt-8 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 max-w-2xl mx-auto border-t border-black/10 dark:border-white/10 mt-6 text-center">
+                      <div>
+                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">50+</div>
+                        <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Hackathons Hosted</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">10K+</div>
+                        <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Builders Connected</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">₹25L+</div>
+                        <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Prizes Awarded</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">100%</div>
+                        <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Free for Students</div>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-black/40 dark:text-white/40 pt-4">
+                      By continuing, you agree to HackHub <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Terms of Service</Link>, <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Privacy Notice</Link>, and <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Policies</Link>.
                     </p>
                   </motion.div>
                 ) : step === "code" ? (
@@ -640,7 +649,6 @@ const HeroSection = ({ className }) => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
