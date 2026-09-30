@@ -107,10 +107,10 @@ function AdminLogin() {
 
 
     return (
-        <div className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300 px-6">
+        <div className="relative w-full min-h-screen overflow-y-auto bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300 px-4 sm:px-8 lg:px-12">
 
-            <div className="flex flex-col lg:flex-row min-h-screen">
-                <div className="w-full lg:w-5/12 xl:w-1/2 bg-gray-50 dark:bg-black/60 p-5 sm:p-8 md:p-10 lg:p-12 flex flex-col relative overflow-hidden">
+            <div className="flex flex-col lg:flex-row min-h-screen gap-6 lg:gap-0">
+                <div className="w-full lg:w-7/12 p-4 sm:p-8 md:p-10 lg:p-12 flex flex-col relative overflow-hidden">
                     <div>
                         <div className="flex items-center">
                             <div className="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-xl flex items-center justify-center shadow-lg shrink-0">
@@ -206,8 +206,8 @@ function AdminLogin() {
                     </div>
                 </div>
 
-                <div className="w-full lg:w-7/12 xl:w-1/2 bg-white dark:bg-black p-5 sm:p-8 md:p-10 lg:p-12 flex flex-col justify-center">
-                    <div className="w-full max-w-2xl mx-auto">
+                <div className="w-full lg:w-5/12 p-4 sm:p-6 md:p-8 lg:p-10 flex flex-col justify-center">
+                    <div className="w-full max-w-2xl mx-auto border-2 border-emerald-700 dark:border-emerald-500 rounded-2xl bg-gray-50 dark:bg-white/5 p-5 sm:p-8 backdrop-blur-sm">
                         <div className="flex flex-col items-center mb-5 sm:mb-6 md:mb-8">
                             <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center mb-3 sm:mb-4">
                                 <UserPlus className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 text-emerald-700 dark:text-emerald-500" />
@@ -223,7 +223,7 @@ function AdminLogin() {
                             </p>
                         </div>
 
-                        <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
+                        <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5 [&_input:not([type=checkbox])]:!bg-transparent [&_input:not([type=checkbox])]:!border-0 [&_input:not([type=checkbox])]:!border-b-2 [&_input:not([type=checkbox])]:!border-gray-300 [&_input:not([type=checkbox])]:!rounded-none [&_input:not([type=checkbox])]:!shadow-none [&_input:not([type=checkbox])]:!text-gray-900 [&_input:not([type=checkbox])::placeholder]:!text-gray-500 [&_input:not([type=checkbox]):focus]:!border-emerald-700 [&_input:not([type=checkbox]):focus]:!ring-0 [&_input:not([type=checkbox]):focus]:!outline-none dark:[&_input:not([type=checkbox])]:!border-gray-600 dark:[&_input:not([type=checkbox])]:!text-white dark:[&_input:not([type=checkbox])::placeholder]:!text-gray-400 dark:[&_input:not([type=checkbox]):focus]:!border-emerald-500">
                             {error && (
                                 <div className="mb-4 p-2.5 bg-red-500/20 border border-red-500/40 rounded-xl text-red-500 text-xs text-center font-medium">
                                     {error}
@@ -332,17 +332,6 @@ function AdminLogin() {
                                 Continue with Google
                             </button>
 
-                            <div className="text-center pt-1 sm:pt-2">
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                                    Don't have an account?{" "}
-                                    <Link
-                                        to="/admin/register"
-                                        className="text-emerald-700 dark:text-emerald-500 hover:underline font-semibold"
-                                    >
-                                        Create account
-                                    </Link>
-                                </p>
-                            </div>
                         </form>
                     </div>
                 </div>

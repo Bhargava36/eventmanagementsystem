@@ -89,9 +89,9 @@ function UserLogin() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col bg-[#edf3f0] text-slate-900 dark:bg-black dark:text-white">
+        <div className="min-h-screen flex flex-col bg-white text-slate-900 dark:bg-black dark:text-white">
             <div className="flex flex-1 flex-col lg:flex-row overflow-hidden px-10 py-6 lg:px-12 xl:px-16">
-                <div className="relative lg:w-1/2 flex flex-col overflow-hidden bg-[#edf3f0] p-6 lg:p-8 xl:p-10 border-r border-slate-200 dark:bg-black dark:border-gray-900">
+                <div className="relative lg:w-1/2 flex flex-col overflow-hidden p-6 lg:p-8 xl:p-10">
 
                     <div className="mb-4 flex  items-center gap-3 text-lg font-semibold lg:mb-8">
                         <div className="flex h-10 w-10 items-center justify-center">
@@ -135,9 +135,9 @@ function UserLogin() {
                     </div>
                 </div>
 
-                <div className="lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 py-10 lg:py-8 bg-[#edf3f0] dark:bg-[#020303] overflow-y-auto">
+                <div className="lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 py-10 lg:py-8 overflow-y-auto">
 
-                    <div className="max-w-2xl w-full mx-auto rounded-2xl border border-emerald-700/30 bg-white/90 p-6 shadow-[0_10px_30px_rgba(16,185,129,0.08)] dark:border-emerald-500/80 dark:bg-black/70 dark:shadow-none sm:p-8 lg:p-10">
+                    <div className="max-w-2xl w-full mx-auto rounded-2xl border-2 border-emerald-700 dark:border-emerald-500 bg-gray-50 p-6 backdrop-blur-sm dark:bg-white/5 sm:p-8 lg:p-10">
                         <div className="mb-8 text-center lg:text-left">
                             <div className="flex items-center justify-center lg:justify-start gap-3 mb-3">
                                 <div className="bg-emerald-100 p-3 rounded-full border border-emerald-200 dark:border-emerald-800/60 dark:bg-emerald-500/10">
@@ -152,7 +152,7 @@ function UserLogin() {
                             </p>
                         </div>
 
-                        <form onSubmit={handleLogin} className="space-y-5 lg:space-y-6 [&_label]:text-slate-700 [&_input]:!border-slate-200 [&_input]:!bg-white [&_input]:!text-slate-900 [&_input]:placeholder-slate-400 [&_svg]:text-slate-600 dark:[&_label]:text-gray-300 dark:[&_input]:!border-gray-700 dark:[&_input]:!bg-[#0b1118] dark:[&_input]:!text-white dark:[&_input]:placeholder-gray-500 dark:[&_svg]:text-gray-300">
+                        <form onSubmit={handleLogin} className="space-y-5 lg:space-y-6 [&_label]:text-slate-700 dark:[&_label]:text-gray-300 [&_input:not([type=checkbox])]:!bg-transparent [&_input:not([type=checkbox])]:!border-0 [&_input:not([type=checkbox])]:!border-b-2 [&_input:not([type=checkbox])]:!border-gray-300 [&_input:not([type=checkbox])]:!rounded-none [&_input:not([type=checkbox])]:!shadow-none [&_input:not([type=checkbox])]:!text-gray-900 [&_input:not([type=checkbox])::placeholder]:!text-gray-500 [&_input:not([type=checkbox]):focus]:!border-emerald-700 [&_input:not([type=checkbox]):focus]:!ring-0 [&_input:not([type=checkbox]):focus]:!outline-none dark:[&_input:not([type=checkbox])]:!border-gray-600 dark:[&_input:not([type=checkbox])]:!text-white dark:[&_input:not([type=checkbox])::placeholder]:!text-gray-400 dark:[&_input:not([type=checkbox]):focus]:!border-emerald-500">
                             {error && (
                                 <div className="mb-4 p-2.5 bg-red-500/20 border border-red-500/40 rounded-xl text-red-500 text-xs text-center font-medium">
                                     {error}
