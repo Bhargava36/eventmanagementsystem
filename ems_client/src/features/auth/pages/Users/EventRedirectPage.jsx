@@ -389,7 +389,7 @@ function EventDetails() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#050505]">
         <div className="text-center">
           <p className="text-red-500 mb-4">
             {error}
@@ -408,8 +408,8 @@ function EventDetails() {
 
   if (!event) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
-        <p className="text-slate-500">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#050505]">
+        <p className="text-slate-600 dark:text-slate-300">
           Event not found
         </p>
       </div>
@@ -419,14 +419,8 @@ function EventDetails() {
   const primaryColor =
     event.PrimaryColor || '#10b981';
 
-  const secondaryColor =
-    event.SecondaryColor || '#e5e7eb';
-
   const primaryTextColor =
     event.PrimaryTextColor || '#ffffff';
-
-  const secondaryTextColor =
-    event.SecondaryTextColor || '#475569';
 
   const tertiaryColor =
     event.TertiaryColor || '#f1f5f9';
@@ -444,28 +438,19 @@ function EventDetails() {
     getTeamSizeOptions();
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-slate-100 p-4 md:p-6 lg:p-8 font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-slate-100 p-4 md:p-6 lg:p-8 font-sans">
 
       <div className="w-full max-w-[1600px] mx-auto space-y-6">
 
         <button
           onClick={handleBack}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900"
-          style={{
-            border: `1px solid ${secondaryColor}`,
-            color: secondaryTextColor
-          }}
+          className="mb-4 inline-flex cursor-pointer items-center gap-2 rounded-md px-4 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-500"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Dashboard
         </button>
 
-        <section
-          className="rounded-3xl overflow-hidden shadow-sm"
-          style={{
-            border: `1px solid ${secondaryColor}`
-          }}
-        >
+        <section className="rounded-2xl overflow-hidden border border-emerald-700/20 dark:border-emerald-500/30 bg-white dark:bg-gray-950 shadow-sm">
 
           <div
             className="min-h-[320px] md:min-h-[380px] flex flex-col items-center justify-center text-center px-6 py-12"
@@ -510,26 +495,20 @@ function EventDetails() {
 
           </div>
 
-          <div className="bg-white dark:bg-black p-6 md:p-8 lg:p-10">
+          <div className="bg-white dark:bg-gray-950 p-6 md:p-8 lg:p-10">
 
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
 
               <div className="max-w-4xl">
 
                 <p
-                  className="text-sm font-bold uppercase tracking-widest mb-3"
-                  style={{
-                    color: secondaryTextColor
-                  }}
+                  className="text-sm font-bold uppercase tracking-widest mb-3 text-slate-600 dark:text-slate-400"
                 >
                   {event.EventType || 'EVENT'}
                 </p>
 
                 <h2
-                  className="text-3xl md:text-4xl font-extrabold mb-4"
-                  style={{
-                    color: primaryColor
-                  }}
+                  className="text-3xl md:text-4xl font-extrabold mb-4 text-emerald-700 dark:text-emerald-400"
                 >
                   {event.EventName}
                 </h2>
@@ -564,12 +543,7 @@ function EventDetails() {
 
           <div className="lg:col-span-7 space-y-6">
 
-            <div
-              className="bg-white dark:bg-black rounded-3xl p-6 md:p-7"
-              style={{
-                border: `1px solid ${secondaryColor}`
-              }}
-            >
+              <div className="bg-white dark:bg-gray-950 rounded-xl p-6 md:p-7 shadow-sm border border-emerald-700/20 dark:border-emerald-500/30">
               <div className="flex items-start gap-4">
 
                 <div
@@ -589,10 +563,7 @@ function EventDetails() {
                 <div>
 
                   <h3
-                    className="text-xl font-bold mb-3"
-                    style={{
-                      color: primaryColor
-                    }}
+                    className="text-xl font-bold mb-3 text-emerald-700 dark:text-emerald-400"
                   >
                     About the Event
                   </h3>
@@ -607,12 +578,7 @@ function EventDetails() {
               </div>
             </div>
 
-            <div
-              className="bg-white dark:bg-black rounded-3xl p-6 md:p-7"
-              style={{
-                border: `1px solid ${secondaryColor}`
-              }}
-            >
+              <div className="bg-white dark:bg-gray-950 rounded-xl p-6 md:p-7 shadow-sm border border-emerald-700/20 dark:border-emerald-500/30">
               <div className="flex items-start gap-4">
 
                 <div
@@ -632,10 +598,7 @@ function EventDetails() {
                 <div className="flex-1">
 
                   <h3
-                    className="text-xl font-bold mb-4"
-                    style={{
-                      color: primaryColor
-                    }}
+                    className="text-xl font-bold mb-4 text-emerald-700 dark:text-emerald-400"
                   >
                     Requirements
                   </h3>
@@ -650,14 +613,14 @@ function EventDetails() {
                             className="flex items-start gap-3"
                           >
                             <div
-                              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 dark:!bg-white"
                               style={{
                                 backgroundColor:
                                   tertiaryColor
                               }}
                             >
                               <Check
-                                className="w-4 h-4"
+                                className="w-4 h-4 dark:!text-black"
                                 style={{
                                   color:
                                     tertiaryTextColor
@@ -674,7 +637,7 @@ function EventDetails() {
 
                     </ul>
                   ) : (
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
                       No requirements specified.
                     </p>
                   )}
@@ -688,12 +651,7 @@ function EventDetails() {
 
           <div className="lg:col-span-5 space-y-6">
 
-            <div
-              className="bg-white dark:bg-black rounded-3xl p-6 md:p-7"
-              style={{
-                border: `1px solid ${secondaryColor}`
-              }}
-            >
+              <div className="bg-white dark:bg-gray-950 rounded-xl p-6 md:p-7 shadow-sm border border-emerald-700/20 dark:border-emerald-500/30">
               <div className="flex items-start gap-4">
 
                 <div
@@ -713,19 +671,13 @@ function EventDetails() {
                 <div>
 
                   <h3
-                    className="text-xl font-bold mb-2"
-                    style={{
-                      color: primaryColor
-                    }}
+                    className="text-xl font-bold mb-2 text-emerald-700 dark:text-emerald-400"
                   >
                     Duration
                   </h3>
 
                   <p
-                    className="text-sm md:text-base font-semibold"
-                    style={{
-                      color: secondaryTextColor
-                    }}
+                    className="text-sm md:text-base font-semibold text-slate-700 dark:text-slate-300"
                   >
                     {formatDate(event.StartDate)}
                     {' - '}
@@ -737,12 +689,7 @@ function EventDetails() {
               </div>
             </div>
 
-            <div
-              className="bg-white dark:bg-black rounded-3xl p-6 md:p-7"
-              style={{
-                border: `1px solid ${secondaryColor}`
-              }}
-            >
+              <div className="bg-white dark:bg-gray-950 rounded-xl p-6 md:p-7 shadow-sm border border-emerald-700/20 dark:border-emerald-500/30">
               <div className="flex items-start gap-4">
 
                 <div
@@ -762,19 +709,13 @@ function EventDetails() {
                 <div>
 
                   <h3
-                    className="text-xl font-bold mb-2"
-                    style={{
-                      color: primaryColor
-                    }}
+                    className="text-xl font-bold mb-2 text-emerald-700 dark:text-emerald-400"
                   >
                     Location
                   </h3>
 
                   <p
-                    className="text-sm md:text-base font-semibold"
-                    style={{
-                      color: secondaryTextColor
-                    }}
+                    className="text-sm md:text-base font-semibold text-slate-700 dark:text-slate-300"
                   >
                     {event.Location || '-'}
                   </p>
@@ -784,12 +725,7 @@ function EventDetails() {
               </div>
             </div>
 
-            <div
-              className="bg-white dark:bg-black rounded-3xl p-6 md:p-7"
-              style={{
-                border: `1px solid ${secondaryColor}`
-              }}
-            >
+              <div className="bg-white dark:bg-gray-950 rounded-xl p-6 md:p-7 shadow-sm border border-emerald-700/20 dark:border-emerald-500/30">
               <div className="flex items-start gap-4">
 
                 <div
@@ -809,10 +745,7 @@ function EventDetails() {
                 <div className="flex-1">
 
                   <h3
-                    className="text-xl font-bold mb-4"
-                    style={{
-                      color: primaryColor
-                    }}
+                    className="text-xl font-bold mb-4 text-emerald-700 dark:text-emerald-400"
                   >
                     Facilities
                   </h3>
@@ -827,14 +760,14 @@ function EventDetails() {
                             className="flex items-start gap-3"
                           >
                             <div
-                              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                              className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 dark:!bg-white"
                               style={{
                                 backgroundColor:
                                   tertiaryColor
                               }}
                             >
                               <Check
-                                className="w-4 h-4"
+                                className="w-4 h-4 dark:!text-black"
                                 style={{
                                   color:
                                     tertiaryTextColor
@@ -851,7 +784,7 @@ function EventDetails() {
 
                     </ul>
                   ) : (
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
                       No facilities specified.
                     </p>
                   )}
@@ -872,7 +805,7 @@ function EventDetails() {
 
           <div className="mx-auto w-full max-w-4xl">
 
-            <div className="rounded-3xl bg-white p-6 shadow-2xl dark:bg-[#0b0b0b] md:p-8">
+            <div className="rounded-2xl border border-emerald-700/20 bg-white p-6 text-slate-900 shadow-2xl dark:border-emerald-500/30 dark:bg-gray-950 dark:text-slate-100 md:p-8">
 
               <div className="mb-8 flex items-start justify-between gap-4">
 
@@ -923,7 +856,7 @@ function EventDetails() {
                     className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${
                       currentStep >= 2
                         ? 'bg-emerald-600 text-white'
-                        : 'bg-slate-200 text-slate-500'
+                        : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300'
                     }`}
                   >
                     2
@@ -941,7 +874,7 @@ function EventDetails() {
               {currentStep === 1 && (
                 <div className="space-y-6">
 
-                  <section className="rounded-3xl border border-slate-200 p-6 dark:border-slate-800">
+                  <section className="rounded-xl border border-emerald-700/20 bg-white p-5 shadow-sm dark:border-emerald-500/30 dark:bg-gray-950">
 
                     <div className="mb-6 flex items-center gap-3">
 
@@ -977,7 +910,7 @@ function EventDetails() {
                           value={formData.TeamName}
                           onChange={handleChange}
                           placeholder="Enter team name"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909]"
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500"
                         />
 
                       </div>
@@ -991,7 +924,7 @@ function EventDetails() {
                         <select
                           value={teamSize}
                           onChange={handleTeamSizeChange}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909]"
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white"
                         >
                           <option value="">
                             Select team size
@@ -1016,7 +949,7 @@ function EventDetails() {
 
                   </section>
 
-                  <section className="rounded-3xl border border-slate-200 p-6 dark:border-slate-800">
+                  <section className="rounded-xl border border-emerald-700/20 bg-white p-5 shadow-sm dark:border-emerald-500/30 dark:bg-gray-950">
 
                     <div className="mb-6 flex items-center gap-3">
 
@@ -1054,7 +987,7 @@ function EventDetails() {
                           value={formData.TeamLeadEmail}
                           onChange={handleChange}
                           placeholder="Enter registered email"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909]"
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500"
                         />
 
                       </div>
@@ -1094,7 +1027,7 @@ function EventDetails() {
                   className="space-y-6"
                 >
 
-                  <section className="rounded-3xl border border-slate-200 p-6 dark:border-slate-800">
+                  <section className="rounded-xl border border-emerald-700/20 bg-white p-5 shadow-sm dark:border-emerald-500/30 dark:bg-gray-950">
 
                     <div className="mb-6">
 
@@ -1114,7 +1047,7 @@ function EventDetails() {
                         (member, index) => (
                           <div
                             key={index}
-                            className="rounded-2xl border border-slate-200 p-5 dark:border-slate-800"
+                            className="rounded-xl border border-emerald-700/20 bg-slate-50 p-5 shadow-sm dark:border-emerald-500/20 dark:bg-black"
                           >
 
                             <div className="mb-3 flex items-center gap-3">
@@ -1129,7 +1062,7 @@ function EventDetails() {
                                   Team Member {index + 2}
                                 </p>
 
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-slate-600 dark:text-slate-400">
                                   Registered EMS email
                                 </p>
 
@@ -1151,7 +1084,7 @@ function EventDetails() {
                                   )
                                 }
                                 placeholder="Enter registered email"
-                                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909]"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500"
                               />
 
                             </div>
@@ -1164,7 +1097,7 @@ function EventDetails() {
 
                   </section>
 
-                  <section className="rounded-3xl border border-slate-200 p-6 dark:border-slate-800">
+                  <section className="rounded-xl border border-emerald-700/20 bg-white p-5 shadow-sm dark:border-emerald-500/30 dark:bg-gray-950">
 
                     <div className="mb-4">
 
@@ -1176,9 +1109,9 @@ function EventDetails() {
 
                     <div className="grid gap-4 md:grid-cols-2">
 
-                      <div className="rounded-xl bg-slate-50 p-4 dark:bg-[#090909]">
+                      <div className="rounded-lg border border-emerald-700/10 bg-slate-50 p-4 shadow-sm dark:border-emerald-500/20 dark:bg-black">
 
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
                           Team Size
                         </p>
 
@@ -1188,9 +1121,9 @@ function EventDetails() {
 
                       </div>
 
-                      <div className="rounded-xl bg-slate-50 p-4 dark:bg-[#090909]">
+                      <div className="rounded-lg border border-emerald-700/10 bg-slate-50 p-4 shadow-sm dark:border-emerald-500/20 dark:bg-black">
 
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-600 dark:text-slate-400">
                           Participation Mode
                         </p>
 
@@ -1204,7 +1137,7 @@ function EventDetails() {
 
                   </section>
 
-                  <section className="rounded-3xl border border-slate-200 p-6 dark:border-slate-800">
+                  <section className="rounded-xl border border-emerald-700/20 bg-white p-5 shadow-sm dark:border-emerald-500/30 dark:bg-gray-950">
 
                     <label className="flex cursor-pointer items-start gap-3">
 

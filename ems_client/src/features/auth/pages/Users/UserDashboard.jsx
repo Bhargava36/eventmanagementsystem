@@ -120,7 +120,7 @@ function UserDashboard() {
                 <div
                   key={event.Id}
                   onClick={() => handleEventClick(event)}
-                  className="group flex flex-col md:flex-row gap-6 p-4 md:p-5 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-slate-800 hover:border-emerald-700/50 dark:hover:border-emerald-500/50 transition-all duration-300 shadow-xl cursor-pointer"
+                  className="group flex flex-col md:flex-row gap-6 p-4 md:p-5 rounded-3xl bg-white dark:bg-black border border-emerald-700/30 dark:border-emerald-500/20 hover:border-emerald-700/50 dark:hover:border-emerald-500/50 transition-all duration-300 shadow-xl cursor-pointer"
                 >
                   <div className={`w-full md:w-56 lg:w-64 aspect-square rounded-2xl flex items-center justify-center relative overflow-hidden shrink-0 border border-white/5`} style = {{ backgroundColor: event.PrimaryColor}}>
                     <div className="absolute inset-0 opacity-20">
