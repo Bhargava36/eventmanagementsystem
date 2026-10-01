@@ -11,13 +11,13 @@ import {
   CheckCircle2,
   Pencil,
   BadgeCheck,
-  CircleUserRound
+  CircleUserRound,
+  VenusAndMars
 } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { useParams } from "react-router-dom";
 
 function UserProfile() {
-  const { id } = useParams();
-
+  const {id} = useParams();
   const [profile, setProfile] = useState(null);
   const [showEdit, setShowEdit] = useState(false);
 
@@ -28,30 +28,46 @@ function UserProfile() {
     Location: '',
     State: '',
     CreatedAt: '',
-    Mobile: ''
+    Mobile: '',
+    Gender: ''
   });
 
   useEffect(() => {
-    if (id) {
-      fetchUserProfile();
-    }
-  }, [id]);
+    fetchUserProfile();
+  }, []);
 
   const fetchUserProfile = async () => {
     try {
+      const storedUser = localStorage.getItem("user");
+
+      console.log("STORED USER:", storedUser);
+
+      if (!storedUser) {
+        throw new Error("User is not logged in");
+      }
+
+      const loggedInUser = JSON.parse(storedUser);
+
+      console.log("LOGGED IN USER:", loggedInUser);
+      console.log("USER ID:", loggedInUser.Id);
+
+      if (!loggedInUser.Id) {
+        throw new Error("User ID not found in localStorage");
+      }
+
       const res = await fetch(
-        `http://localhost:3000/api/users/${id}`
+        `http://localhost:3000/api/users/${loggedInUser.Id}`
       );
 
       const data = await res.json();
-
+      console.log("USER PROFILE RESPONSE:", data);
       if (!res.ok) {
         throw new Error(
           data.message || 'Failed to fetch profile'
         );
       }
 
-      const user = data.events[0];
+      const user = data.user;
 
       if (!user) {
         throw new Error('User not found');
@@ -66,7 +82,8 @@ function UserProfile() {
         Location: user.Location || '',
         State: user.State || '',
         CreatedAt: user.CreatedAt || '',
-        Mobile: user.Mobile || ''
+        Mobile: user.Mobile || '',
+        Gender: user.Gender || ''
       });
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -81,7 +98,8 @@ function UserProfile() {
       Location: profile.Location || '',
       State: profile.State || '',
       CreatedAt: profile.CreatedAt || '',
-      Mobile: profile.Mobile || ''
+      Mobile: profile.Mobile || '',
+      Gender: profile.Gender || ''
     });
 
     setShowEdit(true);
@@ -214,15 +232,15 @@ function UserProfile() {
                   Joined{' '}
                   {profile.CreatedAt
                     ? new Date(
-                        profile.CreatedAt
-                      ).toLocaleDateString(
-                        'en-GB',
-                        {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric'
-                        }
-                      )
+                      profile.CreatedAt
+                    ).toLocaleDateString(
+                      'en-GB',
+                      {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      }
+                    )
                     : '-'}
                 </span>
 
@@ -412,6 +430,22 @@ function UserProfile() {
 
               </div>
 
+              <div>
+
+                <label className="mb-2 block text-sm font-medium text-slate-600 dark:text-slate-300">
+                  Gender
+                </label>
+
+                <input
+                  type="text"
+                  name="Gender"
+                  value={formData.Gender}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-emerald-500 dark:border-slate-800 dark:bg-[#090b0e] dark:text-white"
+                />
+
+              </div>
+
               <div className="flex gap-3 sm:col-span-2">
 
                 <button
@@ -563,6 +597,26 @@ function UserProfile() {
                 <div className="flex items-center gap-3 sm:w-56">
 
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-500">
+                    <VenusAndMars className="h-4 w-4" />
+                  </div>
+
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    Gender
+                  </span>
+
+                </div>
+
+                <span className="text-sm font-medium text-slate-900 dark:text-white">
+                  {profile.Gender || '-'}
+                </span>
+
+              </div>
+
+              <div className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center">
+
+                <div className="flex items-center gap-3 sm:w-56">
+
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-500">
                     <Calendar className="h-4 w-4" />
                   </div>
 
@@ -576,15 +630,15 @@ function UserProfile() {
 
                   {profile.CreatedAt
                     ? new Date(
-                        profile.CreatedAt
-                      ).toLocaleDateString(
-                        'en-GB',
-                        {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric'
-                        }
-                      )
+                      profile.CreatedAt
+                    ).toLocaleDateString(
+                      'en-GB',
+                      {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      }
+                    )
                     : '-'}
 
                 </span>
