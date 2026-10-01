@@ -75,7 +75,7 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<UserDashboard />} />
             <Route path="teams" element={<MyTeams />} />
-            <Route path="teamInfo" element={<TeamInfo />} />
+            <Route path="teamInfo/:teamId" element={<TeamInfo />} />
             <Route path="events/:id" element={<EventRedirectPage />} />
             <Route path="problem-statements" element={<ProblemStatementsPage />} />
             <Route path="profile/:id" element={<UserProfile/>} />
