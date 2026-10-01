@@ -42,24 +42,34 @@ function UserDashboard() {
   }, []);
 
   const fetchUpcomingEvents = async () => {
-    try {
-      const res = await fetch("http://localhost:3000/api/events");
-      const data = await res.json();
+  try {
+    const res = await fetch("http://localhost:3000/api/events");
+    const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to fetch events");
-      }
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to fetch events");
+    }
 
-      const upcoming = data.events.filter((event) => event.EventStatus === "upcoming");
-      setUpcomingEvents(upcoming);
-    }
-    catch (error) {
-      console.error("Upcoming events error:", error);
-    }
-    finally {
-      setLoadingEvents(false);
-    }
-  };
+    console.log("Events from API:", data.events);
+
+    const upcoming = data.events.filter(
+      (event) =>
+        String( event.EventStatus)
+          .toLowerCase() === "upcoming"
+    );
+
+    console.log("Upcoming events:", upcoming);
+
+    setUpcomingEvents(upcoming);
+
+  } catch (error) {
+    console.error("Upcoming events error:", error);
+  } finally {
+    setLoadingEvents(false);
+  }
+};
+
+
   function handleEventClick(event) {
     navigate(`/user/events/${event.Id}`);
     console.log("event:",event);
@@ -163,21 +173,21 @@ function UserDashboard() {
                         <div>
                           <p className="text-slate-500 dark:text-slate-500 text-xs font-medium mb-0.5">Prize Pool</p>
                           <p className="text-slate-900 dark:text-white text-sm font-semibold">
-                            {/* {event.prize} */} {'-'}
+                            ${event.PrizeMoney} 
                             </p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-slate-50 dark:bg-[#090b0e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 md:p-4 flex items-center gap-3 w-full">
+                    {/* <div className="bg-slate-50 dark:bg-[#090b0e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 md:p-4 flex items-center gap-3 w-full">
                       <MapPin className="h-5 w-5 text-emerald-700 dark:text-emerald-500 shrink-0" />
                       <div>
                         <p className="text-slate-500 text-xs font-medium mb-0.5">Event Venue</p>
                         <p className="text-slate-900 dark:text-white text-sm font-semibold">
-                          {/* {event.venue} */} {'-'}
+                          {event.venue}  {'-'}
                           </p>
                       </div>
-                    </div>
+                    </div> */}
 
                   </div>
                 </div>
@@ -188,7 +198,7 @@ function UserDashboard() {
 
       </div>
       <div className="mt-12">
-        <Footer />
+        {/* <Footer /> */}
       </div>
     </div>
   );
