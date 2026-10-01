@@ -1,173 +1,181 @@
-const userService = require('./usersServices');
-const jwt = require("jsonwebtoken");
+const usersService = require("./usersServices");
 const bcrypt = require("bcrypt");
 
 const createUser = (req, res) => {
-    const {UserName, Email, Password, College, Location, State, Mobile } = req.body;
-
-    if( !UserName || !Email || !Password || !College || !Location || !State || !Mobile) {
-        return res.status(400).json({message: "All fields are required"});
-    }
-
-    userService.createUser(UserName, Email, Password, College, Location, State, Mobile, (err, result) => {
-        if(err){
-            return res.status(500).json({
-                message: "Registration failed",
-                error: err
+    const {UserName, Email, Password, Mobile, Gender, College, Location, State } = req.body;
+    usersService.createUser(UserName, Email, Password, Mobile, Gender, College, Location, State, (err, result) => {
+            if (err) {
+                return res.status(500).json({
+                    message: err.message
+                });
+            }
+            res.status(201).json({
+                message: "User created successfully",
+                userId: result.insertId
             });
         }
-        else {
-            return res.status(201).json({
-                message: "Users Registered Successfully!",
-            });
-        }
-    });
+    );
 };
 
 const loginUser = (req, res) => {
-    const {Email, Password} = req.body;
-
-    if(!Email || !Password){
-        return res.status(400).json({
-            message: "All fields are required, Check it once"
-        });
-    }
-
-    userService.loginUser(Email, async(err, result) => {
-        if(err){
+    const { Email, Password } = req.body;
+    usersService.loginUser(Email, async (err, users) => {
+        if (err) {
             return res.status(500).json({
-                message: "Database error",
-                error: err
-            });
-        }
-        
-        if(result.length === 0){
-            return res.status(401).json({
-                message: "Invalid UserName or Password"
-            });
-        }
-        const users = result[0];
-
-        const isMatch = await bcrypt.compare(Password, users.Password);
-        
-        if(!isMatch) {
-             return res.status(401).json({
-                message: "Invalid UserName or Password"
+                message: err.message
             });
         }
 
-        const token = jwt.sign(
-            {
-            Id: users.Id,
-            UserName: users.UserName,
-            role: "user" 
-            },
-            process.env.JWT_SECRECT,
-            {
-                expiresIn: process.env.JWT_EXPIRES_IN
+        if (users.length === 0) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+
+        const user = users[0];
+
+        try {
+            const isMatch = await bcrypt.compare(
+                Password,
+                user.Password
+            );
+
+            if (!isMatch) {
+                return res.status(401).json({
+                    message: "Invalid email or password"
+                });
             }
-        );
-        return res.status(200).json({
-            message:"Login Successful",
-            token,
-            users: {
-                Id: users.Id,
-                UserName: users.UserName,
-                Email: users.Email,
-                College: users.College,
-                Location: users.Location,
-                State: users.State,
-                Mobile: users.Mobile
-            }
-        });
+
+            res.status(200).json({
+                message: "Login successful",
+                user
+            });
+        } catch (error) {
+            return res.status(500).json({
+                message: error.message
+            });
+        }
     });
 };
 
 const getAllUsers = (req, res) => {
-
-    userService.getAllUsers((err, result) => {
-
+    usersService.getAllUsers((err, users) => {
         if (err) {
-
             return res.status(500).json({
-                message: "Failed to get users",
-                error: err
+                message: err.message
             });
         }
 
-        return res.status(200).json({
-            message: "users fetched successfully",
-            events: result
+        res.status(200).json({
+            users
         });
     });
 };
 
 const getUserById = (req, res) => {
-    const id = req.params.id;
-
-    userService.getUserById(id, (err, result) => {
-        if(err) {
+    usersService.getUserById(req.params.id, (err, users) => {
+        if (err) {
             return res.status(500).json({
-                message: "Failed to get users by id",
-                error: err
+                message: err.message
             });
         }
 
-        if(result.length === 0) {
+        if (users.length === 0) {
             return res.status(404).json({
-                message: "users not found"
+                message: "User not found"
             });
         }
 
-        return res.status(200).json({
-            message: "users fetched successfully",
-            events: result
+        res.status(200).json({
+            user: users[0]
         });
     });
 };
 
 const getUserCount = (req, res) => {
-
-    userService.getUserCount((err, result) => {
-
+    usersService.getUserCount((err, result) => {
         if (err) {
             return res.status(500).json({
-                message: 'Failed to get user count',
-                error: err.message
+                message: err.message
             });
         }
 
-        return res.status(200).json({
-            message: 'User count fetched successfully',
+        res.status(200).json({
             count: result.userCount
         });
     });
 };
 
-const updateUser = (req, res) => {
-    const { id } = req.params;
-    const { UserName, Email, College, Location, State, Mobile } = req.body;
+const getUserByEmail = (req, res) => {
+    usersService.getUserByEmail(
+        req.params.email,
+        (err, users) => {
+            if (err) {
+                return res.status(500).json({
+                    message: err.message
+                });
+            }
 
-    userService.updateUser(id, UserName, Email, College, Location, State, Mobile, (err, result) => {
-        if (err) {
-            return res.status(500).json({
-                message: "Failed to update users",
-                error: err
+            if (users.length === 0) {
+                return res.status(404).json({
+                    message: "User not found"
+                });
+            }
+
+            res.status(200).json({
+                user: users[0]
             });
         }
+    );
+};
 
-        return res.status(200).json({
-            message: "users updated successfully",
-            users: result
-        });
-    });
+const updateUser = (req, res) => {
+    const {UserName, Email, Mobile, Gender, College, Location, State } = req.body;
+    const id = req.params.id;
+    usersService.updateUser(id, UserName, Email, Mobile, Gender, College, Location, State, (err, result) => {
+            if (err) {
+                return res.status(500).json({
+                    message: err.message
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    message: "User not found"
+                });
+            }
+
+            res.status(200).json({
+                message: "User updated successfully",
+                result
+            });
+        }
+    );
+};
+
+const checkEmailExists = (req, res) => {
+    const email =  req.params.email;
+    usersService.checkEmailExists(email, (err, exists) => {
+            if (err) {
+                return res.status(500).json({
+                    message: err.message
+                });
+            }
+
+            res.status(200).json({
+                exists
+            });
+        }
+    );
 };
 
 module.exports = {
     createUser,
     loginUser,
     getAllUsers,
-    getUserById,
     getUserCount,
-    updateUser
+    getUserById,
+    getUserByEmail,
+    updateUser,
+    checkEmailExists
 };
