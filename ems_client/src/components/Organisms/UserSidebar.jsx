@@ -54,7 +54,7 @@ const UserSidebarContent = ({
   function handleLogout() {
     logout();
     toast.success('Logged out successfully');
-    navigate('/login'); 
+    navigate('/user/login'); 
   }
 
   const userInitials = user?.name ? user.name.charAt(0).toUpperCase() : (user?.username ? user.username.charAt(0).toUpperCase() : 'U');
