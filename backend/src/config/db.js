@@ -59,49 +59,51 @@ const migrationQueries = [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
     `CREATE TABLE IF NOT EXISTS users (
-        Id INT AUTO_INCREMENT PRIMARY KEY,
-        UserName VARCHAR(255) NOT NULL,
-        Email VARCHAR(255) NOT NULL UNIQUE,
-        Password VARCHAR(255) NOT NULL,
-        College VARCHAR(255),
-        Location VARCHAR(255),
-        State VARCHAR(100),
-        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    UserName VARCHAR(255) NOT NULL,
+    Email VARCHAR(255) NOT NULL UNIQUE,
+    Password VARCHAR(255) NOT NULL,
+    Mobile VARCHAR(50),
+    College VARCHAR(255),
+    Location VARCHAR(255),
+    State VARCHAR(100),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
+    `ALTER TABLE users ADD COLUMN if not exists Gender ENUM('Male', 'Female', 'Other') NOT NULL `,
+
     `CREATE TABLE IF NOT EXISTS teams (
-        Id INT AUTO_INCREMENT PRIMARY KEY,
-        TeamLead VARCHAR(255) NOT NULL,
-        Email VARCHAR(255) NOT NULL,
-        TeamSize VARCHAR(50),
-        College VARCHAR(255),
-        State VARCHAR(100),
-        PhoneNumber VARCHAR(50),
-        TeamName VARCHAR(255) NOT NULL,
-        ProblemStatementId VARCHAR(100),
-        Tech_Stack VARCHAR(255),
-        EventId INT,
-        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_teams_event (EventId)
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    TeamName VARCHAR(255) NOT NULL,
+    TeamLeadUserId INT NOT NULL,
+    TeamSize INT NOT NULL,
+    College VARCHAR(255),
+    State VARCHAR(100),
+    ProblemStatementId VARCHAR(100),
+    Tech_Stack VARCHAR(255),
+    EventId INT NOT NULL,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_teams_lead (TeamLeadUserId),
+    INDEX idx_teams_event (EventId),
+    FOREIGN KEY (TeamLeadUserId) REFERENCES users(Id) ON DELETE RESTRICT,
+    FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
     `CREATE TABLE IF NOT EXISTS event_registrations (
-        Id INT AUTO_INCREMENT PRIMARY KEY,
-        TeamLead VARCHAR(255) NOT NULL,
-        Email VARCHAR(255) NOT NULL,
-        TeamSize INT,
-        College VARCHAR(255),
-        State VARCHAR(100),
-        PhoneNumber VARCHAR(50),
-        TeamName VARCHAR(255) NOT NULL,
-        Tech_Stack VARCHAR(100),
-        EventId INT,
-        STATUS VARCHAR(50) DEFAULT 'pending',
-        ProblemStatementId VARCHAR(100),
-        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_reg_event (EventId)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    EventId INT NOT NULL,
+    TeamId INT NOT NULL,
+    ParticipationMode ENUM('Virtual', 'Physical') NOT NULL,
+    Status ENUM('pending', 'approved', 'rejected', 'cancelled') DEFAULT 'pending',
+    ProblemStatementId VARCHAR(100),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_reg_event (EventId),
+    INDEX idx_reg_team (TeamId),
+    UNIQUE KEY unique_team_event_mode (EventId, TeamId, ParticipationMode),
+    FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+    FOREIGN KEY (TeamId) REFERENCES teams(Id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
     `CREATE TABLE IF NOT EXISTS problemstatements (
         Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -119,27 +121,37 @@ const migrationQueries = [
         UNIQUE (EventId, PrizeRank)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
-    `DROP TABLE IF EXISTS teammembers`,
-
-    `DROP TABLE IF EXISTS teamlead`,
-
     `CREATE TABLE IF NOT EXISTS team_members (
         Id INT AUTO_INCREMENT PRIMARY KEY,
-        Name VARCHAR(255) NOT NULL,
-        Email VARCHAR(255) NOT NULL UNIQUE,
-        Password VARCHAR(255) NOT NULL,
-        Role ENUM('TeamLead', 'TeamMember') NOT NULL,
-        PhoneNumber VARCHAR(50),
-        TeamId INT,
-        Gender VARCHAR(20),
+        UserId INT NOT NULL,
+        TeamId INT NOT NULL,
+        Role ENUM('TeamLead', 'TeamMember') NOT NULL DEFAULT 'TeamMember',
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
+        UNIQUE KEY unique_user_team (UserId, TeamId),
+        INDEX idx_team_members_user (UserId),
         INDEX idx_team_members_team (TeamId),
+        FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE,
+        FOREIGN KEY (TeamId) REFERENCES teams(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
-        FOREIGN KEY (TeamId)
-            REFERENCES teams(Id)
-            ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    `ALTER TABLE team_members ADD COLUMN if not exists Gender ENUM('Male', 'Female', 'Other') NOT NULL `,
+
+    `CREATE TABLE IF NOT EXISTS event_core_team (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    EventId INT NOT NULL,
+    Role VARCHAR(100) NOT NULL,
+    Name VARCHAR(150) NOT NULL,
+    Phone VARCHAR(20) NOT NULL,
+    Email VARCHAR(150) NOT NULL,
+    Department VARCHAR(100) NOT NULL,
+    Type ENUM('faculty', 'student') NOT NULL,
+    StudentCoordinators INT NOT NULL DEFAULT 0,
+    FacultyCoordinators INT NOT NULL DEFAULT 0,
+    Volunteers INT NOT NULL DEFAULT 0,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 
 ];
 
