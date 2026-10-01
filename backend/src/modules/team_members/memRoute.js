@@ -1,7 +1,5 @@
 const express = require("express");
-
 const router = express.Router();
-
 const memController = require("./memController");
 
 router.post('/register', memController.registerUser);

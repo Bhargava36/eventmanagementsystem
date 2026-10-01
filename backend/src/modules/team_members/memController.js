@@ -2,119 +2,143 @@ const memberService = require("../team_members/memService");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-const registerUser = (req,res) => {
-    const {Name, Email, Password, Role, PhoneNumber, TeamId, Gender} = req.body;
+const registerUser = (req, res) => {
 
-    if(!Name || !Email || !Password || !Role || !PhoneNumber || !Gender){
-        return res.status(400).json({message: "All fields are required"});
-    }
+    const { UserId, TeamId, Role, Gender } = req.body;
 
-    if(Role !== 'TeamLead' && Role !== 'TeamMember') {
+    if (!UserId || !TeamId || !Role || !Gender) {
         return res.status(400).json({
-            message : "Role must be Team lead or member"
+            message: "All fields are required"
         });
     }
 
-    memberService.createUser(Name, Email, Password, Role, PhoneNumber, TeamId, Gender, (err, result) => {
-        if(err){
-            return res.status(500).json({
-                message: "Registration failed",
-                error: err
-            });
-        }
-        else {
+    if (Role !== "TeamLead" && Role !== "TeamMember") {
+        return res.status(400).json({
+            message: "Role must be TeamLead or TeamMember"
+        });
+    }
+
+    if (Gender !== "Male" && Gender !== "Female" && Gender !== "Other") {
+        return res.status(400).json({
+            message: "Gender must be Male, Female or Other"
+        });
+    }
+
+    memberService.createUser( UserId, TeamId, Role, Gender, (err, result) => {
+            if (err) {
+                return res.status(500).json({
+                    message: "Registration failed",
+                    error: err.message
+                });
+            }
+
             return res.status(201).json({
-                message: "User Registered Successfully!"
+                message: "User added to team successfully",
+                teamMemberId: result.insertId
             });
         }
-    });
+    );
 };
 
-const loginUser = (req,res) => {
-    const {Email,Password} = req.body;
 
-    if(!Email || !Password){
+const loginUser = (req, res) => {
+
+    const { Email, Password } = req.body;
+
+    if (!Email || !Password) {
         return res.status(400).json({
-            message: "All fields are required, Check it once"
+            message: "Email and Password are required"
         });
     }
 
-    memberService.loginUser(Email, async(err,result) => {
-        if(err){
+    memberService.loginUser(Email, async (err, result) => {
+
+        if (err) {
             return res.status(500).json({
                 message: "Database error",
-                error: err
+                error: err.message
             });
         }
-        
-        if(result.length === 0){
+
+        if (result.length === 0) {
             return res.status(401).json({
-                message: "Invalid UserName or Password"
+                message: "Invalid Email or Password"
             });
         }
+
         const user = result[0];
 
         const isMatch = await bcrypt.compare(Password, user.Password);
-        if(!isMatch) {
-             return res.status(401).json({
-                message: "Invalid UserName or Password"
+
+        if (!isMatch) {
+            return res.status(401).json({
+                message: "Invalid Email or Password"
             });
         }
 
         const token = jwt.sign(
             {
-            Id: user.Id,
-            Name: user.Name,
-            role: "user" 
+                Id: user.UserId,
+                Name: user.UserName,
+                role: user.Role,
+                TeamId: user.TeamId
             },
             process.env.JWT_SECRECT,
             {
                 expiresIn: process.env.JWT_EXPIRES_IN
             }
         );
+
         return res.status(200).json({
-            message:"Login Successful",
+            message: "Login Successful",
             token,
             user: {
-                Id: user.Id,
-                Name: user.AdminName,
+                Id: user.UserId,
+                Name: user.UserName,
                 Email: user.Email,
-                PhoneNumber: user.PhoneNumber
+                PhoneNumber: user.PhoneNumber,
+                TeamId: user.TeamId,
+                Role: user.Role,
+                Gender: user.Gender
             }
         });
     });
 };
+
 
 const getAllUsers = (req, res) => {
 
     memberService.getAllUsers((err, result) => {
 
         if (err) {
-
             return res.status(500).json({
-                message: "Failed to get uses",
-                error: err
+                message: "Failed to get users",
+                error: err.message
             });
         }
 
         return res.status(200).json({
-            message: "users fetched successfully",
-            events: result
+            message: "Users fetched successfully",
+            users: result
         });
     });
 };
 
+
 const getUsersById = (req, res) => {
+
     const id = req.params.id;
+
     memberService.getusersById(id, (err, result) => {
-        if(err) {
+
+        if (err) {
             return res.status(500).json({
                 message: "Failed to get user by id",
-                error: err
+                error: err.message
             });
         }
 
-        if(result.length === 0) {
+        if (result.length === 0) {
             return res.status(404).json({
                 message: "User not found"
             });
@@ -122,40 +146,47 @@ const getUsersById = (req, res) => {
 
         return res.status(200).json({
             message: "User fetched successfully",
-            events: result
+            user: result[0]
         });
     });
 };
 
+
 const getUsersByTeamId = (req, res) => {
-    const teamid = req.params.teamid;
-    memberService.getusersById(teamid, (err, result) => {
-        if(err) {
+
+    const teamId = req.params.teamid;
+
+    memberService.getusersByTeamId(teamId, (err, result) => {
+
+        if (err) {
             return res.status(500).json({
-                message: "Failed to get users by teamid",
-                error: err
+                message: "Failed to get users by team id",
+                error: err.message
             });
         }
 
-        if(result.length === 0) {
+        if (result.length === 0) {
             return res.status(404).json({
-                message: "team not found"
+                message: "No users found in this team"
             });
         }
 
         return res.status(200).json({
-            message: "Users fetched successfully",
-            events: result
+            message: "Team users fetched successfully",
+            users: result
         });
     });
 };
 
+
 const getUserCount = (req, res) => {
+
     memberService.getUserCount((err, result) => {
+
         if (err) {
             return res.status(500).json({
                 message: "Failed to get user count",
-                error: err
+                error: err.message
             });
         }
 
@@ -166,41 +197,47 @@ const getUserCount = (req, res) => {
     });
 };
 
+
 const updateUserById = (req, res) => {
 
     const id = req.params.id;
 
-    const { Name, Email, Password, Role, PhoneNumber, TeamId, Gender } = req.body;
+    const { UserId, TeamId, Role, Gender } = req.body;
 
-    if (!Name || !Email || !Password || !Role || !PhoneNumber || !TeamId || !Gender) {
-
+    if (!UserId || !TeamId || !Role || !Gender) {
         return res.status(400).json({
             message: "All fields are required"
         });
     }
 
-    if(Role !== 'TeamLead' && Role !== 'TeamMember') {
+    if (Role !== "TeamLead" && Role !== "TeamMember") {
         return res.status(400).json({
-            message : "Role must be Team lead or member"
+            message: "Role must be TeamLead or TeamMember"
         });
     }
 
-    memberService.updateUserById( id, Name, Email, Password, Role, PhoneNumber, TeamId, Gender, (err, result) => {
+    if (Gender !== "Male" && Gender !== "Female" && Gender !== "Other") {
+        return res.status(400).json({
+            message: "Gender must be Male, Female or Other"
+        });
+    }
+
+    memberService.updateUserById(id, UserId, TeamId, Role, Gender, (err, result) => {
 
             if (err) {
-
                 return res.status(500).json({
-                    message: "users update failed",
-                    error: err
+                    message: "User update failed",
+                    error: err.message
                 });
             }
 
             return res.status(200).json({
-                message: "users updated successfully"
+                message: "User updated successfully"
             });
         }
     );
 };
+
 
 module.exports = {
     registerUser,

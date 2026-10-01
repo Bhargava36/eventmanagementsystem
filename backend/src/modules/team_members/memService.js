@@ -1,42 +1,23 @@
 const db = require('../../config/db');
-const bcrypt = require('bcrypt');
 
-const createUser = async (Name, Email, Password, Role, PhoneNumber, TeamId, Gender, callback) => {
-    try {
-        const hashedPassword = await bcrypt.hash(Password, 10);
+const createUser = (UserId, TeamId, Role, Gender, callback) => {
+    const query = `INSERT INTO team_members ( UserId, TeamId, Role, Gender ) VALUES (?, ?, ?, ?) `;
 
-        const query = "insert into teammembers (Name, Email, Password, Role, PhoneNumber, TeamId, Gender) values (?,?,?,?,?,?,?)";
+    const values = [ UserId, TeamId, Role, Gender];
 
-        db.query(query, [Name, Email, hashedPassword, Role, PhoneNumber, TeamId, Gender], (err, result) => {
-            if (err) {
-                return callback(err, null);
-            } else {
-                return callback(null, result);
-            }
-        });
-    } catch (err) {
-        return callback(err, null);
-    }
-};
-
-const loginUser = (Email, callback) => {
-    const query = "select Id, Name, Email, Password, Role, PhoneNumber, TeamId, Gender from teammembers where Email = ?";
-    db.query(query, [Email], (err, result) => {
+    db.query(query, values, (err, result) => {
         if (err) {
             return callback(err, null);
         }
-        else {
-            return callback(null, result);
-        }
+
+        return callback(null, result);
     });
 };
 
 const getAllUsers = (callback) => {
-
-    const query = ` SELECT * FROM teammembers ORDER BY CreatedAt DESC `;
+    const query = `SELECT tm.Id, tm.UserId, u.UserName, u.Email, u.PhoneNumber, u.Gender AS UserGender, u.College, u.State, tm.TeamId, tm.Role, tm.Gender, tm.CreatedAt FROM team_members tm LEFT JOIN users u ON tm.UserId = u.Id ORDER BY tm.CreatedAt DESC`;
 
     db.query(query, (err, result) => {
-
         if (err) {
             return callback(err, null);
         }
@@ -46,7 +27,7 @@ const getAllUsers = (callback) => {
 };
 
 const getusersById = (id, callback) => {
-    const query = ` SELECT * FROM teammembers where Id = ?`;
+    const query = `SELECT tm.Id, tm.UserId, u.UserName, u.Email, u.PhoneNumber, u.Gender AS UserGender, u.College, u.State, tm.TeamId, tm.Role, tm.Gender, tm.CreatedAt FROM team_members tm LEFT JOIN users u ON tm.UserId = u.Id WHERE tm.Id = ?`;
 
     db.query(query, [id], (err, result) => {
         if (err) {
@@ -57,10 +38,10 @@ const getusersById = (id, callback) => {
     });
 };
 
-const getusersByTeamId = (id, callback) => {
-    const query = ` SELECT * FROM teammembers where TeamId = ?`;
+const getusersByTeamId = (teamId, callback) => {
+    const query = `SELECT tm.Id, tm.UserId, u.UserName, u.Email, u.PhoneNumber, u.Gender AS UserGender, u.College, u.State, tm.TeamId, tm.Role, tm.Gender, tm.CreatedAt FROM team_members tm LEFT JOIN users u ON tm.UserId = u.Id WHERE tm.TeamId = ? ORDER BY CASE WHEN tm.Role = 'TeamLead' THEN 1 ELSE 2 END, tm.CreatedAt ASC`;
 
-    db.query(query, [id], (err, result) => {
+    db.query(query, [teamId], (err, result) => {
         if (err) {
             return callback(err, null);
         }
@@ -70,31 +51,33 @@ const getusersByTeamId = (id, callback) => {
 };
 
 const getUserCount = (callback) => {
-    const query = ` SELECT COUNT(*) AS userCount FROM teammembers `;
+    const query = `SELECT COUNT(*) AS userCount FROM team_members`;
+
     db.query(query, (err, result) => {
         if (err) {
             return callback(err, null);
         }
+
         return callback(null, result[0]);
     });
 };
 
-const updateUserById = (id, Name, Email, Password, Role, PhoneNumber, TeamId, Gender, callback) => {
-    const query = ` Update teammembers SET Name = ?, Email = ?, Password = ?, Role = ?, PhoneNumber = ?, TeamId = ?, Gender = ? WHERE Id = ? `;
-    db.query(query, [Name, Email, Password, Role, PhoneNumber, TeamId, Gender, id], (err, result) => {
+const updateUserById = (id, UserId, TeamId, Role, Gender, callback) => {
+    const query = `UPDATE team_members SET UserId = ?, TeamId = ?, Role = ?, Gender = ? WHERE Id = ?`;
 
+    const values = [ UserId, TeamId, Role, Gender, id];
+
+    db.query(query, values, (err, result) => {
         if (err) {
             return callback(err, null);
         }
 
         return callback(null, result);
-    }
-    );
+    });
 };
 
 module.exports = {
     createUser,
-    loginUser,
     getAllUsers,
     getusersById,
     getusersByTeamId,
