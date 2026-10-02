@@ -11,8 +11,9 @@ const registerAdmin = (req,res) => {
 
     adminService.createAdmin(AdminName, Email, Password, Mobile, EventId, (err, result) => {
         if(err){
-            return res.status(500).json({
-                message: "Registration failed",
+            const statusCode = err.statusCode || 400;
+            return res.status(statusCode).json({
+                message: err.message || "Registration failed",
                 error: err
             });
         }

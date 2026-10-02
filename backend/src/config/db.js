@@ -10,7 +10,9 @@ const db = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 20,
     queueLimit: 0,
-    connectTimeout: 10000, // 10 seconds
+    connectTimeout: 10000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000
 });
 
 const migrationQueries = [
@@ -38,12 +40,21 @@ const migrationQueries = [
         EventType VARCHAR(100),
         EventStatus VARCHAR(100) DEFAULT 'upcoming',
         HackathonMode VARCHAR(100),
+        VirtualStartDate VARCHAR(100),
+        VirtualEndDate VARCHAR(100),
+        PhysicalStartDate VARCHAR(100),
+        PhysicalEndDate VARCHAR(100),
+        VirtualFacilities TEXT,
+        VirtualRequirements TEXT,
+        PhysicalFacilities TEXT,
+        PhysicalRequirements TEXT,
         PrimaryColor VARCHAR(50),
         SecondaryColor VARCHAR(50),
         TertiaryColor VARCHAR(50),
         PrimaryTextColor VARCHAR(50),
         SecondaryTextColor VARCHAR(50),
         TertiaryTextColor VARCHAR(50),
+        Posters LONGTEXT,
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
@@ -71,6 +82,8 @@ const migrationQueries = [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
     `ALTER TABLE users ADD COLUMN if not exists Gender ENUM('Male', 'Female', 'Other') NOT NULL `,
+
+    `ALTER TABLE events ADD COLUMN if not exists Posters LONGTEXT`,
 
     `CREATE TABLE IF NOT EXISTS teams (
     Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -151,8 +164,52 @@ const migrationQueries = [
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualStartDate VARCHAR(100)`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualEndDate VARCHAR(100)`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalStartDate VARCHAR(100)`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalEndDate VARCHAR(100)`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualRegistrationStart VARCHAR(100)`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualRegistrationEnd VARCHAR(100)`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalRegistrationStart VARCHAR(100)`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalRegistrationEnd VARCHAR(100)`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualFacilities TEXT`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualRequirements TEXT`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalFacilities TEXT`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalRequirements TEXT`,
+
+    `CREATE TABLE IF NOT EXISTS event_descriptions (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        Description TEXT,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_event_desc (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS event_facilities (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        Phase ENUM('Virtual', 'Physical', 'General') DEFAULT 'General',
+        Facility TEXT NOT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_fac_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS event_requirements (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        Phase ENUM('Virtual', 'Physical', 'General') DEFAULT 'General',
+        Requirement TEXT NOT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_req_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE event_core_team ADD COLUMN IF NOT EXISTS Photo LONGTEXT`
 ];
 
 let isMigrating = false;

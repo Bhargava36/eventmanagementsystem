@@ -3,19 +3,29 @@ const bcrypt = require('bcrypt');
 
 const createAdmin = async (AdminName, Email, Password, Mobile, EventId, callback) => {
     try {
-        const hashedPassword = await bcrypt.hash(Password, 10);
+        const countQuery = "SELECT COUNT(*) AS adminCount FROM admins WHERE EventId = ?";
+        db.query(countQuery, [EventId], async (countErr, countResult) => {
+            if (countErr) {
+                return callback(countErr, null);
+            }
 
-        const query = "insert into admins (AdminName, Email, Password, Mobile, EventId) values (?,?,?,?,?)";
-        db.query(query, [AdminName, Email, hashedPassword, Mobile, EventId], (err, result) => {
-            if (err) {
-                return callback(err, null);
+            if (countResult && countResult[0] && countResult[0].adminCount >= 3) {
+                const limitError = new Error("Maximum limit reached. An event can have up to 3 admins only.");
+                limitError.statusCode = 400;
+                return callback(limitError, null);
             }
-            else {
-                return callback(null, result);
-            }
+
+            const hashedPassword = await bcrypt.hash(Password, 10);
+            const query = "insert into admins (AdminName, Email, Password, Mobile, EventId) values (?,?,?,?,?)";
+            db.query(query, [AdminName, Email, hashedPassword, Mobile, EventId], (err, result) => {
+                if (err) {
+                    return callback(err, null);
+                } else {
+                    return callback(null, result);
+                }
+            });
         });
-    }
-    catch (err) {
+    } catch (err) {
         return callback(err, null);
     }
 };
@@ -59,7 +69,7 @@ const getAdminById = (id, callback) => {
 };
 
 const getAdminByEventId = (EventId, callback) => {
-    const query = ` SELECT admins.Id, admins.Email, admins.Mobile, admins.EventId, admins.createdAt, events.EventName FROM admins JOIN events ON admins.EventId = events.Id WHERE admins.EventId = ?`;
+    const query = ` SELECT admins.Id, admins.AdminName, admins.Email, admins.Mobile, admins.EventId, admins.createdAt, events.EventName FROM admins JOIN events ON admins.EventId = events.Id WHERE admins.EventId = ?`;
 
     db.query(query, [EventId], (err, result) => {
         if (err) {

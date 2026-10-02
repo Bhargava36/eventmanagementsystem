@@ -7,7 +7,14 @@ import {
   Plus,
   Eye,
   ChevronDown,
-  X
+  X,
+  UploadCloud,
+  Image as ImageIcon,
+  Trash2,
+  Globe,
+  MapPin,
+  Layers,
+  Users
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
@@ -51,18 +58,31 @@ function EventsDashboard() {
     TeamSize: '',
     StartDate: '',
     EndDate: '',
+    VirtualStartDate: '',
+    VirtualEndDate: '',
+    PhysicalStartDate: '',
+    PhysicalEndDate: '',
+    VirtualRegistrationStart: '',
+    VirtualRegistrationEnd: '',
+    PhysicalRegistrationStart: '',
+    PhysicalRegistrationEnd: '',
+    VirtualFacilities: '',
+    VirtualRequirements: '',
+    PhysicalFacilities: '',
+    PhysicalRequirements: '',
     RegistrationStart: '',
     RegistrationEnd: '',
     Location: '',
     EventType: '',
     EventStatus: '',
-    HackathonMode: '',
+    HackathonMode: 'Physical',
     PrimaryColor: '#10B981',
     SecondaryColor: '#FFFFFF',
     TertiaryColor: '#000000',
     PrimaryTextColor: '#FFFFFF',
     SecondaryTextColor: '#000000',
-    TertiaryTextColor: '#FFFFFF'
+    TertiaryTextColor: '#FFFFFF',
+    Posters: []
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -125,10 +145,111 @@ function EventsDashboard() {
     }));
   };
 
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (loadEvt) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1200;
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.82);
+          resolve(compressed);
+        };
+        img.onerror = () => resolve(loadEvt.target.result);
+        img.src = loadEvt.target.result;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handlePosterUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not a valid image file.`);
+        continue;
+      }
+      try {
+        const compressedBase64 = await compressImage(file);
+        if (compressedBase64) {
+          setFormData((prev) => ({
+            ...prev,
+            Posters: [...(prev.Posters || []), compressedBase64]
+          }));
+        }
+      } catch (err) {
+        console.error('Image upload error:', err);
+      }
+    }
+    e.target.value = '';
+  };
+
+  const handleRemovePoster = (indexToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      Posters: (prev.Posters || []).filter((_, idx) => idx !== indexToRemove)
+    }));
+  };
+
+  const handleSetPrimaryPoster = (indexToPrimary) => {
+    setFormData((prev) => {
+      const posters = [...(prev.Posters || [])];
+      if (indexToPrimary === 0 || !posters[indexToPrimary]) return prev;
+      const [selected] = posters.splice(indexToPrimary, 1);
+      posters.unshift(selected);
+      return {
+        ...prev,
+        Posters: posters
+      };
+    });
+  };
+
   const handleCreateEvent = async (e) => {
     e.preventDefault();
 
     try {
+      const payload = { ...formData };
+
+      if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Hybrid') {
+        payload.StartDate = formData.VirtualStartDate || formData.StartDate;
+        payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
+        payload.Facilities = [formData.VirtualFacilities, formData.PhysicalFacilities].filter(Boolean).join('\n\n') || formData.Facilities || '-';
+        payload.Requirements = [formData.VirtualRequirements, formData.PhysicalRequirements].filter(Boolean).join('\n\n') || formData.Requirements || '-';
+      } else if (formData.HackathonMode === 'Virtual') {
+        payload.StartDate = formData.VirtualStartDate || formData.StartDate;
+        payload.EndDate = formData.VirtualEndDate || formData.EndDate;
+        payload.Facilities = formData.VirtualFacilities || formData.Facilities;
+        payload.Requirements = formData.VirtualRequirements || formData.Requirements;
+        payload.VirtualFacilities = payload.Facilities;
+        payload.VirtualRequirements = payload.Requirements;
+        if (!payload.Location) payload.Location = 'Virtual / Online';
+      } else if (formData.HackathonMode === 'Physical') {
+        payload.StartDate = formData.PhysicalStartDate || formData.StartDate;
+        payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
+        payload.Facilities = formData.PhysicalFacilities || formData.Facilities;
+        payload.Requirements = formData.PhysicalRequirements || formData.Requirements;
+        payload.PhysicalFacilities = payload.Facilities;
+        payload.PhysicalRequirements = payload.Requirements;
+      }
+
       const res = await fetch(
         'http://localhost:3000/api/events/create',
         {
@@ -136,7 +257,7 @@ function EventsDashboard() {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(payload)
         }
       );
 
@@ -285,7 +406,7 @@ function EventsDashboard() {
 
               <div className="px-7 pt-6">
                 <div className="flex items-center">
-                  {[1, 2, 3, 4, 5].map((step) => (
+                  {[1, 2, 3, 4].map((step) => (
                     <React.Fragment key={step}>
                       <div className="flex flex-col items-center">
                         <div
@@ -298,7 +419,7 @@ function EventsDashboard() {
                         </div>
                       </div>
 
-                      {step < 5 && (
+                      {step < 4 && (
                         <div
                           className={`h-1 flex-1 mx-2 rounded ${currentStep > step
                             ? 'bg-emerald-700'
@@ -312,24 +433,14 @@ function EventsDashboard() {
 
                 <div className="mt-5">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {currentStep === 1 &&
-                      'Basic Information'}
-
-                    {currentStep === 2 &&
-                      'Event Details'}
-
-                    {currentStep === 3 &&
-                      'Schedule'}
-
-                    {currentStep === 4 &&
-                      'Type & Location'}
-
-                    {currentStep === 5 &&
-                      'Event Colors'}
+                    {currentStep === 1 && 'Basic Information & Posters'}
+                    {currentStep === 2 && 'Participation Mode & Schedule'}
+                    {currentStep === 3 && 'Type, Team & Location'}
+                    {currentStep === 4 && 'Event Colors'}
                   </h3>
 
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Step {currentStep} of 5
+                    Step {currentStep} of 4
                   </p>
                 </div>
               </div>
@@ -356,19 +467,72 @@ function EventsDashboard() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Description
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Event Posters
+                          </label>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {(formData.Posters || []).length} uploaded
+                          </span>
+                        </div>
+
+                        <label className="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-xl p-5 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50/50 dark:bg-gray-900/50">
+                          <UploadCloud className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mb-2" />
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Click or drag images to upload event posters
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            PNG, JPG, WEBP (Up to 8MB each, multiple allowed)
+                          </p>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handlePosterUpload}
+                            className="hidden"
+                          />
                         </label>
 
-                        <textarea
-                          name="Description"
-                          value={formData.Description}
-                          onChange={handleChange}
-                          placeholder="Describe your event"
-                          rows="7"
-                          required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                        />
+                        {(formData.Posters || []).length > 0 && (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                            {formData.Posters.map((poster, index) => (
+                              <div
+                                key={index}
+                                className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 aspect-[4/3]"
+                              >
+                                <img
+                                  src={poster}
+                                  alt={`Poster ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+
+                                <div className="absolute top-1.5 left-1.5">
+                                  {index === 0 ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-600 text-white shadow">
+                                      Primary
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSetPrimaryPoster(index)}
+                                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/60 hover:bg-emerald-600 text-white backdrop-blur-sm transition-colors opacity-0 group-hover:opacity-100"
+                                    >
+                                      Set Primary
+                                    </button>
+                                  )}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePoster(index)}
+                                  className="absolute top-1.5 right-1.5 p-1 rounded-full bg-red-600/80 hover:bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -376,120 +540,253 @@ function EventsDashboard() {
                   {currentStep === 2 && (
                     <div className="space-y-5">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Event Facilities
+                        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                          Participation / Event Mode
                         </label>
-
-                        <textarea
-                          name="Facilities"
-                          value={formData.Facilities}
-                          onChange={handleChange}
-                          placeholder="Enter facilities provided for participants"
-                          rows="3"
-                          required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                        />
+                        <div className="grid grid-cols-3 gap-3">
+                          {[
+                            { id: 'Virtual', label: 'Virtual', desc: '100% Online', icon: Globe },
+                            { id: 'Physical', label: 'Physical', desc: 'In-person / Venue', icon: MapPin },
+                            { id: 'Both', label: 'Both (Virtual & Physical)', desc: 'Multi-stage / Hybrid', icon: Layers }
+                          ].map((modeOption) => {
+                            const IconComponent = modeOption.icon;
+                            const isSelected = (formData.HackathonMode || 'Physical').toLowerCase() === modeOption.id.toLowerCase();
+                            return (
+                              <button
+                                key={modeOption.id}
+                                type="button"
+                                onClick={() => {
+                                  const newMode = modeOption.id;
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    HackathonMode: newMode,
+                                    Location: newMode === 'Virtual' ? (prev.Location || 'Virtual / Online') : (prev.Location === 'Virtual / Online' ? '' : prev.Location)
+                                  }));
+                                }}
+                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                  isSelected
+                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 ring-2 ring-emerald-500/30'
+                                    : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <IconComponent className={`w-4 h-4 ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'}`} />
+                                  <span className={`text-xs sm:text-sm font-semibold ${isSelected ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                                    {modeOption.label}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                                  {modeOption.desc}
+                                </p>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Event Requirements
-                        </label>
+                      {formData.HackathonMode === 'Both' ? (
+                        <div className="space-y-4">
+                          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
+                            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider">
+                              <Globe className="w-3.5 h-3.5" />
+                              <span>Virtual Phase Schedule</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                  Virtual Registration Start
+                                </label>
+                                <input
+                                  type="date"
+                                  name="VirtualRegistrationStart"
+                                  value={formData.VirtualRegistrationStart}
+                                  onChange={handleChange}
+                                  required
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                  Virtual Registration End
+                                </label>
+                                <input
+                                  type="date"
+                                  name="VirtualRegistrationEnd"
+                                  value={formData.VirtualRegistrationEnd}
+                                  onChange={handleChange}
+                                  required
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                  Virtual Event Start Date
+                                </label>
+                                <input
+                                  type="date"
+                                  name="VirtualStartDate"
+                                  value={formData.VirtualStartDate}
+                                  onChange={handleChange}
+                                  required
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                  Virtual Event End Date
+                                </label>
+                                <input
+                                  type="date"
+                                  name="VirtualEndDate"
+                                  value={formData.VirtualEndDate}
+                                  onChange={handleChange}
+                                  required
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
 
-                        <textarea
-                          name="Requirements"
-                          value={formData.Requirements}
-                          onChange={handleChange}
-                          placeholder="Enter requirements for participants"
-                          rows="3"
-                          required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                        />
-                      </div>
+                          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
+                            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider">
+                              <MapPin className="w-3.5 h-3.5" />
+                              <span>Physical / On-Campus Phase Schedule</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                  Physical Registration Start
+                                </label>
+                                <input
+                                  type="date"
+                                  name="PhysicalRegistrationStart"
+                                  value={formData.PhysicalRegistrationStart}
+                                  onChange={handleChange}
+                                  required
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                  Physical Registration End
+                                </label>
+                                <input
+                                  type="date"
+                                  name="PhysicalRegistrationEnd"
+                                  value={formData.PhysicalRegistrationEnd}
+                                  onChange={handleChange}
+                                  required
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                  Physical Event Start Date
+                                </label>
+                                <input
+                                  type="date"
+                                  name="PhysicalStartDate"
+                                  value={formData.PhysicalStartDate}
+                                  onChange={handleChange}
+                                  required
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                  Physical Event End Date
+                                </label>
+                                <input
+                                  type="date"
+                                  name="PhysicalEndDate"
+                                  value={formData.PhysicalEndDate}
+                                  onChange={handleChange}
+                                  required
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {formData.HackathonMode === 'Virtual' ? 'Virtual Start Date' : 'Event Start Date'}
+                              </label>
+                              <input
+                                type="date"
+                                name="StartDate"
+                                value={formData.StartDate}
+                                onChange={(e) => {
+                                  handleChange(e);
+                                  if (formData.HackathonMode === 'Virtual') {
+                                    setFormData((prev) => ({ ...prev, StartDate: e.target.value, VirtualStartDate: e.target.value }));
+                                  } else {
+                                    setFormData((prev) => ({ ...prev, StartDate: e.target.value, PhysicalStartDate: e.target.value }));
+                                  }
+                                }}
+                                required
+                                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {formData.HackathonMode === 'Virtual' ? 'Virtual End Date' : 'Event End Date'}
+                              </label>
+                              <input
+                                type="date"
+                                name="EndDate"
+                                value={formData.EndDate}
+                                onChange={(e) => {
+                                  handleChange(e);
+                                  if (formData.HackathonMode === 'Virtual') {
+                                    setFormData((prev) => ({ ...prev, EndDate: e.target.value, VirtualEndDate: e.target.value }));
+                                  } else {
+                                    setFormData((prev) => ({ ...prev, EndDate: e.target.value, PhysicalEndDate: e.target.value }));
+                                  }
+                                }}
+                                required
+                                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
+                              />
+                            </div>
+                          </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Team Size
-                        </label>
-
-                        <input
-                          type="text"
-                          name="TeamSize"
-                          value={formData.TeamSize}
-                          onChange={handleChange}
-                          placeholder="Example: 2 - 4 members"
-                          required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
-                      </div>
+                          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100 dark:border-gray-800">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Registration Start
+                              </label>
+                              <input
+                                type="date"
+                                name="RegistrationStart"
+                                value={formData.RegistrationStart}
+                                onChange={handleChange}
+                                required
+                                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Registration End
+                              </label>
+                              <input
+                                type="date"
+                                name="RegistrationEnd"
+                                value={formData.RegistrationEnd}
+                                onChange={handleChange}
+                                required
+                                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
                   {currentStep === 3 && (
-                    <div className="grid grid-cols-2 gap-5">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Start Date
-                        </label>
-
-                        <input
-                          type="date"
-                          name="StartDate"
-                          value={formData.StartDate}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          End Date
-                        </label>
-
-                        <input
-                          type="date"
-                          name="EndDate"
-                          value={formData.EndDate}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Registration Start
-                        </label>
-
-                        <input
-                          type="date"
-                          name="RegistrationStart"
-                          value={formData.RegistrationStart}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Registration End
-                        </label>
-
-                        <input
-                          type="date"
-                          name="RegistrationEnd"
-                          value={formData.RegistrationEnd}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {currentStep === 4 && (
                     <div className="space-y-5">
                       <div className="grid grid-cols-2 gap-5">
                         <div>
@@ -516,65 +813,32 @@ function EventsDashboard() {
                             <option value="Conference">
                               Conference
                             </option>
+                            <option value="Tech Fest">
+                              Tech Fest
+                            </option>
                           </select>
                         </div>
 
-                        {/* <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                        Event Status
-                                                    </label>
-
-                                                    <select
-                                                        name="EventStatus"
-                                                        value={formData.EventStatus}
-                                                        onChange={handleChange}
-                                                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                                                    >
-                                                        <option value="">
-                                                            Automatic
-                                                        </option>
-                                                        <option value="Upcoming">
-                                                            Upcoming
-                                                        </option>
-                                                        <option value="Ongoing">
-                                                            Ongoing
-                                                        </option>
-                                                        <option value="Completed">
-                                                            Completed
-                                                        </option>
-                                                    </select>
-                                                </div> */}
-                      </div>
-
-                      {formData.EventType === 'Hackathon' && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Hackathon Mode
+                            Team Size
                           </label>
 
-                          <select
-                            name="HackathonMode"
-                            value={formData.HackathonMode}
+                          <input
+                            type="text"
+                            name="TeamSize"
+                            value={formData.TeamSize}
                             onChange={handleChange}
+                            placeholder="Example: 2 - 4 members"
                             required
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                          >
-                            <option value="">
-                              Select Hackathon Mode
-                            </option>
-                            <option value="Physical">
-                              Physical
-                            </option>
-                            <option value="Virtual">
-                              Virtual
-                            </option>
-                          </select>
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
                         </div>
-                      )}
+                      </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Location
+                          Location / Venue
                         </label>
 
                         <input
@@ -582,15 +846,27 @@ function EventsDashboard() {
                           name="Location"
                           value={formData.Location}
                           onChange={handleChange}
-                          placeholder="Enter event location"
+                          placeholder={formData.HackathonMode === 'Virtual' ? 'Online / Meeting Platform (e.g. Google Meet, Zoom)' : 'Enter venue location (e.g. Campus Auditorium / Hall A)'}
                           required
                           className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                         />
                       </div>
+
+                      <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 flex items-start gap-3">
+                        <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-300">
+                            Admin-Curated Content Notice
+                          </p>
+                          <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
+                            Event Description, Facilities, and Participant Requirements are managed directly by the assigned Event Admin in the Admin Dashboard Studio after creation.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
 
-                  {currentStep === 5 && (
+                  {currentStep === 4 && (
                     <div className="grid grid-cols-2 gap-5">
                       {[
                         ['PrimaryColor', 'Primary Color'],
@@ -659,7 +935,7 @@ function EventsDashboard() {
                       Cancel
                     </button>
 
-                    {currentStep < 5 ? (
+                    {currentStep < 4 ? (
                       <button
                         type="button"
                         onClick={() =>
@@ -890,9 +1166,17 @@ function EventsDashboard() {
                       >
                         <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <div className="flex items-center gap-2 sm:gap-3">
-                            <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shrink-0">
-                              <Calendar className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-700 dark:text-emerald-500" />
-                            </div>
+                            {event.Posters && event.Posters.length > 0 ? (
+                              <img
+                                src={event.Posters[0]}
+                                alt={event.EventName}
+                                className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg object-cover border border-emerald-500/20 shrink-0"
+                              />
+                            ) : (
+                              <div className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shrink-0">
+                                <Calendar className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-700 dark:text-emerald-500" />
+                              </div>
+                            )}
 
                             <div className="min-w-0">
                               <p className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white">
@@ -950,6 +1234,7 @@ function EventsDashboard() {
                         <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <Link
                             to={`/sidebar/eventinfo/${event.Id}`}
+                            state={{ initialEvent: event }}
                             className="flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 text-xs rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-500 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 font-medium transition-colors whitespace-nowrap cursor-pointer w-fit"
                           >
                             <Eye className="w-3 sm:w-3.5 h-3 sm:h-3.5" />

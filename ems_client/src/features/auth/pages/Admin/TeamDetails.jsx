@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import Footer from '../../../../components/Organisms/Footer';
 
 import { useNavigate } from 'react-router-dom';
@@ -39,7 +40,12 @@ function TeamDetails() {
     };
 
     return (
-        <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors p-4 sm:p-6 md:p-8">
+        <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="bg-gray-50 dark:bg-black min-h-screen transition-colors p-4 sm:p-6 md:p-8"
+        >
             <div className="mb-4 mt-2">
                 <button onClick={handleBack} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-500 transition-colors font-medium cursor-pointer ">
                     <ArrowLeft className="w-4 h-4" />
@@ -280,7 +286,7 @@ function TeamDetails() {
                
             </div>
 
-    </div>
+        </motion.div>
     );
 }
 export default TeamDetails;

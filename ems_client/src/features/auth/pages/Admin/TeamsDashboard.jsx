@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search,
     Bell,
@@ -6,7 +7,10 @@ import {
     Filter,
     Eye,
     Code,
-    ArrowRight
+    ArrowRight,
+    Globe,
+    MapPin,
+    Layers
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,6 +25,7 @@ function TeamsDashboard() {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [activeTab, setActiveTab] = useState('all');
 
     useEffect(() => {
         if (eventId) {
@@ -33,7 +38,6 @@ function TeamsDashboard() {
 
     const fetchTeams = async () => {
         try {
-            setLoading(true);
             setError('');
             const response = await fetch(`http://localhost:3000/api/teams/event/${eventId}`);
             if (!response.ok) {
@@ -43,51 +47,31 @@ function TeamsDashboard() {
             const data = await response.json();
             const fetchedTeams = data.teams || [];
             setTeams(fetchedTeams);
-
             setTotalTeams(fetchedTeams.length);
 
-            const members = fetchedTeams.reduce((total, team) => total + Number(team.MembersCount || 0), 0 );
-
+            const members = fetchedTeams.reduce(
+                (total, team) => total + Number(team.MemberCount || team.MembersCount || team.TeamSize || 0),
+                0
+            );
             setTotalMembers(members);
-
-        } catch (error) {
-            console.error('TEAMS FETCH ERROR:', error);
-            setError(error.message);
+        } catch (err) {
+            console.error('TEAMS FETCH ERROR:', err);
+            setError(err.message);
         } finally {
             setLoading(false);
         }
     };
 
-    const getTeamId = (team) => {
-        return team.Id;
-    };
+    const getTeamId = (team) => team.Id;
+    const getTeamName = (team) => team.TeamName || 'Unnamed Team';
+    const getTagline = (team) => team.Description || team.College || 'No description available';
+    const getLeaderName = (team) => team.LeaderName || 'Not available';
+    const getLeaderEmail = (team) => team.LeaderEmail || team.Email || 'Not available';
+    const getMemberCount = (team) => Number(team.MemberCount || team.MembersCount || team.TeamSize || 0);
 
-    const getTeamName = (team) => {
-        return team.TeamName ||'Unnamed Team';
-    };
-
-    const getTagline = (team) => {
-        return team.Description || 'No description available';
-    };
-
-    const getLeaderName = (team) => {
-        return team.LeaderName || 'Not available';
-    };
-
-    const getLeaderEmail = (team) => {
-        return team.Email ||'Not available';
-    };
-
-    const getMemberCount = (team) => {
-        return Number(team.MembersCount || 0
-        );
-    };
-
-    const getRegisteredDate = (date) => {
-        if (!date) {
-            return 'Not available';
-        }
-
+    const getRegisteredDate = (team) => {
+        const date = team.CreatedAt || team.Created_At;
+        if (!date) return 'Registered';
         return new Date(date).toLocaleDateString('en-IN', {
             day: '2-digit',
             month: 'short',
@@ -95,324 +79,498 @@ function TeamsDashboard() {
         });
     };
 
-    const filteredTeams = teams.filter((team) => 
-    (team.TeamName || '').toLowerCase().includes(search.toLowerCase())
-    );
+    const virtualCount = teams.filter(
+        (t) => t.ParticipationMode?.toLowerCase() === 'virtual'
+    ).length;
+
+    const physicalCount = teams.filter(
+        (t) => t.ParticipationMode?.toLowerCase() === 'physical'
+    ).length;
+
+    const filteredTeams = teams.filter((team) => {
+        const matchesSearch =
+            (team.TeamName || '').toLowerCase().includes(search.toLowerCase()) ||
+            (team.LeaderName || '').toLowerCase().includes(search.toLowerCase()) ||
+            (team.College || '').toLowerCase().includes(search.toLowerCase());
+
+        if (!matchesSearch) return false;
+
+        if (activeTab === 'virtual') {
+            return team.ParticipationMode?.toLowerCase() === 'virtual';
+        }
+        if (activeTab === 'physical') {
+            return team.ParticipationMode?.toLowerCase() === 'physical';
+        }
+        return true;
+    });
 
     const handleTeamClick = (teamId) => {
         navigate(`/admin/teams/${teamId}`);
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center">
-                <div className="text-center">
-                    <div className="h-10 w-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
-
-                    <p className="mt-4 text-gray-600 dark:text-gray-400">
-                        Loading teams...
-                    </p>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center p-5">
-                <div className="bg-white dark:bg-gray-950 border border-red-200 dark:border-red-900 rounded-xl p-6 text-center max-w-md w-full">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Unable to load teams
-                    </h2>
-
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        {error}
-                    </p>
-
-                    <button
-                        onClick={fetchTeams}
-                        className="mt-5 px-4 py-2 rounded-lg bg-emerald-700 text-white hover:bg-emerald-800"
-                    >
-                        Try Again
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    const tabs = [
+        {
+            id: 'all',
+            label: 'All Teams',
+            count: totalTeams,
+            icon: Layers
+        },
+        {
+            id: 'virtual',
+            label: 'Virtual Track',
+            count: virtualCount,
+            icon: Globe
+        },
+        {
+            id: 'physical',
+            label: 'Physical Track',
+            count: physicalCount,
+            icon: MapPin
+        }
+    ];
 
     return (
-        <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors p-4 sm:p-6 md:p-8">
-
+        <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="bg-gray-50 dark:bg-black min-h-screen transition-colors p-4 sm:p-6 md:p-8"
+        >
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 sm:mb-8">
-
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                         Registered Teams
                     </h1>
-
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Manage all registered teams, view details and track participation.
+                        Track, filter and manage virtual and physical hackathon registrations.
                     </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-
                         <input
                             type="text"
-                            placeholder="Search teams..."
+                            placeholder="Search teams or leaders..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full sm:w-64 pl-10 pr-4 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500"
+                            className="w-full sm:w-64 pl-10 pr-4 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500 shadow-sm"
                         />
                     </div>
 
-                    <button className="relative p-2 rounded-lg bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors">
-                        <Bell className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-700 dark:bg-emerald-500" />
+                    <button
+                        type="button"
+                        onClick={fetchTeams}
+                        className="relative p-2.5 rounded-xl bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors shadow-sm text-gray-600 dark:text-gray-300"
+                    >
+                        <Bell className="w-4 h-4" />
+                        <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500" />
                     </button>
-
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+            {error && (
+                <div className="mb-6 rounded-xl border border-red-200 bg-red-50/50 p-4 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400">
+                    {error}
+                </div>
+            )}
 
-                <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
-
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.05 }}
+                    whileHover={{ y: -3 }}
+                    className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+                >
                     <div className="flex items-start justify-between">
-
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                                 Total Teams
                             </p>
-
                             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                                 {totalTeams}
                             </p>
                         </div>
-
                         <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
-                            <Users className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
+                            <Layers className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
                         </div>
-
                     </div>
-
-                    <p className="text-xs text-emerald-700 dark:text-emerald-500 mt-3">
-                        Registered teams
+                    <p className="text-xs text-emerald-700 dark:text-emerald-500 mt-3 font-medium">
+                        All registrations
                     </p>
+                </motion.div>
 
-                </div>
-
-                <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
-
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.1 }}
+                    whileHover={{ y: -3 }}
+                    className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+                >
                     <div className="flex items-start justify-between">
+                        <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                Virtual Track
+                            </p>
+                            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                                {virtualCount}
+                            </p>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
+                            <Globe className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                        Online participants
+                    </p>
+                </motion.div>
 
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.15 }}
+                    whileHover={{ y: -3 }}
+                    className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+                >
+                    <div className="flex items-start justify-between">
+                        <div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                Physical Track
+                            </p>
+                            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
+                                {physicalCount}
+                            </p>
+                        </div>
+                        <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/10">
+                            <MapPin className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                        On-campus participants
+                    </p>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2 }}
+                    whileHover={{ y: -3 }}
+                    className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+                >
+                    <div className="flex items-start justify-between">
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                                 Total Members
                             </p>
-
                             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                                 {totalMembers}
                             </p>
                         </div>
-
                         <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
                             <Users className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
                         </div>
-
                     </div>
-
                     <p className="text-xs text-emerald-700 dark:text-emerald-500 mt-3">
                         Across all teams
                     </p>
-
-                </div>
-
+                </motion.div>
             </div>
 
-            <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6">
+            <div className="relative pt-2">
+                <div className="flex items-end gap-1 px-4 sm:px-6 relative z-10 select-none overflow-x-auto no-scrollbar">
+                    {tabs.map((tab) => {
+                        const isActive = activeTab === tab.id;
+                        const Icon = tab.icon;
 
-                <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`group relative inline-flex items-center gap-2.5 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer ${
+                                    isActive
+                                        ? 'bg-white dark:bg-gray-950 text-gray-950 dark:text-white rounded-t-2xl border-t border-l border-r border-gray-200 dark:border-gray-800 z-20 -mb-[1px]'
+                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100/70 dark:hover:bg-gray-900/40 rounded-t-xl mb-0'
+                                }`}
+                            >
+                                <Icon
+                                    className={`w-4 h-4 transition-colors ${
+                                        isActive
+                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                            : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                                    }`}
+                                />
+                                <span>{tab.label}</span>
 
-                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                        All Registered Teams
-                    </h2>
+                                <span
+                                    className={`ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${
+                                        isActive
+                                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                                            : 'bg-gray-200/70 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                    }`}
+                                >
+                                    {tab.count}
+                                </span>
 
-                    <div className="flex items-center gap-2 sm:gap-3">
+                                {isActive && (
+                                    <>
+                                        <svg
+                                            className="absolute -bottom-[1px] -left-4 w-4 h-4 pointer-events-none fill-white dark:fill-gray-950 text-gray-200 dark:text-gray-800"
+                                            viewBox="0 0 16 16"
+                                        >
+                                            <path d="M16 0 A 16 16 0 0 0 0 16 L 16 16 Z" />
+                                            <path
+                                                d="M16 0 A 16 16 0 0 0 0 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="1"
+                                            />
+                                        </svg>
 
-                        <div className="relative flex-1 sm:flex-none">
+                                        <svg
+                                            className="absolute -bottom-[1px] -right-4 w-4 h-4 pointer-events-none fill-white dark:fill-gray-950 text-gray-200 dark:text-gray-800"
+                                            viewBox="0 0 16 16"
+                                        >
+                                            <path d="M0 0 A 16 16 0 0 1 16 16 L 0 16 Z" />
+                                            <path
+                                                d="M0 0 A 16 16 0 0 1 16 16"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="1"
+                                            />
+                                        </svg>
+                                    </>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
 
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-
-                            <input
-                                type="text"
-                                placeholder="Search by team name or leader..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full sm:w-60 pl-9 pr-4 py-1.5 sm:py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500"
-                            />
-
+                <div className="bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6 relative z-0">
+                    <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                                {activeTab === 'virtual'
+                                    ? 'Virtual Track Registrations'
+                                    : activeTab === 'physical'
+                                    ? 'Physical Track Registrations'
+                                    : 'All Registered Teams'}
+                            </h2>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                ({filteredTeams.length} {filteredTeams.length === 1 ? 'team' : 'teams'})
+                            </span>
                         </div>
 
-                        <button className="p-1.5 sm:p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0">
-                            <Filter className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="relative flex-1 sm:flex-none">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Filter by name, lead, college..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full sm:w-60 pl-9 pr-4 py-1.5 sm:py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500"
+                                />
+                            </div>
 
+                            <button
+                                type="button"
+                                onClick={() => setSearch('')}
+                                className="p-1.5 sm:p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0"
+                                title="Reset filter"
+                            >
+                                <Filter className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
 
-                </div>
-
-                <div className="overflow-x-auto">
-
-                    <table className="w-full text-xs sm:text-sm min-w-[900px]">
-
-                        <thead>
-                            <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
-
-                                <th className="px-4 py-3 sm:py-4 font-medium w-12">
-                                    #
-                                </th>
-
-                                <th className="px-4 py-3 sm:py-4 font-medium">
-                                    Team Details
-                                </th>
-
-                                <th className="px-4 py-3 sm:py-4 font-medium">
-                                    Team Leader
-                                </th>
-
-                                <th className="px-4 py-3 sm:py-4 font-medium text-center">
-                                    Members
-                                </th>
-
-                                <th className="px-4 py-3 sm:py-4 font-medium">
-                                    Registered On
-                                </th>
-
-                                <th className="px-4 py-3 sm:py-4 font-medium text-center">
-                                    Actions
-                                </th>
-
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            {filteredTeams.length === 0 ? (
-
-                                <tr>
-                                    <td
-                                        colSpan="6"
-                                        className="px-4 py-12 text-center text-gray-500 dark:text-gray-400"
-                                    >
-                                        No teams found
-                                    </td>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-xs sm:text-sm min-w-[900px]">
+                            <thead>
+                                <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+                                    <th className="px-4 py-3 sm:py-4 font-semibold w-12">
+                                        #
+                                    </th>
+                                    <th className="px-4 py-3 sm:py-4 font-semibold">
+                                        Team Details
+                                    </th>
+                                    <th className="px-4 py-3 sm:py-4 font-semibold">
+                                        Track
+                                    </th>
+                                    <th className="px-4 py-3 sm:py-4 font-semibold">
+                                        Team Leader
+                                    </th>
+                                    <th className="px-4 py-3 sm:py-4 font-semibold text-center">
+                                        Members
+                                    </th>
+                                    <th className="px-4 py-3 sm:py-4 font-semibold">
+                                        Registered On
+                                    </th>
+                                    <th className="px-4 py-3 sm:py-4 font-semibold text-center">
+                                        Action
+                                    </th>
                                 </tr>
+                            </thead>
 
-                            ) : (
-
-                                filteredTeams.map((team, index) => {
-
-                                    const teamId = getTeamId(team);
-                                    const teamName = getTeamName(team);
-
-                                    return (
-                                        <tr
-                                            key={teamId || index}
-                                            className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors"
+                            <tbody>
+                                {loading ? (
+                                    [1, 2, 3, 4].map((i) => (
+                                        <motion.tr
+                                            key={i}
+                                            animate={{ opacity: [0.35, 0.8, 0.35] }}
+                                            transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
+                                            className="border-b border-gray-100 dark:border-gray-800/50"
                                         >
-
-                                            <td className="px-4 py-3 sm:py-4 text-gray-900 dark:text-white font-medium">
-                                                {String(index + 1).padStart(2, '0')}
+                                            <td className="px-4 py-4">
+                                                <div className="h-4 w-6 bg-gray-200 dark:bg-gray-800 rounded" />
                                             </td>
-
-                                            <td className="px-4 py-3 sm:py-4">
-
-                                                <div className="flex items-center gap-3">
-
-                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-white font-bold text-xs sm:text-sm shrink-0 bg-emerald-700 dark:bg-emerald-500">
-
-                                                        <Code className="w-4 h-4 sm:w-5 sm:h-5" />
-
-                                                    </div>
-
-                                                    <div className="min-w-0">
-
-                                                        <p className="font-semibold text-gray-900 dark:text-white truncate">
-                                                            {teamName}
-                                                        </p>
-
-                                                        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                            {getTagline(team)}
-                                                        </p>
-
-                                                    </div>
-
-                                                </div>
-
+                                            <td className="px-4 py-4">
+                                                <div className="h-4 w-36 bg-gray-200 dark:bg-gray-800 rounded mb-1" />
+                                                <div className="h-3 w-24 bg-gray-100 dark:bg-gray-900 rounded" />
                                             </td>
-
-                                            <td className="px-4 py-3 sm:py-4">
-
-                                                <p className="font-medium text-gray-900 dark:text-white">
-                                                    {getLeaderName(team)}
+                                            <td className="px-4 py-4">
+                                                <div className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-full" />
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <div className="h-4 w-28 bg-gray-200 dark:bg-gray-800 rounded" />
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                <div className="h-4 w-8 bg-gray-200 dark:bg-gray-800 rounded mx-auto" />
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <div className="h-4 w-20 bg-gray-200 dark:bg-gray-800 rounded" />
+                                            </td>
+                                            <td className="px-4 py-4 text-center">
+                                                <div className="h-8 w-8 bg-gray-200 dark:bg-gray-800 rounded mx-auto" />
+                                            </td>
+                                        </motion.tr>
+                                    ))
+                                ) : filteredTeams.length === 0 ? (
+                                    <tr>
+                                        <td
+                                            colSpan="7"
+                                            className="px-4 py-16 text-center text-gray-500 dark:text-gray-400"
+                                        >
+                                            <div className="flex flex-col items-center justify-center">
+                                                <Users className="w-10 h-10 text-gray-300 dark:text-gray-700 mb-2" />
+                                                <p className="font-medium text-gray-700 dark:text-gray-300 text-sm">
+                                                    No teams found in this view
                                                 </p>
-
-                                                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                                                    {getLeaderEmail(team)}
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    {search
+                                                        ? 'Try modifying your search query'
+                                                        : `No ${activeTab === 'all' ? '' : activeTab} registrations yet`}
                                                 </p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredTeams.map((team, index) => {
+                                        const teamId = getTeamId(team);
+                                        const teamName = getTeamName(team);
+                                        const isVirtual =
+                                            team.ParticipationMode?.toLowerCase() === 'virtual';
+                                        const isPhysical =
+                                            team.ParticipationMode?.toLowerCase() === 'physical';
 
-                                            </td>
+                                        return (
+                                            <motion.tr
+                                                key={teamId || index}
+                                                initial={{ opacity: 0, y: 8 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ duration: 0.25, delay: Math.min(index * 0.04, 0.35) }}
+                                                className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors"
+                                            >
+                                                <td className="px-4 py-3 sm:py-4 text-gray-900 dark:text-white font-medium">
+                                                    {String(index + 1).padStart(2, '0')}
+                                                </td>
 
-                                            <td className="px-4 py-3 sm:py-4 text-center text-gray-900 dark:text-white">
-                                                {getMemberCount(team)}
-                                            </td>
+                                                <td className="px-4 py-3 sm:py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0 bg-emerald-700 dark:bg-emerald-500">
+                                                            <Code className="w-4 h-4" />
+                                                        </div>
 
-                                            <td className="px-4 py-3 sm:py-4 text-gray-600 dark:text-gray-300">
-                                                {getRegisteredDate(team)}
-                                            </td>
+                                                        <div className="min-w-0">
+                                                            <p className="font-semibold text-gray-900 dark:text-white truncate">
+                                                                {teamName}
+                                                            </p>
+                                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                                                                {getTagline(team)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </td>
 
-                                            <td className="px-4 py-3 sm:py-4">
+                                                <td className="px-4 py-3 sm:py-4">
+                                                    {isVirtual ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                                            <Globe className="w-3.5 h-3.5" />
+                                                            Virtual
+                                                        </span>
+                                                    ) : isPhysical ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                                                            <MapPin className="w-3.5 h-3.5" />
+                                                            Physical
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                                                            General
+                                                        </span>
+                                                    )}
+                                                </td>
 
-                                                <div className="flex items-center justify-center">
+                                                <td className="px-4 py-3 sm:py-4">
+                                                    <p className="font-medium text-gray-900 dark:text-white">
+                                                        {getLeaderName(team)}
+                                                    </p>
+                                                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                        {getLeaderEmail(team)}
+                                                    </p>
+                                                </td>
 
-                                                    <button
-                                                        onClick={() => handleTeamClick(teamId)}
-                                                        className="p-1.5 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-emerald-500 hover:text-emerald-500 text-gray-500 dark:text-gray-400 transition-colors cursor-pointer"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                    </button>
+                                                <td className="px-4 py-3 sm:py-4 text-center text-gray-900 dark:text-white font-semibold">
+                                                    {getMemberCount(team)}
+                                                </td>
 
-                                                </div>
+                                                <td className="px-4 py-3 sm:py-4 text-gray-600 dark:text-gray-300 text-xs">
+                                                    {getRegisteredDate(team)}
+                                                </td>
 
-                                            </td>
+                                                <td className="px-4 py-3 sm:py-4">
+                                                    <div className="flex items-center justify-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleTeamClick(teamId)}
+                                                            className="p-1.5 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-emerald-500 hover:text-emerald-500 text-gray-500 dark:text-gray-400 transition-colors cursor-pointer"
+                                                            title="View details"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </motion.tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
 
-                                        </tr>
-                                    );
-                                })
-                            )}
-
-                        </tbody>
-
-                    </table>
-
+                    <div
+                        onClick={() => {
+                            setActiveTab('all');
+                            setSearch('');
+                        }}
+                        className="w-fit py-4 flex items-center m-auto justify-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 cursor-pointer hover:underline"
+                    >
+                        <span>View all registered teams</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
                 </div>
-
-                <div className="w-fit h-15 flex items-center m-auto justify-center gap-2 text-emerald-500 cursor-pointer hover:underline">
-
-                    <p>View all registered teams</p>
-
-                    <ArrowRight className="w-4 h-4" />
-
-                </div>
-
             </div>
-
-        </div>
+        </motion.div>
     );
 }
 

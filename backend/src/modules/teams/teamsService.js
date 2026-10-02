@@ -145,15 +145,26 @@ const getTeamInfo = (teamId, userId, callback) => {
 };
 
 const getTeamsByEvent = (EventId, callback) => {
-
-    const query = `SELECT * FROM teams WHERE EventId = ? ORDER BY Id DESC`;
+    const query = `
+        SELECT 
+            t.*,
+            er.ParticipationMode,
+            er.Status AS RegistrationStatus,
+            er.Id AS RegistrationId,
+            u.UserName AS LeaderName,
+            u.Email AS LeaderEmail,
+            (SELECT COUNT(*) FROM team_members tm WHERE tm.TeamId = t.Id) AS MemberCount
+        FROM teams t
+        LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
+        LEFT JOIN users u ON t.TeamLeadUserId = u.Id
+        WHERE t.EventId = ? 
+        ORDER BY t.Id DESC
+    `;
 
     db.query(query, [EventId], (err, result) => {
-
         if (err) {
             return callback(err, null);
         }
-
         return callback(null, result);
     });
 };

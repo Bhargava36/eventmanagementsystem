@@ -1,16 +1,27 @@
 const db = require("../../config/db");
 
 const addPrizes = (eventId, prizes, callback) => {
-    const query = `INSERT INTO event_prizes (EventId, PrizeRank, Prize) VALUES ?`;
-
-    const values = prizes.map((prize, index) => [eventId, index + 1, prize.prize]);
-
-    db.query(query, [values], (err, result) => {
-        if (err) {
-            return callback(err, null);
+    db.query(`DELETE FROM event_prizes WHERE EventId = ?`, [eventId], (deleteErr) => {
+        if (deleteErr) {
+            return callback(deleteErr, null);
         }
 
-        callback(null, result);
+        if (!prizes || prizes.length === 0) {
+            return callback(null, { affectedRows: 0 });
+        }
+
+        const query = `INSERT INTO event_prizes (EventId, PrizeRank, Prize) VALUES ?`;
+        const values = prizes.map((prize, index) => {
+            const prizeVal = typeof prize === 'object' && prize !== null ? (prize.prize || prize.Prize || '') : prize;
+            return [eventId, index + 1, String(prizeVal)];
+        });
+
+        db.query(query, [values], (err, result) => {
+            if (err) {
+                return callback(err, null);
+            }
+            callback(null, result);
+        });
     });
 };
 
