@@ -49,8 +49,6 @@ const UserSidebarContent = ({
 
   const canShowText = isMobile || showText;
 
-    const profilePath = user?.Id ? `/user/profile/${user.Id}` : '/user/dashboard';
-
   function handleLogout() {
     logout();
     toast.success('Logged out successfully');
@@ -60,10 +58,10 @@ const UserSidebarContent = ({
   const userInitials = user?.name ? user.name.charAt(0).toUpperCase() : (user?.username ? user.username.charAt(0).toUpperCase() : 'U');
   const displayName = user?.name || user?.username || 'Participant';
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/user/dashboard', badge: null, end: false },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/user/dashboard', badge: null, end: true },
     { name: 'My Teams', icon: Users, path: '/user/teams', badge: null, end: false },
     { name: 'Problem Statements', icon: ScrollText, path: '/user/problem-statements', badge: null, end: false },
-    { name: 'Profile', icon: CircleUserRound, path: profilePath, badge: null, end: false },
+    { name: 'Profile', icon: CircleUserRound, path: '/user/profile', badge: null, end: false },
   ];
 
   return (

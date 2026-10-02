@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Quicksand", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Quicksand", sans-serif;
+  --font-display: "Playfair Display", "Cinzel Decorative", Georgia, serif;
+  --font-heading: "Playfair Display", "Cinzel Decorative", Georgia, serif;
+  --font-fancy: "Cinzel Decorative", "Playfair Display", Georgia, serif;
+  --font-serif: "Playfair Display", Georgia, serif;
 }
 
 @variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
@@ -10,19 +14,45 @@
 @layer base {
   :root {
     --transition-duration: 300ms;
-    font-family: var(--font-sans);
-    letter-spacing: -0.015em;
+    font-family: "Quicksand", sans-serif;
   }
   
   html, body {
-    font-family: var(--font-sans);
+    font-family: "Quicksand", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     @apply transition-colors duration-300;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-    letter-spacing: -0.03em;
+  /* Main Headings & Titles - High-End Luxury Fancy Serif */
+  h1, h2, h3, h4, h5, h6, .font-heading, .heading {
+    font-family: "Playfair Display", "Cinzel Decorative", Georgia, serif;
+    letter-spacing: -0.015em;
   }
+
+  /* Spans inside headings must inherit the fancy font */
+  h1 span, h2 span, h3 span, h4 span, h5 span, h6 span {
+    font-family: inherit;
+  }
+
+  p, a, button, input, textarea, select, label {
+    font-family: "Quicksand", sans-serif;
+  }
+}
+
+/* Fancy Display Utilities */
+.font-fancy {
+  font-family: "Cinzel Decorative", "Playfair Display", serif !important;
+}
+
+.font-playfair {
+  font-family: "Playfair Display", Georgia, serif !important;
+}
+
+.font-syne {
+  font-family: "Syne", sans-serif !important;
+}
+
+.font-quicksand {
+  font-family: "Quicksand", sans-serif !important;
 }

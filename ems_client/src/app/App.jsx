@@ -11,7 +11,7 @@ import SuperAdminProfile from '../features/auth/pages/SuperAdmin/SuperAdminProfi
 import AdminSidebar from '../components/Organisms/AdminSidebar';
 import EventInfo from '../features/auth/pages/SuperAdmin/EventInfo';
 import PublicLayout from '../components/Templates/PublicLayout';
-// import AdminRegister from '../features/auth/pages/Admin/AdminRegister';
+import AdminRegister from '../features/auth/pages/Admin/AdminRegister';
 import AdminLogin from '../features/auth/pages/Admin/AdminLogin';
 import TeamsDashboard from '../features/auth/pages/Admin/TeamsDashboard';
 import TeamDetails from '../features/auth/pages/Admin/TeamDetails';
@@ -39,10 +39,11 @@ function App() {
           {/* <Route path="/login" element={<Login />} /> */}
           <Route path="/superadmin/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/superadmin/register" element={<Register />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/register" element={<AdminRegister />} />
           <Route path="/user/login" element={<UserLogin />} />
           <Route path="/user/register" element={<UserRegister />} />
-          {/* <Route path="/admin/register" element={<AdminRegister />} /> */}
         </Route>
 
 
@@ -67,6 +68,7 @@ function App() {
             <Route path="core-team" element={<CoreTeam />} />
             <Route path="teams" element={<TeamsDashboard />} />
             <Route path="teams/:id" element={<TeamDetails />} />
+            <Route path="profile" element={<AdminProfile />} />
             <Route path="profile/:id" element={<AdminProfile />} />
           </Route>
         </Route>
@@ -79,7 +81,8 @@ function App() {
             <Route path="teamInfo/:teamId" element={<TeamInfo />} />
             <Route path="events/:id" element={<EventRedirectPage />} />
             <Route path="problem-statements" element={<ProblemStatementsPage />} />
-            <Route path="profile/:id" element={<UserProfile/>} />
+            <Route path="profile" element={<UserProfile />} />
+            <Route path="profile/:id" element={<UserProfile />} />
           </Route>
         </Route>
 

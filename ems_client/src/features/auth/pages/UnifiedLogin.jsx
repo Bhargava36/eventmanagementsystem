@@ -190,10 +190,14 @@ const ROLE_CONFIGS = {
       Password: password,
     }),
     onSuccess: (data, { login }) => {
-      const teamleadUser = data.users || data.user || {};
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("token", data.token);
-      login(data.token, teamleadUser, "user");
+      const userObj = data.user || data.users || {};
+      const token = data.token;
+      localStorage.setItem("user", JSON.stringify(userObj));
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+      localStorage.setItem("role", "user");
+      login(token, userObj, "user");
     },
   },
 };
@@ -201,6 +205,9 @@ const ROLE_CONFIGS = {
 function getActiveRole(pathname, propRole) {
   if (propRole && ROLE_CONFIGS[propRole]) {
     return propRole;
+  }
+  if (pathname.includes("/superadmin")) {
+    return "super_admin";
   }
   if (pathname.includes("/admin")) {
     return "admin";
@@ -282,7 +289,10 @@ function UnifiedLogin({ role: propRole }) {
       config.onSuccess(data, { login });
 
       toast.success("Logged in successfully!");
-      const from = location.state?.from?.pathname || config.defaultRedirect;
+      let from = location.state?.from?.pathname;
+      if (!from || from.includes("/login") || from.includes("/register") || from === "/") {
+        from = config.defaultRedirect;
+      }
       navigate(from, { replace: true });
     } catch (err) {
       const errMsg = err.message || "Login failed, try again later";
@@ -321,7 +331,7 @@ function UnifiedLogin({ role: propRole }) {
                 {config.titleFirst}
               </h1>
               <h1 className="text-3xl lg:text-5xl font-bold tracking-tight">
-                <span className="text-emerald-700 dark:text-emerald-400">
+                <span className="text-emerald-700 dark:text-emerald-400 italic font-serif">
                   {config.titleHighlight}
                 </span>
               </h1>
@@ -397,7 +407,7 @@ function UnifiedLogin({ role: propRole }) {
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold mb-1">
                 {config.formHeading}{" "}
-                <span className="text-emerald-700 dark:text-emerald-500">
+                <span className="text-emerald-700 dark:text-emerald-500 italic font-serif">
                   {config.formHeadingHighlight}
                 </span>
               </h1>

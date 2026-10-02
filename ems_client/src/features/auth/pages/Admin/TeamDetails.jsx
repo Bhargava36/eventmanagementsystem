@@ -43,7 +43,7 @@ function TeamDetails() {
             <div className="mb-4 mt-2">
                 <button onClick={handleBack} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-500 transition-colors font-medium cursor-pointer ">
                     <ArrowLeft className="w-4 h-4" />
-                    Back to Teams
+                    Back to Registered Teams
                 </button>
             </div>
 

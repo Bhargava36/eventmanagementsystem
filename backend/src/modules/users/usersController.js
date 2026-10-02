@@ -1,5 +1,6 @@
 const usersService = require("./usersServices");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const createUser = (req, res) => {
     const {UserName, Email, Password, Mobile, Gender, College, Location, State } = req.body;
@@ -46,8 +47,22 @@ const loginUser = (req, res) => {
                 });
             }
 
+            const token = jwt.sign(
+                {
+                    Id: user.Id,
+                    UserName: user.UserName,
+                    Email: user.Email,
+                    role: "user"
+                },
+                process.env.JWT_SECRECT || "secret",
+                {
+                    expiresIn: process.env.JWT_EXPIRES_IN || "7d"
+                }
+            );
+
             res.status(200).json({
                 message: "Login successful",
+                token,
                 user
             });
         } catch (error) {

@@ -57,14 +57,21 @@ const SidebarContent = ({
     navigate('/admin/login');
   }
 
-  const profilePath = user?.Id ? `/admin/profile/${user.Id}` : '/admin/dashboard';
+  const storedAdmin = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('admin') || '{}');
+    } catch {
+      return {};
+    }
+  })();
+  const adminDisplayName = storedAdmin?.AdminName || user?.AdminName || 'Admin';
 
   const menuItems = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', badge: null, end: false },
-  { name: 'Core Team', icon: UsersRound, path: '/admin/core-team', badge: null, end: false },
-  { name: 'Teams', icon: Users, path: '/admin/teams', badge: null, end: false },
-  { name: 'Profile', icon: CircleUserRound, path: profilePath, badge: null, end: false },
-];
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', badge: null, end: true },
+    { name: 'Core Team', icon: UsersRound, path: '/admin/core-team', badge: null, end: false },
+    { name: 'Registered Teams', icon: Users, path: '/admin/teams', badge: null, end: false },
+    { name: 'Profile', icon: CircleUserRound, path: '/admin/profile', badge: null, end: false },
+  ];
 
   return (
     <aside
@@ -101,7 +108,7 @@ const SidebarContent = ({
               !isMobile && collapsed ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg'
             } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300`}
           >
-            A
+            {adminDisplayName.charAt(0).toUpperCase()}
           </div>
           <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white dark:border-black"></span>
         </div>
@@ -112,7 +119,7 @@ const SidebarContent = ({
             transition={{ duration: 0.2, delay: 0.5 }}
             className="overflow-hidden"
           >
-            <h3 className="font-bold text-base whitespace-nowrap">Admin</h3>
+            <h3 className="font-bold text-base whitespace-nowrap capitalize">{adminDisplayName}</h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
               Administrator
             </p>

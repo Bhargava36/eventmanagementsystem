@@ -57,7 +57,7 @@ const SidebarContent = ({
   };
 
   const totalEvents = count.length;
-  const profilePath = user?.Id ? `/sidebar/profile/${user.Id}` : '/sidebar';
+  const profilePath = '/sidebar/profile';
   const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
   { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: totalEvents, dot: false },

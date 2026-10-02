@@ -147,11 +147,11 @@ function TeamsDashboard() {
 
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                        Teams
+                        Registered Teams
                     </h1>
 
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Manage all teams, view details and track participation.
+                        Manage all registered teams, view details and track participation.
                     </p>
                 </div>
 
@@ -239,7 +239,7 @@ function TeamsDashboard() {
                 <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 
                     <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                        All Teams
+                        All Registered Teams
                     </h2>
 
                     <div className="flex items-center gap-2 sm:gap-3">
@@ -404,7 +404,7 @@ function TeamsDashboard() {
 
                 <div className="w-fit h-15 flex items-center m-auto justify-center gap-2 text-emerald-500 cursor-pointer hover:underline">
 
-                    <p>View all teams</p>
+                    <p>View all registered teams</p>
 
                     <ArrowRight className="w-4 h-4" />
 
