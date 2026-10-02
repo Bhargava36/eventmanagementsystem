@@ -116,7 +116,7 @@ const SidebarContent = ({
           <motion.div
             initial={{ opacity: 0, x: -5 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.2, delay: 0.5 }}
+            transition={{ duration: 0.2, delay: 0.2 }}
             className="overflow-hidden"
           >
             <h3 className="font-bold text-base whitespace-nowrap capitalize">{adminDisplayName}</h3>
@@ -164,7 +164,7 @@ const SidebarContent = ({
                       <motion.span
                         initial={{ opacity: 0, x: -5 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: 0.5 }}
+                        transition={{ duration: 0.1, delay: 0.1 }}
                         className="font-medium text-sm whitespace-nowrap"
                       >
                         {item.name}
