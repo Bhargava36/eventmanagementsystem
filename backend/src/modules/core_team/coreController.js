@@ -1,8 +1,10 @@
 const coreTeamService = require("./coreServices");
+const { saveBase64File } = require("../../middleware/multer");
 
 const createCoreTeam = (req, res) => {
     const { EventId, Role, Name, Phone, Email, Department, Type, Photo } = req.body;
-    coreTeamService.createCoreTeam(EventId, Role, Name, Phone, Email, Department, Type, Photo, (err, result) => {
+    const savedPhoto = saveBase64File(Photo, "images");
+    coreTeamService.createCoreTeam(EventId, Role, Name, Phone, Email, Department, Type, savedPhoto, (err, result) => {
         if (err) {
             console.log(err);
             return res.status(500).json({
@@ -58,8 +60,9 @@ const getCoreTeamById = (req, res) => {
 const updateCoreTeam = (req, res) => {
     const { Role, Name, Phone, Email, Department, Type, Photo } = req.body;
     const id = req.params.id;
+    const savedPhoto = saveBase64File(Photo, "images");
 
-    coreTeamService.updateCoreTeam(id, Role, Name, Phone, Email, Department, Type, Photo, (err, result) => {
+    coreTeamService.updateCoreTeam(id, Role, Name, Phone, Email, Department, Type, savedPhoto, (err, result) => {
         if (err) {
             console.log(err);
             return res.status(500).json({

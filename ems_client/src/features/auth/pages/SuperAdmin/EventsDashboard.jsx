@@ -182,6 +182,13 @@ function EventsDashboard() {
     });
   };
 
+  const resolvePosterUrl = (url) => {
+    if (!url) return '';
+    if (typeof url !== 'string') return url?.url || '';
+    if (url.startsWith('/uploads')) return `http://localhost:3000${url}`;
+    return url;
+  };
+
   const handlePosterUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
@@ -192,6 +199,33 @@ function EventsDashboard() {
         continue;
       }
       try {
+        const uploadData = new FormData();
+        uploadData.append('file', file);
+
+        const uploadRes = await fetch('http://localhost:3000/api/upload', {
+          method: 'POST',
+          body: uploadData
+        });
+
+        if (uploadRes.ok) {
+          const result = await uploadRes.json();
+          const fileUrl = result.fileUrl || result.url;
+          setFormData((prev) => ({
+            ...prev,
+            Posters: [...(prev.Posters || []), fileUrl]
+          }));
+        } else {
+          // Fallback to compressed base64 if direct upload fails
+          const compressedBase64 = await compressImage(file);
+          if (compressedBase64) {
+            setFormData((prev) => ({
+              ...prev,
+              Posters: [...(prev.Posters || []), compressedBase64]
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Image upload error:', err);
         const compressedBase64 = await compressImage(file);
         if (compressedBase64) {
           setFormData((prev) => ({
@@ -199,8 +233,6 @@ function EventsDashboard() {
             Posters: [...(prev.Posters || []), compressedBase64]
           }));
         }
-      } catch (err) {
-        console.error('Image upload error:', err);
       }
     }
     e.target.value = '';
@@ -515,7 +547,7 @@ function EventsDashboard() {
                                 className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 aspect-[4/3]"
                               >
                                 <img
-                                  src={poster}
+                                  src={resolvePosterUrl(poster)}
                                   alt={`Poster ${index + 1}`}
                                   className="w-full h-full object-cover"
                                 />
@@ -1251,7 +1283,7 @@ function EventsDashboard() {
                           <div className="flex items-center gap-2 sm:gap-3">
                             {event.Posters && event.Posters.length > 0 ? (
                               <img
-                                src={event.Posters[0]}
+                                src={resolvePosterUrl(Array.isArray(event.Posters) ? event.Posters[0] : (typeof event.Posters === 'string' && event.Posters.startsWith('[') ? JSON.parse(event.Posters)[0] : event.Posters))}
                                 alt={event.EventName}
                                 className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg object-cover border border-emerald-500/20 shrink-0"
                               />

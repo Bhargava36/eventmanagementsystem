@@ -324,6 +324,13 @@ function EventInfo() {
         });
     };
 
+    const resolvePosterUrl = (url) => {
+        if (!url) return '';
+        if (typeof url !== 'string') return url?.url || '';
+        if (url.startsWith('/uploads')) return `http://localhost:3000${url}`;
+        return url;
+    };
+
     const handlePosterUpload = async (e) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
@@ -334,6 +341,32 @@ function EventInfo() {
                 continue;
             }
             try {
+                const uploadData = new FormData();
+                uploadData.append('file', file);
+
+                const uploadRes = await fetch('http://localhost:3000/api/upload', {
+                    method: 'POST',
+                    body: uploadData
+                });
+
+                if (uploadRes.ok) {
+                    const result = await uploadRes.json();
+                    const fileUrl = result.fileUrl || result.url;
+                    setFormData((prev) => ({
+                        ...prev,
+                        Posters: [...(prev.Posters || []), fileUrl]
+                    }));
+                } else {
+                    const compressedBase64 = await compressImage(file);
+                    if (compressedBase64) {
+                        setFormData((prev) => ({
+                            ...prev,
+                            Posters: [...(prev.Posters || []), compressedBase64]
+                        }));
+                    }
+                }
+            } catch (err) {
+                console.error('Image upload error:', err);
                 const compressedBase64 = await compressImage(file);
                 if (compressedBase64) {
                     setFormData((prev) => ({
@@ -341,8 +374,6 @@ function EventInfo() {
                         Posters: [...(prev.Posters || []), compressedBase64]
                     }));
                 }
-            } catch (err) {
-                console.error('Image compression error:', err);
             }
         }
         e.target.value = '';
@@ -903,7 +934,7 @@ function EventInfo() {
                                                     className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 aspect-[4/3] shadow-sm"
                                                 >
                                                     <img
-                                                        src={poster}
+                                                        src={resolvePosterUrl(poster)}
                                                         alt={`Poster ${index + 1}`}
                                                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                                     />
@@ -1433,7 +1464,7 @@ function EventInfo() {
                                     <div className="relative aspect-[16/9] w-full bg-gradient-to-br from-emerald-600 to-teal-800 overflow-hidden flex items-center justify-center">
                                         {(formData.Posters || []).length > 0 ? (
                                             <img
-                                                src={formData.Posters[0]}
+                                                src={resolvePosterUrl(formData.Posters[0])}
                                                 alt="Event Primary Poster Preview"
                                                 className="w-full h-full object-cover"
                                             />
@@ -1569,14 +1600,14 @@ function EventInfo() {
                                             <AnimatePresence mode="wait">
                                                 <motion.img
                                                     key={activePosterIndex}
-                                                    src={event.Posters[activePosterIndex] || event.Posters[0]}
+                                                    src={resolvePosterUrl(event.Posters[activePosterIndex] || event.Posters[0])}
                                                     alt={event.EventName}
                                                     initial={{ opacity: 0 }}
                                                     animate={{ opacity: 1 }}
                                                     exit={{ opacity: 0 }}
                                                     transition={{ duration: 0.35 }}
                                                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
-                                                    onClick={() => setLightboxImage(event.Posters[activePosterIndex] || event.Posters[0])}
+                                                    onClick={() => setLightboxImage(resolvePosterUrl(event.Posters[activePosterIndex] || event.Posters[0]))}
                                                 />
                                             </AnimatePresence>
 
@@ -1644,7 +1675,7 @@ function EventInfo() {
                                                         }`}
                                                     >
                                                         <img
-                                                            src={poster}
+                                                            src={resolvePosterUrl(poster)}
                                                             alt={`Thumbnail ${index + 1}`}
                                                             className="w-full h-full object-cover"
                                                         />

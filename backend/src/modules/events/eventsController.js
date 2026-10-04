@@ -1,4 +1,29 @@
 const eventsService = require('./eventsService');
+const { saveBase64File } = require('../../middleware/multer');
+
+const processPosters = (posters) => {
+    if (!posters) return [];
+    let list = [];
+    if (Array.isArray(posters)) {
+        list = posters;
+    } else if (typeof posters === 'string') {
+        try {
+            const parsed = JSON.parse(posters);
+            list = Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+            list = [posters];
+        }
+    }
+    return list.map((item) => {
+        if (typeof item === 'string' && item.startsWith('data:image/')) {
+            return saveBase64File(item, 'images');
+        }
+        if (item && typeof item === 'object' && item.url && item.url.startsWith('data:image/')) {
+            return { ...item, url: saveBase64File(item.url, 'images') };
+        }
+        return item;
+    });
+};
 
 const createEvent = (req, res) => {
     const {
@@ -76,7 +101,9 @@ const createEvent = (req, res) => {
         });
     }
 
-    eventsService.createEvent(EventName, Description, effectiveFacilities, effectiveRequirements, TeamSize, effectiveStartDate, effectiveEndDate, effectiveRegistrationStart, effectiveRegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters, VirtualStartDate, VirtualEndDate, PhysicalStartDate, PhysicalEndDate, VirtualRegistrationStart, VirtualRegistrationEnd, PhysicalRegistrationStart, PhysicalRegistrationEnd, VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements, effectivePrizeMoney, effectiveVirtualPrizeMoney, effectivePhysicalPrizeMoney, (err, result) => {
+    const processedPosters = processPosters(Posters);
+
+    eventsService.createEvent(EventName, Description, effectiveFacilities, effectiveRequirements, TeamSize, effectiveStartDate, effectiveEndDate, effectiveRegistrationStart, effectiveRegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, processedPosters, VirtualStartDate, VirtualEndDate, PhysicalStartDate, PhysicalEndDate, VirtualRegistrationStart, VirtualRegistrationEnd, PhysicalRegistrationStart, PhysicalRegistrationEnd, VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements, effectivePrizeMoney, effectiveVirtualPrizeMoney, effectivePhysicalPrizeMoney, (err, result) => {
             if (err) {
                 return res.status(500).json({
                     message: 'Event creation failed',
@@ -226,7 +253,9 @@ const updateEvent = (req, res) => {
         });
     }
 
-    eventsService.updateEventById(id, EventName, Description, effectiveFacilities, effectiveRequirements, TeamSize, effectiveStartDate, effectiveEndDate, effectiveRegistrationStart, effectiveRegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters, VirtualStartDate, VirtualEndDate, PhysicalStartDate, PhysicalEndDate, VirtualRegistrationStart, VirtualRegistrationEnd, PhysicalRegistrationStart, PhysicalRegistrationEnd, VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements, effectivePrizeMoney, effectiveVirtualPrizeMoney, effectivePhysicalPrizeMoney, (err, result) => {
+    const processedPosters = processPosters(Posters);
+
+    eventsService.updateEventById(id, EventName, Description, effectiveFacilities, effectiveRequirements, TeamSize, effectiveStartDate, effectiveEndDate, effectiveRegistrationStart, effectiveRegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, processedPosters, VirtualStartDate, VirtualEndDate, PhysicalStartDate, PhysicalEndDate, VirtualRegistrationStart, VirtualRegistrationEnd, PhysicalRegistrationStart, PhysicalRegistrationEnd, VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements, effectivePrizeMoney, effectiveVirtualPrizeMoney, effectivePhysicalPrizeMoney, (err, result) => {
             if (err) {
                 return res.status(500).json({
                     message: 'Event update failed',

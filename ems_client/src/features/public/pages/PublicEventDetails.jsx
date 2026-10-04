@@ -385,7 +385,6 @@ function PublicEventDetails() {
 
   const [activeTrackTab, setActiveTrackTab] = useState('physical');
   const [copiedLink, setCopiedLink] = useState(false);
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -435,34 +434,7 @@ function PublicEventDetails() {
     }
   };
 
-  useEffect(() => {
-    if (!event) return;
 
-    const targetDateStr = event.RegistrationEnd || event.StartDate;
-    if (!targetDateStr) return;
-
-    const calculateTimeLeft = () => {
-      const target = new Date(targetDateStr).getTime();
-      const now = new Date().getTime();
-      const difference = target - now;
-
-      if (difference <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-        return;
-      }
-
-      setTimeLeft({
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((difference % (1000 * 60)) / 1000)
-      });
-    };
-
-    calculateTimeLeft();
-    const interval = setInterval(calculateTimeLeft, 1000);
-    return () => clearInterval(interval);
-  }, [event]);
 
   const handleRegisterClick = () => {
     const rawUser = localStorage.getItem('user');
@@ -505,18 +477,25 @@ function PublicEventDetails() {
 
   const getPoster = () => {
     if (!event || !event.Posters) return null;
+    let url = null;
     if (Array.isArray(event.Posters) && event.Posters.length > 0) {
-      return typeof event.Posters[0] === 'string' ? event.Posters[0] : event.Posters[0]?.url || null;
-    }
-    if (typeof event.Posters === 'string') {
+      url = typeof event.Posters[0] === 'string' ? event.Posters[0] : event.Posters[0]?.url || null;
+    } else if (typeof event.Posters === 'string') {
       try {
         const parsed = JSON.parse(event.Posters);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          url = typeof parsed[0] === 'string' ? parsed[0] : parsed[0]?.url || null;
+        } else {
+          url = parsed;
+        }
       } catch {
-        return event.Posters;
+        url = event.Posters;
       }
     }
-    return null;
+    if (url && typeof url === 'string' && url.startsWith('/uploads')) {
+      return `http://localhost:3000${url}`;
+    }
+    return url;
   };
 
   const isRegistrationClosed = useMemo(() => {
@@ -882,7 +861,7 @@ function PublicEventDetails() {
                     Registration has ended
                   </div>
                 ) : (
-                  <FlipCountdown timeLeft={timeLeft} />
+                  <FlipCountdown targetDate={event.RegistrationEnd || event.StartDate} />
                 )}
               </div>
             </div>

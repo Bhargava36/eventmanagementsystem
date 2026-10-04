@@ -167,20 +167,25 @@ function ExploreEvents() {
 
   const getEventPosterUrl = (posters) => {
     if (!posters) return null;
+    let url = null;
     if (Array.isArray(posters) && posters.length > 0) {
-      return typeof posters[0] === 'string' ? posters[0] : posters[0]?.url || null;
-    }
-    if (typeof posters === 'string') {
+      url = typeof posters[0] === 'string' ? posters[0] : posters[0]?.url || null;
+    } else if (typeof posters === 'string') {
       try {
         const parsed = JSON.parse(posters);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed[0];
+          url = typeof parsed[0] === 'string' ? parsed[0] : parsed[0]?.url || null;
+        } else {
+          url = parsed;
         }
       } catch {
-        return posters;
+        url = posters;
       }
     }
-    return null;
+    if (url && typeof url === 'string' && url.startsWith('/uploads')) {
+      return `http://localhost:3000${url}`;
+    }
+    return url;
   };
 
   const clearAllFilters = () => {
