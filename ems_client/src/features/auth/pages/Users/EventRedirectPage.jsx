@@ -478,7 +478,7 @@ function EventDetails() {
       </div>
 
       {showRegistration && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black px-4 py-6 sm:py-10">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-6 sm:py-10">
 
           <div className="w-full max-w-4xl">
 
