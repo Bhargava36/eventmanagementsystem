@@ -29,7 +29,9 @@ import {
     Layers,
     FileText,
     Check,
-    Globe
+    Globe,
+    Radio,
+    Trophy
 } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';
@@ -93,6 +95,9 @@ function EventInfo() {
         EventType: initialEvent?.EventType || '',
         EventStatus: initialEvent?.EventStatus || '',
         HackathonMode: initialEvent?.HackathonMode || '',
+        PrizeMoney: initialEvent?.PrizeMoney || '',
+        VirtualPrizeMoney: initialEvent?.VirtualPrizeMoney || '',
+        PhysicalPrizeMoney: initialEvent?.PhysicalPrizeMoney || '',
         PrimaryColor: initialEvent?.PrimaryColor || '',
         SecondaryColor: initialEvent?.SecondaryColor || '',
         TertiaryColor: initialEvent?.TertiaryColor || '',
@@ -167,6 +172,9 @@ function EventInfo() {
                 EventType: data.event.EventType || '',
                 EventStatus: data.event.EventStatus || '',
                 HackathonMode: data.event.HackathonMode || '',
+                PrizeMoney: data.event.PrizeMoney || '',
+                VirtualPrizeMoney: data.event.VirtualPrizeMoney || '',
+                PhysicalPrizeMoney: data.event.PhysicalPrizeMoney || '',
                 PrimaryColor: data.event.PrimaryColor || '',
                 SecondaryColor: data.event.SecondaryColor || '',
                 TertiaryColor: data.event.TertiaryColor || '',
@@ -400,22 +408,32 @@ function EventInfo() {
             setSaving(true);
 
             const payload = { ...formData };
-            if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Hybrid') {
+            if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') {
                 payload.StartDate = formData.VirtualStartDate || formData.StartDate;
                 payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
                 payload.RegistrationStart = formData.VirtualRegistrationStart || formData.RegistrationStart;
                 payload.RegistrationEnd = formData.PhysicalRegistrationEnd || formData.RegistrationEnd;
+                payload.VirtualPrizeMoney = formData.VirtualPrizeMoney;
+                payload.PhysicalPrizeMoney = formData.PhysicalPrizeMoney;
+            } else if (formData.HackathonMode === 'Hybrid') {
+                payload.StartDate = formData.StartDate || formData.VirtualStartDate || formData.PhysicalStartDate;
+                payload.EndDate = formData.EndDate || formData.PhysicalEndDate || formData.VirtualEndDate;
+                payload.RegistrationStart = formData.RegistrationStart || formData.VirtualRegistrationStart || formData.PhysicalRegistrationStart;
+                payload.RegistrationEnd = formData.RegistrationEnd || formData.PhysicalRegistrationEnd || formData.VirtualRegistrationEnd;
+                payload.PrizeMoney = formData.PrizeMoney || formData.PhysicalPrizeMoney || formData.VirtualPrizeMoney;
             } else if (formData.HackathonMode === 'Virtual') {
                 payload.StartDate = formData.VirtualStartDate || formData.StartDate;
                 payload.EndDate = formData.VirtualEndDate || formData.EndDate;
                 payload.RegistrationStart = formData.VirtualRegistrationStart || formData.RegistrationStart;
                 payload.RegistrationEnd = formData.VirtualRegistrationEnd || formData.RegistrationEnd;
+                payload.VirtualPrizeMoney = formData.VirtualPrizeMoney || formData.PrizeMoney;
                 if (!payload.Location) payload.Location = 'Virtual / Online';
             } else if (formData.HackathonMode === 'Physical') {
                 payload.StartDate = formData.PhysicalStartDate || formData.StartDate;
                 payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
                 payload.RegistrationStart = formData.PhysicalRegistrationStart || formData.RegistrationStart;
                 payload.RegistrationEnd = formData.PhysicalRegistrationEnd || formData.RegistrationEnd;
+                payload.PhysicalPrizeMoney = formData.PhysicalPrizeMoney || formData.PrizeMoney;
             }
 
             const res = await fetch(
@@ -801,11 +819,12 @@ function EventInfo() {
                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                             Hackathon / Participation Mode
                                         </label>
-                                        <div className="grid grid-cols-3 gap-2 mb-2">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
                                             {[
                                                 { id: 'Virtual', label: 'Virtual' },
                                                 { id: 'Physical', label: 'Physical' },
-                                                { id: 'Both', label: 'Both (Virtual & Physical)' }
+                                                { id: 'Virtual and Physical', label: 'Virtual and Physical' },
+                                                { id: 'Hybrid', label: 'Hybrid' }
                                             ].map((modeItem) => (
                                                 <button
                                                     key={modeItem.id}
@@ -816,7 +835,8 @@ function EventInfo() {
                                                         Location: modeItem.id === 'Virtual' ? (prev.Location || 'Virtual / Online') : (prev.Location === 'Virtual / Online' ? '' : prev.Location)
                                                     }))}
                                                     className={`py-2 px-1 rounded-xl text-xs font-medium border text-center transition-all ${
-                                                        formData.HackathonMode?.toLowerCase() === modeItem.id.toLowerCase()
+                                                        formData.HackathonMode?.toLowerCase() === modeItem.id.toLowerCase() ||
+                                                        (modeItem.id === 'Virtual and Physical' && formData.HackathonMode === 'Both')
                                                             ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-400 shadow-sm'
                                                             : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900'
                                                     }`}
@@ -950,7 +970,7 @@ function EventInfo() {
                                         )}
                                     </div>
 
-                                    {formData.HackathonMode === 'Both' ? (
+                                    {formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical' ? (
                                         <div className="space-y-4">
                                             <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-500/5 space-y-3">
                                                 <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider">
@@ -1192,6 +1212,71 @@ function EventInfo() {
                                             />
                                         </div>
                                     </div>
+
+                                    {(formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') ? (
+                                        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 space-y-4">
+                                            <div className="flex items-center gap-2">
+                                                <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">Track Prize Pools</h4>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">Configure separate prize money for Physical and Virtual tracks.</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                                        Physical Track Prize Money
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="PhysicalPrizeMoney"
+                                                        value={formData.PhysicalPrizeMoney || ''}
+                                                        onChange={handleInputChange}
+                                                        placeholder="e.g. ₹50,000"
+                                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                                        Virtual Track Prize Money
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="VirtualPrizeMoney"
+                                                        value={formData.VirtualPrizeMoney || ''}
+                                                        onChange={handleInputChange}
+                                                        placeholder="e.g. ₹25,000"
+                                                        className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between pt-2 border-t border-amber-200/60 dark:border-amber-800/40 text-xs">
+                                                <span className="text-gray-600 dark:text-gray-400 font-medium">Combined Pool Note</span>
+                                                <span className="font-extrabold text-amber-600 dark:text-amber-400">
+                                                    {formData.PhysicalPrizeMoney && formData.VirtualPrizeMoney
+                                                        ? `Physical: ${formData.PhysicalPrizeMoney} | Virtual: ${formData.VirtualPrizeMoney}`
+                                                        : formData.PhysicalPrizeMoney || formData.VirtualPrizeMoney || 'Set track prize amounts above'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                Prize Money / Prize Pool
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="PrizeMoney"
+                                                value={formData.PrizeMoney || ''}
+                                                onChange={handleInputChange}
+                                                placeholder="e.g. ₹50,000 or $1,000"
+                                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
@@ -1629,8 +1714,10 @@ function EventInfo() {
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             {event.HackathonMode === 'Virtual' ? (
                                                 <Globe className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
-                                            ) : event.HackathonMode === 'Both' ? (
+                                            ) : event.HackathonMode === 'Both' || event.HackathonMode === 'Virtual and Physical' ? (
                                                 <Layers className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
+                                            ) : event.HackathonMode === 'Hybrid' ? (
+                                                <Radio className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                             ) : (
                                                 <MapPin className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                             )}
@@ -1760,6 +1847,39 @@ function EventInfo() {
                                         </div>
 
                                     </div>
+
+                                    {(event.VirtualPrizeMoney || event.PhysicalPrizeMoney || event.PrizeMoney) && (
+                                        <div className="flex items-start gap-3">
+                                            <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/20">
+                                                <Trophy className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                                            </div>
+
+                                            <div>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                    Prize Pool
+                                                </p>
+
+                                                {(event.HackathonMode === 'Both' || event.HackathonMode === 'Virtual and Physical') && (event.PhysicalPrizeMoney || event.VirtualPrizeMoney) ? (
+                                                    <div className="space-y-1 mt-0.5">
+                                                        {event.PhysicalPrizeMoney && (
+                                                            <p className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                                                                Physical Track: {event.PhysicalPrizeMoney}
+                                                            </p>
+                                                        )}
+                                                        {event.VirtualPrizeMoney && (
+                                                            <p className="text-xs font-bold text-blue-700 dark:text-blue-400">
+                                                                Virtual Track: {event.VirtualPrizeMoney}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                                        {event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney || '-'}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
 
                                 </div>
 

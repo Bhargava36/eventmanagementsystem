@@ -10,10 +10,12 @@ const addPrizes = (eventId, prizes, callback) => {
             return callback(null, { affectedRows: 0 });
         }
 
-        const query = `INSERT INTO event_prizes (EventId, PrizeRank, Prize) VALUES ?`;
+        const query = `INSERT INTO event_prizes (EventId, PrizeRank, Prize, Track) VALUES ?`;
         const values = prizes.map((prize, index) => {
-            const prizeVal = typeof prize === 'object' && prize !== null ? (prize.prize || prize.Prize || '') : prize;
-            return [eventId, index + 1, String(prizeVal)];
+            const prizeVal = typeof prize === 'object' && prize !== null ? (prize.prize || prize.Prize || prize.amount || '') : prize;
+            const rank = typeof prize === 'object' && prize !== null && (prize.prizeRank || prize.PrizeRank) ? Number(prize.prizeRank || prize.PrizeRank) : index + 1;
+            const track = typeof prize === 'object' && prize !== null && (prize.track || prize.Track) ? (prize.track || prize.Track) : 'Overall';
+            return [eventId, rank, String(prizeVal), track];
         });
 
         db.query(query, [values], (err, result) => {
@@ -26,7 +28,7 @@ const addPrizes = (eventId, prizes, callback) => {
 };
 
 const getPrizesByEvent = (eventId, callback) => {
-    const query = `SELECT Id, EventId, PrizeRank, Prize FROM event_prizes WHERE EventId = ? ORDER BY PrizeRank ASC`;
+    const query = `SELECT Id, EventId, PrizeRank, Prize, Track FROM event_prizes WHERE EventId = ? ORDER BY Track ASC, PrizeRank ASC`;
 
     db.query(query, [eventId], (err, result) => {
         if (err) {
@@ -38,7 +40,7 @@ const getPrizesByEvent = (eventId, callback) => {
 };
 
 const getPrizeById = (id, callback) => {
-    const query = `SELECT Id, EventId, PrizeRank, Prize FROM event_prizes WHERE Id = ?`;
+    const query = `SELECT Id, EventId, PrizeRank, Prize, Track FROM event_prizes WHERE Id = ?`;
 
     db.query(query, [id], (err, result) => {
         if (err) {

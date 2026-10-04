@@ -468,7 +468,7 @@ const HeroSection = ({ className }) => {
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
                       {/* Explore Events - Luxury Primary Button */}
                       <Link
-                        to="/user/login"
+                        to="/events"
                         className="relative group overflow-hidden w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 text-white font-semibold text-sm sm:text-base tracking-wide shadow-[0_10px_25px_-5px_rgba(5,150,105,0.4)] hover:shadow-[0_20px_35px_-8px_rgba(5,150,105,0.6)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 ease-out"
                       >
                         {/* Shimmer light sweep */}

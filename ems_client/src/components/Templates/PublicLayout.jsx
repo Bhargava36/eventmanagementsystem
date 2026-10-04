@@ -1,6 +1,7 @@
 import { Navbar } from "../Molecules/Navbar";
 import { Footer } from "../Organisms/Footer";
 import { Outlet } from "react-router-dom";
+import ByteChatbot from "../Organisms/ByteChatbot";
 
 function PublicLayout() {
   return (
@@ -10,6 +11,7 @@ function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
+      <ByteChatbot />
     </div>
   );
 }

@@ -15,6 +15,8 @@ import {
   Code,
   Award,
   CalendarDays,
+  AlertCircle,
+  Check,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../components/Molecules/WaveBackground";
@@ -233,8 +235,15 @@ function UnifiedLogin({ role: propRole }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [shakeForm, setShakeForm] = useState(false);
 
-  // Focus state handlers to reliably float labels without overlapping
+  const [touched, setTouched] = useState({
+    email: false,
+    password: false,
+    eventName: false,
+  });
+
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [isEventFocused, setIsEventFocused] = useState(false);
@@ -243,6 +252,49 @@ function UnifiedLogin({ role: propRole }) {
   const isPasswordFloating = Boolean(password) || isPasswordFocused;
   const isEventFloating = Boolean(eventName) || isEventFocused;
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const getEmailError = () => {
+    const val = email.trim();
+    if (!val) return "Email address is required";
+    if (!emailRegex.test(val)) return "Please enter a valid email address";
+    return "";
+  };
+
+  const getPasswordError = () => {
+    if (!password) return "Password is required";
+    if (password.length < 6) return "Password must be at least 6 characters";
+    return "";
+  };
+
+  const getEventNameError = () => {
+    if (config.showEventName && !eventName.trim()) {
+      return "Event name is required for organizer login";
+    }
+    return "";
+  };
+
+  const emailError = getEmailError();
+  const passwordError = getPasswordError();
+  const eventNameError = getEventNameError();
+
+  const showEmailError = (submitted || touched.email || email.length > 0) && emailError;
+  const showPasswordError = (submitted || touched.password || password.length > 0) && passwordError;
+  const showEventNameError = (submitted || touched.eventName || eventName.length > 0) && eventNameError;
+
+  const isEmailValid = (touched.email || email.length > 0) && !emailError;
+  const isPasswordValid = (touched.password || password.length > 0) && !passwordError;
+  const isEventValid = config.showEventName && (touched.eventName || eventName.length > 0) && !eventNameError;
+
+  const triggerShake = () => {
+    setShakeForm(true);
+    setTimeout(() => setShakeForm(false), 500);
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
   const handleGoogleSignIn = () => {
     toast.info("Google sign-in is coming soon.");
   };
@@ -250,18 +302,19 @@ function UnifiedLogin({ role: propRole }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setSubmitted(true);
 
-    if (!email || !password) {
-      const msg = "Required to fill all fields";
-      setError(msg);
-      toast.error(msg);
-      return;
-    }
+    setTouched({
+      email: true,
+      password: true,
+      eventName: true,
+    });
 
-    if (config.showEventName && !eventName.trim()) {
-      const msg = "Event Name is required for organizer login";
-      setError(msg);
-      toast.error(msg);
+    if (emailError || passwordError || eventNameError) {
+      triggerShake();
+      const firstError = emailError || passwordError || eventNameError;
+      setError(firstError);
+      toast.error(firstError);
       return;
     }
 
@@ -295,6 +348,7 @@ function UnifiedLogin({ role: propRole }) {
       }
       navigate(from, { replace: true });
     } catch (err) {
+      triggerShake();
       const errMsg = err.message || "Login failed, try again later";
       setError(errMsg);
       toast.error(errMsg);
@@ -311,9 +365,7 @@ function UnifiedLogin({ role: propRole }) {
     >
       <WaveBackground />
 
-      {/* Main Split Container */}
       <div className="relative z-10 flex flex-col lg:flex-row mx-4 sm:mx-8 lg:mx-12 xl:mx-20 gap-8 lg:gap-14 items-center lg:items-start justify-center">
-        {/* Left Side: Brand Marketing & Role Value Prop */}
         <div className="hidden lg:flex flex-col w-full lg:w-6/12 p-0 lg:p-6 xl:p-8">
           <AnimatePresence mode="wait">
             <motion.div
@@ -340,7 +392,6 @@ function UnifiedLogin({ role: propRole }) {
                 {config.description}
               </p>
 
-              {/* Feature Cards Grid (4 items) */}
               <div className="flex flex-col gap-4 lg:gap-5 mt-6 lg:mt-8">
                 {config.features.map((feature, idx) => {
                   const Icon = feature.icon;
@@ -371,19 +422,24 @@ function UnifiedLogin({ role: propRole }) {
           </AnimatePresence>
         </div>
 
-        {/* Right Side: Form Card */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
           className="flex flex-col w-full lg:w-6/12 xl:w-5/12 max-w-xl px-2 sm:px-4"
         >
-          <form
+          <motion.form
             onSubmit={handleLogin}
+            noValidate
             autoComplete="off"
+            animate={
+              shakeForm
+                ? { x: [0, -10, 10, -8, 8, -4, 4, 0] }
+                : { x: 0 }
+            }
+            transition={{ duration: 0.4 }}
             className="bg-gray-50/90 dark:bg-zinc-950/80 border-2 backdrop-blur-md border-emerald-700 dark:border-emerald-500/80 rounded-2xl p-7 sm:p-9 md:p-10 shadow-2xl"
           >
-            {/* Hidden dummy inputs to prevent browser from dumping autofilled credentials on initial load */}
             <input
               type="text"
               name="prevent_autofill_username"
@@ -416,127 +472,276 @@ function UnifiedLogin({ role: propRole }) {
               </p>
             </div>
 
-            {error && (
-              <div className="mb-5 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-600 dark:text-red-400 text-xs text-center font-medium">
-                {error}
-              </div>
-            )}
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                  className="mb-5 p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-600 dark:text-red-400 text-xs font-medium space-y-2.5"
+                >
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span className="flex-1 text-left">{error}</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* Event Name Input (Required for Event Organizer Admin) */}
             {config.showEventName && (
               <div className="relative w-full mb-6">
-                <CalendarDays className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400 pointer-events-none" />
+                <CalendarDays
+                  className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
+                    showEventNameError
+                      ? "text-rose-500"
+                      : isEventValid
+                      ? "text-emerald-500"
+                      : "text-emerald-700 dark:text-emerald-400"
+                  }`}
+                />
                 <input
                   type="text"
                   id="user_event_name"
                   name="user_event_name"
                   placeholder=""
-                  required
                   autoComplete="off"
                   value={eventName}
                   onFocus={() => setIsEventFocused(true)}
-                  onBlur={() => setIsEventFocused(false)}
+                  onBlur={() => {
+                    setIsEventFocused(false);
+                    handleBlur("eventName");
+                  }}
                   onChange={(e) => setEventName(e.target.value)}
-                  className="w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200 text-sm"
+                  className={`w-full border-0 border-b-2 bg-transparent pl-8 pr-8 py-2 text-black dark:text-white focus:outline-none transition duration-200 text-sm ${
+                    showEventNameError
+                      ? "border-rose-500 focus:border-rose-500"
+                      : isEventValid
+                      ? "border-emerald-500 focus:border-emerald-500"
+                      : "border-gray-300 dark:border-gray-600 focus:border-emerald-500"
+                  }`}
                 />
                 <label
                   htmlFor="user_event_name"
                   className={`absolute left-8 transition-all duration-200 pointer-events-none select-none ${
                     isEventFloating
-                      ? "-top-4 text-xs text-emerald-700 dark:text-emerald-400 font-semibold"
+                      ? `-top-4 text-xs font-semibold ${
+                          showEventNameError
+                            ? "text-rose-500"
+                            : isEventValid
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-emerald-700 dark:text-emerald-400"
+                        }`
                       : "top-2 text-sm text-gray-500 dark:text-gray-400"
                   }`}
                 >
                   Event Name
                 </label>
+
+                {isEventValid && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="absolute right-1 top-3 text-emerald-500"
+                  >
+                    <Check className="w-4 h-4" />
+                  </motion.div>
+                )}
+
+                <AnimatePresence>
+                  {showEventNameError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -4, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center gap-1.5 text-rose-500 text-xs mt-1.5 font-medium"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{eventNameError}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             )}
 
-            {/* Email Address */}
             <div className="relative w-full mb-6">
-              <Mail className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400 pointer-events-none" />
+              <Mail
+                className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
+                  showEmailError
+                    ? "text-rose-500"
+                    : isEmailValid
+                    ? "text-emerald-500"
+                    : "text-emerald-700 dark:text-emerald-400"
+                }`}
+              />
               <input
                 type="text"
                 id="login_account_email"
                 name="login_account_email"
                 placeholder=""
-                required
                 autoComplete="off"
                 value={email}
                 onFocus={() => setIsEmailFocused(true)}
-                onBlur={() => setIsEmailFocused(false)}
+                onBlur={() => {
+                  setIsEmailFocused(false);
+                  handleBlur("email");
+                }}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200 text-sm"
+                className={`w-full border-0 border-b-2 bg-transparent pl-8 pr-8 py-2 text-black dark:text-white focus:outline-none transition duration-200 text-sm ${
+                  showEmailError
+                    ? "border-rose-500 focus:border-rose-500"
+                    : isEmailValid
+                    ? "border-emerald-500 focus:border-emerald-500"
+                    : "border-gray-300 dark:border-gray-600 focus:border-emerald-500"
+                }`}
               />
               <label
                 htmlFor="login_account_email"
                 className={`absolute left-8 transition-all duration-200 pointer-events-none select-none ${
                   isEmailFloating
-                    ? "-top-4 text-xs text-emerald-700 dark:text-emerald-400 font-semibold"
+                    ? `-top-4 text-xs font-semibold ${
+                        showEmailError
+                          ? "text-rose-500"
+                          : isEmailValid
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-emerald-700 dark:text-emerald-400"
+                      }`
                     : "top-2 text-sm text-gray-500 dark:text-gray-400"
                 }`}
               >
                 Email Address
               </label>
+
+              {isEmailValid && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="absolute right-1 top-3 text-emerald-500"
+                >
+                  <Check className="w-4 h-4" />
+                </motion.div>
+              )}
+
+              <AnimatePresence>
+                {showEmailError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -4, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-1.5 text-rose-500 text-xs mt-1.5 font-medium"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{emailError}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
-            {/* Password */}
             <div className="relative w-full mb-4">
-              <Lock className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400 pointer-events-none" />
+              <Lock
+                className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
+                  showPasswordError
+                    ? "text-rose-500"
+                    : isPasswordValid
+                    ? "text-emerald-500"
+                    : "text-emerald-700 dark:text-emerald-400"
+                }`}
+              />
               <input
                 type={showPassword ? "text" : "password"}
                 id="login_account_password"
                 name="login_account_password"
                 placeholder=""
-                required
                 autoComplete="new-password"
                 value={password}
                 onFocus={() => setIsPasswordFocused(true)}
-                onBlur={() => setIsPasswordFocused(false)}
+                onBlur={() => {
+                  setIsPasswordFocused(false);
+                  handleBlur("password");
+                }}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border-0 border-b-2 border-gray-300 dark:border-gray-600 bg-transparent pl-8 pr-10 py-2 text-black dark:text-white focus:outline-none focus:border-emerald-500 transition duration-200 text-sm"
+                className={`w-full border-0 border-b-2 bg-transparent pl-8 pr-16 py-2 text-black dark:text-white focus:outline-none transition duration-200 text-sm ${
+                  showPasswordError
+                    ? "border-rose-500 focus:border-rose-500"
+                    : isPasswordValid
+                    ? "border-emerald-500 focus:border-emerald-500"
+                    : "border-gray-300 dark:border-gray-600 focus:border-emerald-500"
+                }`}
               />
               <label
                 htmlFor="login_account_password"
                 className={`absolute left-8 transition-all duration-200 pointer-events-none select-none ${
                   isPasswordFloating
-                    ? "-top-4 text-xs text-emerald-700 dark:text-emerald-400 font-semibold"
+                    ? `-top-4 text-xs font-semibold ${
+                        showPasswordError
+                          ? "text-rose-500"
+                          : isPasswordValid
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-emerald-700 dark:text-emerald-400"
+                      }`
                     : "top-2 text-sm text-gray-500 dark:text-gray-400"
                 }`}
               >
                 Password
               </label>
 
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 top-2.5 p-1 text-gray-500 hover:text-emerald-500 dark:text-gray-400 dark:hover:text-emerald-400 focus:outline-none transition-colors cursor-pointer"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                <AnimatePresence mode="wait" initial={false}>
-                  {showPassword ? (
-                    <motion.div
-                      key="eye-off"
-                      initial={{ opacity: 0, scale: 0.6 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.6 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <EyeOff className="w-5 h-5" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="eye"
-                      initial={{ opacity: 0, scale: 0.6 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.6 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <Eye className="w-5 h-5" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </button>
+              <div className="absolute right-2 top-2.5 flex items-center gap-1.5">
+                {isPasswordValid && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-emerald-500 mr-1"
+                  >
+                    <Check className="w-4 h-4" />
+                  </motion.div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="p-1 text-gray-500 hover:text-emerald-500 dark:text-gray-400 dark:hover:text-emerald-400 focus:outline-none transition-colors cursor-pointer"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    {showPassword ? (
+                      <motion.div
+                        key="eye-off"
+                        initial={{ opacity: 0, scale: 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.6 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        <EyeOff className="w-5 h-5" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="eye"
+                        initial={{ opacity: 0, scale: 0.6 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.6 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        <Eye className="w-5 h-5" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {showPasswordError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -4, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex items-center gap-1.5 text-rose-500 text-xs mt-1.5 font-medium"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{passwordError}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="flex items-center justify-between mb-6 text-xs sm:text-sm">
@@ -556,7 +761,6 @@ function UnifiedLogin({ role: propRole }) {
               {loading ? "Signing in..." : "Sign in"}
             </button>
 
-            {/* Participant Sign-up Callout */}
             {config.showRegisterLink && (
               <p className="text-center mt-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 New participant?{" "}
@@ -586,7 +790,6 @@ function UnifiedLogin({ role: propRole }) {
               Sign in with Google
             </button>
 
-            {/* Subtle Cross-link to other portal */}
             {config.alternateLink && (
               <div className="text-center mt-4">
                 <Link
@@ -604,7 +807,7 @@ function UnifiedLogin({ role: propRole }) {
                 <p>{config.securityNotice}</p>
               </div>
             </div>
-          </form>
+          </motion.form>
         </motion.div>
       </div>
     </motion.div>

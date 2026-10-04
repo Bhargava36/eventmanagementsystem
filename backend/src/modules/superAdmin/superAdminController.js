@@ -1,3 +1,4 @@
+const db = require("../../config/db");
 const superAdminService = require("../superAdmin/superAdminService");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
@@ -9,9 +10,6 @@ const registerAdmin = (req,res) => {
         return res.status(400).json({message: "All fields are required"});
     }
 
-    // if(Password !== ConfirmPassword){
-    //     return res.status(400).json({message:"Password should not match"});
-    // }
 
     superAdminService.createAdmin(UserName,Email,Password,PhoneNumber,(err,result) => {
         if(err){
@@ -32,6 +30,12 @@ const registerAdmin = (req,res) => {
 const loginAdminController = (req,res) => {
     const {email,password} = req.body;
 
+    if(!email || !password){
+        return res.status(400).json({
+            message: "Email and password are required"
+        });
+    }
+
     superAdminService.loginAdmin(email, async(err,result) => {
         if(err){
             return res.status(500).json({
@@ -39,11 +43,28 @@ const loginAdminController = (req,res) => {
                 error: err
             });
         }
-        
-        if(result.length === 0){
-            return res.status(401).json({
-                message: "Invalid UserName or Password"
+        if (result.length === 0) {
+            const trimmedEmail = email.trim().toLowerCase();
+            db.query('SELECT Id FROM admins WHERE LOWER(Email) = ?', [trimmedEmail], (adErr, adRows) => {
+                if (!adErr && adRows && adRows.length > 0) {
+                    return res.status(403).json({
+                        message: "Access Denied: Unauthorized portal access."
+                    });
+                }
+
+                db.query('SELECT Id FROM users WHERE LOWER(Email) = ?', [trimmedEmail], (uErr, uRows) => {
+                    if (!uErr && uRows && uRows.length > 0) {
+                        return res.status(403).json({
+                            message: "Access Denied: Unauthorized portal access."
+                        });
+                    }
+
+                    return res.status(401).json({
+                        message: "Invalid email or password"
+                    });
+                });
             });
+            return;
         }
         const admin = result[0];
 

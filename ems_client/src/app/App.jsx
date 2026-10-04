@@ -27,6 +27,9 @@ import EventRedirectPage from '../features/auth/pages/Users/EventRedirectPage';
 import MyTeams from '../features/auth/pages/Users/MyTeams';
 import TeamInfo from '../features/auth/pages/Users/TeamInfo';
 import UserProfile from '../features/auth/pages/Users/UserProfile';
+import ExploreEvents from '../features/public/pages/ExploreEvents';
+import PublicEventDetails from '../features/public/pages/PublicEventDetails';
+import NotFound from '../features/public/pages/NotFound';
 import ProtectedRoute from '../components/Organisms/ProtectedRoute';
 import Unauthorized from '../components/ui/Unauthorized';
 
@@ -36,7 +39,10 @@ function App() {
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HeroSection />} />
-          {/* <Route path="/login" element={<Login />} /> */}
+          <Route path="/events" element={<ExploreEvents />} />
+          <Route path="/explore" element={<ExploreEvents />} />
+          <Route path="/events/:id" element={<PublicEventDetails />} />
+          <Route path="/explore/:id" element={<PublicEventDetails />} />
           <Route path="/superadmin/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/superadmin/register" element={<Register />} />
@@ -44,6 +50,9 @@ function App() {
           <Route path="/admin/register" element={<AdminRegister />} />
           <Route path="/user/login" element={<UserLogin />} />
           <Route path="/user/register" element={<UserRegister />} />
+          <Route path="/404" element={<NotFound />} />
+          <Route path="/not-found" element={<NotFound />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
 
 
@@ -89,8 +98,6 @@ function App() {
 
           
 
-       
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>
   );

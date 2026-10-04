@@ -9,7 +9,7 @@
   --font-serif: "Playfair Display", Georgia, serif;
 }
 
-@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
 
 @layer base {
   :root {

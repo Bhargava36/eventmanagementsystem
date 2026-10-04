@@ -10,10 +10,10 @@ const createRegistration = (req, res) => {
         });
     }
 
-    if (
-        ParticipationMode !== "Virtual" && ParticipationMode !== "Physical") {
+    const validModes = ["Virtual", "Physical", "Virtual and Physical", "Hybrid", "Both"];
+    if (!validModes.includes(ParticipationMode)) {
         return res.status(400).json({
-            message: "ParticipationMode must be Virtual or Physical"
+            message: "ParticipationMode must be Virtual, Physical, Virtual and Physical, or Hybrid"
         });
     }
 
@@ -139,9 +139,10 @@ const getRegistrationsByMode = (req, res) => {
 
     const mode = req.params.mode;
 
-    if ( mode !== "Virtual" && mode !== "Physical" ) {
+    const validModes = ["Virtual", "Physical", "Virtual and Physical", "Hybrid", "Both"];
+    if (!validModes.includes(mode)) {
         return res.status(400).json({
-            message: "Mode must be Virtual or Physical"
+            message: "Mode must be Virtual, Physical, Virtual and Physical, or Hybrid"
         });
     }
 
@@ -295,9 +296,10 @@ const getRegistrationCountByMode = (req, res) => {
 
     const mode = req.params.mode;
 
-    if ( mode !== "Virtual" && mode !== "Physical") {
+    const validModes = ["Virtual", "Physical", "Virtual and Physical", "Hybrid", "Both"];
+    if (!validModes.includes(mode)) {
         return res.status(400).json({
-            message: "Mode must be Virtual or Physical"
+            message: "Mode must be Virtual, Physical, Virtual and Physical, or Hybrid"
         });
     }
 

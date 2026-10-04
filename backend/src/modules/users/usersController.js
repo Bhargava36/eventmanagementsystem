@@ -1,3 +1,4 @@
+const db = require("../../config/db");
 const usersService = require("./usersServices");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -20,56 +21,93 @@ const createUser = (req, res) => {
 
 const loginUser = (req, res) => {
     const { Email, Password } = req.body;
-    usersService.loginUser(Email, async (err, users) => {
-        if (err) {
+
+    if (!Email || !Password) {
+        return res.status(400).json({
+            message: "Email and Password are required"
+        });
+    }
+
+    const trimmedEmail = Email.trim().toLowerCase();
+
+    db.query('SELECT Id FROM superadmin WHERE LOWER(Email) = ?', [trimmedEmail], (saErr, saRows) => {
+        if (saErr) {
             return res.status(500).json({
-                message: err.message
+                message: saErr.message
             });
         }
 
-        if (users.length === 0) {
-            return res.status(404).json({
-                message: "User not found"
+        if (saRows && saRows.length > 0) {
+            return res.status(403).json({
+                message: "Access Denied: Unauthorized portal access."
             });
         }
 
-        const user = users[0];
-
-        try {
-            const isMatch = await bcrypt.compare(
-                Password,
-                user.Password
-            );
-
-            if (!isMatch) {
-                return res.status(401).json({
-                    message: "Invalid email or password"
+        db.query('SELECT Id FROM admins WHERE LOWER(Email) = ?', [trimmedEmail], (adErr, adRows) => {
+            if (adErr) {
+                return res.status(500).json({
+                    message: adErr.message
                 });
             }
 
-            const token = jwt.sign(
-                {
-                    Id: user.Id,
-                    UserName: user.UserName,
-                    Email: user.Email,
-                    role: "user"
-                },
-                process.env.JWT_SECRECT || "secret",
-                {
-                    expiresIn: process.env.JWT_EXPIRES_IN || "7d"
-                }
-            );
+            if (adRows && adRows.length > 0) {
+                return res.status(403).json({
+                    message: "Access Denied: Unauthorized portal access."
+                });
+            }
 
-            res.status(200).json({
-                message: "Login successful",
-                token,
-                user
+            usersService.loginUser(trimmedEmail, async (err, users) => {
+                if (err) {
+                    return res.status(500).json({
+                        message: err.message
+                    });
+                }
+
+                if (users.length === 0) {
+                    return res.status(404).json({
+                        message: "User not found"
+                    });
+                }
+
+                const user = users[0];
+
+                try {
+                    const isMatch = await bcrypt.compare(
+                        Password,
+                        user.Password
+                    );
+
+                    if (!isMatch) {
+                        return res.status(401).json({
+                            message: "Invalid email or password"
+                        });
+                    }
+
+                    const token = jwt.sign(
+                        {
+                            Id: user.Id,
+                            UserName: user.UserName,
+                            Email: user.Email,
+                            role: "user"
+                        },
+                        process.env.JWT_SECRECT || "secret",
+                        {
+                            expiresIn: process.env.JWT_EXPIRES_IN || "7d"
+                        }
+                    );
+
+                    res.status(200).json({
+                        message: "Login successful",
+                        token,
+                        user
+                    });
+                } catch (error) {
+                    return res.status(500).json({
+                        message: error.message
+                    });
+                }
             });
-        } catch (error) {
-            return res.status(500).json({
-                message: error.message
-            });
-        }
+        });
     });
 };
 

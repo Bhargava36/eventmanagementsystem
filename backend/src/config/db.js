@@ -209,7 +209,11 @@ const migrationQueries = [
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
-    `ALTER TABLE event_core_team ADD COLUMN IF NOT EXISTS Photo LONGTEXT`
+    `ALTER TABLE event_core_team ADD COLUMN IF NOT EXISTS Photo LONGTEXT`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PrizeMoney VARCHAR(255)`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualPrizeMoney VARCHAR(255)`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalPrizeMoney VARCHAR(255)`,
+    `ALTER TABLE event_prizes ADD COLUMN IF NOT EXISTS Track VARCHAR(50) DEFAULT 'Overall'`
 ];
 
 let isMigrating = false;

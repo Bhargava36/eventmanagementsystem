@@ -14,7 +14,8 @@ import {
   Globe,
   MapPin,
   Layers,
-  Users
+  Users,
+  Trophy
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
@@ -76,6 +77,9 @@ function EventsDashboard() {
     EventType: '',
     EventStatus: '',
     HackathonMode: 'Physical',
+    PrizeMoney: '',
+    VirtualPrizeMoney: '',
+    PhysicalPrizeMoney: '',
     PrimaryColor: '#10B981',
     SecondaryColor: '#FFFFFF',
     TertiaryColor: '#000000',
@@ -228,11 +232,19 @@ function EventsDashboard() {
     try {
       const payload = { ...formData };
 
-      if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Hybrid') {
+      if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') {
         payload.StartDate = formData.VirtualStartDate || formData.StartDate;
         payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
         payload.Facilities = [formData.VirtualFacilities, formData.PhysicalFacilities].filter(Boolean).join('\n\n') || formData.Facilities || '-';
         payload.Requirements = [formData.VirtualRequirements, formData.PhysicalRequirements].filter(Boolean).join('\n\n') || formData.Requirements || '-';
+        payload.VirtualPrizeMoney = formData.VirtualPrizeMoney;
+        payload.PhysicalPrizeMoney = formData.PhysicalPrizeMoney;
+      } else if (formData.HackathonMode === 'Hybrid') {
+        payload.StartDate = formData.StartDate || formData.VirtualStartDate || formData.PhysicalStartDate;
+        payload.EndDate = formData.EndDate || formData.PhysicalEndDate || formData.VirtualEndDate;
+        payload.Facilities = formData.Facilities || [formData.VirtualFacilities, formData.PhysicalFacilities].filter(Boolean).join('\n\n') || '-';
+        payload.Requirements = formData.Requirements || [formData.VirtualRequirements, formData.PhysicalRequirements].filter(Boolean).join('\n\n') || '-';
+        payload.PrizeMoney = formData.PrizeMoney || formData.PhysicalPrizeMoney || formData.VirtualPrizeMoney;
       } else if (formData.HackathonMode === 'Virtual') {
         payload.StartDate = formData.VirtualStartDate || formData.StartDate;
         payload.EndDate = formData.VirtualEndDate || formData.EndDate;
@@ -240,6 +252,7 @@ function EventsDashboard() {
         payload.Requirements = formData.VirtualRequirements || formData.Requirements;
         payload.VirtualFacilities = payload.Facilities;
         payload.VirtualRequirements = payload.Requirements;
+        payload.VirtualPrizeMoney = formData.VirtualPrizeMoney || formData.PrizeMoney;
         if (!payload.Location) payload.Location = 'Virtual / Online';
       } else if (formData.HackathonMode === 'Physical') {
         payload.StartDate = formData.PhysicalStartDate || formData.StartDate;
@@ -248,6 +261,7 @@ function EventsDashboard() {
         payload.Requirements = formData.PhysicalRequirements || formData.Requirements;
         payload.PhysicalFacilities = payload.Facilities;
         payload.PhysicalRequirements = payload.Requirements;
+        payload.PhysicalPrizeMoney = formData.PhysicalPrizeMoney || formData.PrizeMoney;
       }
 
       const res = await fetch(
@@ -543,14 +557,16 @@ function EventsDashboard() {
                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                           Participation / Event Mode
                         </label>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           {[
                             { id: 'Virtual', label: 'Virtual', desc: '100% Online', icon: Globe },
-                            { id: 'Physical', label: 'Physical', desc: 'In-person / Venue', icon: MapPin },
-                            { id: 'Both', label: 'Both (Virtual & Physical)', desc: 'Multi-stage / Hybrid', icon: Layers }
+                            { id: 'Physical', label: 'Physical', desc: 'In-person / Campus', icon: MapPin },
+                            { id: 'Virtual and Physical', label: 'Virtual and Physical', desc: 'Multi-stage / Both', icon: Layers },
+                            { id: 'Hybrid', label: 'Hybrid', desc: 'Simultaneous Live & Online', icon: Radio }
                           ].map((modeOption) => {
                             const IconComponent = modeOption.icon;
-                            const isSelected = (formData.HackathonMode || 'Physical').toLowerCase() === modeOption.id.toLowerCase();
+                            const isSelected = (formData.HackathonMode || 'Physical').toLowerCase() === modeOption.id.toLowerCase() ||
+                              (modeOption.id === 'Virtual and Physical' && formData.HackathonMode === 'Both');
                             return (
                               <button
                                 key={modeOption.id}
@@ -584,7 +600,7 @@ function EventsDashboard() {
                         </div>
                       </div>
 
-                      {formData.HackathonMode === 'Both' ? (
+                      {formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical' ? (
                         <div className="space-y-4">
                           <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
                             <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider">
@@ -851,6 +867,73 @@ function EventsDashboard() {
                           className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
                         />
                       </div>
+
+                      {(formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') ? (
+                        <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+                            <div>
+                              <h4 className="text-sm font-bold text-gray-900 dark:text-white">Track-Wise Prize Pools</h4>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Specify separate prize money for the Physical and Virtual tracks of this event.</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                Physical Track Prize Money
+                              </label>
+                              <input
+                                type="text"
+                                name="PhysicalPrizeMoney"
+                                value={formData.PhysicalPrizeMoney}
+                                onChange={handleChange}
+                                placeholder="e.g. ₹50,000"
+                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                Virtual Track Prize Money
+                              </label>
+                              <input
+                                type="text"
+                                name="VirtualPrizeMoney"
+                                value={formData.VirtualPrizeMoney}
+                                onChange={handleChange}
+                                placeholder="e.g. ₹25,000"
+                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t border-amber-200/60 dark:border-amber-800/40 text-xs">
+                            <span className="text-gray-600 dark:text-gray-400 font-medium">Combined Pool Note</span>
+                            <span className="font-extrabold text-amber-600 dark:text-amber-400">
+                              {formData.PhysicalPrizeMoney && formData.VirtualPrizeMoney
+                                ? `Physical: ${formData.PhysicalPrizeMoney} | Virtual: ${formData.VirtualPrizeMoney}`
+                                : formData.PhysicalPrizeMoney || formData.VirtualPrizeMoney || 'Set track prize amounts above'}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Prize Money / Prize Pool
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              name="PrizeMoney"
+                              value={formData.PrizeMoney}
+                              onChange={handleChange}
+                              placeholder="e.g. ₹50,000 or $1,000"
+                              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                            />
+                          </div>
+                        </div>
+                      )}
 
                       <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 flex items-start gap-3">
                         <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
@@ -1190,6 +1273,26 @@ function EventsDashboard() {
                                   event.Description
                                 }
                               </p>
+
+                              {(event.VirtualPrizeMoney || event.PhysicalPrizeMoney || event.PrizeMoney) && (
+                                <div className="flex items-center gap-2 mt-1">
+                                  {event.PhysicalPrizeMoney && (
+                                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                      Physical: {event.PhysicalPrizeMoney}
+                                    </span>
+                                  )}
+                                  {event.VirtualPrizeMoney && (
+                                    <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+                                      Virtual: {event.VirtualPrizeMoney}
+                                    </span>
+                                  )}
+                                  {!event.PhysicalPrizeMoney && !event.VirtualPrizeMoney && event.PrizeMoney && (
+                                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                      Pool: {event.PrizeMoney}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>

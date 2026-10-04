@@ -210,18 +210,21 @@ function AdminDashboard() {
     };
 
     const openPrizeModal = () => {
+        const isDual = event?.HackathonMode === 'Both' || event?.HackathonMode === 'Virtual and Physical';
         if (declaredPrizes && declaredPrizes.length > 0) {
             setPrizes(
                 declaredPrizes.map((p, idx) => ({
                     name: p.Name || p.name || `Prize ${p.PrizeRank || idx + 1}`,
-                    amount: String(p.Prize || p.prize || p.amount || "")
+                    amount: String(p.Prize || p.prize || p.amount || ""),
+                    track: p.Track || p.track || (isDual ? 'Physical' : 'Overall')
                 }))
             );
         } else {
             setPrizes([
                 {
                     name: "1st Prize",
-                    amount: ""
+                    amount: "",
+                    track: isDual ? 'Physical' : 'Overall'
                 }
             ]);
         }
@@ -242,11 +245,13 @@ function AdminDashboard() {
     };
 
     const addPrize = () => {
+        const isDual = event?.HackathonMode === 'Both' || event?.HackathonMode === 'Virtual and Physical';
         setPrizes((currentPrizes) => [
             ...currentPrizes,
             {
                 name: "",
-                amount: ""
+                amount: "",
+                track: isDual ? 'Physical' : 'Overall'
             }
         ]);
     };
@@ -279,11 +284,17 @@ function AdminDashboard() {
                 return;
             }
 
+            const trackRankCounters = {};
             const payload = {
-                prizes: validPrizes.map((prize, index) => ({
-                    prizeRank: index + 1,
-                    prize: prize.amount
-                }))
+                prizes: validPrizes.map((prize) => {
+                    const trk = prize.track || 'Overall';
+                    trackRankCounters[trk] = (trackRankCounters[trk] || 0) + 1;
+                    return {
+                        prizeRank: trackRankCounters[trk],
+                        prize: prize.amount,
+                        track: trk
+                    };
+                })
             };
 
             const response = await fetch(
@@ -758,9 +769,20 @@ function AdminDashboard() {
                                 >
                                     <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                                            Rank #{getPrizeRank(prize, index)}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                                Rank #{getPrizeRank(prize, index)}
+                                            </span>
+                                            {prize.Track && prize.Track !== 'Overall' && (
+                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                                                    prize.Track === 'Virtual'
+                                                        ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20'
+                                                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
+                                                }`}>
+                                                    {prize.Track}
+                                                </span>
+                                            )}
+                                        </div>
                                         <Trophy className="w-4 h-4 text-emerald-500/70" />
                                     </div>
                                     <h3 className="text-base font-bold text-gray-900 dark:text-white mt-2">
@@ -1150,7 +1172,7 @@ function AdminDashboard() {
 
                                     </div>
 
-                                    <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className={`grid gap-4 ${(event?.HackathonMode === 'Both' || event?.HackathonMode === 'Virtual and Physical') ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
 
                                         <div>
 
@@ -1173,6 +1195,29 @@ function AdminDashboard() {
                                             />
 
                                         </div>
+
+                                        {(event?.HackathonMode === 'Both' || event?.HackathonMode === 'Virtual and Physical') && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                                                    Track / Mode
+                                                </label>
+                                                <select
+                                                    value={prize.track || 'Physical'}
+                                                    onChange={(e) =>
+                                                        handlePrizeChange(
+                                                            index,
+                                                            "track",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-600"
+                                                >
+                                                    <option value="Physical">Physical Track</option>
+                                                    <option value="Virtual">Virtual Track</option>
+                                                    <option value="Overall">Overall</option>
+                                                </select>
+                                            </div>
+                                        )}
 
                                         <div>
 

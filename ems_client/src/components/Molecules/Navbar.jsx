@@ -63,7 +63,7 @@ export function Navbar() {
 
   const navLinksData = [
     { label: 'Home', href: '/' },
-    { label: 'Explore Events', href: '/user/login' },
+    { label: 'Explore Events', href: '/events' },
     { label: 'Organizers', href: '/admin/login' },
   ];
 

@@ -9,7 +9,8 @@ const createEvent = (req, res) => {
         VirtualRegistrationStart, VirtualRegistrationEnd, PhysicalRegistrationStart, PhysicalRegistrationEnd,
         VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements,
         PrimaryColor, SecondaryColor, TertiaryColor,
-        PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters
+        PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters,
+        PrizeMoney, VirtualPrizeMoney, PhysicalPrizeMoney
     } = req.body;
 
     let effectiveStartDate = StartDate;
@@ -17,21 +18,47 @@ const createEvent = (req, res) => {
     let effectiveRegistrationStart = RegistrationStart;
     let effectiveRegistrationEnd = RegistrationEnd;
 
-    if (HackathonMode === 'Both' || HackathonMode === 'Hybrid') {
+    let effectivePrizeMoney = PrizeMoney;
+    let effectiveVirtualPrizeMoney = VirtualPrizeMoney;
+    let effectivePhysicalPrizeMoney = PhysicalPrizeMoney;
+
+    if (HackathonMode === 'Both' || HackathonMode === 'Virtual and Physical') {
         if (!effectiveStartDate) effectiveStartDate = VirtualStartDate || PhysicalStartDate;
         if (!effectiveEndDate) effectiveEndDate = PhysicalEndDate || VirtualEndDate;
         if (!effectiveRegistrationStart) effectiveRegistrationStart = VirtualRegistrationStart || PhysicalRegistrationStart;
         if (!effectiveRegistrationEnd) effectiveRegistrationEnd = PhysicalRegistrationEnd || VirtualRegistrationEnd;
+
+        if (!effectivePrizeMoney) {
+            if (effectiveVirtualPrizeMoney && effectivePhysicalPrizeMoney) {
+                const vNum = parseFloat(String(effectiveVirtualPrizeMoney).replace(/[^0-9.]/g, ''));
+                const pNum = parseFloat(String(effectivePhysicalPrizeMoney).replace(/[^0-9.]/g, ''));
+                if (!isNaN(vNum) && !isNaN(pNum)) {
+                    effectivePrizeMoney = `₹${(vNum + pNum).toLocaleString('en-IN')}`;
+                } else {
+                    effectivePrizeMoney = `${effectivePhysicalPrizeMoney} + ${effectiveVirtualPrizeMoney}`;
+                }
+            } else {
+                effectivePrizeMoney = effectivePhysicalPrizeMoney || effectiveVirtualPrizeMoney || null;
+            }
+        }
+    } else if (HackathonMode === 'Hybrid') {
+        if (!effectiveStartDate) effectiveStartDate = StartDate || VirtualStartDate || PhysicalStartDate;
+        if (!effectiveEndDate) effectiveEndDate = EndDate || PhysicalEndDate || VirtualEndDate;
+        if (!effectiveRegistrationStart) effectiveRegistrationStart = RegistrationStart || VirtualRegistrationStart || PhysicalRegistrationStart;
+        if (!effectiveRegistrationEnd) effectiveRegistrationEnd = RegistrationEnd || PhysicalRegistrationEnd || VirtualRegistrationEnd;
+        if (!effectivePrizeMoney) effectivePrizeMoney = effectivePhysicalPrizeMoney || effectiveVirtualPrizeMoney || null;
     } else if (HackathonMode === 'Virtual') {
         if (!effectiveStartDate) effectiveStartDate = VirtualStartDate;
         if (!effectiveEndDate) effectiveEndDate = VirtualEndDate;
         if (!effectiveRegistrationStart) effectiveRegistrationStart = VirtualRegistrationStart;
         if (!effectiveRegistrationEnd) effectiveRegistrationEnd = VirtualRegistrationEnd;
+        if (!effectiveVirtualPrizeMoney && effectivePrizeMoney) effectiveVirtualPrizeMoney = effectivePrizeMoney;
     } else if (HackathonMode === 'Physical') {
         if (!effectiveStartDate) effectiveStartDate = PhysicalStartDate;
         if (!effectiveEndDate) effectiveEndDate = PhysicalEndDate;
         if (!effectiveRegistrationStart) effectiveRegistrationStart = PhysicalRegistrationStart;
         if (!effectiveRegistrationEnd) effectiveRegistrationEnd = PhysicalRegistrationEnd;
+        if (!effectivePhysicalPrizeMoney && effectivePrizeMoney) effectivePhysicalPrizeMoney = effectivePrizeMoney;
     }
 
     const effectiveFacilities = Facilities || [VirtualFacilities, PhysicalFacilities].filter(Boolean).join('\n\n') || '';
@@ -49,7 +76,7 @@ const createEvent = (req, res) => {
         });
     }
 
-    eventsService.createEvent(EventName, Description, effectiveFacilities, effectiveRequirements, TeamSize, effectiveStartDate, effectiveEndDate, effectiveRegistrationStart, effectiveRegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters, VirtualStartDate, VirtualEndDate, PhysicalStartDate, PhysicalEndDate, VirtualRegistrationStart, VirtualRegistrationEnd, PhysicalRegistrationStart, PhysicalRegistrationEnd, VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements, (err, result) => {
+    eventsService.createEvent(EventName, Description, effectiveFacilities, effectiveRequirements, TeamSize, effectiveStartDate, effectiveEndDate, effectiveRegistrationStart, effectiveRegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters, VirtualStartDate, VirtualEndDate, PhysicalStartDate, PhysicalEndDate, VirtualRegistrationStart, VirtualRegistrationEnd, PhysicalRegistrationStart, PhysicalRegistrationEnd, VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements, effectivePrizeMoney, effectiveVirtualPrizeMoney, effectivePhysicalPrizeMoney, (err, result) => {
             if (err) {
                 return res.status(500).json({
                     message: 'Event creation failed',
@@ -132,7 +159,8 @@ const updateEvent = (req, res) => {
         VirtualRegistrationStart, VirtualRegistrationEnd, PhysicalRegistrationStart, PhysicalRegistrationEnd,
         VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements,
         PrimaryColor, SecondaryColor, TertiaryColor,
-        PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters
+        PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters,
+        PrizeMoney, VirtualPrizeMoney, PhysicalPrizeMoney
     } = req.body;
 
     let effectiveStartDate = StartDate;
@@ -140,21 +168,47 @@ const updateEvent = (req, res) => {
     let effectiveRegistrationStart = RegistrationStart;
     let effectiveRegistrationEnd = RegistrationEnd;
 
-    if (HackathonMode === 'Both' || HackathonMode === 'Hybrid') {
+    let effectivePrizeMoney = PrizeMoney;
+    let effectiveVirtualPrizeMoney = VirtualPrizeMoney;
+    let effectivePhysicalPrizeMoney = PhysicalPrizeMoney;
+
+    if (HackathonMode === 'Both' || HackathonMode === 'Virtual and Physical') {
         if (!effectiveStartDate) effectiveStartDate = VirtualStartDate || PhysicalStartDate;
         if (!effectiveEndDate) effectiveEndDate = PhysicalEndDate || VirtualEndDate;
         if (!effectiveRegistrationStart) effectiveRegistrationStart = VirtualRegistrationStart || PhysicalRegistrationStart;
         if (!effectiveRegistrationEnd) effectiveRegistrationEnd = PhysicalRegistrationEnd || VirtualRegistrationEnd;
+
+        if (!effectivePrizeMoney) {
+            if (effectiveVirtualPrizeMoney && effectivePhysicalPrizeMoney) {
+                const vNum = parseFloat(String(effectiveVirtualPrizeMoney).replace(/[^0-9.]/g, ''));
+                const pNum = parseFloat(String(effectivePhysicalPrizeMoney).replace(/[^0-9.]/g, ''));
+                if (!isNaN(vNum) && !isNaN(pNum)) {
+                    effectivePrizeMoney = `₹${(vNum + pNum).toLocaleString('en-IN')}`;
+                } else {
+                    effectivePrizeMoney = `${effectivePhysicalPrizeMoney} + ${effectiveVirtualPrizeMoney}`;
+                }
+            } else {
+                effectivePrizeMoney = effectivePhysicalPrizeMoney || effectiveVirtualPrizeMoney || null;
+            }
+        }
+    } else if (HackathonMode === 'Hybrid') {
+        if (!effectiveStartDate) effectiveStartDate = StartDate || VirtualStartDate || PhysicalStartDate;
+        if (!effectiveEndDate) effectiveEndDate = EndDate || PhysicalEndDate || VirtualEndDate;
+        if (!effectiveRegistrationStart) effectiveRegistrationStart = RegistrationStart || VirtualRegistrationStart || PhysicalRegistrationStart;
+        if (!effectiveRegistrationEnd) effectiveRegistrationEnd = RegistrationEnd || PhysicalRegistrationEnd || VirtualRegistrationEnd;
+        if (!effectivePrizeMoney) effectivePrizeMoney = effectivePhysicalPrizeMoney || effectiveVirtualPrizeMoney || null;
     } else if (HackathonMode === 'Virtual') {
         if (!effectiveStartDate) effectiveStartDate = VirtualStartDate;
         if (!effectiveEndDate) effectiveEndDate = VirtualEndDate;
         if (!effectiveRegistrationStart) effectiveRegistrationStart = VirtualRegistrationStart;
         if (!effectiveRegistrationEnd) effectiveRegistrationEnd = VirtualRegistrationEnd;
+        if (!effectiveVirtualPrizeMoney && effectivePrizeMoney) effectiveVirtualPrizeMoney = effectivePrizeMoney;
     } else if (HackathonMode === 'Physical') {
         if (!effectiveStartDate) effectiveStartDate = PhysicalStartDate;
         if (!effectiveEndDate) effectiveEndDate = PhysicalEndDate;
         if (!effectiveRegistrationStart) effectiveRegistrationStart = PhysicalRegistrationStart;
         if (!effectiveRegistrationEnd) effectiveRegistrationEnd = PhysicalRegistrationEnd;
+        if (!effectivePhysicalPrizeMoney && effectivePrizeMoney) effectivePhysicalPrizeMoney = effectivePrizeMoney;
     }
 
     const effectiveFacilities = Facilities || [VirtualFacilities, PhysicalFacilities].filter(Boolean).join('\n\n') || '-';
@@ -172,7 +226,7 @@ const updateEvent = (req, res) => {
         });
     }
 
-    eventsService.updateEventById(id, EventName, Description, effectiveFacilities, effectiveRequirements, TeamSize, effectiveStartDate, effectiveEndDate, effectiveRegistrationStart, effectiveRegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters, VirtualStartDate, VirtualEndDate, PhysicalStartDate, PhysicalEndDate, VirtualRegistrationStart, VirtualRegistrationEnd, PhysicalRegistrationStart, PhysicalRegistrationEnd, VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements, (err, result) => {
+    eventsService.updateEventById(id, EventName, Description, effectiveFacilities, effectiveRequirements, TeamSize, effectiveStartDate, effectiveEndDate, effectiveRegistrationStart, effectiveRegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters, VirtualStartDate, VirtualEndDate, PhysicalStartDate, PhysicalEndDate, VirtualRegistrationStart, VirtualRegistrationEnd, PhysicalRegistrationStart, PhysicalRegistrationEnd, VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements, effectivePrizeMoney, effectiveVirtualPrizeMoney, effectivePhysicalPrizeMoney, (err, result) => {
             if (err) {
                 return res.status(500).json({
                     message: 'Event update failed',

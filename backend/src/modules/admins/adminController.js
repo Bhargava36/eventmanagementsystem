@@ -1,3 +1,4 @@
+const db = require("../../config/db");
 const adminService = require("../admins/adminServices");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
@@ -43,9 +44,27 @@ const loginAdminController = (req, res) => {
         }
 
         if (result.length === 0) {
-            return res.status(401).json({
-                message: "Invalid Email, Password or Event Name"
+            const trimmedEmail = Email.trim().toLowerCase();
+            db.query('SELECT Id FROM superadmin WHERE LOWER(Email) = ?', [trimmedEmail], (saErr, saRows) => {
+                if (!saErr && saRows && saRows.length > 0) {
+                    return res.status(403).json({
+                        message: "Access Denied: Unauthorized portal access."
+                    });
+                }
+
+                db.query('SELECT Id FROM users WHERE LOWER(Email) = ?', [trimmedEmail], (uErr, uRows) => {
+                    if (!uErr && uRows && uRows.length > 0) {
+                        return res.status(403).json({
+                            message: "Access Denied: Unauthorized portal access."
+                        });
+                    }
+
+                    return res.status(401).json({
+                        message: "Invalid Email, Password or Event Name"
+                    });
+                });
             });
+            return;
         }
 
         const admin = result[0];
