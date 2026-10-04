@@ -7,6 +7,7 @@ import useToast from '../../Hooks/useToast';
 import {
   LayoutDashboard,
   Users,
+  Trophy,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -58,10 +59,11 @@ const UserSidebarContent = ({
   const userInitials = user?.name ? user.name.charAt(0).toUpperCase() : (user?.username ? user.username.charAt(0).toUpperCase() : 'U');
   const displayName = user?.name || user?.username || 'Participant';
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/user/dashboard', badge: null, end: true },
-    { name: 'My Teams', icon: Users, path: '/user/teams', badge: null, end: false },
-    { name: 'Problem Statements', icon: ScrollText, path: '/user/problem-statements', badge: null, end: false },
-    { name: 'Profile', icon: CircleUserRound, path: '/user/profile', badge: null, end: false },
+    { name: 'Dashboard',          icon: LayoutDashboard, path: '/user/dashboard',      badge: null, end: true  },
+    { name: 'Competitions',       icon: Trophy,          path: '/user/competitions',   badge: null, end: false },
+    { name: 'My Teams',           icon: Users,           path: '/user/teams',          badge: null, end: false },
+    { name: 'Problem Statements', icon: ScrollText,      path: '/user/problem-statements', badge: null, end: false },
+    { name: 'Profile',            icon: CircleUserRound, path: '/user/profile',        badge: null, end: false },
   ];
 
   return (

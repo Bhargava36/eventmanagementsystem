@@ -27,6 +27,7 @@ import EventRedirectPage from '../features/auth/pages/Users/EventRedirectPage';
 import MyTeams from '../features/auth/pages/Users/MyTeams';
 import TeamInfo from '../features/auth/pages/Users/TeamInfo';
 import UserProfile from '../features/auth/pages/Users/UserProfile';
+import UserCompetitions from '../features/auth/pages/Users/UserCompetitions';
 import ExploreEvents from '../features/public/pages/ExploreEvents';
 import PublicEventDetails from '../features/public/pages/PublicEventDetails';
 import NotFound from '../features/public/pages/NotFound';
@@ -89,6 +90,7 @@ function App() {
             <Route path="teams" element={<MyTeams />} />
             <Route path="teamInfo/:teamId" element={<TeamInfo />} />
             <Route path="events/:id" element={<EventRedirectPage />} />
+            <Route path="competitions" element={<UserCompetitions />} />
             <Route path="problem-statements" element={<ProblemStatementsPage />} />
             <Route path="profile" element={<UserProfile />} />
             <Route path="profile/:id" element={<UserProfile />} />

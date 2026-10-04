@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, Compass } from 'lucide-react';
 import useTheme from '../../Hooks/useTheme';
 
-function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch }) {
+function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, title, description, speechText, actionLabel, onAction }) {
   const { theme } = useTheme();
   const [isPetted, setIsPetted] = useState(false);
 
@@ -34,7 +34,7 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
               exit={{ opacity: 0, scale: 0.8 }}
               className="absolute -top-3 z-30 px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 pointer-events-none whitespace-nowrap"
             >
-              <span>Beep boop! Keep exploring! (◕‿◕)</span>
+              <span>{speechText || "Beep boop! Keep exploring! (◕‿◕)"}</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -285,10 +285,10 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
 
       <div className="space-y-2 mt-1">
         <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-          No Events Found
+          {title || 'No Events Found'}
         </h3>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 max-w-sm mx-auto leading-relaxed">
-          {searchTerm ? (
+          {description || (searchTerm ? (
             <>
               Byte searched everywhere, but found zero events matching{' '}
               <span className="font-semibold text-emerald-600 dark:text-emerald-400">
@@ -298,7 +298,7 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
             </>
           ) : (
             'Byte searched everywhere, but no events matched your selected filter criteria.'
-          )}
+          ))}
         </p>
       </div>
 
@@ -310,6 +310,15 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>Reset All Filters</span>
+          </button>
+        )}
+
+        {actionLabel && onAction && (
+          <button
+            onClick={onAction}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-all duration-200 active:scale-95"
+          >
+            <span>{actionLabel}</span>
           </button>
         )}
 

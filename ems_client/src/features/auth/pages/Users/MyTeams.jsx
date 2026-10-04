@@ -1,12 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import ByteEmptyState from '../../../../components/Molecules/ByteEmptyState';
 import {
   Calendar,
-  Users
+  Users,
+  Crown,
+  ArrowRight,
+  ExternalLink,
+  AlertCircle,
+  RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 
-function MyTeams() {
+/* ── dot-pulse keyframes ── */
+const DotStyle = () => (
+  <style>{`
+    @keyframes teamDotPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.3; transform: scale(0.55); }
+    }
+    .t-dp1 { animation: teamDotPulse 1.8s ease-in-out infinite; }
+    .t-dp2 { animation: teamDotPulse 1.8s ease-in-out 0.32s infinite; }
+    .t-dp3 { animation: teamDotPulse 1.8s ease-in-out 0.64s infinite; }
+  `}</style>
+);
 
+const CardDots = () => (
+  <span className="flex items-center gap-[3px] shrink-0">
+    <span className="t-dp1 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
+    <span className="t-dp2 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
+    <span className="t-dp3 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
+  </span>
+);
+
+const StatusBadge = ({ status = '' }) => {
+  const s = status.toLowerCase();
+  let cls = 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800';
+  if (s === 'approved') cls = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30';
+  if (s === 'pending')  cls = 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30';
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${cls}`}>
+      {status || 'Enrolled'}
+    </span>
+  );
+};
+
+export default function MyTeams() {
   const navigate = useNavigate();
 
   const [teams, setTeams] = useState([]);
@@ -18,16 +58,11 @@ function MyTeams() {
   }, []);
 
   const fetchMyTeams = async () => {
-
     try {
-
       setLoading(true);
       setError('');
 
-      const user = JSON.parse(
-        localStorage.getItem('user')
-      );
-      console.log('Logged in user:', user);
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
       const userId = user?.Id;
 
       if (!userId) {
@@ -42,228 +77,181 @@ function MyTeams() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.message || 'Failed to fetch teams'
-        );
+        throw new Error(data.message || 'Failed to fetch teams');
       }
 
       setTeams(data.teams || []);
-
     } catch (err) {
-
       console.error('Get my teams error:', err);
-
-      setError(
-        err.message || 'Failed to load teams'
-      );
-
+      setError(err.message || 'Failed to load teams');
     } finally {
-
       setLoading(false);
-
     }
   };
 
-  const getCardImage = (eventName) => {
-
-    return (
-      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl border border-slate-300 bg-slate-100 text-center shadow-[0_0_0_1px_rgba(16,185,129,0.18)] dark:border-slate-700 dark:bg-black">
-
-        <span className="px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200">
-          {eventName}
-        </span>
-
-      </div>
-    );
-  };
-
-  const handleCardClick = (teamId) => {
-
-    navigate(`/user/teamInfo/${teamId}`);
-
-  };
-
-  const formatDate = (date) => {
-
-    if (!date) {
-      return '-';
-    }
-
-    return new Date(date).toLocaleDateString(
-      'en-GB',
-      {
+  const fmt = (dateStr) => {
+    if (!dateStr) return '—';
+    try {
+      return new Date(dateStr).toLocaleDateString('en-GB', {
         day: '2-digit',
         month: 'short',
         year: 'numeric'
-      }
-    );
+      });
+    } catch {
+      return dateStr;
+    }
   };
 
-  if (loading) {
-
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-white dark:bg-black">
-
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Loading teams...
-        </p>
-
-      </div>
-    );
-  }
-
-  if (error) {
-
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-white dark:bg-black">
-
-        <div className="text-center">
-
-          <p className="mb-4 text-sm text-red-500">
-            {error}
-          </p>
-
-          <button
-            onClick={fetchMyTeams}
-            className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white"
-          >
-            Try Again
-          </button>
-
-        </div>
-
-      </div>
-    );
-  }
-
   return (
+    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white transition-colors duration-300">
+      <DotStyle />
 
-    <div className="flex min-h-screen w-full justify-center bg-white p-4 text-slate-900 transition-colors duration-200 dark:bg-black dark:text-white sm:p-6 md:p-8 lg:p-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
 
-      <div className="flex w-full max-w-5xl flex-col">
-
-        <div className="mb-8">
-
-          <h1 className="mb-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-            My Teams
-          </h1>
-
-          <p className="text-sm text-slate-500 dark:text-slate-400 sm:text-base">
-            Events where you are registered as a team lead or team member
-          </p>
-
+        {/* ── HEADER ── */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-slate-200 dark:border-zinc-800">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">
+              Team Workspace
+            </p>
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white leading-tight">
+              My Teams
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
+              Events where you are registered as a team lead or team member
+            </p>
+          </div>
+          {teams.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">
+                {teams.length} {teams.length === 1 ? 'Team' : 'Teams'} Active
+              </span>
+            </div>
+          )}
         </div>
 
-        {teams.length === 0 ? (
-
-          <div className="rounded-2xl border border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-[#0b0b0b]">
-
-            <Users className="mx-auto mb-4 h-10 w-10 text-slate-400" />
-
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              You are not part of any team yet.
-            </p>
-
+        {/* ── CONTENT ── */}
+        {loading ? (
+          <div className="py-24 text-center bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+            <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-sm text-slate-500 dark:text-zinc-400">Loading your teams…</p>
           </div>
-
+        ) : error ? (
+          <div className="p-6 rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 text-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={fetchMyTeams}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-colors"
+            >
+              <RefreshCw className="h-3.5 w-3.5" /> Try Again
+            </button>
+          </div>
+        ) : teams.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col items-center">
+            <ByteEmptyState
+              searchTerm=""
+              hasActiveFilters={false}
+              onReset={() => {}}
+              onQuickSearch={null}
+              title="No teams yet"
+              description="You haven't joined or created any team yet. Explore open competitions to create or join a squad with your peers!"
+              actionLabel="Explore Competitions"
+              onAction={() => navigate('/user/competitions')}
+              speechText="Beep boop! Form your dream team! (◕‿◕)"
+            />
+          </div>
         ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {teams.map((team, idx) => {
+              const isLead = (team.Role || '').toLowerCase().includes('lead');
 
-          <div className="flex flex-col gap-4">
-
-            {teams.map((team) => (
-
-              <button
-                key={team.TeamId}
-                onClick={() =>
-                  handleCardClick(team.TeamId)
-                }
-                className="group w-full rounded-2xl border border-slate-300 bg-white p-4 text-left shadow-[0_8px_20px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-[#0b0b0b] dark:shadow-[0_8px_24px_rgba(0,0,0,0.32)] dark:hover:shadow-[0_12px_28px_rgba(0,0,0,0.4)]"
-              >
-
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-
-                  <div className="h-24 w-full shrink-0 overflow-hidden rounded-xl sm:w-40">
-
-                    {getCardImage(
-                      team.EventName
-                    )}
-
-                  </div>
-
-                  <div className="flex min-w-0 flex-1 flex-col gap-3">
-
-                    <div className="flex items-start justify-between gap-3">
-
-                      <div>
-
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-500 dark:text-emerald-400">
-                          Participated Event
-                        </p>
-
-                        <h3 className="mt-1 text-lg font-bold text-slate-900 dark:text-white sm:text-xl">
-                          {team.EventName}
-                        </h3>
-
-                      </div>
-
-                      <span className="rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                        {team.Role?.toLowerCase() === 'teamlead'
-                          ? 'Team Lead'
-                          : 'Team Member'}
+              return (
+                <motion.div
+                  key={team.TeamId || idx}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: idx * 0.05 }}
+                  whileHover={{ y: -3 }}
+                  className="bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 p-5"
+                >
+                  {/* Card top */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${
+                        isLead
+                          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                          : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                      }`}>
+                        {isLead ? <Crown className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+                        {isLead ? 'Team Lead' : 'Team Member'}
                       </span>
-
+                      {team.RegistrationStatus && (
+                        <StatusBadge status={team.RegistrationStatus} />
+                      )}
                     </div>
-
-                    <div className="grid gap-2 text-sm text-slate-700 dark:text-slate-300 sm:grid-cols-2">
-
-                      <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/80">
-
-                        <Calendar className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
-
-                        <span>
-                          {formatDate(team.StartDate)}
-                        </span>
-
-                      </div>
-
-                      <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/80">
-
-                        <Users className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
-
-                        <span>
-                          {team.TeamName}
-                        </span>
-
-                      </div>
-
-                      <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950/80 sm:col-span-2">
-
-                        <Users className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
-
-                        <span>
-                          {team.TeamSize} Members
-                        </span>
-
-                      </div>
-
-                    </div>
-
+                    <CardDots />
                   </div>
 
-                </div>
+                  {/* Event & Team Info */}
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                      Participated Event
+                    </p>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug">
+                      {team.EventName || 'Hackathon Event'}
+                    </h3>
+                  </div>
 
-              </button>
+                  {/* Details strip */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300">
+                      <Users className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      <span className="font-semibold truncate">{team.TeamName}</span>
+                    </div>
 
-            ))}
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500">Size:</span>
+                      <span className="font-semibold">{team.TeamSize || 1} Members</span>
+                    </div>
 
+                    {(team.StartDate || team.EndDate) && (
+                      <div className="col-span-2 flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-slate-600 dark:text-zinc-400">
+                        <Calendar className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        <span className="font-medium truncate">
+                          {fmt(team.StartDate)} {team.EndDate ? `– ${fmt(team.EndDate)}` : ''}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card actions */}
+                  <div className="flex items-center gap-2 pt-2 mt-auto border-t border-slate-100 dark:border-zinc-800">
+                    <button
+                      onClick={() => navigate(`/user/teamInfo/${team.TeamId}`)}
+                      className="flex-1 py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+                    >
+                      Workspace <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                    {team.EventId && (
+                      <button
+                        onClick={() => navigate(`/events/${team.EventId}`)}
+                        title="View Event Details"
+                        className="py-2 px-3 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900 text-slate-600 dark:text-zinc-400 text-xs font-semibold transition-colors"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
-
         )}
 
       </div>
-
     </div>
   );
 }
-
-export default MyTeams;

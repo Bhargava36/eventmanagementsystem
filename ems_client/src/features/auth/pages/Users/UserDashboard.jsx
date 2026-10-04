@@ -1,207 +1,282 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import Footer from '../../../../components/Organisms/Footer';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import useAuth from '../../../../Hooks/useAuth';
+import ByteEmptyState from '../../../../components/Molecules/ByteEmptyState';
 import {
-  Search,
-  Bell,
-  ChevronDown,
   Calendar,
-  Code,
-  Box,
-  Lightbulb,
-  Palette,
-  Monitor,
   Users,
-  Rocket,
   Trophy,
-  MapPin,
   ArrowRight,
   Crown,
-  Hexagon
+  ChevronRight,
+  ExternalLink,
+  ScrollText,
+  Award,
+  Clock,
 } from 'lucide-react';
 
-const logoElement = (
-  <div className="relative w-5 h-5 flex items-center justify-center">
-    <span className="absolute w-1.5 h-1.5 rounded-full bg-slate-800 dark:bg-slate-200 top-0 left-1/2 -translate-x-1/2 opacity-90"></span>
-    <span className="absolute w-1.5 h-1.5 rounded-full bg-slate-800 dark:bg-slate-200 left-0 top-1/2 -translate-y-1/2 opacity-90"></span>
-    <span className="absolute w-1.5 h-1.5 rounded-full bg-slate-800 dark:bg-slate-200 right-0 top-1/2 -translate-y-1/2 opacity-90"></span>
-    <span className="absolute w-1.5 h-1.5 rounded-full bg-slate-800 dark:bg-slate-200 bottom-0 left-1/2 -translate-x-1/2 opacity-90"></span>
-  </div>
+/* ── dot-pulse keyframes ── */
+const DotStyle = () => (
+  <style>{`
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.3; transform: scale(0.55); }
+    }
+    .dp1 { animation: dotPulse 1.8s ease-in-out infinite; }
+    .dp2 { animation: dotPulse 1.8s ease-in-out 0.32s infinite; }
+    .dp3 { animation: dotPulse 1.8s ease-in-out 0.64s infinite; }
+  `}</style>
 );
 
-function UserDashboard() {
-  const navigate = useNavigate();
+const CardDots = () => (
+  <span className="flex items-center gap-[3px] shrink-0">
+    <span className="dp1 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
+    <span className="dp2 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
+    <span className="dp3 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
+  </span>
+);
 
-  const user = JSON.parse(localStorage.getItem('user'));
-  const [upcomingEvents, setUpcomingEvents] = useState([]);
-  const [loadingEvents, setLoadingEvents] = useState(true);
-
-  useEffect(() => {
-    fetchUpcomingEvents();
-  }, []);
-
-  const fetchUpcomingEvents = async () => {
-  try {
-    const res = await fetch("http://localhost:3000/api/events");
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to fetch events");
-    }
-
-    console.log("Events from API:", data.events);
-
-    const upcoming = data.events.filter(
-      (event) =>
-        String( event.EventStatus)
-          .toLowerCase() === "upcoming"
-    );
-
-    console.log("Upcoming events:", upcoming);
-
-    setUpcomingEvents(upcoming);
-
-  } catch (error) {
-    console.error("Upcoming events error:", error);
-  } finally {
-    setLoadingEvents(false);
-  }
+const StatusBadge = ({ status = '' }) => {
+  const s = status.toLowerCase();
+  let cls = 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800';
+  if (s === 'approved') cls = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30';
+  if (s === 'pending')  cls = 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30';
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${cls}`}>
+      {status || 'Enrolled'}
+    </span>
+  );
 };
 
+export default function UserDashboard() {
+  const navigate = useNavigate();
+  const { user: authUser } = useAuth();
 
-  function handleEventClick(event) {
-    navigate(`/user/events/${event.Id}`);
-    console.log("event:",event);
-  }
+  const user = authUser || (() => {
+    try { return JSON.parse(localStorage.getItem('user') || 'null'); }
+    catch { return null; }
+  })();
+
+  const [events,  setEvents]  = useState([]);
+  const [myTeams, setMyTeams] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => { load(); }, [user?.Id]);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const userId   = user?.Id;
+      const promises = [fetch('http://localhost:3000/api/events')];
+      if (userId) promises.push(fetch(`http://localhost:3000/api/teams/my-teams/${userId}`));
+      const results  = await Promise.allSettled(promises);
+      if (results[0]?.status === 'fulfilled' && results[0].value.ok) {
+        const d = await results[0].value.json();
+        setEvents(d.events || []);
+      }
+      if (results[1]?.status === 'fulfilled' && results[1].value.ok) {
+        const d = await results[1].value.json();
+        setMyTeams(d.teams || []);
+      }
+    } catch { /* silent */ }
+    finally { setLoading(false); }
+  };
+
+  const fmt = (dateStr) => {
+    if (!dateStr) return '—';
+    try { return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    catch { return dateStr; }
+  };
+
+  const openEventsCount = useMemo(() =>
+    events.filter(e => {
+      const s = (e.EventStatus || '').toLowerCase();
+      return !s || s === 'upcoming' || s === 'live' || s === 'ongoing';
+    }).length,
+  [events]);
+
+  const initial = user?.UserName ? user.UserName.charAt(0).toUpperCase() : 'P';
+
+  const fadeUp = (delay = 0) => ({
+    initial:    { opacity: 0, y: 15 },
+    animate:    { opacity: 1, y: 0 },
+    transition: { duration: 0.35, ease: 'easeOut', delay },
+  });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-slate-100 p-4 md:p-6 lg:p-8 transition-colors duration-200">
-      <div className="w-full space-y-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white transition-colors duration-300">
+      <DotStyle />
 
-        <header className="flex items-center justify-between gap-4 pb-2">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl flex items-center justify-center shadow-sm">
-              {logoElement}
-            </div>
-            <div className="flex flex-col justify-center">
-              <h1 className="font-extrabold text-lg tracking-wider leading-none text-slate-900 dark:text-white">
-                HACK_HUB
-              </h1>
-              <span className="text-[10px] font-bold tracking-widest text-emerald-700 dark:text-emerald-500 uppercase mt-1">
-                EMS
-              </span>
-            </div>
-          </div>
-        </header>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-10">
 
-        <section className="relative overflow-hidden rounded-2xl p-6 md:p-8 lg:p-10 border border-emerald-700/20 dark:border-emerald-500/30 bg-white dark:bg-emerald-950/10 flex justify-between items-center shadow-sm">
-          <div className="max-w-2xl space-y-2.5 relative z-10">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-              Hello, <span className="text-emerald-700 dark:text-emerald-500">{user?.UserName}</span> 👋
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base leading-relaxed">
-              Welcome to your dashboard. Explore upcoming events, register, and prepare to build the future!
+        {/* ── PAGE HEADER ── */}
+        <motion.div {...fadeUp(0)} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-slate-200 dark:border-zinc-800">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">
+              Participant Dashboard
             </p>
-          </div>
-
-        </section>
-
-        <section className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-700/10 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-500 shrink-0">
-              <Calendar className="h-6 w-6" />
-            </div>
-            <div className="space-y-0.5">
-              <h3 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Upcoming Events</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm">
-                Discover and participate in our latest challenges.
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white leading-tight">
+              Welcome back, {user?.UserName || 'Participant'}
+            </h1>
+            {(user?.College || user?.State) && (
+              <p className="mt-1.5 text-sm text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 flex-wrap">
+                {user?.College && <span>{user.College}</span>}
+                {user?.College && user?.State && <span className="text-slate-300 dark:text-zinc-700">·</span>}
+                {user?.State && <span>{user.State}</span>}
               </p>
-            </div>
+            )}
           </div>
 
-          {loadingEvents ? (
-            <p className='text-gray-500'> Loading events</p>
-          ) : upcomingEvents.length === 0 ? (
-            <p className='text-gray-500'>No upcoming events available</p>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link to="/user/teams"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 shadow-sm transition-all">
+              <Users className="h-3.5 w-3.5" /> My Teams
+            </Link>
+            <Link to="/user/profile"
+              className="w-9 h-9 rounded-full bg-emerald-700 dark:bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-sm hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors">
+              {initial}
+            </Link>
+          </div>
+        </motion.div>
+
+        {/* ── STAT STRIP ── */}
+        <motion.div {...fadeUp(0.06)} className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {[
+            { label: 'Registrations',  value: myTeams.length,   icon: <Users    className="h-4 w-4" /> },
+            { label: 'My Teams',       value: myTeams.length,   icon: <Users    className="h-4 w-4" /> },
+            { label: 'Open Events',    value: openEventsCount,  icon: <Clock    className="h-4 w-4" /> },
+            { label: 'Total Events',   value: events.length,    icon: <Calendar className="h-4 w-4" /> },
+          ].map((s, i) => (
+            <motion.div
+              key={i}
+              {...fadeUp(0.06 + i * 0.05)}
+              whileHover={{ y: -3 }}
+              className="bg-white dark:bg-zinc-950 rounded-xl p-4 sm:p-5 border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">{s.label}</span>
+                <span className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">{s.icon}</span>
+              </div>
+              <span className="text-3xl font-bold text-slate-900 dark:text-white tabular-nums">{s.value}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* ── MY REGISTERED EVENTS ── */}
+        <motion.section {...fadeUp(0.12)} className="space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">My Registered Events</h2>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Events you've registered for and your team details</p>
+            </div>
+            {myTeams.length > 0 && (
+              <Link to="/user/teams"
+                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1">
+                View all <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            )}
+          </div>
+
+          {myTeams.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col items-center">
+              <ByteEmptyState
+                searchTerm=""
+                hasActiveFilters={false}
+                onReset={() => {}}
+                onQuickSearch={null}
+                title="No registrations yet"
+                description="You haven't registered for any events yet. Browse the competitions below and register your team!"
+              />
+            </div>
           ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {upcomingEvents.map((event) => (
-                <div
-                  key={event.Id}
-                  onClick={() => handleEventClick(event)}
-                  className="group flex flex-col md:flex-row gap-6 p-4 md:p-5 rounded-3xl bg-white dark:bg-black border border-emerald-700/30 dark:border-emerald-500/20 hover:border-emerald-700/50 dark:hover:border-emerald-500/50 transition-all duration-300 shadow-xl cursor-pointer"
-                >
-                  <div className={`w-full md:w-56 lg:w-64 aspect-square rounded-2xl flex items-center justify-center relative overflow-hidden shrink-0 border border-white/5`} style = {{ backgroundColor: event.PrimaryColor}}>
-                    <div className="absolute inset-0 opacity-20">
-                      <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <line x1="0" y1="100" x2="100" y2="0" stroke="white" strokeWidth="0.5" />
-                        <line x1="20" y1="100" x2="100" y2="20" stroke="white" strokeWidth="0.5" />
-                      </svg>
-                    </div>
-                    <div className="relative z-10 flex items-center justify-center">
-                      <div className={`absolute inset-0 bg-white blur-3xl opacity-20 rounded-full`}></div>
-                      <Code className={`h-24 w-24`} style ={ { color: event.PrimaryTextColor }} strokeWidth={1.5} />
-                    </div>
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-center py-2">
-                    <div className="inline-flex items-center px-3 py-1 rounded-full border border-emerald-700/30 dark:border-emerald-500/30 bg-emerald-700/10 dark:bg-emerald-500/10 w-max mb-4">
-                      <span className="text-[10px] font-bold tracking-widest text-emerald-700 dark:text-emerald-500 uppercase">
-                        {event.EventType}
-                      </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {myTeams.map((team, idx) => {
+                const isLead = (team.Role || '').toLowerCase().includes('lead');
+                return (
+                  <motion.div
+                    key={team.TeamId || idx}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: idx * 0.05 }}
+                    whileHover={{ y: -3 }}
+                    className="bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 p-5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <StatusBadge status={team.RegistrationStatus} />
+                      <CardDots />
                     </div>
 
-                    <h4 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-2 leading-tight">
-                      {event.EventName}
-                    </h4>
-                    <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base mb-6">
-                      {event.Description}
-                    </p>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
+                        {team.EventName || 'Hackathon Event'}
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+                        <Users className="h-3 w-3 shrink-0" />
+                        <span>{team.TeamName}</span>
+                        {isLead && (
+                          <span className="flex items-center gap-0.5 ml-1 text-amber-600 dark:text-amber-400 font-semibold">
+                            <Crown className="h-3 w-3" /> Lead
+                          </span>
+                        )}
+                      </p>
+                    </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                      <div className="bg-slate-50 dark:bg-[#090b0e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 md:p-4 flex items-center gap-3">
-                        <Calendar className="h-5 w-5 text-emerald-700 dark:text-emerald-500 shrink-0" />
-                        <div>
-                          <p className="text-slate-500 dark:text-slate-500 text-xs font-medium mb-0.5">Duration</p>
-                          <p className="text-slate-900 dark:text-white text-sm font-semibold">{new Date(event.StartDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} - {new Date(event.EndDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p>
-                        </div>
+                    {(team.StartDate || team.EndDate) && (
+                      <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-xs text-slate-600 dark:text-zinc-400">
+                        <Calendar className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        <span className="font-medium">{fmt(team.StartDate)} – {fmt(team.EndDate)}</span>
                       </div>
+                    )}
 
-                      <div className="bg-slate-50 dark:bg-[#090b0e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 md:p-4 flex items-center gap-3">
-                        <Trophy className="h-5 w-5 text-emerald-700 dark:text-emerald-500 shrink-0" />
-                        <div>
-                          <p className="text-slate-500 dark:text-slate-500 text-xs font-medium mb-0.5">Prize Pool</p>
-                          <p className="text-slate-900 dark:text-white text-sm font-semibold">
-                            ${event.PrizeMoney} 
-                            </p>
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2 pt-1 mt-auto border-t border-slate-100 dark:border-zinc-800">
+                      <button
+                        onClick={() => navigate(`/user/teamInfo/${team.TeamId}`)}
+                        className="flex-1 py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+                      >
+                        Workspace <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => navigate(`/events/${team.EventId}`)}
+                        className="py-2 px-3 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900 text-slate-600 dark:text-zinc-400 text-xs font-semibold transition-colors"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </button>
                     </div>
-
-                    {/* <div className="bg-slate-50 dark:bg-[#090b0e] border border-slate-200 dark:border-slate-800 rounded-xl p-3 md:p-4 flex items-center gap-3 w-full">
-                      <MapPin className="h-5 w-5 text-emerald-700 dark:text-emerald-500 shrink-0" />
-                      <div>
-                        <p className="text-slate-500 text-xs font-medium mb-0.5">Event Venue</p>
-                        <p className="text-slate-900 dark:text-white text-sm font-semibold">
-                          {event.venue}  {'-'}
-                          </p>
-                      </div>
-                    </div> */}
-
-                  </div>
-                </div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
-        </section>
+        </motion.section>
 
-      </div>
-      <div className="mt-12">
-        {/* <Footer /> */}
+        {/* ── QUICK LINKS ── */}
+        <motion.section {...fadeUp(0.18)} className="pt-6 border-t border-slate-200 dark:border-zinc-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[
+              { to: '/user/competitions',       icon: Trophy,      label: 'Competitions',       sub: 'Browse & register for events'   },
+              { to: '/user/problem-statements', icon: ScrollText,  label: 'Problem Statements', sub: 'Browse challenge tracks'        },
+              { to: '/user/teams',              icon: Users,       label: 'Team Management',    sub: 'Manage your squads'             },
+              { to: '/user/profile',            icon: Award,       label: 'My Profile',         sub: 'Update credentials & skills'   },
+            ].map(({ to, icon: Icon, label, sub }) => (
+              <Link key={to} to={to}
+                className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-emerald-500/50 shadow-sm hover:shadow-md flex items-center justify-between group transition-all">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{label}</p>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">{sub}</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-400 dark:text-zinc-600 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+              </Link>
+            ))}
+          </div>
+        </motion.section>
+
       </div>
     </div>
   );
 }
-
-export default UserDashboard;

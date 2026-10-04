@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useTheme from '../../../Hooks/useTheme';
+import FlipCountdown from '../../../components/Molecules/FlipCountdown';
 import {
   ArrowLeft,
   Calendar,
@@ -859,35 +860,38 @@ function PublicEventDetails() {
             </div>
           </div>
 
-          <div className="px-6 py-4 sm:px-10 bg-slate-50 dark:bg-zinc-900/90 border-t border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <Clock className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="text-xs text-slate-500 dark:text-zinc-400 font-medium">
-                  {isRegistrationClosed ? 'Registration Status' : 'Registration Window Closes In'}
+          <div className="px-6 py-5 sm:px-8 lg:px-10 bg-slate-50/80 dark:bg-zinc-900/90 backdrop-blur-md border-t border-slate-200 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-5">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start md:items-center gap-4 w-full md:w-auto">
+              <div className="flex flex-col items-center sm:items-start gap-2.5">
+                <div className="flex items-center gap-2">
+                  {!isRegistrationClosed ? (
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                  ) : (
+                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+                  )}
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                    {isRegistrationClosed ? 'Registration Status' : 'Registration Window Closes In'}
+                  </span>
                 </div>
+
                 {isRegistrationClosed ? (
-                  <div className="text-sm font-bold text-red-600 dark:text-red-400">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold">
                     Registration has ended
                   </div>
                 ) : (
-                  <div className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5 font-mono">
-                    <span className="text-emerald-600 dark:text-emerald-400">{timeLeft.days}d</span> :
-                    <span>{String(timeLeft.hours).padStart(2, '0')}h</span> :
-                    <span>{String(timeLeft.minutes).padStart(2, '0')}m</span> :
-                    <span>{String(timeLeft.seconds).padStart(2, '0')}s</span>
-                  </div>
+                  <FlipCountdown timeLeft={timeLeft} />
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-3 w-full md:w-auto">
               <button
                 onClick={handleRegisterClick}
                 disabled={isRegistrationClosed}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200"
+                className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none transition-all duration-200"
               >
                 <span>{isRegistrationClosed ? 'Registrations Closed' : 'Register for Event'}</span>
                 <ChevronRight className="h-4 w-4" />
