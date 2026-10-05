@@ -30,8 +30,8 @@ const createRegistration = (req, res) => {
             if (err) {
                 console.log( "CREATE REGISTRATION ERROR:",err);
 
-                return res.status(500).json({
-                    message: "Event registration failed",
+                return res.status(err.status || 500).json({
+                    message: err.message || "Event registration failed",
                     error: err.message
                 });
             }

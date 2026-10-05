@@ -30,84 +30,69 @@ const loginUser = (req, res) => {
 
     const trimmedEmail = Email.trim().toLowerCase();
 
-    db.query('SELECT Id FROM superadmin WHERE LOWER(Email) = ?', [trimmedEmail], (saErr, saRows) => {
-        if (saErr) {
+    usersService.loginUser(trimmedEmail, async (err, users) => {
+        if (err) {
             return res.status(500).json({
-                message: saErr.message
+                message: err.message
             });
         }
 
-        if (saRows && saRows.length > 0) {
+        if (!users || users.length === 0) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+
+        const user = users[0];
+
+        // Check if user has participant / student role
+        if (user.RoleName !== 'user') {
             return res.status(403).json({
-                message: "Access Denied: Unauthorized portal access."
+                message: "Access Denied: Unauthorized portal access. Please log in via your designated organizer or super admin portal."
             });
         }
 
-        db.query('SELECT Id FROM admins WHERE LOWER(Email) = ?', [trimmedEmail], (adErr, adRows) => {
-            if (adErr) {
-                return res.status(500).json({
-                    message: adErr.message
+        try {
+            const isMatch = await bcrypt.compare(
+                Password,
+                user.Password
+            );
+
+            if (!isMatch) {
+                return res.status(401).json({
+                    message: "Invalid email or password"
                 });
             }
 
-            if (adRows && adRows.length > 0) {
-                return res.status(403).json({
-                    message: "Access Denied: Unauthorized portal access."
-                });
-            }
-
-            usersService.loginUser(trimmedEmail, async (err, users) => {
-                if (err) {
-                    return res.status(500).json({
-                        message: err.message
-                    });
+            const token = jwt.sign(
+                {
+                    Id: user.Id,
+                    UserName: user.UserName,
+                    Email: user.Email,
+                    role: user.RoleName || "user"
+                },
+                process.env.JWT_SECRECT || "secret",
+                {
+                    expiresIn: process.env.JWT_EXPIRES_IN || "7d"
                 }
+            );
 
-                if (users.length === 0) {
-                    return res.status(404).json({
-                        message: "User not found"
-                    });
-                }
+            // Do not send password hash in response
+            const { Password: _, ...userWithoutPassword } = user;
 
-                const user = users[0];
-
-                try {
-                    const isMatch = await bcrypt.compare(
-                        Password,
-                        user.Password
-                    );
-
-                    if (!isMatch) {
-                        return res.status(401).json({
-                            message: "Invalid email or password"
-                        });
-                    }
-
-                    const token = jwt.sign(
-                        {
-                            Id: user.Id,
-                            UserName: user.UserName,
-                            Email: user.Email,
-                            role: "user"
-                        },
-                        process.env.JWT_SECRECT || "secret",
-                        {
-                            expiresIn: process.env.JWT_EXPIRES_IN || "7d"
-                        }
-                    );
-
-                    res.status(200).json({
-                        message: "Login successful",
-                        token,
-                        user
-                    });
-                } catch (error) {
-                    return res.status(500).json({
-                        message: error.message
-                    });
+            res.status(200).json({
+                message: "Login successful",
+                token,
+                user: {
+                    ...userWithoutPassword,
+                    role: user.RoleName || "user"
                 }
             });
-        });
+        } catch (error) {
+            return res.status(500).json({
+                message: error.message
+            });
+        }
     });
 };
 

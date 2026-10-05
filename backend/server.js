@@ -15,6 +15,7 @@ const eventRegRoute = require("./src/modules/event_registrations/e_resRoutes");
 const prizesRoute = require("./src/modules/prize_money/prizeRoute");
 const coreTeamRoute = require("./src/modules/core_team/coreRoutes");
 const uploadRoute = require("./src/modules/upload/uploadRoute");
+const rolesRoute = require("./src/modules/roles/rolesRoute");
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/users', userRoute);
 app.use('/api/event_reg', eventRegRoute);
 app.use("/api/event_prizes", prizesRoute);
 app.use("/api/core_team", coreTeamRoute);
+app.use("/api/roles", rolesRoute);
 
 
 app.listen(3000, () => {

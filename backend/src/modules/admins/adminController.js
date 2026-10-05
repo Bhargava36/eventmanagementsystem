@@ -43,25 +43,17 @@ const loginAdminController = (req, res) => {
             });
         }
 
-        if (result.length === 0) {
+        if (!result || result.length === 0) {
             const trimmedEmail = Email.trim().toLowerCase();
-            db.query('SELECT Id FROM superadmin WHERE LOWER(Email) = ?', [trimmedEmail], (saErr, saRows) => {
-                if (!saErr && saRows && saRows.length > 0) {
+            db.query('SELECT u.Id, r.RoleName FROM users u JOIN roles r ON u.RoleId = r.Id WHERE LOWER(u.Email) = ?', [trimmedEmail], (uErr, uRows) => {
+                if (!uErr && uRows && uRows.length > 0 && uRows[0].RoleName !== 'admin') {
                     return res.status(403).json({
-                        message: "Access Denied: Unauthorized portal access."
+                        message: "Access Denied: Unauthorized portal access. Please log in via your designated portal."
                     });
                 }
 
-                db.query('SELECT Id FROM users WHERE LOWER(Email) = ?', [trimmedEmail], (uErr, uRows) => {
-                    if (!uErr && uRows && uRows.length > 0) {
-                        return res.status(403).json({
-                            message: "Access Denied: Unauthorized portal access."
-                        });
-                    }
-
-                    return res.status(401).json({
-                        message: "Invalid Email, Password or Event Name"
-                    });
+                return res.status(401).json({
+                    message: "Invalid Email, Password or Event Name"
                 });
             });
             return;
@@ -81,13 +73,14 @@ const loginAdminController = (req, res) => {
             {
                 Id: admin.Id,
                 AdminName: admin.AdminName,
+                UserName: admin.UserName,
                 EventId: admin.EventId,
                 EventName: admin.EventName,
                 role: "admin"
             },
-            process.env.JWT_SECRECT,
+            process.env.JWT_SECRECT || "secret",
             {
-                expiresIn: process.env.JWT_EXPIRES_IN
+                expiresIn: process.env.JWT_EXPIRES_IN || "7d"
             }
         );
 
@@ -97,10 +90,12 @@ const loginAdminController = (req, res) => {
             admin: {
                 Id: admin.Id,
                 AdminName: admin.AdminName,
+                UserName: admin.UserName,
                 Email: admin.Email,
                 Mobile: admin.Mobile,
                 EventId: admin.EventId,
-                EventName: admin.EventName
+                EventName: admin.EventName,
+                role: "admin"
             }
         });
     });

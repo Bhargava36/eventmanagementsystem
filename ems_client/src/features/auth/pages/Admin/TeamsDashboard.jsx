@@ -16,8 +16,8 @@ import { useNavigate } from 'react-router-dom';
 
 function TeamsDashboard() {
     const navigate = useNavigate();
-    const admin = JSON.parse(localStorage.getItem('admin'));
-    const eventId = admin?.EventId;
+    const storedAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
+    const [currentEventId, setCurrentEventId] = useState(storedAdmin?.EventId || storedAdmin?.eventId || null);
 
     const [teams, setTeams] = useState([]);
     const [totalTeams, setTotalTeams] = useState(0);
@@ -28,24 +28,48 @@ function TeamsDashboard() {
     const [activeTab, setActiveTab] = useState('all');
 
     useEffect(() => {
-        if (eventId) {
-            fetchTeams();
-        } else {
-            setLoading(false);
-            setError('No event assigned to this admin.');
-        }
-    }, [eventId]);
+        const init = async () => {
+            let eid = currentEventId;
+            if (!eid && (storedAdmin?.Id || storedAdmin?.id)) {
+                try {
+                    const res = await fetch(`http://localhost:3000/api/admin/${storedAdmin.Id || storedAdmin.id}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const adminData = data.events?.[0] || data.admin;
+                        if (adminData?.EventId) {
+                            eid = adminData.EventId;
+                            setCurrentEventId(eid);
+                            localStorage.setItem('admin', JSON.stringify({ ...storedAdmin, ...adminData }));
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to resolve admin event:', e);
+                }
+            }
 
-    const fetchTeams = async () => {
+            if (eid) {
+                fetchTeams(eid);
+            } else {
+                setLoading(false);
+                setError('No event assigned to this admin.');
+            }
+        };
+
+        init();
+    }, [currentEventId]);
+
+    const fetchTeams = async (targetEventId = currentEventId) => {
+        if (!targetEventId) return;
         try {
+            setLoading(true);
             setError('');
-            const response = await fetch(`http://localhost:3000/api/teams/event/${eventId}`);
+            const response = await fetch(`http://localhost:3000/api/teams/event/${targetEventId}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch teams');
             }
 
             const data = await response.json();
-            const fetchedTeams = data.teams || [];
+            const fetchedTeams = Array.isArray(data) ? data : (data.teams || []);
             setTeams(fetchedTeams);
             setTotalTeams(fetchedTeams.length);
 
@@ -79,13 +103,17 @@ function TeamsDashboard() {
         });
     };
 
-    const virtualCount = teams.filter(
-        (t) => t.ParticipationMode?.toLowerCase() === 'virtual'
-    ).length;
+    const getMode = (team) => (team.ParticipationMode || '').toLowerCase();
 
-    const physicalCount = teams.filter(
-        (t) => t.ParticipationMode?.toLowerCase() === 'physical'
-    ).length;
+    const virtualCount = teams.filter((t) => {
+        const m = getMode(t);
+        return m === 'virtual' || m === 'both' || m === 'hybrid' || m.includes('virtual');
+    }).length;
+
+    const physicalCount = teams.filter((t) => {
+        const m = getMode(t);
+        return m === 'physical' || m === 'both' || m === 'hybrid' || m.includes('physical');
+    }).length;
 
     const filteredTeams = teams.filter((team) => {
         const matchesSearch =
@@ -95,11 +123,12 @@ function TeamsDashboard() {
 
         if (!matchesSearch) return false;
 
+        const m = getMode(team);
         if (activeTab === 'virtual') {
-            return team.ParticipationMode?.toLowerCase() === 'virtual';
+            return m === 'virtual' || m === 'both' || m === 'hybrid' || m.includes('virtual');
         }
         if (activeTab === 'physical') {
-            return team.ParticipationMode?.toLowerCase() === 'physical';
+            return m === 'physical' || m === 'both' || m === 'hybrid' || m.includes('physical');
         }
         return true;
     });
@@ -469,10 +498,10 @@ function TeamsDashboard() {
                                     filteredTeams.map((team, index) => {
                                         const teamId = getTeamId(team);
                                         const teamName = getTeamName(team);
-                                        const isVirtual =
-                                            team.ParticipationMode?.toLowerCase() === 'virtual';
-                                        const isPhysical =
-                                            team.ParticipationMode?.toLowerCase() === 'physical';
+                                        const mode = getMode(team);
+                                        const isVirtual = mode === 'virtual';
+                                        const isPhysical = mode === 'physical';
+                                        const isBoth = mode === 'both' || mode === 'hybrid' || mode.includes('virtual and physical');
 
                                         return (
                                             <motion.tr
@@ -513,6 +542,11 @@ function TeamsDashboard() {
                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
                                                             <MapPin className="w-3.5 h-3.5" />
                                                             Physical
+                                                        </span>
+                                                    ) : isBoth ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">
+                                                            <Layers className="w-3.5 h-3.5" />
+                                                            Both Modes
                                                         </span>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">

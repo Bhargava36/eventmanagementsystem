@@ -17,7 +17,7 @@ const getUserByEmail = (Email, callback) => {
 
 const createTeamForRegistration = ( TeamName, TeamLeadUserId, TeamSize, College, State, EventId, callback) => {
 
-    const query = ` INSERT INTO teams (TeamName, TeamLeadUserId, TeamSize, College, State, EventId ) VALUES (?, ?, ?, ?, ?, ?)`;
+    const query = ` INSERT INTO registered_teams (TeamName, TeamLeadUserId, TeamSize, College, State, EventId ) VALUES (?, ?, ?, ?, ?, ?)`;
 
     const values = [TeamName, TeamLeadUserId, TeamSize, College, State, EventId];
 
@@ -33,20 +33,29 @@ const createTeamForRegistration = ( TeamName, TeamLeadUserId, TeamSize, College,
 
 
 const createEventRegistration = ( EventId, TeamId, ParticipationMode, Status, ProblemStatementId, callback) => {
-
-    const query = `
-        INSERT INTO event_registrations
-        ( EventId, TeamId, ParticipationMode, Status, ProblemStatementId ) VALUES (?, ?, ?, ?, ?)`;
-
-    const values = [ EventId, TeamId, ParticipationMode, Status, ProblemStatementId];
-
-    db.query(query, values, (err, result) => {
-
-        if (err) {
-            return callback(err, null);
+    // Check if team is already registered for this event
+    const checkQuery = `SELECT Id FROM event_registrations WHERE EventId = ? AND TeamId = ?`;
+    db.query(checkQuery, [EventId, TeamId], (err, existing) => {
+        if (err) return callback(err, null);
+        if (existing && existing.length > 0) {
+            const error = new Error('This team is already registered for this event. A participant/team can only register once per event.');
+            error.status = 400;
+            return callback(error, null);
         }
 
-        return callback(null, result);
+        const query = `
+            INSERT INTO event_registrations
+            ( EventId, TeamId, ParticipationMode, Status, ProblemStatementId ) VALUES (?, ?, ?, ?, ?)`;
+
+        const values = [ EventId, TeamId, ParticipationMode, Status, ProblemStatementId];
+
+        db.query(query, values, (err, result) => {
+            if (err) {
+                return callback(err, null);
+            }
+
+            return callback(null, result);
+        });
     });
 };
 

@@ -274,7 +274,10 @@ const getTeamsByEvent = (req, res) => {
             });
         }
 
-        return res.status(200).json(result);
+        return res.status(200).json({
+            message: "Teams fetched successfully",
+            teams: result
+        });
     });
 };
 

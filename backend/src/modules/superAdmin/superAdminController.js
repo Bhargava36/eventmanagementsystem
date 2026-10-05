@@ -43,25 +43,17 @@ const loginAdminController = (req,res) => {
                 error: err
             });
         }
-        if (result.length === 0) {
+        if (!result || result.length === 0) {
             const trimmedEmail = email.trim().toLowerCase();
-            db.query('SELECT Id FROM admins WHERE LOWER(Email) = ?', [trimmedEmail], (adErr, adRows) => {
-                if (!adErr && adRows && adRows.length > 0) {
+            db.query('SELECT u.Id, r.RoleName FROM users u JOIN roles r ON u.RoleId = r.Id WHERE LOWER(u.Email) = ?', [trimmedEmail], (uErr, uRows) => {
+                if (!uErr && uRows && uRows.length > 0 && uRows[0].RoleName !== 'super_admin') {
                     return res.status(403).json({
-                        message: "Access Denied: Unauthorized portal access."
+                        message: "Access Denied: Unauthorized portal access. Please log in via your designated portal."
                     });
                 }
 
-                db.query('SELECT Id FROM users WHERE LOWER(Email) = ?', [trimmedEmail], (uErr, uRows) => {
-                    if (!uErr && uRows && uRows.length > 0) {
-                        return res.status(403).json({
-                            message: "Access Denied: Unauthorized portal access."
-                        });
-                    }
-
-                    return res.status(401).json({
-                        message: "Invalid email or password"
-                    });
+                return res.status(401).json({
+                    message: "Invalid email or password"
                 });
             });
             return;
@@ -78,13 +70,14 @@ const loginAdminController = (req,res) => {
 
         const token = jwt.sign(
             {
-            Id: admin.Id,
-            UserName: admin.UserName,
-            role: "super_admin" 
+                Id: admin.Id,
+                UserName: admin.UserName,
+                Email: admin.Email,
+                role: "super_admin" 
             },
-            process.env.JWT_SECRECT,
+            process.env.JWT_SECRECT || "secret",
             {
-                expiresIn: process.env.JWT_EXPIRES_IN
+                expiresIn: process.env.JWT_EXPIRES_IN || "7d"
             }
         );
         return res.status(200).json({
@@ -94,7 +87,9 @@ const loginAdminController = (req,res) => {
                 Id: admin.Id,
                 UserName: admin.UserName,
                 Email: admin.Email,
-                PhoneNumber: admin.PhoneNumber
+                PhoneNumber: admin.PhoneNumber || admin.Mobile,
+                Mobile: admin.Mobile || admin.PhoneNumber,
+                role: "super_admin"
             }
         });
     });

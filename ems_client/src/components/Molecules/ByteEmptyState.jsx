@@ -65,39 +65,41 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
             </radialGradient>
           </defs>
 
-          <motion.ellipse
-            cx="120"
-            cy="182"
-            rx="48"
-            ry="7"
-            className="fill-slate-300 dark:fill-black"
+          {/*
+            Shadow ellipse — animate scaleX on a motion.g centred at (120,182)
+            instead of animating rx directly on the ellipse element.
+          */}
+          <motion.g
+            style={{ transformOrigin: '120px 182px' }}
             animate={{
-              rx: isPetted ? [48, 38, 48] : [48, 40, 48, 54, 48],
-              opacity: [0.25, 0.12, 0.25, 0.35, 0.25]
+              scaleX: isPetted ? [1, 0.79, 1] : [1, 0.83, 1, 1.12, 1],
+              opacity: [0.25, 0.12, 0.25, 0.35, 0.25],
             }}
             transition={{
               duration: isPetted ? 0.6 : 3.6,
               repeat: isPetted ? 1 : Infinity,
-              ease: "easeInOut"
+              ease: 'easeInOut',
             }}
-          />
+          >
+            <ellipse cx="120" cy="182" rx="48" ry="7" className="fill-slate-300 dark:fill-black" />
+          </motion.g>
 
           <motion.g
             animate={
               isPetted
                 ? {
                     y: [0, -22, 0, -10, 0],
-                    rotate: [0, -10, 10, -5, 0]
+                    rotate: [0, -10, 10, -5, 0],
                   }
                 : {
                     y: [0, -9, 0, 9, 0],
-                    rotate: [0, -2, 0, 2, 0]
+                    rotate: [0, -2, 0, 2, 0],
                   }
             }
             transition={
               isPetted
-                ? { duration: 0.8, ease: "easeOut" }
-                : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }
+                ? { duration: 0.8, ease: 'easeOut' }
+                : { duration: 3.6, repeat: Infinity, ease: 'easeInOut' }
             }
             className="origin-bottom"
           >
@@ -109,45 +111,23 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
               fill="url(#byteBeaconGlow)"
               animate={{
                 scale: [1, 1.3, 1],
-                opacity: [0.8, 1, 0.8]
+                opacity: [0.8, 1, 0.8],
               }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
             />
 
-            <rect
-              x="64"
-              y="65"
-              width="8"
-              height="18"
-              rx="3"
-              className="fill-slate-400 dark:fill-zinc-700"
-            />
-            <rect
-              x="168"
-              y="65"
-              width="8"
-              height="18"
-              rx="3"
-              className="fill-slate-400 dark:fill-zinc-700"
-            />
+            <rect x="64"  y="65" width="8" height="18" rx="3" className="fill-slate-400 dark:fill-zinc-700" />
+            <rect x="168" y="65" width="8" height="18" rx="3" className="fill-slate-400 dark:fill-zinc-700" />
 
             <rect
-              x="70"
-              y="40"
-              width="100"
-              height="74"
-              rx="22"
+              x="70" y="40" width="100" height="74" rx="22"
               fill={theme === 'dark' ? 'url(#byteChassisDark)' : 'url(#byteChassisLight)'}
               stroke={theme === 'dark' ? '#3f3f46' : '#cbd5e1'}
               strokeWidth="2.5"
             />
 
             <rect
-              x="79"
-              y="49"
-              width="82"
-              height="56"
-              rx="14"
+              x="79" y="49" width="82" height="56" rx="14"
               fill="url(#byteScreenGrad)"
               stroke="#10b981"
               strokeWidth="1.5"
@@ -156,124 +136,108 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
 
             {isPetted ? (
               <g>
-                <path
-                  d="M 93 72 C 93 64 105 64 105 72"
-                  stroke="#10b981"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-                <path
-                  d="M 135 72 C 135 64 147 64 147 72"
-                  stroke="#10b981"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                  fill="none"
-                />
-                <ellipse cx="88" cy="80" rx="4" ry="2.5" fill="#f43f5e" opacity="0.8" />
+                <path d="M 93 72 C 93 64 105 64 105 72" stroke="#10b981" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+                <path d="M 135 72 C 135 64 147 64 147 72" stroke="#10b981" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+                <ellipse cx="88"  cy="80" rx="4" ry="2.5" fill="#f43f5e" opacity="0.8" />
                 <ellipse cx="152" cy="80" rx="4" ry="2.5" fill="#f43f5e" opacity="0.8" />
-                <path
-                  d="M 115 84 Q 120 90 125 84"
-                  stroke="#10b981"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  fill="none"
-                />
+                <path d="M 115 84 Q 120 90 125 84" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" fill="none" />
               </g>
             ) : (
               <g>
                 <motion.g
-                  animate={{
-                    scaleY: [1, 1, 1, 0.1, 1, 1, 1]
-                  }}
+                  animate={{ scaleY: [1, 1, 1, 0.1, 1, 1, 1] }}
                   transition={{
                     duration: 3.8,
                     repeat: Infinity,
-                    times: [0, 0.45, 0.48, 0.5, 0.53, 0.8, 1]
+                    times: [0, 0.45, 0.48, 0.5, 0.53, 0.8, 1],
                   }}
                 >
-                  <circle cx="98" cy="72" r="6" fill="#10b981" />
-                  <circle cx="96" cy="70" r="2" fill="#ffffff" />
+                  <circle cx="98"  cy="72" r="6" fill="#10b981" />
+                  <circle cx="96"  cy="70" r="2" fill="#ffffff" />
                   <circle cx="142" cy="72" r="6" fill="#10b981" />
                   <circle cx="140" cy="70" r="2" fill="#ffffff" />
                 </motion.g>
 
-                <ellipse cx="87" cy="80" rx="3.5" ry="2" fill="#fb7185" opacity="0.6" />
+                <ellipse cx="87"  cy="80" rx="3.5" ry="2" fill="#fb7185" opacity="0.6" />
                 <ellipse cx="153" cy="80" rx="3.5" ry="2" fill="#fb7185" opacity="0.6" />
 
-                <motion.path
-                  d="M 116 84 Q 120 80 124 84"
-                  stroke="#10b981"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  fill="none"
-                  animate={{
-                    d: [
-                      "M 116 84 Q 120 80 124 84",
-                      "M 116 85 Q 120 82 124 85",
-                      "M 116 84 Q 120 80 124 84"
-                    ]
-                  }}
-                  transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                />
+                {/* Mouth — animate opacity/scaleY only; no geometry attr animation */}
+                <motion.g
+                  style={{ transformOrigin: '120px 84px' }}
+                  animate={{ scaleY: [1, 1.4, 1] }}
+                  transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <path
+                    d="M 116 84 Q 120 80 124 84"
+                    stroke="#10b981"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </motion.g>
               </g>
             )}
 
             <rect
-              x="82"
-              y="120"
-              width="76"
-              height="44"
-              rx="16"
+              x="82" y="120" width="76" height="44" rx="16"
               fill={theme === 'dark' ? 'url(#byteChassisDark)' : 'url(#byteChassisLight)'}
               stroke={theme === 'dark' ? '#3f3f46' : '#cbd5e1'}
               strokeWidth="2.5"
             />
 
+            {/*
+              Progress bar — animate scaleX on a motion.g anchored at left edge
+              instead of animating width directly on the rect element.
+            */}
             <g transform="translate(104, 134)">
               <rect x="0" y="0" width="32" height="12" rx="4" className="fill-slate-200 dark:fill-zinc-800" />
-              <motion.rect
-                x="2"
-                y="2"
-                width="18"
-                height="8"
-                rx="3"
-                className="fill-emerald-500"
-                animate={{ width: [10, 28, 10] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              />
+              <motion.g
+                style={{ transformOrigin: '2px 6px' }}
+                animate={{ scaleX: [0.56, 1, 0.56] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <rect x="2" y="2" width="28" height="8" rx="3" className="fill-emerald-500" />
+              </motion.g>
             </g>
 
             <g transform="translate(54, 126)">
               <motion.g
                 animate={{ rotate: [-8, 8, -8] }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
               >
                 <rect x="0" y="0" width="22" height="28" rx="4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1.5" />
-                <line x1="4" y1="6" x2="18" y2="6" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="4" y1="6"  x2="18" y2="6"  stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
                 <line x1="4" y1="11" x2="15" y2="11" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" />
                 <text x="7" y="22" fill="#ef4444" fontSize="11" fontWeight="bold">?</text>
               </motion.g>
             </g>
 
+            {/*
+              Arm/cable — only animates rotate (a CSS transform), so it's safe on motion.g.
+              The path itself is a plain <path> with a static d attribute.
+            */}
             <g transform="translate(162, 130)">
-              <motion.path
-                d="M 2 4 C 12 4 18 14 16 22"
-                stroke={theme === 'dark' ? '#52525b' : '#94a3b8'}
-                strokeWidth="4"
-                strokeLinecap="round"
-                fill="none"
+              <motion.g
+                style={{ transformOrigin: '9px 13px' }}
                 animate={{ rotate: [0, 10, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              />
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <path
+                  d="M 2 4 C 12 4 18 14 16 22"
+                  stroke={theme === 'dark' ? '#52525b' : '#94a3b8'}
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </motion.g>
             </g>
 
             <motion.g
               animate={{
                 y: [0, -6, 0],
-                opacity: [0.6, 1, 0.6]
+                opacity: [0.6, 1, 0.6],
               }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
               className="origin-center"
             >
               <circle cx="178" cy="36" r="10" className="fill-amber-400" />

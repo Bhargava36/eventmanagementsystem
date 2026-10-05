@@ -37,8 +37,8 @@ const CardDots = () => (
   </span>
 );
 
-const StatusBadge = ({ status = '' }) => {
-  const s = status.toLowerCase();
+const StatusBadge = ({ status }) => {
+  const s = (status ?? '').toLowerCase();
   let cls = 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800';
   if (s === 'approved') cls = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30';
   if (s === 'pending')  cls = 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30';
@@ -203,7 +203,7 @@ export default function UserDashboard() {
                     className="bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 p-5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <StatusBadge status={team.RegistrationStatus} />
+                      <StatusBadge status={team.RegistrationStatus ?? ''} />
                       <CardDots />
                     </div>
 
