@@ -45,8 +45,8 @@ export const CanvasRevealEffect = ({
 const DotMatrix = ({
   colors = [[0, 0, 0]],
   opacities = [0.04, 0.04, 0.04, 0.04, 0.04, 0.08, 0.08, 0.08, 0.08, 0.14],
-  totalSize = 5,
-  dotSize = 40,
+  totalSize = 20,
+  dotSize = 10,
   shader = "",
   center = ["x", "y"],
 }) => {
@@ -404,7 +404,7 @@ const HeroSection = ({ className }) => {
                 [4, 120, 87],
                 [4, 120, 87],
               ]}
-              dotSize={20}
+              dotSize={6}
               reverse={false}
             />
           </div>
@@ -422,7 +422,7 @@ const HeroSection = ({ className }) => {
                 [4, 120, 87],
                 [4, 120, 87],
               ]}
-              dotSize={20}
+              dotSize={10}
               reverse={true}
             />
           </div>
