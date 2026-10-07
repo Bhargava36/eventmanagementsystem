@@ -1,6 +1,9 @@
 const db = require('../../config/db');
 
-const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, callback) => {
+const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, ParticipationModeOrCallback, callbackArg) => {
+    const ParticipationMode = typeof ParticipationModeOrCallback === 'string' ? ParticipationModeOrCallback : null;
+    const callback = typeof ParticipationModeOrCallback === 'function' ? ParticipationModeOrCallback : callbackArg;
+
     if (!TeamName || !TeamLeadEmail || !TeamSize || !EventId) {
         const err = new Error('TeamName, TeamLeadEmail, TeamSize, and EventId are required');
         err.status = 400;
@@ -22,58 +25,143 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, ca
         return callback(err, null);
     }
 
-    // 1. Fetch Team Lead User
-    const leadQuery = `SELECT Id, UserName, Email, College, State, Gender FROM users WHERE LOWER(Email) = ? LIMIT 1`;
-    db.query(leadQuery, [leadEmailClean], (err, leadRows) => {
+    // 1. Fetch Event and validate registration status & team size rules
+    const eventQuery = `SELECT EventName, TeamSize, EventStatus, RegistrationEnd, VirtualRegistrationEnd, PhysicalRegistrationEnd, VirtualRegistrationOpen, PhysicalRegistrationOpen, RegistrationOpen FROM events WHERE Id = ?`;
+    db.query(eventQuery, [EventId], (err, eventRows) => {
         if (err) return callback(err, null);
-        if (!leadRows || leadRows.length === 0) {
-            const errNotFound = new Error(`Team Lead email "${TeamLeadEmail}" is not registered in EMS.`);
-            errNotFound.status = 404;
-            return callback(errNotFound, null);
+        if (!eventRows || eventRows.length === 0) {
+            const errEv = new Error(`Event with ID ${EventId} not found.`);
+            errEv.status = 404;
+            return callback(errEv, null);
         }
 
-        const leader = leadRows[0];
+        const ev = eventRows[0];
 
-        // 2. Check if Team Lead is ALREADY registered in this Event
+        // Check if registration is paused by admin
+        if (ParticipationMode === 'Virtual' && (ev.VirtualRegistrationOpen === 0 || ev.VirtualRegistrationOpen === false)) {
+            const errPaused = new Error(`Registration for the Virtual track is currently paused by the event admin.`);
+            errPaused.status = 403;
+            return callback(errPaused, null);
+        }
+        if (ParticipationMode === 'Physical' && (ev.PhysicalRegistrationOpen === 0 || ev.PhysicalRegistrationOpen === false)) {
+            const errPaused = new Error(`Registration for the Physical track is currently paused by the event admin.`);
+            errPaused.status = 403;
+            return callback(errPaused, null);
+        }
+        if (ev.RegistrationOpen === 0 || ev.RegistrationOpen === false) {
+            const errPaused = new Error(`Registration for event "${ev.EventName}" is currently paused by the event admin.`);
+            errPaused.status = 403;
+            return callback(errPaused, null);
+        }
+
+        // Validate Team Size against Admin Event Requirement
+        let minSize = 1;
+        let maxSize = 10;
+        if (ev.TeamSize) {
+            const str = String(ev.TeamSize).trim();
+            if (str.includes('-')) {
+                const parts = str.split('-').map(Number);
+                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+                    minSize = parts[0];
+                    maxSize = parts[1];
+                }
+            } else {
+                const num = Number(str);
+                if (!isNaN(num) && num > 0) {
+                    minSize = num;
+                    maxSize = num;
+                }
+            }
+        }
+
+        const requestedSize = Number(TeamSize);
+        if (isNaN(requestedSize) || requestedSize < minSize || requestedSize > maxSize) {
+            const sizeDesc = minSize === maxSize ? `${minSize}` : `${minSize}-${maxSize}`;
+            const errSize = new Error(`Invalid team size. Event "${ev.EventName}" strictly requires a team size of ${sizeDesc} members.`);
+            errSize.status = 400;
+            return callback(errSize, null);
+        }
+
+        // Total team formation count (1 Team Lead + memberEmails) MUST match requested size
+        const totalMembers = 1 + memberEmailsClean.length;
+        if (totalMembers !== requestedSize) {
+            const neededOther = requestedSize - 1;
+            const providedOther = memberEmailsClean.length;
+            const errCount = new Error(
+                `Team formation failed: Event requires exactly ${requestedSize} members. You must provide 1 Team Lead and ${neededOther} team member email(s). (Currently provided: ${providedOther} member(s))`
+            );
+            errCount.status = 400;
+            return callback(errCount, null);
+        }
+
+        // 2. Fetch Team Lead User
+        const leadQuery = `SELECT Id, UserName, Email, College, State, Gender FROM users WHERE LOWER(Email) = ? LIMIT 1`;
+        db.query(leadQuery, [leadEmailClean], (err, leadRows) => {
+            if (err) return callback(err, null);
+            if (!leadRows || leadRows.length === 0) {
+                const errNotFound = new Error(`Team Lead email "${TeamLeadEmail}" is not registered in EMS.`);
+                errNotFound.status = 404;
+                return callback(errNotFound, null);
+            }
+
+            const leader = leadRows[0];
+
+        // 2. Check if Team Lead is ALREADY registered in this Event for the same track
         const checkLeadRegQuery = `
-            SELECT t.TeamName, u.Email, u.UserName
+            SELECT t.TeamName, u.Email, u.UserName, er.ParticipationMode
             FROM registered_team_members tm
             INNER JOIN registered_teams t ON tm.TeamId = t.Id
             INNER JOIN users u ON tm.UserId = u.Id
+            LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
             WHERE t.EventId = ? AND tm.UserId = ?
-            LIMIT 1
         `;
         db.query(checkLeadRegQuery, [EventId, leader.Id], (err, existingLeadReg) => {
             if (err) return callback(err, null);
             if (existingLeadReg && existingLeadReg.length > 0) {
-                const errAlready = new Error(
-                    `Team Lead (${leader.Email}) is already registered for this event in team "${existingLeadReg[0].TeamName}". A participant can only register once per event.`
-                );
-                errAlready.status = 400;
-                return callback(errAlready, null);
+                const leadConflict = existingLeadReg.find((r) => {
+                    if (!ParticipationMode) return true;
+                    if (!r.ParticipationMode) return true;
+                    return r.ParticipationMode.toLowerCase() === ParticipationMode.toLowerCase();
+                });
+                if (leadConflict) {
+                    const trackText = ParticipationMode ? `for the ${ParticipationMode} track of` : 'for';
+                    const errAlready = new Error(
+                        `Team Lead (${leader.Email}) is already registered ${trackText} this event in team "${leadConflict.TeamName}". A participant can only register once per track.`
+                    );
+                    errAlready.status = 400;
+                    return callback(errAlready, null);
+                }
             }
 
             // 3. If there are team members, check them
             const proceedWithMembers = (membersList) => {
-                // Check if any member is ALREADY registered in this Event
+                // Check if any member is ALREADY registered in this Event for the same track
                 if (membersList.length > 0) {
                     const memberUserIds = membersList.map((m) => m.Id);
                     const checkMemberRegQuery = `
-                        SELECT t.TeamName, u.Email, u.UserName
+                        SELECT t.TeamName, u.Email, u.UserName, er.ParticipationMode
                         FROM registered_team_members tm
                         INNER JOIN registered_teams t ON tm.TeamId = t.Id
                         INNER JOIN users u ON tm.UserId = u.Id
+                        LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
                         WHERE t.EventId = ? AND tm.UserId IN (?)
-                        LIMIT 1
                     `;
                     db.query(checkMemberRegQuery, [EventId, memberUserIds], (err, existingMemberReg) => {
                         if (err) return callback(err, null);
                         if (existingMemberReg && existingMemberReg.length > 0) {
-                            const errMemAlready = new Error(
-                                `Team member (${existingMemberReg[0].Email}) is already registered for this event in team "${existingMemberReg[0].TeamName}". A participant can only register once per event.`
-                            );
-                            errMemAlready.status = 400;
-                            return callback(errMemAlready, null);
+                            const memberConflict = existingMemberReg.find((r) => {
+                                if (!ParticipationMode) return true;
+                                if (!r.ParticipationMode) return true;
+                                return r.ParticipationMode.toLowerCase() === ParticipationMode.toLowerCase();
+                            });
+                            if (memberConflict) {
+                                const trackText = ParticipationMode ? `for the ${ParticipationMode} track of` : 'for';
+                                const errMemAlready = new Error(
+                                    `Team member (${memberConflict.Email}) is already registered ${trackText} this event in team "${memberConflict.TeamName}". A participant can only register once per track.`
+                                );
+                                errMemAlready.status = 400;
+                                return callback(errMemAlready, null);
+                            }
                         }
 
                         insertTeamAndMembers(leader, membersList);
@@ -144,6 +232,7 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, ca
                 proceedWithMembers([]);
             }
         });
+    });
     });
 };
 

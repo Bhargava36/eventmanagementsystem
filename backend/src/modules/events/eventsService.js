@@ -242,6 +242,78 @@ const deleteEvent = (id, callback) => {
     });
 };
 
+const updateVirtualEventStatus = (id, virtualStatus, callback) => {
+    let query = `UPDATE events SET VirtualStatus = ? WHERE Id = ?`;
+    let values = [virtualStatus, id];
+
+    if (virtualStatus === 'LIVE') {
+        query = `UPDATE events SET VirtualStatus = ?, VirtualStartedAt = COALESCE(VirtualStartedAt, NOW()) WHERE Id = ?`;
+        values = [virtualStatus, id];
+    }
+
+    db.query(query, values, (err, result) => {
+        if (err) return callback(err, null);
+        db.query(`SELECT Id, VirtualStatus, VirtualStartedAt, VirtualMeetUrl FROM events WHERE Id = ?`, [id], (err2, rows) => {
+            if (err2) return callback(err2, null);
+            return callback(null, rows[0]);
+        });
+    });
+};
+
+const updateVirtualMeetUrl = (id, meetUrl, callback) => {
+    const query = `UPDATE events SET VirtualMeetUrl = ? WHERE Id = ?`;
+    db.query(query, [meetUrl, id], (err, result) => {
+        if (err) return callback(err, null);
+        db.query(`SELECT Id, VirtualStatus, VirtualStartedAt, VirtualMeetUrl FROM events WHERE Id = ?`, [id], (err2, rows) => {
+            if (err2) return callback(err2, null);
+            return callback(null, rows[0]);
+        });
+    });
+};
+
+const updateEventSettings = (id, settings, callback) => {
+    const allowedKeys = [
+        'VirtualRegistrationOpen',
+        'PhysicalRegistrationOpen',
+        'RegistrationOpen',
+        'VirtualRegistrationEnd',
+        'PhysicalRegistrationEnd',
+        'RegistrationEnd',
+        'VirtualRegistrationStart',
+        'PhysicalRegistrationStart',
+        'RegistrationStart',
+        'TeamSize',
+        'VirtualStatus',
+        'VirtualMeetUrl',
+        'HackathonMode'
+    ];
+
+    const updates = [];
+    const values = [];
+
+    for (const key of allowedKeys) {
+        if (settings[key] !== undefined) {
+            updates.push(`${key} = ?`);
+            values.push(settings[key]);
+        }
+    }
+
+    if (updates.length === 0) {
+        return callback(null, { message: 'No settings to update' });
+    }
+
+    values.push(id);
+    const query = `UPDATE events SET ${updates.join(', ')} WHERE Id = ?`;
+
+    db.query(query, values, (err) => {
+        if (err) return callback(err, null);
+        db.query(`SELECT * FROM events WHERE Id = ?`, [id], (err2, rows) => {
+            if (err2) return callback(err2, null);
+            return callback(null, rows[0]);
+        });
+    });
+};
+
 module.exports = {
     createEvent,
     getAllEvents,
@@ -250,5 +322,8 @@ module.exports = {
     getEventStatus,
     updateEventById,
     deleteEvent,
-    saveEventGuidelines
+    saveEventGuidelines,
+    updateVirtualEventStatus,
+    updateVirtualMeetUrl,
+    updateEventSettings
 };

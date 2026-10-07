@@ -31,6 +31,7 @@ import {
   ChevronRight,
   Layers,
   Radio,
+  Video,
   Info,
   X,
   Lightbulb,
@@ -241,8 +242,10 @@ function EventDetails() {
   const [submitting,       setSubmitting]       = useState(false);
   const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   const [registeredTeam,    setRegisteredTeam]    = useState(null);
+  const [userEventRegistrations, setUserEventRegistrations] = useState([]);
   const [checkingRegistration, setCheckingRegistration] = useState(true);
   const [registrationMode, setRegistrationMode]   = useState('Virtual');
+  const [activeCountdownTrack, setActiveCountdownTrack] = useState('Virtual');
 
   const getAvailableModes = (hackathonMode) => {
     const m = String(hackathonMode || '').trim().toLowerCase();
@@ -258,6 +261,7 @@ function EventDetails() {
   useEffect(() => {
     if (location.state?.mode) {
       setRegistrationMode(location.state.mode);
+      setActiveCountdownTrack(location.state.mode);
     }
   }, [location.state]);
 
@@ -272,7 +276,7 @@ function EventDetails() {
   });
   const [members,  setMembers]  = useState([]);
 
-  // Check if current user is already registered for this event
+  // Check if current user is already registered for this event (tracks per mode)
   useEffect(() => {
     const userId = loggedUser?.Id || loggedUser?.id;
     if (!userId || !id) {
@@ -284,10 +288,11 @@ function EventDetails() {
       .then((res) => (res.ok ? res.json() : { teams: [] }))
       .then((data) => {
         const teams = data.teams || [];
-        const match = teams.find((t) => Number(t.EventId) === Number(id));
-        if (match) {
+        const matches = teams.filter((t) => Number(t.EventId) === Number(id));
+        setUserEventRegistrations(matches);
+        if (matches.length > 0) {
           setAlreadyRegistered(true);
-          setRegisteredTeam(match);
+          setRegisteredTeam(matches[0]);
         } else {
           setAlreadyRegistered(false);
           setRegisteredTeam(null);
@@ -296,6 +301,18 @@ function EventDetails() {
       .catch(() => {})
       .finally(() => setCheckingRegistration(false));
   }, [loggedUser?.Id, loggedUser?.id, id]);
+
+  const virtualRegistration = useMemo(() => {
+    return userEventRegistrations.find(
+      (t) => (t.ParticipationMode || '').toLowerCase() === 'virtual'
+    );
+  }, [userEventRegistrations]);
+
+  const physicalRegistration = useMemo(() => {
+    return userEventRegistrations.find(
+      (t) => (t.ParticipationMode || '').toLowerCase() === 'physical'
+    );
+  }, [userEventRegistrations]);
 
   // Sync lead details when profile is fetched or updated
   useEffect(() => {
@@ -363,12 +380,35 @@ function EventDetails() {
   };
 
   const handleRegisterClick = (mode = null) => {
-    if (alreadyRegistered) {
-      alert(`You are already registered for this event in team "${registeredTeam?.TeamName || ''}". A participant can only register once per event.`);
-      return;
-    }
     const modes = getAvailableModes(event?.HackathonMode);
     const targetMode = mode || (modes.includes('Virtual') ? 'Virtual' : modes[0]);
+
+    if (targetMode === 'Virtual' && isVirtualPaused) {
+      alert('Registration for the Virtual track is currently paused by the event organizers.');
+      return;
+    }
+    if (targetMode === 'Physical' && isPhysicalPaused) {
+      alert('Registration for the Physical track is currently paused by the event organizers.');
+      return;
+    }
+    if (isGlobalPaused) {
+      alert('Registration for this event is currently paused by the event organizers.');
+      return;
+    }
+
+    if (targetMode === 'Virtual' && virtualRegistration) {
+      alert(`You are already registered for the Virtual track of this event in team "${virtualRegistration.TeamName}".`);
+      return;
+    }
+    if (targetMode === 'Physical' && physicalRegistration) {
+      alert(`You are already registered for the Physical track of this event in team "${physicalRegistration.TeamName}".`);
+      return;
+    }
+    if (modes.length === 1 && userEventRegistrations.length > 0) {
+      alert(`You are already registered for this event in team "${userEventRegistrations[0].TeamName}".`);
+      return;
+    }
+
     setRegistrationMode(targetMode);
 
     const lead = getLeadDefaults();
@@ -377,7 +417,7 @@ function EventDetails() {
     setTeamSize('');
     setMembers([]);
     setFormData((prev) => ({
-      TeamName: prev.TeamName || '',
+      TeamName: '',
       TeamLeadName: lead.TeamLeadName || prev.TeamLeadName || '',
       TeamLeadEmail: lead.TeamLeadEmail || prev.TeamLeadEmail || '',
       TeamLeadCollege: lead.TeamLeadCollege || prev.TeamLeadCollege || '',
@@ -455,6 +495,7 @@ function EventDetails() {
         Tech_Stack: null,
         EventId: Number(id),
         MemberEmails: members.map((m) => m.Email.trim()),
+        ParticipationMode: registrationMode,
       };
       const teamResponse = await fetch('http://localhost:3000/api/teams/create', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(teamPayload),
@@ -476,13 +517,15 @@ function EventDetails() {
       const registrationData = await registrationResponse.json();
       if (!registrationResponse.ok) throw new Error(registrationData.message || 'Event registration failed');
       alert(`Team registered successfully for ${registrationMode} Hackathon!\n\nTeam ID: ${teamId}`);
-      setAlreadyRegistered(true);
-      setRegisteredTeam({ 
-        TeamName: formData.TeamName, 
+      const newReg = { 
+        TeamName: formData.TeamName.trim(), 
         TeamId: teamId, 
         EventId: Number(id),
         ParticipationMode: registrationMode 
-      });
+      };
+      setUserEventRegistrations((prev) => [...prev, newReg]);
+      setAlreadyRegistered(true);
+      setRegisteredTeam(newReg);
       closeRegistration();
     } catch (err) {
       console.error('Registration error:', err);
@@ -525,13 +568,56 @@ function EventDetails() {
     return url;
   };
 
+  const effectiveVirtualRegEnd = useMemo(() => {
+    return event?.VirtualRegistrationEnd || event?.RegistrationEnd;
+  }, [event]);
+
+  const effectivePhysicalRegEnd = useMemo(() => {
+    return event?.PhysicalRegistrationEnd || event?.RegistrationEnd;
+  }, [event]);
+
+  const isVirtualPaused = useMemo(() => {
+    return event?.VirtualRegistrationOpen === 0 || event?.VirtualRegistrationOpen === false;
+  }, [event]);
+
+  const isPhysicalPaused = useMemo(() => {
+    return event?.PhysicalRegistrationOpen === 0 || event?.PhysicalRegistrationOpen === false;
+  }, [event]);
+
+  const isGlobalPaused = useMemo(() => {
+    return event?.RegistrationOpen === 0 || event?.RegistrationOpen === false;
+  }, [event]);
+
+  const isVirtualRegistrationClosed = useMemo(() => {
+    if (!event) return false;
+    const s = (event.EventStatus || '').toLowerCase();
+    if (s === 'completed') return true;
+    if (isGlobalPaused || isVirtualPaused) return true;
+    if (effectiveVirtualRegEnd) return new Date().getTime() > new Date(effectiveVirtualRegEnd).getTime();
+    return false;
+  }, [event, effectiveVirtualRegEnd, isGlobalPaused, isVirtualPaused]);
+
+  const isPhysicalRegistrationClosed = useMemo(() => {
+    if (!event) return false;
+    const s = (event.EventStatus || '').toLowerCase();
+    if (s === 'completed') return true;
+    if (isGlobalPaused || isPhysicalPaused) return true;
+    if (effectivePhysicalRegEnd) return new Date().getTime() > new Date(effectivePhysicalRegEnd).getTime();
+    return false;
+  }, [event, effectivePhysicalRegEnd, isGlobalPaused, isPhysicalPaused]);
+
   const isRegistrationClosed = useMemo(() => {
     if (!event) return false;
     const s = (event.EventStatus || '').toLowerCase();
     if (s === 'completed') return true;
+    if (isGlobalPaused) return true;
+    const modes = getAvailableModes(event.HackathonMode);
+    if (modes.length > 1) {
+      return isVirtualRegistrationClosed && isPhysicalRegistrationClosed;
+    }
     if (event.RegistrationEnd) return new Date().getTime() > new Date(event.RegistrationEnd).getTime();
     return false;
-  }, [event]);
+  }, [event, isVirtualRegistrationClosed, isPhysicalRegistrationClosed, isGlobalPaused]);
 
   const splitFacilities = (text) => {
     if (!text) return [];
@@ -761,82 +847,244 @@ function EventDetails() {
           {/* register bar */}
           <div className="px-6 py-5 sm:px-8 lg:px-10 bg-slate-50/80 dark:bg-zinc-900/90 backdrop-blur-md border-t border-slate-200 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-5">
             <div className="flex flex-col sm:flex-row items-center sm:items-start md:items-center gap-4 w-full md:w-auto">
-              <div className="flex flex-col items-center sm:items-start gap-2.5">
-                <div className="flex items-center gap-2">
-                  {!isRegistrationClosed ? (
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-                    </span>
-                  ) : <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />}
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                    {isRegistrationClosed ? 'Registration Status' : 'Registration Window Closes In'}
-                  </span>
-                </div>
-                {isRegistrationClosed ? (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold">Registration has ended</div>
-                ) : (
-                  <FlipCountdown targetDate={event.RegistrationEnd || event.StartDate} />
-                )}
-              </div>
+              {(() => {
+                const modes = getAvailableModes(event?.HackathonMode);
+                if (modes.length > 1) {
+                  const isCurTrackVirtual = activeCountdownTrack === 'Virtual';
+                  const curTrackEnd = isCurTrackVirtual ? effectiveVirtualRegEnd : effectivePhysicalRegEnd;
+                  const isCurTrackClosed = isCurTrackVirtual ? isVirtualRegistrationClosed : isPhysicalRegistrationClosed;
+                  const isCurTrackPaused = isCurTrackVirtual ? isVirtualPaused : isPhysicalPaused;
+
+                  return (
+                    <div className="flex flex-col items-center sm:items-start gap-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                          Registration Window:
+                        </span>
+                        <div className="inline-flex items-center p-1 rounded-xl bg-slate-200/70 dark:bg-zinc-800/80 border border-slate-300/40 dark:border-zinc-700/50">
+                          <button
+                            type="button"
+                            onClick={() => setActiveCountdownTrack('Virtual')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                              isCurTrackVirtual
+                                ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            <span>🌐 Virtual Track</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                              isVirtualPaused
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
+                                : isVirtualRegistrationClosed
+                                ? 'bg-rose-500/10 text-rose-500 font-bold'
+                                : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                            }`}>
+                              {isVirtualPaused ? 'Paused' : isVirtualRegistrationClosed ? 'Closed' : formatDate(effectiveVirtualRegEnd)}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveCountdownTrack('Physical')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                              !isCurTrackVirtual
+                                ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-sm'
+                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            <span>📍 Physical Track</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                              isPhysicalPaused
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
+                                : isPhysicalRegistrationClosed
+                                ? 'bg-rose-500/10 text-rose-500 font-bold'
+                                : 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                            }`}>
+                              {isPhysicalPaused ? 'Paused' : isPhysicalRegistrationClosed ? 'Closed' : formatDate(effectivePhysicalRegEnd)}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {isCurTrackClosed ? (
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold">
+                          {isCurTrackPaused
+                            ? `${activeCountdownTrack} Registration is paused by organizers`
+                            : `${activeCountdownTrack} Registration has ended (${formatDate(curTrackEnd)})`}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center sm:items-start gap-1">
+                          <FlipCountdown key={activeCountdownTrack} targetDate={curTrackEnd || event.StartDate} />
+                          <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-semibold">
+                            {activeCountdownTrack} Track Closes on: <strong className={isCurTrackVirtual ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>{formatDate(curTrackEnd)}</strong>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="flex flex-col items-center sm:items-start gap-2.5">
+                    <div className="flex items-center gap-2">
+                      {!isRegistrationClosed ? (
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                        </span>
+                      ) : <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />}
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                        {isRegistrationClosed ? 'Registration Status' : 'Registration Window Closes In'}
+                      </span>
+                    </div>
+                    {isRegistrationClosed ? (
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold">
+                        Registration has ended
+                      </div>
+                    ) : (
+                      <FlipCountdown targetDate={event.RegistrationEnd || event.StartDate} />
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             <div className="flex items-center gap-3 w-full md:w-auto">
-              {alreadyRegistered ? (
-                <div className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-sm tracking-wide shadow-sm">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Already Registered {registeredTeam?.TeamName ? `(${registeredTeam.TeamName}${registeredTeam.ParticipationMode ? ` • ${registeredTeam.ParticipationMode}` : ''})` : ''}</span>
-                </div>
-              ) : isRegistrationClosed ? (
-                <button
-                  disabled
-                  className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-slate-300 dark:bg-zinc-800 text-slate-500 dark:text-zinc-500 font-bold text-sm cursor-not-allowed"
-                >
-                  <span>Registrations Closed</span>
-                </button>
-              ) : (
-                (() => {
-                  const modes = getAvailableModes(event?.HackathonMode);
-                  if (modes.length > 1) {
-                    return (
-                      <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+              {(() => {
+                const modes = getAvailableModes(event?.HackathonMode);
+                if (modes.length > 1) {
+                  const hasVirtual = Boolean(virtualRegistration);
+                  const hasPhysical = Boolean(physicalRegistration);
+
+                  return (
+                    <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 w-full md:w-auto">
+                      {/* Virtual Track Action */}
+                      {hasVirtual ? (
+                        event?.VirtualStatus === 'LIVE' ? (
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/user/events/${id}/virtual`)}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-xl shadow-emerald-600/30 hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer animate-pulse"
+                          >
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                            </span>
+                            <Video className="h-4 w-4 fill-current" />
+                            <span>OPEN VIRTUAL EVENT PAGE</span>
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <div className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-xs">
+                              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                              <span>Virtual: Registered ({virtualRegistration.TeamName})</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/user/events/${id}/virtual`)}
+                              className="p-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-bold transition border border-slate-200 dark:border-zinc-700"
+                              title="Virtual Hub"
+                            >
+                              <Video className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                            </button>
+                          </div>
+                        )
+                      ) : isVirtualRegistrationClosed ? (
+                        <span className="text-xs text-slate-400 font-medium px-4 py-3 rounded-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800">
+                          {isVirtualPaused ? 'Virtual Registration Paused' : 'Virtual Registrations Ended'}
+                        </span>
+                      ) : (
                         <button
                           type="button"
                           onClick={() => handleRegisterClick('Virtual')}
-                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer"
                         >
                           <Globe className="h-4 w-4" />
                           <span>Register for Virtual Hackathon</span>
                         </button>
+                      )}
+
+                      {/* Physical Track Action */}
+                      {hasPhysical ? (
+                        <div className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 font-bold text-xs">
+                          <CheckCircle2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          <span>Physical: Registered ({physicalRegistration.TeamName})</span>
+                        </div>
+                      ) : isPhysicalRegistrationClosed ? (
+                        <span className="text-xs text-slate-400 font-medium px-4 py-3 rounded-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800">
+                          {isPhysicalPaused ? 'Physical Registration Paused' : 'Physical Registrations Ended'}
+                        </span>
+                      ) : (
                         <button
                           type="button"
                           onClick={() => handleRegisterClick('Physical')}
-                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-amber-600/25 hover:shadow-amber-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs sm:text-sm tracking-wide shadow-lg shadow-amber-600/25 hover:shadow-amber-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer"
                         >
                           <MapPin className="h-4 w-4" />
                           <span>Register for Physical Hackathon</span>
                         </button>
-                      </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                // Single track events
+                const singleMode = modes[0] || 'Virtual';
+                const isPhysical = singleMode === 'Physical';
+                const hasSingleReg = userEventRegistrations.length > 0;
+
+                if (hasSingleReg) {
+                  if (singleMode === 'Virtual' && event?.VirtualStatus === 'LIVE') {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/user/events/${id}/virtual`)}
+                        className="w-full md:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm tracking-wide shadow-xl shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer animate-pulse"
+                      >
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                        </span>
+                        <Video className="h-5 w-5 fill-current" />
+                        <span>OPEN VIRTUAL EVENT PAGE</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
                     );
                   }
-                  const singleMode = modes[0] || 'Virtual';
-                  const isPhysical = singleMode === 'Physical';
+                  return (
+                    <div className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-sm tracking-wide shadow-sm">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Already Registered {userEventRegistrations[0]?.TeamName ? `(${userEventRegistrations[0].TeamName})` : ''}</span>
+                    </div>
+                  );
+                }
+
+                if (isRegistrationClosed) {
                   return (
                     <button
-                      type="button"
-                      onClick={() => handleRegisterClick(singleMode)}
-                      className={`w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-bold text-sm tracking-wide shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 ${
-                        isPhysical
-                          ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/30 hover:shadow-amber-600/50'
-                          : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/30 hover:shadow-emerald-600/50'
-                      }`}
+                      disabled
+                      className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl bg-slate-300 dark:bg-zinc-800 text-slate-500 dark:text-zinc-500 font-bold text-sm cursor-not-allowed"
                     >
-                      {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-                      <span>Register for {singleMode} Hackathon</span>
-                      <ChevronRight className="h-4 w-4" />
+                      <span>Registrations Closed</span>
                     </button>
                   );
-                })()
-              )}
+                }
+
+                return (
+                  <button
+                    type="button"
+                    onClick={() => handleRegisterClick(singleMode)}
+                    className={`w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-bold text-sm tracking-wide shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer ${
+                      isPhysical
+                        ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/30 hover:shadow-amber-600/50'
+                        : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/30 hover:shadow-emerald-600/50'
+                    }`}
+                  >
+                    {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
+                    <span>Register for {singleMode} Hackathon</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                );
+              })()}
             </div>
           </div>
         </motion.div>
@@ -1080,10 +1328,23 @@ function EventDetails() {
                   <span className="text-slate-500 dark:text-zinc-400">Registration Begins</span>
                   <span className="font-bold text-slate-900 dark:text-white">{formatDate(event.RegistrationStart)}</span>
                 </div>
-                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                  <span className="text-slate-500 dark:text-zinc-400">Registration Closes</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{formatDate(event.RegistrationEnd)}</span>
-                </div>
+                {getAvailableModes(event?.HackathonMode).length > 1 ? (
+                  <>
+                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                      <span className="text-slate-500 dark:text-zinc-400">Virtual Reg Closes</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatDate(effectiveVirtualRegEnd)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                      <span className="text-slate-500 dark:text-zinc-400">Physical Reg Closes</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">{formatDate(effectivePhysicalRegEnd)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                    <span className="text-slate-500 dark:text-zinc-400">Registration Closes</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{formatDate(event.RegistrationEnd)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
                   <span className="text-slate-500 dark:text-zinc-400">Hackathon Dates</span>
                   <span className="font-bold text-slate-900 dark:text-white">{formatDate(event.StartDate)}</span>
@@ -1093,70 +1354,152 @@ function EventDetails() {
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">{event.HackathonMode || 'Online & Campus'}</span>
                 </div>
               </div>
-              <div className="space-y-2.5 pt-2">
-                {alreadyRegistered ? (
-                  <div className="w-full inline-flex flex-col items-center justify-center gap-1.5 py-3.5 px-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-sm text-center shadow-sm">
-                    <div className="inline-flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                      <span>Already Registered</span>
-                    </div>
-                    {registeredTeam?.TeamName && (
-                      <span className="text-xs font-medium text-slate-600 dark:text-zinc-400">
-                        Team: {registeredTeam.TeamName} {registeredTeam.ParticipationMode ? `(${registeredTeam.ParticipationMode})` : ''}
-                      </span>
-                    )}
-                  </div>
-                ) : isRegistrationClosed ? (
-                  <button disabled className="w-full py-3.5 px-6 rounded-2xl bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-xs cursor-not-allowed">
-                    Registration Concluded
-                  </button>
-                ) : (
-                  (() => {
-                    const modes = getAvailableModes(event?.HackathonMode);
-                    if (modes.length > 1) {
-                      return (
-                        <div className="space-y-2.5">
-                          <button
-                            type="button"
-                            onClick={() => handleRegisterClick('Virtual')}
-                            className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                          >
-                            <Globe className="h-4 w-4" />
-                            <span>Register for Virtual Hackathon</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleRegisterClick('Physical')}
-                            className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-600/20 hover:shadow-amber-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                          >
-                            <MapPin className="h-4 w-4" />
-                            <span>Register for Physical Hackathon</span>
-                          </button>
+              <div className="space-y-3 pt-2">
+                {(() => {
+                  const modes = getAvailableModes(event?.HackathonMode);
+                  if (modes.length > 1) {
+                    const hasVirtual = Boolean(virtualRegistration);
+                    const hasPhysical = Boolean(physicalRegistration);
+
+                    return (
+                      <div className="space-y-3">
+                        {/* Virtual Track Card */}
+                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 space-y-2">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                              <Globe className="h-3.5 w-3.5" /> Virtual Track
+                            </span>
+                            {hasVirtual && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+                                Registered
+                              </span>
+                            )}
+                          </div>
+
+                          {hasVirtual ? (
+                            event?.VirtualStatus === 'LIVE' ? (
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/user/events/${id}/virtual`)}
+                                className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/30 hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer animate-pulse"
+                              >
+                                <Video className="h-3.5 w-3.5 fill-current" />
+                                <span>Open Virtual Event Page</span>
+                                <ChevronRight className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <div className="text-[11px] text-slate-600 dark:text-zinc-400 font-medium">
+                                Team: <strong className="text-slate-800 dark:text-zinc-200">{virtualRegistration.TeamName}</strong>
+                              </div>
+                            )
+                          ) : isVirtualRegistrationClosed ? (
+                            <div className="text-[11px] text-slate-400 text-center py-1">Registrations Closed</div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleRegisterClick('Virtual')}
+                              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-sm hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
+                            >
+                              <Globe className="h-3.5 w-3.5" />
+                              <span>Register for Virtual Track</span>
+                            </button>
+                          )}
                         </div>
+
+                        {/* Physical Track Card */}
+                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 space-y-2">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                              <MapPin className="h-3.5 w-3.5" /> Physical Track
+                            </span>
+                            {hasPhysical && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold">
+                                Registered
+                              </span>
+                            )}
+                          </div>
+
+                          {hasPhysical ? (
+                            <div className="text-[11px] text-slate-600 dark:text-zinc-400 font-medium">
+                              Team: <strong className="text-slate-800 dark:text-zinc-200">{physicalRegistration.TeamName}</strong>
+                            </div>
+                          ) : isPhysicalRegistrationClosed ? (
+                            <div className="text-[11px] text-slate-400 text-center py-1">Registrations Closed</div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleRegisterClick('Physical')}
+                              className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs tracking-wide shadow-sm hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer"
+                            >
+                              <MapPin className="h-3.5 w-3.5" />
+                              <span>Register for Physical Track</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Single track
+                  const singleMode = modes[0] || 'Virtual';
+                  const isPhysical = singleMode === 'Physical';
+                  const hasSingleReg = userEventRegistrations.length > 0;
+
+                  if (hasSingleReg) {
+                    if (singleMode === 'Virtual' && event?.VirtualStatus === 'LIVE') {
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/user/events/${id}/virtual`)}
+                          className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-sm tracking-wide shadow-lg shadow-emerald-600/30 hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer animate-pulse"
+                        >
+                          <Video className="h-4 w-4 fill-current" />
+                          <span>Open Virtual Event Page</span>
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
                       );
                     }
-                    const singleMode = modes[0] || 'Virtual';
-                    const isPhysical = singleMode === 'Physical';
                     return (
-                      <button
-                        type="button"
-                        onClick={() => handleRegisterClick(singleMode)}
-                        className={`w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl text-white font-bold text-xs tracking-wide shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 ${
-                          isPhysical
-                            ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/30'
-                            : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/30'
-                        }`}
-                      >
-                        {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-                        <span>Register for {singleMode} Hackathon</span>
-                        <ChevronRight className="h-4 w-4" />
+                      <div className="w-full inline-flex flex-col items-center justify-center gap-1.5 py-3.5 px-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold text-sm text-center shadow-sm">
+                        <div className="inline-flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Already Registered</span>
+                        </div>
+                        {userEventRegistrations[0]?.TeamName && (
+                          <span className="text-xs font-medium text-slate-600 dark:text-zinc-400">
+                            Team: {userEventRegistrations[0].TeamName}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  if (isRegistrationClosed) {
+                    return (
+                      <button disabled className="w-full py-3.5 px-6 rounded-2xl bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-xs cursor-not-allowed">
+                        Registration Concluded
                       </button>
                     );
-                  })()
-                )}
+                  }
+
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => handleRegisterClick(singleMode)}
+                      className={`w-full inline-flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl text-white font-bold text-xs tracking-wide shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer ${
+                        isPhysical
+                          ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/20 hover:shadow-amber-600/40'
+                          : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/20 hover:shadow-emerald-600/40'
+                      }`}
+                    >
+                      {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
+                      <span>Register for {singleMode} Hackathon</span>
+                    </button>
+                  );
+                })()}
                 <p className="text-[11px] text-center text-slate-500 dark:text-zinc-400">
-                  {alreadyRegistered
-                    ? 'A participant can only register once per event.'
+                  {userEventRegistrations.length > 0
+                    ? 'Registration confirmed for your team.'
                     : 'Free student entry. All team members must be registered EMS users.'}
                 </p>
               </div>

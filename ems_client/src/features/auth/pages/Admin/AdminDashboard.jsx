@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
     Users,
@@ -21,7 +22,8 @@ import {
     Building2,
     Layers,
     Save,
-    Edit3
+    Edit3,
+    Radio
 } from "lucide-react";
 
 function formatDate(date) {
@@ -510,6 +512,14 @@ function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                        to="/admin/virtual-event"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-teal-600/30 bg-teal-50 dark:bg-teal-950/40 px-4 py-2.5 text-sm font-medium text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition shadow-sm"
+                    >
+                        <Radio className="h-4 w-4 text-teal-600 dark:text-teal-400 animate-pulse" />
+                        Virtual Event Control
+                    </Link>
+
                     <button
                         type="button"
                         onClick={openGuidelinesModal}

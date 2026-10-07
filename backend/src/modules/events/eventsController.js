@@ -333,6 +333,65 @@ const updateEventGuidelines = (req, res) => {
     });
 };
 
+const updateVirtualStatus = (req, res) => {
+    const { id } = req.params;
+    const { VirtualStatus } = req.body;
+
+    const validStatuses = ['NOT_STARTED', 'LIVE', 'COMPLETED'];
+    if (!validStatuses.includes(VirtualStatus)) {
+        return res.status(400).json({ message: 'Invalid VirtualStatus' });
+    }
+
+    eventsService.updateVirtualEventStatus(id, VirtualStatus, (err, updated) => {
+        if (err) {
+            return res.status(500).json({
+                message: 'Failed to update virtual event status',
+                error: err.message
+            });
+        }
+        return res.status(200).json({
+            message: 'Virtual event status updated successfully',
+            event: updated
+        });
+    });
+};
+
+const updateVirtualMeetUrl = (req, res) => {
+    const { id } = req.params;
+    const { VirtualMeetUrl } = req.body;
+
+    eventsService.updateVirtualMeetUrl(id, VirtualMeetUrl || '', (err, updated) => {
+        if (err) {
+            return res.status(500).json({
+                message: 'Failed to update virtual meet url',
+                error: err.message
+            });
+        }
+        return res.status(200).json({
+            message: 'Virtual meet url updated successfully',
+            event: updated
+        });
+    });
+};
+
+const updateEventSettings = (req, res) => {
+    const { id } = req.params;
+    const settings = req.body;
+
+    eventsService.updateEventSettings(id, settings, (err, updated) => {
+        if (err) {
+            return res.status(500).json({
+                message: 'Failed to update event settings',
+                error: err.message
+            });
+        }
+        return res.status(200).json({
+            message: 'Event settings updated successfully',
+            event: updated
+        });
+    });
+};
+
 module.exports = {
     createEvent,
     getAllEvents,
@@ -340,5 +399,8 @@ module.exports = {
     getEventCount,
     updateEvent,
     deleteEvent,
-    updateEventGuidelines
+    updateEventGuidelines,
+    updateVirtualStatus,
+    updateVirtualMeetUrl,
+    updateEventSettings
 };

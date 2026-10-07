@@ -384,6 +384,7 @@ function PublicEventDetails() {
   const [error, setError] = useState(null);
 
   const [activeTrackTab, setActiveTrackTab] = useState('physical');
+  const [activeCountdownTrack, setActiveCountdownTrack] = useState('Virtual');
   const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
@@ -449,6 +450,19 @@ function PublicEventDetails() {
   };
 
   const handleRegisterClick = (mode = 'Virtual') => {
+    if (mode === 'Virtual' && isVirtualPaused) {
+      alert('Registration for the Virtual track is currently paused by event organizers.');
+      return;
+    }
+    if (mode === 'Physical' && isPhysicalPaused) {
+      alert('Registration for the Physical track is currently paused by event organizers.');
+      return;
+    }
+    if (isGlobalPaused) {
+      alert('Registration for this event is currently paused by event organizers.');
+      return;
+    }
+
     const rawUser = localStorage.getItem('user');
     if (rawUser) {
       try {
@@ -510,16 +524,59 @@ function PublicEventDetails() {
     return url;
   };
 
+  const effectiveVirtualRegEnd = useMemo(() => {
+    return event?.VirtualRegistrationEnd || event?.RegistrationEnd;
+  }, [event]);
+
+  const effectivePhysicalRegEnd = useMemo(() => {
+    return event?.PhysicalRegistrationEnd || event?.RegistrationEnd;
+  }, [event]);
+
+  const isVirtualPaused = useMemo(() => {
+    return event?.VirtualRegistrationOpen === 0 || event?.VirtualRegistrationOpen === false;
+  }, [event]);
+
+  const isPhysicalPaused = useMemo(() => {
+    return event?.PhysicalRegistrationOpen === 0 || event?.PhysicalRegistrationOpen === false;
+  }, [event]);
+
+  const isGlobalPaused = useMemo(() => {
+    return event?.RegistrationOpen === 0 || event?.RegistrationOpen === false;
+  }, [event]);
+
+  const isVirtualRegistrationClosed = useMemo(() => {
+    if (!event) return false;
+    const s = (event.EventStatus || '').toLowerCase();
+    if (s === 'completed') return true;
+    if (isGlobalPaused || isVirtualPaused) return true;
+    if (effectiveVirtualRegEnd) return new Date().getTime() > new Date(effectiveVirtualRegEnd).getTime();
+    return false;
+  }, [event, effectiveVirtualRegEnd, isGlobalPaused, isVirtualPaused]);
+
+  const isPhysicalRegistrationClosed = useMemo(() => {
+    if (!event) return false;
+    const s = (event.EventStatus || '').toLowerCase();
+    if (s === 'completed') return true;
+    if (isGlobalPaused || isPhysicalPaused) return true;
+    if (effectivePhysicalRegEnd) return new Date().getTime() > new Date(effectivePhysicalRegEnd).getTime();
+    return false;
+  }, [event, effectivePhysicalRegEnd, isGlobalPaused, isPhysicalPaused]);
+
   const isRegistrationClosed = useMemo(() => {
     if (!event) return false;
     const s = (event.EventStatus || '').toLowerCase();
     if (s === 'completed') return true;
+    if (isGlobalPaused) return true;
+    const modes = getAvailableModes(event.HackathonMode);
+    if (modes.length > 1) {
+      return isVirtualRegistrationClosed && isPhysicalRegistrationClosed;
+    }
     if (event.RegistrationEnd) {
       const end = new Date(event.RegistrationEnd).getTime();
       return new Date().getTime() > end;
     }
     return false;
-  }, [event]);
+  }, [event, isVirtualRegistrationClosed, isPhysicalRegistrationClosed, isGlobalPaused]);
 
   const splitFacilities = (text) => {
     if (!text) return [];
@@ -853,29 +910,108 @@ function PublicEventDetails() {
 
           <div className="px-6 py-5 sm:px-8 lg:px-10 bg-slate-50/80 dark:bg-zinc-900/90 backdrop-blur-md border-t border-slate-200 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-5">
             <div className="flex flex-col sm:flex-row items-center sm:items-start md:items-center gap-4 w-full md:w-auto">
-              <div className="flex flex-col items-center sm:items-start gap-2.5">
-                <div className="flex items-center gap-2">
-                  {!isRegistrationClosed ? (
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
-                  ) : (
-                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
-                  )}
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                    {isRegistrationClosed ? 'Registration Status' : 'Registration Window Closes In'}
-                  </span>
-                </div>
+              {(() => {
+                const modes = getAvailableModes(event?.HackathonMode);
+                if (modes.length > 1) {
+                  const isCurTrackVirtual = activeCountdownTrack === 'Virtual';
+                  const curTrackEnd = isCurTrackVirtual ? effectiveVirtualRegEnd : effectivePhysicalRegEnd;
+                  const isCurTrackClosed = isCurTrackVirtual ? isVirtualRegistrationClosed : isPhysicalRegistrationClosed;
+                  const isCurTrackPaused = isCurTrackVirtual ? isVirtualPaused : isPhysicalPaused;
 
-                {isRegistrationClosed ? (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold">
-                    Registration has ended
+                  return (
+                    <div className="flex flex-col items-center sm:items-start gap-2.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                          Registration Window:
+                        </span>
+                        <div className="inline-flex items-center p-1 rounded-xl bg-slate-200/70 dark:bg-zinc-800/80 border border-slate-300/40 dark:border-zinc-700/50">
+                          <button
+                            type="button"
+                            onClick={() => setActiveCountdownTrack('Virtual')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                              isCurTrackVirtual
+                                ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            <span>🌐 Virtual Track</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                              isVirtualPaused
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
+                                : isVirtualRegistrationClosed
+                                ? 'bg-rose-500/10 text-rose-500 font-bold'
+                                : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                            }`}>
+                              {isVirtualPaused ? 'Paused' : isVirtualRegistrationClosed ? 'Closed' : formatDate(effectiveVirtualRegEnd)}
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setActiveCountdownTrack('Physical')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                              !isCurTrackVirtual
+                                ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-sm'
+                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            <span>📍 Physical Track</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
+                              isPhysicalPaused
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
+                                : isPhysicalRegistrationClosed
+                                ? 'bg-rose-500/10 text-rose-500 font-bold'
+                                : 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
+                            }`}>
+                              {isPhysicalPaused ? 'Paused' : isPhysicalRegistrationClosed ? 'Closed' : formatDate(effectivePhysicalRegEnd)}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {isCurTrackClosed ? (
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold">
+                          {isCurTrackPaused
+                            ? `${activeCountdownTrack} Registration is paused by organizers`
+                            : `${activeCountdownTrack} Registration has ended (${formatDate(curTrackEnd)})`}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center sm:items-start gap-1">
+                          <FlipCountdown key={activeCountdownTrack} targetDate={curTrackEnd || event.StartDate} />
+                          <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-semibold">
+                            {activeCountdownTrack} Track Closes on: <strong className={isCurTrackVirtual ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>{formatDate(curTrackEnd)}</strong>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="flex flex-col items-center sm:items-start gap-2.5">
+                    <div className="flex items-center gap-2">
+                      {!isRegistrationClosed ? (
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                      ) : (
+                        <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+                      )}
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                        {isRegistrationClosed ? 'Registration Status' : 'Registration Window Closes In'}
+                      </span>
+                    </div>
+
+                    {isRegistrationClosed ? (
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold">
+                        Registration has ended
+                      </div>
+                    ) : (
+                      <FlipCountdown targetDate={event.RegistrationEnd || event.StartDate} />
+                    )}
                   </div>
-                ) : (
-                  <FlipCountdown targetDate={event.RegistrationEnd || event.StartDate} />
-                )}
-              </div>
+                );
+              })()}
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
@@ -891,20 +1027,33 @@ function PublicEventDetails() {
                 if (modes.length > 1) {
                   return (
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
-                      <button
-                        onClick={() => handleRegisterClick('Virtual')}
-                        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                      >
-                        <Globe className="h-4 w-4" />
-                        <span>Register for Virtual Hackathon</span>
-                      </button>
-                      <button
-                        onClick={() => handleRegisterClick('Physical')}
-                        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-600/30 hover:shadow-amber-600/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                      >
-                        <MapPin className="h-4 w-4" />
-                        <span>Register for Physical Hackathon</span>
-                      </button>
+                      {isVirtualRegistrationClosed ? (
+                        <span className="text-xs text-slate-400 font-medium px-4 py-3 rounded-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 text-center">
+                          {isVirtualPaused ? 'Virtual Paused' : 'Virtual Ended'}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleRegisterClick('Virtual')}
+                          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                        >
+                          <Globe className="h-4 w-4" />
+                          <span>Register for Virtual Hackathon</span>
+                        </button>
+                      )}
+
+                      {isPhysicalRegistrationClosed ? (
+                        <span className="text-xs text-slate-400 font-medium px-4 py-3 rounded-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 text-center">
+                          {isPhysicalPaused ? 'Physical Paused' : 'Physical Ended'}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleRegisterClick('Physical')}
+                          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-600/30 hover:shadow-amber-600/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                        >
+                          <MapPin className="h-4 w-4" />
+                          <span>Register for Physical Hackathon</span>
+                        </button>
+                      )}
                     </div>
                   );
                 }
@@ -1385,10 +1534,23 @@ function PublicEventDetails() {
                   <span className="font-bold text-slate-900 dark:text-white">{formatDate(event.RegistrationStart)}</span>
                 </div>
 
-                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                  <span className="text-slate-500 dark:text-zinc-400">Registration Closes</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{formatDate(event.RegistrationEnd)}</span>
-                </div>
+                {getAvailableModes(event?.HackathonMode).length > 1 ? (
+                  <>
+                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                      <span className="text-slate-500 dark:text-zinc-400">Virtual Reg Closes</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatDate(effectiveVirtualRegEnd)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                      <span className="text-slate-500 dark:text-zinc-400">Physical Reg Closes</span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">{formatDate(effectivePhysicalRegEnd)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                    <span className="text-slate-500 dark:text-zinc-400">Registration Closes</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{formatDate(event.RegistrationEnd)}</span>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
                   <span className="text-slate-500 dark:text-zinc-400">Hackathon Dates</span>
@@ -1414,22 +1576,35 @@ function PublicEventDetails() {
                   if (modes.length > 1) {
                     return (
                       <div className="space-y-2.5">
-                        <button
-                          type="button"
-                          onClick={() => handleRegisterClick('Virtual')}
-                          className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                        >
-                          <Globe className="h-4 w-4" />
-                          <span>Register for Virtual Hackathon</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRegisterClick('Physical')}
-                          className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-600/20 hover:shadow-amber-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                        >
-                          <MapPin className="h-4 w-4" />
-                          <span>Register for Physical Hackathon</span>
-                        </button>
+                        {isVirtualRegistrationClosed ? (
+                          <span className="block text-center text-xs text-slate-400 font-medium py-3 px-4 rounded-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800">
+                            Virtual Registrations Ended
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleRegisterClick('Virtual')}
+                            className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                          >
+                            <Globe className="h-4 w-4" />
+                            <span>Register for Virtual Hackathon</span>
+                          </button>
+                        )}
+
+                        {isPhysicalRegistrationClosed ? (
+                          <span className="block text-center text-xs text-slate-400 font-medium py-3 px-4 rounded-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800">
+                            Physical Registrations Ended
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleRegisterClick('Physical')}
+                            className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-600/20 hover:shadow-amber-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                          >
+                            <MapPin className="h-4 w-4" />
+                            <span>Register for Physical Hackathon</span>
+                          </button>
+                        )}
                       </div>
                     );
                   }

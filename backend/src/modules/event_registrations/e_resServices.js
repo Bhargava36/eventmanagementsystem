@@ -43,18 +43,41 @@ const createEventRegistration = ( EventId, TeamId, ParticipationMode, Status, Pr
             return callback(error, null);
         }
 
-        const query = `
-            INSERT INTO event_registrations
-            ( EventId, TeamId, ParticipationMode, Status, ProblemStatementId ) VALUES (?, ?, ?, ?, ?)`;
-
-        const values = [ EventId, TeamId, ParticipationMode, Status, ProblemStatementId];
-
-        db.query(query, values, (err, result) => {
-            if (err) {
-                return callback(err, null);
+        // Validate event registration pause status
+        const eventQuery = `SELECT EventName, VirtualRegistrationOpen, PhysicalRegistrationOpen, RegistrationOpen FROM events WHERE Id = ?`;
+        db.query(eventQuery, [EventId], (evErr, evRows) => {
+            if (!evErr && evRows && evRows.length > 0) {
+                const ev = evRows[0];
+                if (ParticipationMode === 'Virtual' && (ev.VirtualRegistrationOpen === 0 || ev.VirtualRegistrationOpen === false)) {
+                    const error = new Error(`Registration for the Virtual track is currently paused by the event admin.`);
+                    error.status = 403;
+                    return callback(error, null);
+                }
+                if (ParticipationMode === 'Physical' && (ev.PhysicalRegistrationOpen === 0 || ev.PhysicalRegistrationOpen === false)) {
+                    const error = new Error(`Registration for the Physical track is currently paused by the event admin.`);
+                    error.status = 403;
+                    return callback(error, null);
+                }
+                if (ev.RegistrationOpen === 0 || ev.RegistrationOpen === false) {
+                    const error = new Error(`Registration for this event is currently paused by the event admin.`);
+                    error.status = 403;
+                    return callback(error, null);
+                }
             }
 
-            return callback(null, result);
+            const query = `
+                INSERT INTO event_registrations
+                ( EventId, TeamId, ParticipationMode, Status, ProblemStatementId ) VALUES (?, ?, ?, ?, ?)`;
+
+            const values = [ EventId, TeamId, ParticipationMode, Status, ProblemStatementId];
+
+            db.query(query, values, (err, result) => {
+                if (err) {
+                    return callback(err, null);
+                }
+
+                return callback(null, result);
+            });
         });
     });
 };

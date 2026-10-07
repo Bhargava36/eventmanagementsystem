@@ -18,12 +18,15 @@ import TeamDetails from '../features/auth/pages/Admin/TeamDetails';
 import AdminDashboard from '../features/auth/pages/Admin/AdminDashboard';
 import AdminProfile from '../features/auth/pages/Admin/AdminProfile';
 import CoreTeam from '../features/auth/pages/Admin/CoreTeam';
+import AdminVirtualEvent from '../features/auth/pages/Admin/AdminVirtualEvent';
+import AdminEventSettings from '../features/auth/pages/Admin/AdminEventSettings';
 import UserSidebar from '../components/Organisms/UserSidebar';
 import UserRegister from '../features/auth/pages/Users/UserRegister';
 import UserLogin from '../features/auth/pages/Users/UserLogin';
 import UserDashboard from '../features/auth/pages/Users/UserDashboard';
 import ProblemStatementsPage from '../features/auth/pages/Users/ProblemStatements';
 import EventRedirectPage from '../features/auth/pages/Users/EventRedirectPage';
+import ParticipantVirtualEventPage from '../features/auth/pages/Users/ParticipantVirtualEventPage';
 import MyTeams from '../features/auth/pages/Users/MyTeams';
 import TeamInfo from '../features/auth/pages/Users/TeamInfo';
 import UserProfile from '../features/auth/pages/Users/UserProfile';
@@ -75,9 +78,11 @@ function App() {
           <Route path="/admin" element={<AdminSidebar />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="virtual-event" element={<AdminVirtualEvent />} />
             <Route path="core-team" element={<CoreTeam />} />
             <Route path="teams" element={<TeamsDashboard />} />
             <Route path="teams/:id" element={<TeamDetails />} />
+            <Route path="settings" element={<AdminEventSettings />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="profile/:id" element={<AdminProfile />} />
           </Route>
@@ -90,12 +95,15 @@ function App() {
             <Route path="teams" element={<MyTeams />} />
             <Route path="teamInfo/:teamId" element={<TeamInfo />} />
             <Route path="events/:id" element={<EventRedirectPage />} />
+            <Route path="events/:id/virtual" element={<ParticipantVirtualEventPage />} />
             <Route path="competitions" element={<UserCompetitions />} />
             <Route path="problem-statements" element={<ProblemStatementsPage />} />
             <Route path="profile" element={<UserProfile />} />
             <Route path="profile/:id" element={<UserProfile />} />
           </Route>
         </Route>
+
+        <Route path="/events/:id/virtual" element={<ParticipantVirtualEventPage />} />
 
 
           
