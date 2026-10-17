@@ -16,6 +16,7 @@ import {
   CircleX,
   Radio,
   Sliders,
+  Atom,
 } from 'lucide-react';
 
 const logoElement = (
@@ -71,6 +72,7 @@ const SidebarContent = ({
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', badge: null, end: true },
     { name: 'Virtual Event', icon: Radio, path: '/admin/virtual-event', badge: null, end: false },
+    { name: 'Physical Event', icon: Atom, path: '/admin/physical-event', badge: null, end: false },
     { name: 'Event Settings', icon: Sliders, path: '/admin/settings', badge: null, end: false },
     { name: 'Core Team', icon: UsersRound, path: '/admin/core-team', badge: null, end: false },
     { name: 'Registered Teams', icon: Users, path: '/admin/teams', badge: null, end: false },

@@ -36,6 +36,7 @@ import PublicEventDetails from '../features/public/pages/PublicEventDetails';
 import NotFound from '../features/public/pages/NotFound';
 import ProtectedRoute from '../components/Organisms/ProtectedRoute';
 import Unauthorized from '../components/ui/Unauthorized';
+import AdminPhysicalEvent from '../features/auth/pages/Admin/AdminPhysicalEvent';
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="virtual-event" element={<AdminVirtualEvent />} />
+            <Route path="physical-event" element={<AdminPhysicalEvent />} />
             <Route path="core-team" element={<CoreTeam />} />
             <Route path="teams" element={<TeamsDashboard />} />
             <Route path="teams/:id" element={<TeamDetails />} />
