@@ -13,7 +13,6 @@ import {
   ArrowRight,
   List,
   Search,
-  MoreVertical,
   CheckCircle2,
   Clock,
   RefreshCw
@@ -517,9 +516,9 @@ function AdminPhysicalEvent() {
                           <button
                             type="button"
                             title="Team actions"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 dark:hover:text-slate-300"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-slate-400 dark:hover:border-emerald-800 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
                           >
-                            <MoreVertical className="h-5 w-5" />
+                            <Eye className="h-4 w-4" />
                           </button>
                         </td>
                       </tr>
