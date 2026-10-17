@@ -356,22 +356,35 @@ const getTeamInfo = (teamId, userId, callback) => {
             return callback(null, null);
         }
 
-        const teamQuery = ` SELECT t.Id AS TeamId, t.TeamName, t.TeamSize, t.College, t.State, t.TeamLeadUserId, e.Id AS EventId, e.EventName, e.Description AS EventDescription, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus FROM registered_teams t INNER JOIN events e ON t.EventId = e.Id WHERE t.Id = ? LIMIT 1 `;
+        const teamQuery = `SELECT t.Id AS TeamId, t.TeamName, t.TeamSize, t.College, t.State, t.TeamLeadUserId, e.Id AS EventId, e.EventName, e.Posters, e.Description AS EventDescription, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus FROM registered_teams t INNER JOIN events e ON t.EventId = e.Id WHERE t.Id = ? LIMIT 1`;
         db.query(teamQuery, [teamId], (err, result) => {
             if (err) {
                 return callback(err, null);
-
             }
             if (result.length === 0) {
                 return callback(null, null);
             }
 
-            const memberQuery = ` SELECT tm.UserId, tm.Role, tm.Gender, tm.CreatedAt, u.UserName, u.Email, u.College, u.State FROM registered_team_members tm INNER JOIN users u ON tm.UserId = u.Id WHERE tm.TeamId = ? ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, u.UserName `;
-            db.query(memberQuery, [teamId], (err, memberResult) => {
-                if (err) { 
-                    return callback(err); 
+            const team = result[0];
+            if (typeof team.Posters === "string") {
+                try {
+                    const parsedPosters = JSON.parse(team.Posters);
+                    team.Posters = Array.isArray(parsedPosters) ? parsedPosters : [parsedPosters];
+                } catch (error) {
+                    team.Posters = team.Posters ? [team.Posters] : [];
                 }
-                callback(null, { team: result[0], members: memberResult });
+            } else if (!Array.isArray(team.Posters)) {
+                team.Posters = [];
+            }
+            const memberQuery = `SELECT tm.UserId, tm.Role, tm.Gender, tm.CreatedAt, u.UserName, u.Email, u.College, u.State FROM registered_team_members tm INNER JOIN users u ON tm.UserId = u.Id WHERE tm.TeamId = ? ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, u.UserName`;
+            db.query(memberQuery, [teamId], (err, memberResult) => {
+                if (err) {
+                    return callback(err, null);
+                }
+                return callback(null, {
+                    team: team,
+                    members: memberResult
+                });
             });
         });
     });

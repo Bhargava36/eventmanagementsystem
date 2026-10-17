@@ -202,30 +202,28 @@ const getTeamInfo = (req, res) => {
         });
     }
 
-    teamsService.getTeamInfo( teamId, userId, (err, result) => {
+    teamsService.getTeamInfo(teamId, userId, (err, result) => {
+        if (err) {
+            console.error('Get team info error:', err);
 
-            if (err) {
-                console.error('Get team info error:', err);
-
-                return res.status(500).json({
-                    message: 'Failed to fetch team information',
-                    error: err.message
-                });
-            }
-
-            if (!result.team) {
-                return res.status(404).json({
-                    message: 'Team not found or user is not a member of this team'
-                });
-            }
-
-            return res.status(200).json({
-                message: 'Team information fetched successfully',
-                team: result.team,
-                members: result.members
+            return res.status(500).json({
+                message: 'Failed to fetch team information',
+                error: err.message
             });
         }
-    );
+
+        if (!result || !result.team) {
+            return res.status(404).json({
+                message: 'Team not found or user is not a member of this team'
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Team information fetched successfully',
+            team: result.team,
+            members: result.members
+        });
+    });
 };
 
 const updateTeams = (req, res) => {
