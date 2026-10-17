@@ -410,27 +410,22 @@ function TeamInfo() {
                     <div className="border border-emerald-700/20 rounded-xl bg-white p-4 sm:p-5 dark:border-emerald-500/30 dark:bg-gray-950 shadow-sm">
                         <div 
                             onClick={() => team.EventId && navigate(`/user/events/${team.EventId}`)}
-                            className={`mb-4 flex justify-between items-center bg-blue-950 rounded-xl p-3.5 gap-3 ${team.EventId ? 'cursor-pointer hover:bg-blue-900 transition-all group' : ''}`}
+                            className={`mb-4 flex justify-between items-center ${team.EventId ? 'cursor-pointer' : ''}`}
                             title={team.EventId ? "Click to view event details" : undefined}
                         >
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                    <h2 className="text-white font-bold text-base sm:text-lg font-sans break-words group-hover:text-emerald-300 transition-colors">
-                                        {team.EventName}
-                                    </h2>
-                                    {team.EventId && (
-                                        <ExternalLink className="w-3.5 h-3.5 text-slate-300 group-hover:text-emerald-300 shrink-0 transition-colors" />
-                                    )}
+                            {team.Posters && team.Posters.length > 0 ? (
+                                <img
+                                    src={team.Posters[0]}
+                                    alt={team.EventName || "Event Poster"}
+                                    className="w-full h-60 rounded-lg object-cover border border-emerald-500/20"
+                                />
+                            ) : (
+                                <div className="bg-blue-800 rounded-lg flex items-center justify-center p-4">
+                                    <span className="text-sm text-blue-200 font-semibold">
+                                        No Poster Available
+                                    </span>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-xs text-slate-300 mt-1">
-                                    <span>Ideas</span>
-                                    <span>•</span>
-                                    <span>Innovation</span>
-                                    <span>•</span>
-                                    <span>Impact</span>
-                                </div>
-                            </div>
-                            <Lightbulb className="text-lime-400 w-7 h-7 sm:w-8 sm:h-8 shrink-0 mr-1 group-hover:scale-105 transition-transform" />
+                            )}
                         </div>
 
                         <div>
