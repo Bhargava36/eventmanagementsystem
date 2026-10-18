@@ -37,6 +37,8 @@ import NotFound from '../features/public/pages/NotFound';
 import ProtectedRoute from '../components/Organisms/ProtectedRoute';
 import Unauthorized from '../components/ui/Unauthorized';
 import AdminPhysicalEvent from '../features/auth/pages/Admin/AdminPhysicalEvent';
+import AccomodationRedirectPage from '../features/auth/pages/Admin/AccomodationRedirectPage';
+
 
 function App() {
   return (
@@ -87,6 +89,7 @@ function App() {
             <Route path="settings" element={<AdminEventSettings />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="profile/:id" element={<AdminProfile />} />
+            <Route path="accomodation" element={<AccomodationRedirectPage />} />
           </Route>
         </Route>
 

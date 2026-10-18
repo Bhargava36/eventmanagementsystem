@@ -1,5 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
+import {useNavigate} from 'react-router-dom';
 import {
   Tent,
   CalendarDays,
@@ -17,8 +17,11 @@ import {
   Clock,
   RefreshCw
 } from 'lucide-react';
-
 function AdminPhysicalEvent() {
+    const navigate = useNavigate();
+    const handleAccomodationRedirect = () => {
+        navigate('/admin/accomodation');
+    };  
   const admin = JSON.parse(localStorage.getItem('admin'));
   const eventId = admin?.EventId;
 
@@ -234,7 +237,9 @@ function AdminPhysicalEvent() {
               <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 px-3 py-2.5 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-500/10">
                 <Eye className="h-4 w-4" /> View Details
               </button>
-              <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-600">
+              <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-600 cursor-pointer"
+              onClick={handleAccomodationRedirect}
+              >
                 Manage Rooms <ArrowRight className="h-4 w-4" />
               </button>
             </div>
