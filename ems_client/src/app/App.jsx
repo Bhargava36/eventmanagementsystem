@@ -38,6 +38,8 @@ import ProtectedRoute from '../components/Organisms/ProtectedRoute';
 import Unauthorized from '../components/ui/Unauthorized';
 import AdminPhysicalEvent from '../features/auth/pages/Admin/AdminPhysicalEvent';
 import AccomodationRedirectPage from '../features/auth/pages/Admin/AccomodationRedirectPage';
+import FoodRedirectionPage from '../features/auth/pages/Admin/FoodRedirectionPage';
+import IdRedirectionPage from '../features/auth/pages/Admin/IdRedirectionPage';
 
 
 function App() {
@@ -90,6 +92,8 @@ function App() {
             <Route path="profile" element={<AdminProfile />} />
             <Route path="profile/:id" element={<AdminProfile />} />
             <Route path="accomodation" element={<AccomodationRedirectPage />} />
+            <Route path="food" element={<FoodRedirectionPage />} />
+            <Route path="id-card" element={<IdRedirectionPage />} />
           </Route>
         </Route>
 

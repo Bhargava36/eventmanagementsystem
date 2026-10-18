@@ -22,6 +22,12 @@ function AdminPhysicalEvent() {
     const handleAccomodationRedirect = () => {
         navigate('/admin/accomodation');
     };  
+    const handleFoodRedirect = () => {
+        navigate('/admin/food');
+    };
+    const handleIdRedirect = () => {
+        navigate('/admin/id-card');
+    };
   const admin = JSON.parse(localStorage.getItem('admin'));
   const eventId = admin?.EventId;
 
@@ -219,30 +225,25 @@ function AdminPhysicalEvent() {
             </p>
 
             <div className="mb-8 grid grid-cols-3 gap-2">
-              <div>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Total Rooms</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-2 py-3 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Total Rooms</p>
                 <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">50</p>
               </div>
-              <div>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Allocated</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-2 py-3 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Allocated</p>
                 <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">42</p>
               </div>
-              <div>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Available</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-2 py-3 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Available</p>
                 <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">8</p>
               </div>
             </div>
-
-            <div className="mt-auto grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
-              <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 px-3 py-2.5 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-500/10">
-                <Eye className="h-4 w-4" /> View Details
-              </button>
+             
               <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-600 cursor-pointer"
               onClick={handleAccomodationRedirect}
               >
                 Manage Rooms <ArrowRight className="h-4 w-4" />
               </button>
-            </div>
           </div>
 
           <div className="flex h-full min-w-0 flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
@@ -260,28 +261,25 @@ function AdminPhysicalEvent() {
             </p>
 
             <div className="mb-8 grid grid-cols-3 gap-2">
-              <div>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Total Meals</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-2 py-3 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Total Meals</p>
                 <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">1440</p>
               </div>
-              <div>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Served</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-2 py-3 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Served</p>
                 <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">1120</p>
               </div>
-              <div>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Pending</p>
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-2 py-3 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Pending</p>
                 <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">320</p>
               </div>
             </div>
 
-            <div className="mt-auto grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
-              <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 px-3 py-2.5 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-500/10">
-                <List className="h-4 w-4" /> View Menu
-              </button>
-              <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-600">
+              <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-600 cursor-pointer"
+              onClick={handleFoodRedirect}
+              >
                 Manage Food <ArrowRight className="h-4 w-4" />
               </button>
-            </div>
           </div>
 
           <div className="flex h-full min-w-0 flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
@@ -299,25 +297,24 @@ function AdminPhysicalEvent() {
             </p>
 
             <div className="mb-8 grid grid-cols-3 gap-2">
-              <div>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Total IDs</p>
+              <div className="flex min-h-[5.5rem] flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/70 px-2 py-3 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Total IDs</p>
                 <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">156</p>
               </div>
-              <div>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Generated</p>
+              <div className="flex min-h-[5.5rem] flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/70 px-2 py-3 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Generated</p>
                 <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">142</p>
               </div>
-              <div>
-                <p className="truncate text-xs text-slate-500 dark:text-slate-400">Pending</p>
+              <div className="flex min-h-[5.5rem] flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/70 px-2 py-3 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Pending</p>
                 <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">14</p>
               </div>
             </div>
 
-            <div className="mt-auto grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
-              <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 px-3 py-2.5 text-xs font-bold text-emerald-700 transition-colors hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-500/10">
-                <Eye className="h-4 w-4" /> Preview IDs
-              </button>
-              <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-600">
+            <div className="mt-auto">
+              <button type="button" className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2.5 text-xs font-bold text-white transition-colors hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-600 cursor-pointer"
+              onClick={handleIdRedirect}
+              >
                 Generate IDs <ArrowRight className="h-4 w-4" />
               </button>
             </div>
