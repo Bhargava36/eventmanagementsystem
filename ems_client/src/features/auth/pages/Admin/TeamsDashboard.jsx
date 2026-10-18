@@ -307,7 +307,7 @@ function TeamsDashboard() {
             </div>
 
             <div className="relative pt-2">
-                <div className="flex items-end gap-1 px-4 sm:px-6 relative z-10 select-none overflow-x-auto no-scrollbar">
+                <div className="flex items-end gap-2 px-4 sm:px-6 relative z-10 -mb-px">
                     {tabs.map((tab) => {
                         const isActive = activeTab === tab.id;
                         const Icon = tab.icon;
@@ -317,60 +317,45 @@ function TeamsDashboard() {
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`group relative inline-flex items-center gap-2.5 px-5 sm:px-7 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer ${
-                                    isActive
-                                        ? 'bg-white dark:bg-gray-950 text-gray-950 dark:text-white rounded-t-2xl border-t border-l border-r border-gray-200 dark:border-gray-800 z-20 -mb-[1px]'
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100/70 dark:hover:bg-gray-900/40 rounded-t-xl mb-0'
-                                }`}
+                                className="relative h-12 px-5 sm:px-7 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-colors duration-200 outline-none cursor-pointer"
                             >
-                                <Icon
-                                    className={`w-4 h-4 transition-colors ${
-                                        isActive
-                                            ? 'text-emerald-600 dark:text-emerald-400'
-                                            : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'
-                                    }`}
-                                />
-                                <span>{tab.label}</span>
-
-                                <span
-                                    className={`ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${
-                                        isActive
-                                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                                            : 'bg-gray-200/70 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                                    }`}
-                                >
-                                    {tab.count}
-                                </span>
-
-                                {isActive && (
-                                    <>
-                                        <svg
-                                            className="absolute -bottom-[1px] -left-4 w-4 h-4 pointer-events-none fill-white dark:fill-gray-950 text-gray-200 dark:text-gray-800"
-                                            viewBox="0 0 16 16"
-                                        >
-                                            <path d="M16 0 A 16 16 0 0 0 0 16 L 16 16 Z" />
-                                            <path
-                                                d="M16 0 A 16 16 0 0 0 0 16"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="1"
-                                            />
-                                        </svg>
-
-                                        <svg
-                                            className="absolute -bottom-[1px] -right-4 w-4 h-4 pointer-events-none fill-white dark:fill-gray-950 text-gray-200 dark:text-gray-800"
-                                            viewBox="0 0 16 16"
-                                        >
-                                            <path d="M0 0 A 16 16 0 0 1 16 16 L 0 16 Z" />
-                                            <path
-                                                d="M0 0 A 16 16 0 0 1 16 16"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="1"
-                                            />
-                                        </svg>
-                                    </>
+                                {isActive ? (
+                                    <motion.div
+                                        layoutId="teamsActiveTabFolder"
+                                        className="absolute inset-0 rounded-t-2xl bg-white dark:bg-gray-950 border-t border-x border-b-0 border-gray-200 dark:border-gray-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                                        transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                                    >
+                                        {/* Seamless bottom mask: completely eliminates any hairline separation line */}
+                                        <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-gray-950 pointer-events-none z-20" />
+                                    </motion.div>
+                                ) : (
+                                    <div className="absolute inset-0 rounded-t-2xl bg-gray-100/80 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 z-0" />
                                 )}
+
+                                <span className={`relative z-20 flex items-center gap-2 transition-colors ${
+                                    isActive
+                                        ? 'text-gray-950 dark:text-white font-bold'
+                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                }`}>
+                                    <Icon
+                                        className={`w-4 h-4 transition-colors ${
+                                            isActive
+                                                ? 'text-emerald-600 dark:text-emerald-400'
+                                                : 'text-gray-400'
+                                        }`}
+                                    />
+                                    <span>{tab.label}</span>
+
+                                    <span
+                                        className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${
+                                            isActive
+                                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                                                : 'bg-gray-200/80 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                        }`}
+                                    >
+                                        {tab.count}
+                                    </span>
+                                </span>
                             </button>
                         );
                     })}

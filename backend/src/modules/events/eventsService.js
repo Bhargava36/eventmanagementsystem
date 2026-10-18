@@ -273,6 +273,8 @@ const updateVirtualMeetUrl = (id, meetUrl, callback) => {
 
 const updateEventSettings = (id, settings, callback) => {
     const allowedKeys = [
+        'Description',
+        'EventName',
         'VirtualRegistrationOpen',
         'PhysicalRegistrationOpen',
         'RegistrationOpen',
@@ -293,8 +295,12 @@ const updateEventSettings = (id, settings, callback) => {
 
     for (const key of allowedKeys) {
         if (settings[key] !== undefined) {
+            let val = settings[key];
+            if ((key.endsWith('Start') || key.endsWith('End')) && (val === '' || val === null)) {
+                val = null;
+            }
             updates.push(`${key} = ?`);
-            values.push(settings[key]);
+            values.push(val);
         }
     }
 
@@ -307,10 +313,25 @@ const updateEventSettings = (id, settings, callback) => {
 
     db.query(query, values, (err) => {
         if (err) return callback(err, null);
-        db.query(`SELECT * FROM events WHERE Id = ?`, [id], (err2, rows) => {
-            if (err2) return callback(err2, null);
-            return callback(null, rows[0]);
-        });
+
+        const returnUpdatedEvent = () => {
+            getEventById(id, (err2, rows) => {
+                if (err2) return callback(err2, null);
+                return callback(null, rows && rows.length > 0 ? rows[0] : null);
+            });
+        };
+
+        if (settings.Description !== undefined) {
+            const descQuery = `INSERT INTO event_descriptions (EventId, Description) VALUES (?, ?) ON DUPLICATE KEY UPDATE Description = VALUES(Description)`;
+            db.query(descQuery, [id, settings.Description || ''], (descErr) => {
+                if (descErr) {
+                    console.error('Error updating event_descriptions in updateEventSettings:', descErr);
+                }
+                returnUpdatedEvent();
+            });
+        } else {
+            returnUpdatedEvent();
+        }
     });
 };
 

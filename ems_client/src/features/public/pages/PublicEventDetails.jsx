@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useTheme from '../../../Hooks/useTheme';
 import FlipCountdown from '../../../components/Molecules/FlipCountdown';
+import TrackTimelineSection from '../../../components/Molecules/TrackTimelineSection';
 import {
   ArrowLeft,
   Calendar,
@@ -32,6 +33,8 @@ import {
   Radio,
   Info
 } from 'lucide-react';
+
+
 
 function PrizePodiumStage({
   firstAmount,
@@ -308,11 +311,6 @@ function PrizePodiumStage({
             <p className="text-[10px] text-white/95 font-medium leading-relaxed max-w-[170px] line-clamp-2">
               {secondDesc}
             </p>
-            {secondTrack && (
-              <span className="mt-auto px-2 py-0.5 rounded text-[9px] font-bold bg-white/20 text-white border border-white/30">
-                {secondTrack} Track
-              </span>
-            )}
           </motion.div>
         </foreignObject>
 
@@ -334,11 +332,6 @@ function PrizePodiumStage({
             <p className="text-xs text-white/95 font-medium leading-relaxed max-w-[210px] line-clamp-3">
               {firstDesc}
             </p>
-            {firstTrack && (
-              <span className="mt-auto px-2.5 py-0.5 rounded text-[10px] font-bold bg-white/20 text-white border border-white/30">
-                {firstTrack} Track
-              </span>
-            )}
           </motion.div>
         </foreignObject>
 
@@ -360,11 +353,6 @@ function PrizePodiumStage({
             <p className="text-[10px] text-white/95 font-medium leading-relaxed max-w-[170px] line-clamp-2">
               {thirdDesc}
             </p>
-            {thirdTrack && (
-              <span className="mt-auto px-2 py-0.5 rounded text-[9px] font-bold bg-white/20 text-white border border-white/30">
-                {thirdTrack} Track
-              </span>
-            )}
           </motion.div>
         </foreignObject>
       </svg>
@@ -380,6 +368,7 @@ function PublicEventDetails() {
   const [event, setEvent] = useState(null);
   const [prizes, setPrizes] = useState([]);
   const [coreTeam, setCoreTeam] = useState([]);
+  const [timelines, setTimelines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -399,10 +388,11 @@ function PublicEventDetails() {
       setLoading(true);
       setError(null);
 
-      const [eventRes, prizesRes, teamRes] = await Promise.allSettled([
+      const [eventRes, prizesRes, teamRes, timelineRes] = await Promise.allSettled([
         fetch(`http://localhost:3000/api/events/${id}`),
         fetch(`http://localhost:3000/api/event_prizes/event/${id}`),
-        fetch(`http://localhost:3000/api/core_team/event/${id}`)
+        fetch(`http://localhost:3000/api/core_team/event/${id}`),
+        fetch(`http://localhost:3000/api/event_timelines/event/${id}`)
       ]);
 
       if (eventRes.status === 'fulfilled' && eventRes.value.ok) {
@@ -427,6 +417,11 @@ function PublicEventDetails() {
       if (teamRes.status === 'fulfilled' && teamRes.value.ok) {
         const tmData = await teamRes.value.json();
         setCoreTeam(tmData.members || []);
+      }
+
+      if (timelineRes.status === 'fulfilled' && timelineRes.value.ok) {
+        const tlData = await timelineRes.value.json();
+        setTimelines(Array.isArray(tlData) ? tlData : (tlData.timelines || []));
       }
     } catch (err) {
       setError(err.message || 'Failed to load event details');
@@ -773,7 +768,7 @@ function PublicEventDetails() {
                       Event Concluded
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                       <Clock className="h-3.5 w-3.5" />
                       Registrations Open
                     </span>
@@ -840,37 +835,73 @@ function PublicEventDetails() {
                     </div>
                   )}
 
-                  {event.TeamSize && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80">
-                      <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
-                        <Users className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                          Team Formation
-                        </span>
-                        <span className="block text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">
-                          {event.TeamSize} Members per Team
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                    {hasBothTracks ? (
+                      <>
+                        {(event.VirtualPrizeMoney || event.PrizeMoney) && (
+                          <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80">
+                            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                              <Trophy className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                                Virtual Bounty
+                              </span>
+                              <span className="block text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                                {event.VirtualPrizeMoney || event.PrizeMoney}
+                              </span>
+                            </div>
+                          </div>
+                        )}
 
-                  {(event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney) && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20">
-                      <div className="p-2 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
-                        <Trophy className="h-4 w-4" />
+                        {(event.PhysicalPrizeMoney || event.PrizeMoney) && (
+                          <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80">
+                            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                              <Trophy className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                                Physical Bounty
+                              </span>
+                              <span className="block text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                                {event.PhysicalPrizeMoney || event.PrizeMoney}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      (event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney) && (
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80">
+                          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                            <Trophy className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                              Prize Bounty
+                            </span>
+                            <span className="block text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                              {event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    )}
+
+                    {event.TeamSize && (
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 sm:col-span-2">
+                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                          <Users className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                            Team Formation
+                          </span>
+                          <span className="block text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">
+                            {event.TeamSize} Members per Team
+                          </span>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <span className="block text-[10px] font-bold uppercase tracking-wider text-amber-600/80 dark:text-amber-400/80">
-                          Prize Bounty
-                        </span>
-                        <span className="block text-xs font-black text-amber-700 dark:text-amber-300 truncate">
-                          {event.PrizeMoney || `${event.PhysicalPrizeMoney || ''} ${event.VirtualPrizeMoney ? `/ ${event.VirtualPrizeMoney}` : ''}`}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
 
@@ -908,86 +939,171 @@ function PublicEventDetails() {
             </div>
           </div>
 
-          <div className="px-6 py-5 sm:px-8 lg:px-10 bg-slate-50/80 dark:bg-zinc-900/90 backdrop-blur-md border-t border-slate-200 dark:border-zinc-800 flex flex-col md:flex-row items-center justify-between gap-5">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start md:items-center gap-4 w-full md:w-auto">
-              {(() => {
-                const modes = getAvailableModes(event?.HackathonMode);
-                if (modes.length > 1) {
-                  const isCurTrackVirtual = activeCountdownTrack === 'Virtual';
-                  const curTrackEnd = isCurTrackVirtual ? effectiveVirtualRegEnd : effectivePhysicalRegEnd;
-                  const isCurTrackClosed = isCurTrackVirtual ? isVirtualRegistrationClosed : isPhysicalRegistrationClosed;
-                  const isCurTrackPaused = isCurTrackVirtual ? isVirtualPaused : isPhysicalPaused;
-
-                  return (
-                    <div className="flex flex-col items-center sm:items-start gap-2.5">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                          Registration Window:
-                        </span>
-                        <div className="inline-flex items-center p-1 rounded-xl bg-slate-200/70 dark:bg-zinc-800/80 border border-slate-300/40 dark:border-zinc-700/50">
-                          <button
-                            type="button"
-                            onClick={() => setActiveCountdownTrack('Virtual')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                              isCurTrackVirtual
-                                ? 'bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-                            }`}
-                          >
-                            <span>🌐 Virtual Track</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                              isVirtualPaused
-                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
-                                : isVirtualRegistrationClosed
-                                ? 'bg-rose-500/10 text-rose-500 font-bold'
-                                : 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                            }`}>
-                              {isVirtualPaused ? 'Paused' : isVirtualRegistrationClosed ? 'Closed' : formatDate(effectiveVirtualRegEnd)}
+          <div className="p-5 sm:p-6 bg-slate-100/70 dark:bg-zinc-950/80 backdrop-blur-xl border-t border-slate-200/90 dark:border-zinc-800">
+            {(() => {
+              const modes = getAvailableModes(event?.HackathonMode);
+              if (modes.length > 1) {
+                return (
+                  <div className="space-y-3.5">
+                    {/* ROW 1: VIRTUAL TRACK CARD */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4 transition-all duration-200 hover:border-slate-300 dark:hover:border-zinc-700">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3.5 w-full lg:w-auto">
+                        <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20 shadow-xs">
+                          <Globe className="h-5 w-5" />
+                        </div>
+                        <div className="text-center sm:text-left">
+                          <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                            <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                              Virtual Track
                             </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setActiveCountdownTrack('Physical')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                              !isCurTrackVirtual
-                                ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-sm'
-                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-                            }`}
-                          >
-                            <span>📍 Physical Track</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                              isPhysicalPaused
-                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold'
-                                : isPhysicalRegistrationClosed
-                                ? 'bg-rose-500/10 text-rose-500 font-bold'
-                                : 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
-                            }`}>
-                              {isPhysicalPaused ? 'Paused' : isPhysicalRegistrationClosed ? 'Closed' : formatDate(effectivePhysicalRegEnd)}
-                            </span>
-                          </button>
+                            {isVirtualPaused ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                <span>Paused</span>
+                              </span>
+                            ) : isVirtualRegistrationClosed ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                <span>Closed</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                                <span>Live Now</span>
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 block mt-0.5">
+                            Online Submissions • Cloud Evaluation
+                          </span>
                         </div>
                       </div>
 
-                      {isCurTrackClosed ? (
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold">
-                          {isCurTrackPaused
-                            ? `${activeCountdownTrack} Registration is paused by organizers`
-                            : `${activeCountdownTrack} Registration has ended (${formatDate(curTrackEnd)})`}
+                      {/* Middle: Timer or Paused Alert */}
+                      <div className="flex flex-col items-center">
+                        {isVirtualRegistrationClosed ? (
+                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+                            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                            <span>
+                              {isVirtualPaused
+                                ? 'Virtual registration paused by organizers'
+                                : `Virtual registration closed (${formatDate(effectiveVirtualRegEnd)})`}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1.5">
+                            <FlipCountdown targetDate={effectiveVirtualRegEnd || event.StartDate} />
+                            <span className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400">
+                              Virtual Closes on: <strong className="text-emerald-600 dark:text-emerald-400">{formatDate(effectiveVirtualRegEnd)}</strong>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Action Button */}
+                      <div className="w-full lg:w-auto flex justify-center lg:justify-end">
+                        {isVirtualRegistrationClosed ? (
+                          <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-xs border border-slate-200 dark:border-zinc-700 cursor-not-allowed select-none">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            <span>{isVirtualPaused ? 'Virtual Paused' : 'Virtual Ended'}</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleRegisterClick('Virtual')}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/25 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                          >
+                            <Globe className="h-4 w-4" />
+                            <span>Register Virtual Track</span>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ROW 2: PHYSICAL TRACK CARD */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4 transition-all duration-200 hover:border-slate-300 dark:hover:border-zinc-700">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3.5 w-full lg:w-auto">
+                        <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20 shadow-xs">
+                          <MapPin className="h-5 w-5" />
                         </div>
-                      ) : (
-                        <div className="flex flex-col items-center sm:items-start gap-1">
-                          <FlipCountdown key={activeCountdownTrack} targetDate={curTrackEnd || event.StartDate} />
-                          <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-semibold">
-                            {activeCountdownTrack} Track Closes on: <strong className={isCurTrackVirtual ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>{formatDate(curTrackEnd)}</strong>
+                        <div className="text-center sm:text-left">
+                          <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                            <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                              Physical Track
+                            </span>
+                            {isPhysicalPaused ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                <span>Paused</span>
+                              </span>
+                            ) : isPhysicalRegistrationClosed ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                <span>Closed</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                                <span className="relative flex h-1.5 w-1.5">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                                </span>
+                                <span>Accepting Teams</span>
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 block mt-0.5">
+                            Venue: {event.Location || 'Campus Workstations & Food'}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  );
-                }
+                      </div>
 
-                return (
-                  <div className="flex flex-col items-center sm:items-start gap-2.5">
+                      {/* Middle: Timer or Paused Alert */}
+                      <div className="flex flex-col items-center">
+                        {isPhysicalRegistrationClosed ? (
+                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+                            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                            <span>
+                              {isPhysicalPaused
+                                ? 'Physical registration paused by organizers'
+                                : `Physical registration closed (${formatDate(effectivePhysicalRegEnd)})`}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1.5">
+                            <FlipCountdown targetDate={effectivePhysicalRegEnd || event.StartDate} />
+                            <span className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400">
+                              Physical Closes on: <strong className="text-emerald-600 dark:text-emerald-400">{formatDate(effectivePhysicalRegEnd)}</strong>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: Action Button */}
+                      <div className="w-full lg:w-auto flex justify-center lg:justify-end">
+                        {isPhysicalRegistrationClosed ? (
+                          <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-xs border border-slate-200 dark:border-zinc-700 cursor-not-allowed select-none">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            <span>{isPhysicalPaused ? 'Physical Paused' : 'Physical Ended'}</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleRegisterClick('Physical')}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/25 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                          >
+                            <MapPin className="h-4 w-4" />
+                            <span>Register for Physical Track</span>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex flex-col md:flex-row items-center justify-between gap-5">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start md:items-center gap-4 w-full md:w-auto">
                     <div className="flex items-center gap-2">
                       {!isRegistrationClosed ? (
                         <span className="relative flex h-2.5 w-2.5">
@@ -1010,71 +1126,32 @@ function PublicEventDetails() {
                       <FlipCountdown targetDate={event.RegistrationEnd || event.StartDate} />
                     )}
                   </div>
-                );
-              })()}
-            </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-              {isRegistrationClosed ? (
-                <button
-                  disabled
-                  className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-sm cursor-not-allowed"
-                >
-                  <span>Registrations Closed</span>
-                </button>
-              ) : (() => {
-                const modes = getAvailableModes(event?.HackathonMode);
-                if (modes.length > 1) {
-                  return (
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
-                      {isVirtualRegistrationClosed ? (
-                        <span className="text-xs text-slate-400 font-medium px-4 py-3 rounded-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 text-center">
-                          {isVirtualPaused ? 'Virtual Paused' : 'Virtual Ended'}
-                        </span>
-                      ) : (
+                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    {isRegistrationClosed ? (
+                      <button
+                        disabled
+                        className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-sm cursor-not-allowed"
+                      >
+                        <span>Registrations Closed</span>
+                      </button>
+                    ) : (() => {
+                      const singleMode = modes[0] || 'Virtual';
+                      return (
                         <button
-                          onClick={() => handleRegisterClick('Virtual')}
-                          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                          onClick={() => handleRegisterClick(singleMode)}
+                          className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-bold text-sm tracking-wide shadow-lg bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
                         >
                           <Globe className="h-4 w-4" />
-                          <span>Register for Virtual Hackathon</span>
+                          <span>Register for {singleMode} Hackathon</span>
+                          <ChevronRight className="h-3.5 w-3.5" />
                         </button>
-                      )}
-
-                      {isPhysicalRegistrationClosed ? (
-                        <span className="text-xs text-slate-400 font-medium px-4 py-3 rounded-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 text-center">
-                          {isPhysicalPaused ? 'Physical Paused' : 'Physical Ended'}
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleRegisterClick('Physical')}
-                          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-600/30 hover:shadow-amber-600/50 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                        >
-                          <MapPin className="h-4 w-4" />
-                          <span>Register for Physical Hackathon</span>
-                        </button>
-                      )}
-                    </div>
-                  );
-                }
-                const singleMode = modes[0] || 'Virtual';
-                const isPhysical = singleMode === 'Physical';
-                return (
-                  <button
-                    onClick={() => handleRegisterClick(singleMode)}
-                    className={`w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-bold text-sm tracking-wide shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 ${
-                      isPhysical
-                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/30 hover:shadow-amber-600/50'
-                        : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/30 hover:shadow-emerald-600/50'
-                    }`}
-                  >
-                    {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-                    <span>Register for {singleMode} Hackathon</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                );
-              })()}
-            </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </motion.div>
 
@@ -1231,6 +1308,9 @@ function PublicEventDetails() {
                         </div>
                       </div>
 
+                      {/* Track-Specific Timeline & Roadmap */}
+                      <TrackTimelineSection trackType="virtual" timelines={timelines} />
+
                       {showPrizesSection && (
                         <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1382,11 +1462,14 @@ function PublicEventDetails() {
                         </div>
                       </div>
 
+                      {/* Track-Specific Timeline & Roadmap */}
+                      <TrackTimelineSection trackType="physical" timelines={timelines} />
+
                       {showPrizesSection && (
                         <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
-                              <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                              <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                 <Trophy className="h-5 w-5" />
                               </div>
                               <div>
@@ -1400,8 +1483,8 @@ function PublicEventDetails() {
                             </div>
 
                             {event.PhysicalPrizeMoney && (
-                              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-xs font-black self-start sm:self-auto">
-                                <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 text-xs font-black self-start sm:self-auto">
+                                <Trophy className="h-3.5 w-3.5 text-emerald-500" />
                                 <span>Track Pool: {event.PhysicalPrizeMoney}</span>
                               </div>
                             )}
@@ -1542,7 +1625,7 @@ function PublicEventDetails() {
                     </div>
                     <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
                       <span className="text-slate-500 dark:text-zinc-400">Physical Reg Closes</span>
-                      <span className="font-bold text-amber-600 dark:text-amber-400">{formatDate(effectivePhysicalRegEnd)}</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{formatDate(effectivePhysicalRegEnd)}</span>
                     </div>
                   </>
                 ) : (
@@ -1599,7 +1682,7 @@ function PublicEventDetails() {
                           <button
                             type="button"
                             onClick={() => handleRegisterClick('Physical')}
-                            className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-600/20 hover:shadow-amber-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                            className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
                           >
                             <MapPin className="h-4 w-4" />
                             <span>Register for Physical Hackathon</span>
@@ -1614,11 +1697,7 @@ function PublicEventDetails() {
                     <button
                       type="button"
                       onClick={() => handleRegisterClick(singleMode)}
-                      className={`w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl text-white font-bold text-xs tracking-wide shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 ${
-                        isPhysical
-                          ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/30'
-                          : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/30'
-                      }`}
+                      className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl text-white font-bold text-xs tracking-wide shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30"
                     >
                       {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
                       <span>Register for {singleMode} Hackathon</span>

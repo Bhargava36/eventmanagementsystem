@@ -214,14 +214,28 @@ const migrationQueries = [
     `ALTER TABLE event_core_team ADD COLUMN IF NOT EXISTS Photo LONGTEXT`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PrizeMoney VARCHAR(255)`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualPrizeMoney VARCHAR(255)`,
-    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalPrizeMoney VARCHAR(255)`,
     `ALTER TABLE event_prizes ADD COLUMN IF NOT EXISTS Track VARCHAR(50) DEFAULT 'Overall'`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualStatus ENUM('NOT_STARTED', 'LIVE', 'COMPLETED') NOT NULL DEFAULT 'NOT_STARTED'`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualStartedAt DATETIME DEFAULT NULL`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualMeetUrl VARCHAR(500) DEFAULT NULL`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualRegistrationOpen TINYINT(1) DEFAULT 1`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalRegistrationOpen TINYINT(1) DEFAULT 1`,
-    `ALTER TABLE events ADD COLUMN IF NOT EXISTS RegistrationOpen TINYINT(1) DEFAULT 1`
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS RegistrationOpen TINYINT(1) DEFAULT 1`,
+
+    `CREATE TABLE IF NOT EXISTS event_timelines (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        Track ENUM('Virtual', 'Physical', 'General') NOT NULL DEFAULT 'General',
+        TimelineDate VARCHAR(100) NOT NULL,
+        Heading VARCHAR(255) NOT NULL,
+        Description TEXT,
+        OrderIndex INT DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_timeline_event (EventId),
+        INDEX idx_timeline_track (Track),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 
 let isMigrating = false;

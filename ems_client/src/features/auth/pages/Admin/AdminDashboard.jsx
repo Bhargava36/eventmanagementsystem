@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
     Users,
@@ -23,8 +22,9 @@ import {
     Layers,
     Save,
     Edit3,
-    Radio
+    Medal
 } from "lucide-react";
+import PrizePodiumStage from "../../../../components/Molecules/PrizePodiumStage";
 
 function formatDate(date) {
     if (!date) return "Not available";
@@ -74,6 +74,7 @@ function AdminDashboard() {
     ]);
 
     const [declaredPrizes, setDeclaredPrizes] = useState([]);
+    const [activePrizeTab, setActivePrizeTab] = useState("Physical");
 
     const [isGuidelinesModalOpen, setIsGuidelinesModalOpen] = useState(false);
     const [guidelinesLoading, setGuidelinesLoading] = useState(false);
@@ -512,14 +513,6 @@ function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    <Link
-                        to="/admin/virtual-event"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-teal-600/30 bg-teal-50 dark:bg-teal-950/40 px-4 py-2.5 text-sm font-medium text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition shadow-sm"
-                    >
-                        <Radio className="h-4 w-4 text-teal-600 dark:text-teal-400 animate-pulse" />
-                        Virtual Event Control
-                    </Link>
-
                     <button
                         type="button"
                         onClick={openGuidelinesModal}
@@ -770,63 +763,194 @@ function AdminDashboard() {
                         </button>
                     </div>
 
-                    {declaredPrizes.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {declaredPrizes.map((prize, index) => (
-                                <div
-                                    key={prize.Id || prize.id || index}
-                                    className="relative overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent p-5 dark:border-emerald-500/20 dark:bg-gray-900/40"
-                                >
-                                    <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                                                Rank #{getPrizeRank(prize, index)}
-                                            </span>
-                                            {prize.Track && prize.Track !== 'Overall' && (
-                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
-                                                    prize.Track === 'Virtual'
-                                                        ? 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20'
-                                                        : 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20'
-                                                }`}>
-                                                    {prize.Track}
-                                                </span>
-                                            )}
+                    {(() => {
+                        const physicalPrizesList = declaredPrizes.filter((p) => (p.Track || '').toLowerCase() === 'physical');
+                        const virtualPrizesList = declaredPrizes.filter((p) => (p.Track || '').toLowerCase() === 'virtual');
+                        const overallPrizesList = declaredPrizes.filter((p) => (p.Track || '').toLowerCase() === 'overall' || !p.Track);
+
+                        const hasSeparateTrackPrizes = physicalPrizesList.length > 0 || virtualPrizesList.length > 0;
+                        const isDualTrackEvent = (event?.HackathonMode || '').toLowerCase().includes('both') ||
+                                                 (event?.HackathonMode || '').toLowerCase().includes('virtual and physical') ||
+                                                 hasSeparateTrackPrizes;
+
+                        const currentTrackPrizes = isDualTrackEvent
+                            ? (activePrizeTab === 'Virtual'
+                                ? (virtualPrizesList.length > 0 ? virtualPrizesList : overallPrizesList)
+                                : (physicalPrizesList.length > 0 ? physicalPrizesList : overallPrizesList))
+                            : declaredPrizes;
+
+                        const firstPrizeObj = currentTrackPrizes.find((p) => Number(p.PrizeRank) === 1) || (currentTrackPrizes.length > 0 ? currentTrackPrizes[0] : null);
+                        const secondPrizeObj = currentTrackPrizes.find((p) => Number(p.PrizeRank) === 2) || (currentTrackPrizes.length > 1 && currentTrackPrizes[1] !== firstPrizeObj ? currentTrackPrizes[1] : null);
+                        const thirdPrizeObj = currentTrackPrizes.find((p) => Number(p.PrizeRank) === 3) || (currentTrackPrizes.length > 2 && currentTrackPrizes[2] !== firstPrizeObj && currentTrackPrizes[2] !== secondPrizeObj ? currentTrackPrizes[2] : null);
+
+                        const formatPrizeText = (val, fallback) => {
+                            if (!val) return fallback;
+                            const str = String(val).trim();
+                            const num = Number(str.replace(/[^0-9.-]+/g, ''));
+                            if (!isNaN(num) && num > 0) {
+                                return `₹${num.toLocaleString('en-IN')}`;
+                            }
+                            return str;
+                        };
+
+                        const activeTrackPool = isDualTrackEvent
+                            ? (activePrizeTab === 'Virtual' ? (event?.VirtualPrizeMoney || event?.PrizeMoney) : (event?.PhysicalPrizeMoney || event?.PrizeMoney))
+                            : event?.PrizeMoney;
+
+                        const firstPrizeAmount = formatPrizeText(firstPrizeObj?.Prize || (currentTrackPrizes.length === 0 ? activeTrackPool : null), activePrizeTab === 'Virtual' ? 'Virtual Champion' : 'Grand Champion');
+                        const secondPrizeAmount = formatPrizeText(secondPrizeObj?.Prize, 'Runner Up');
+                        const thirdPrizeAmount = formatPrizeText(thirdPrizeObj?.Prize, 'Second Runner Up');
+
+                        const firstPrizeDesc = isDualTrackEvent && activePrizeTab === 'Virtual'
+                            ? 'Virtual Grand Champion • Gold Trophy & Direct Incubation'
+                            : 'On-Campus Grand Champion • Gold Trophy & Incubation';
+
+                        const secondPrizeDesc = isDualTrackEvent && activePrizeTab === 'Virtual'
+                            ? 'Virtual First Runner Up • Silver Trophy & Cloud Credits'
+                            : 'On-Campus First Runner Up • Silver Trophy & Mentorship';
+
+                        const thirdPrizeDesc = isDualTrackEvent && activePrizeTab === 'Virtual'
+                            ? 'Virtual Second Runner Up • Bronze Shield & Certificates'
+                            : 'On-Campus Second Runner Up • Bronze Shield & Swag';
+
+                        const firstPrizeTrack = isDualTrackEvent ? activePrizeTab : (firstPrizeObj?.Track || null);
+                        const secondPrizeTrack = isDualTrackEvent ? activePrizeTab : (secondPrizeObj?.Track || null);
+                        const thirdPrizeTrack = isDualTrackEvent ? activePrizeTab : (thirdPrizeObj?.Track || null);
+
+                        const additionalPrizes = currentTrackPrizes.filter((p) => p !== firstPrizeObj && p !== secondPrizeObj && p !== thirdPrizeObj);
+
+                        return (
+                            <div className="space-y-0">
+                                {/* Track Tabs for Dual Track Hackathons matching Event Details Page */}
+                                {isDualTrackEvent && (
+                                    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 relative z-10 -mb-px">
+                                        <div className="flex items-end gap-2 overflow-x-auto">
+                                            {[
+                                                { key: 'Virtual', label: `Virtual Track (${virtualPrizesList.length})`, icon: Globe },
+                                                { key: 'Physical', label: `On-Campus Track (${physicalPrizesList.length})`, icon: MapPin },
+                                            ].map((tab) => {
+                                                const isActive = activePrizeTab === tab.key;
+                                                const IconComp = tab.icon;
+                                                return (
+                                                    <button
+                                                        key={tab.key}
+                                                        type="button"
+                                                        onClick={() => setActivePrizeTab(tab.key)}
+                                                        className="relative h-11 px-5 sm:px-7 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2 transition-colors duration-200 outline-none"
+                                                    >
+                                                        {isActive ? (
+                                                            <motion.div
+                                                                layoutId="adminPrizeTabActive"
+                                                                className="absolute inset-0 -bottom-[2px] rounded-t-2xl bg-white dark:bg-zinc-900 border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-20 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                                                                transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                                                            >
+                                                                {/* Seamless bottom mask */}
+                                                                <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-zinc-900 pointer-events-none z-30" />
+                                                            </motion.div>
+                                                        ) : (
+                                                            <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 z-0" />
+                                                        )}
+
+                                                        <span className={`relative z-20 flex items-center gap-2 ${
+                                                            isActive
+                                                                ? 'text-slate-900 dark:text-white'
+                                                                : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                                                        }`}>
+                                                            <IconComp className="h-4 w-4" />
+                                                            <span>{tab.label}</span>
+                                                            {isActive && (
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                            )}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
-                                        <Trophy className="w-4 h-4 text-emerald-500/70" />
+
+                                        {activeTrackPool && (
+                                            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold self-start sm:self-auto mb-2">
+                                                <Trophy className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                <span>{activePrizeTab} Pool: {activeTrackPool}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                    <h3 className="text-base font-bold text-gray-900 dark:text-white mt-2">
-                                        {prize.Name ||
-                                            prize.name ||
-                                            `Prize ${getPrizeRank(prize, index)}`}
-                                    </h3>
-                                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-3">
-                                        ₹ {Number(
-                                            getPrizeAmount(prize)
-                                        ).toLocaleString("en-IN")}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="rounded-xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center bg-gray-50/50 dark:bg-gray-900/20">
-                            <Trophy className="w-10 h-10 mx-auto text-gray-400 dark:text-gray-600 mb-3" />
-                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                No prize money declared yet
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
-                                Set up the prize pool for winners of this hackathon to attract top talent and teams.
-                            </p>
-                            <button
-                                type="button"
-                                onClick={openPrizeModal}
-                                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:text-black dark:hover:bg-emerald-600 px-4 py-2 text-xs font-semibold transition"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Add Prize Money Now
-                            </button>
-                        </div>
-                    )}
+                                )}
+
+                                {currentTrackPrizes.length > 0 || activeTrackPool ? (
+                                    <div>
+                                        {/* Podium Component from Event Details Page */}
+                                        <div className={`p-4 sm:p-6 rounded-2xl ${isDualTrackEvent ? 'rounded-tl-none' : ''} bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xs relative z-0`}>
+                                            <PrizePodiumStage
+                                                firstAmount={firstPrizeAmount}
+                                                firstDesc={firstPrizeDesc}
+                                                firstTrack={firstPrizeTrack}
+                                                secondAmount={secondPrizeAmount}
+                                                secondDesc={secondPrizeDesc}
+                                                secondTrack={secondPrizeTrack}
+                                                thirdAmount={thirdPrizeAmount}
+                                                thirdDesc={thirdPrizeDesc}
+                                                thirdTrack={thirdPrizeTrack}
+                                            />
+                                        </div>
+
+                                        {/* Additional Rank Prizes / Special Recognitions */}
+                                        {additionalPrizes.length > 0 && (
+                                            <div className="space-y-3 mt-6">
+                                                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                                                    Special Recognitions & Track Awards ({activePrizeTab} Track)
+                                                </h4>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                                    {additionalPrizes.map((pz, idx) => (
+                                                        <div
+                                                            key={pz.Id || pz.id || idx}
+                                                            className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/50 flex items-center justify-between gap-3 shadow-xs"
+                                                        >
+                                                            <div className="flex items-center gap-2.5">
+                                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                                                                    <Medal className="h-4 w-4" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-xs font-bold text-slate-800 dark:text-zinc-200">
+                                                                        {pz.PrizeRank ? `Rank #${pz.PrizeRank}` : (pz.Name || 'Special Award')}
+                                                                    </div>
+                                                                    {pz.Track && (
+                                                                        <div className="text-[10px] text-slate-500 dark:text-zinc-400">
+                                                                            {pz.Track} Track
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-sm font-black font-mono text-slate-900 dark:text-white">
+                                                                {formatPrizeText(pz.Prize, pz.Prize)}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center bg-gray-50/50 dark:bg-gray-900/20">
+                                        <Trophy className="w-10 h-10 mx-auto text-gray-400 dark:text-gray-600 mb-3" />
+                                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            No prize money declared for {activePrizeTab} track yet
+                                        </p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-sm mx-auto">
+                                            Click "Edit Prize Money" above to declare prizes for this track.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={openPrizeModal}
+                                            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-500 dark:text-black dark:hover:bg-emerald-600 px-4 py-2 text-xs font-semibold transition cursor-pointer"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            <span>Add Prize Money for {activePrizeTab}</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </motion.section>
 
                 <motion.div
@@ -1339,31 +1463,44 @@ function AdminDashboard() {
 
                             {event?.HackathonMode === 'Both' ? (
                                 <div className="space-y-4">
-                                    <div className="flex border-b border-gray-200 dark:border-gray-800">
-                                        <button
-                                            type="button"
-                                            onClick={() => setGuidelinesActiveTab('virtual')}
-                                            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition ${
-                                                guidelinesActiveTab === 'virtual'
-                                                    ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                                                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                            }`}
-                                        >
-                                            <Globe className="w-4 h-4" />
-                                            Virtual Phase Guidelines
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setGuidelinesActiveTab('physical')}
-                                            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold border-b-2 transition ${
-                                                guidelinesActiveTab === 'physical'
-                                                    ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
-                                                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-                                            }`}
-                                        >
-                                            <Building2 className="w-4 h-4" />
-                                            Physical Phase Guidelines
-                                        </button>
+                                    <div className="flex items-end gap-2 overflow-x-auto border-b border-gray-200 dark:border-gray-800 -mb-[1px]">
+                                        {[
+                                            { key: 'virtual', label: 'Virtual Phase Guidelines', icon: Globe },
+                                            { key: 'physical', label: 'Physical Phase Guidelines', icon: Building2 },
+                                        ].map((tab) => {
+                                            const isActive = guidelinesActiveTab === tab.key;
+                                            const IconComp = tab.icon;
+                                            return (
+                                                <button
+                                                    key={tab.key}
+                                                    type="button"
+                                                    onClick={() => setGuidelinesActiveTab(tab.key)}
+                                                    className="relative h-10 px-5 rounded-t-xl font-bold text-xs tracking-wide flex items-center gap-2 transition-colors duration-200 outline-none"
+                                                >
+                                                    {isActive ? (
+                                                        <motion.div
+                                                            layoutId="guidelinesTabActive"
+                                                            className="absolute inset-0 rounded-t-xl bg-white dark:bg-zinc-900 border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10"
+                                                            transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                                                        />
+                                                    ) : (
+                                                        <div className="absolute inset-0 rounded-t-xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 z-0" />
+                                                    )}
+
+                                                    <span className={`relative z-20 flex items-center gap-2 ${
+                                                        isActive
+                                                            ? 'text-slate-900 dark:text-white'
+                                                            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                                                    }`}>
+                                                        <IconComp className="h-4 w-4" />
+                                                        <span>{tab.label}</span>
+                                                        {isActive && (
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                        )}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
 
                                     {guidelinesActiveTab === 'virtual' && (

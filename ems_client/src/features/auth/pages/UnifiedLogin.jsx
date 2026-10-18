@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   ChartNoAxesCombined,
@@ -17,6 +17,7 @@ import {
   CalendarDays,
   AlertCircle,
   Check,
+  ChevronDown,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../components/Molecules/WaveBackground";
@@ -252,6 +253,31 @@ function UnifiedLogin({ role: propRole }) {
   const isPasswordFloating = Boolean(password) || isPasswordFocused;
   const isEventFloating = Boolean(eventName) || isEventFocused;
 
+  const [eventsList, setEventsList] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+
+  useEffect(() => {
+    if (config.showEventName) {
+      loadEvents();
+    }
+  }, [config.showEventName]);
+
+  const loadEvents = async () => {
+    try {
+      setLoadingEvents(true);
+      const res = await fetch("http://localhost:3000/api/events");
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.events || []);
+        setEventsList(list);
+      }
+    } catch (err) {
+      console.error("Failed to load events for organizer login", err);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const getEmailError = () => {
@@ -269,7 +295,7 @@ function UnifiedLogin({ role: propRole }) {
 
   const getEventNameError = () => {
     if (config.showEventName && !eventName.trim()) {
-      return "Event name is required for organizer login";
+      return "Please select your assigned event";
     }
     return "";
   };
@@ -499,53 +525,57 @@ function UnifiedLogin({ role: propRole }) {
                       : "text-emerald-700 dark:text-emerald-400"
                   }`}
                 />
-                <input
-                  type="text"
+                <select
                   id="user_event_name"
                   name="user_event_name"
-                  placeholder=""
-                  autoComplete="off"
                   value={eventName}
                   onFocus={() => setIsEventFocused(true)}
                   onBlur={() => {
                     setIsEventFocused(false);
                     handleBlur("eventName");
                   }}
-                  onChange={(e) => setEventName(e.target.value)}
-                  className={`w-full border-0 border-b-2 bg-transparent pl-8 pr-8 py-2 text-black dark:text-white focus:outline-none transition duration-200 text-sm ${
+                  onChange={(e) => {
+                    setEventName(e.target.value);
+                    if (error) setError("");
+                  }}
+                  className={`w-full border-0 border-b-2 bg-transparent pl-8 pr-8 py-2 text-black dark:text-white focus:outline-none transition duration-200 text-sm cursor-pointer appearance-none ${
                     showEventNameError
                       ? "border-rose-500 focus:border-rose-500"
                       : isEventValid
                       ? "border-emerald-500 focus:border-emerald-500"
                       : "border-gray-300 dark:border-gray-600 focus:border-emerald-500"
                   }`}
-                />
+                >
+                  <option value="" disabled className="bg-white dark:bg-zinc-900 text-gray-400">
+                    {loadingEvents ? "Loading events..." : "-- Choose an event --"}
+                  </option>
+                  {eventsList.map((ev) => (
+                    <option
+                      key={ev.Id}
+                      value={ev.EventName}
+                      className="bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100"
+                    >
+                      {ev.EventName}
+                    </option>
+                  ))}
+                </select>
                 <label
                   htmlFor="user_event_name"
-                  className={`absolute left-8 transition-all duration-200 pointer-events-none select-none ${
-                    isEventFloating
-                      ? `-top-4 text-xs font-semibold ${
-                          showEventNameError
-                            ? "text-rose-500"
-                            : isEventValid
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-emerald-700 dark:text-emerald-400"
-                        }`
-                      : "top-2 text-sm text-gray-500 dark:text-gray-400"
+                  className={`absolute left-8 -top-4 text-xs font-semibold pointer-events-none select-none transition-all duration-200 ${
+                    showEventNameError
+                      ? "text-rose-500"
+                      : isEventValid
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-emerald-700 dark:text-emerald-400"
                   }`}
                 >
-                  Event Name
+                  Assigned Event
                 </label>
 
-                {isEventValid && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="absolute right-1 top-3 text-emerald-500"
-                  >
-                    <Check className="w-4 h-4" />
-                  </motion.div>
-                )}
+                {/* Dropdown Chevron Icon */}
+                <div className="absolute right-1 top-3.5 pointer-events-none text-slate-400 dark:text-zinc-500">
+                  <ChevronDown className="w-4 h-4" />
+                </div>
 
                 <AnimatePresence>
                   {showEventNameError && (

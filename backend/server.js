@@ -16,6 +16,7 @@ const prizesRoute = require("./src/modules/prize_money/prizeRoute");
 const coreTeamRoute = require("./src/modules/core_team/coreRoutes");
 const uploadRoute = require("./src/modules/upload/uploadRoute");
 const rolesRoute = require("./src/modules/roles/rolesRoute");
+const timelineRoutes = require("./src/modules/event_timelines/timelineRoutes");
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api/event_reg', eventRegRoute);
 app.use("/api/event_prizes", prizesRoute);
 app.use("/api/core_team", coreTeamRoute);
 app.use("/api/roles", rolesRoute);
+app.use("/api/event_timelines", timelineRoutes);
 
 
 app.listen(3000, () => {
