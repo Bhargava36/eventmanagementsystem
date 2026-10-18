@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useTheme from '../../../../Hooks/useTheme';
 import useAuth from '../../../../Hooks/useAuth';
 import FlipCountdown from '../../../../components/Molecules/FlipCountdown';
+import TrackTimelineSection from '../../../../components/Molecules/TrackTimelineSection';
 import {
   ArrowLeft,
   Calendar,
@@ -149,7 +150,6 @@ function PrizePodiumStage({
             <div className="border border-white/90 rounded px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-white shadow-sm mb-2">SECOND PRIZE</div>
             <div className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight drop-shadow-sm mb-1">{secondAmount}</div>
             <p className="text-[10px] text-white/95 font-medium leading-relaxed max-w-[170px] line-clamp-2">{secondDesc}</p>
-            {secondTrack && <span className="mt-auto px-2 py-0.5 rounded text-[9px] font-bold bg-white/20 text-white border border-white/30">{secondTrack} Track</span>}
           </motion.div>
         </foreignObject>
         <foreignObject x="320" y="325" width="260" height="235">
@@ -157,7 +157,6 @@ function PrizePodiumStage({
             <div className="border border-white/90 rounded-md px-3.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-sm mb-2.5">FIRST PRIZE</div>
             <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight drop-shadow-sm mb-1.5">{firstAmount}</div>
             <p className="text-xs text-white/95 font-medium leading-relaxed max-w-[210px] line-clamp-3">{firstDesc}</p>
-            {firstTrack && <span className="mt-auto px-2.5 py-0.5 rounded text-[10px] font-bold bg-white/20 text-white border border-white/30">{firstTrack} Track</span>}
           </motion.div>
         </foreignObject>
         <foreignObject x="560" y="445" width="220" height="115">
@@ -165,7 +164,6 @@ function PrizePodiumStage({
             <div className="border border-white/90 rounded px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-white shadow-sm mb-1.5">THIRD PRIZE</div>
             <div className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight drop-shadow-sm mb-1">{thirdAmount}</div>
             <p className="text-[10px] text-white/95 font-medium leading-relaxed max-w-[170px] line-clamp-2">{thirdDesc}</p>
-            {thirdTrack && <span className="mt-auto px-2 py-0.5 rounded text-[9px] font-bold bg-white/20 text-white border border-white/30">{thirdTrack} Track</span>}
           </motion.div>
         </foreignObject>
       </svg>
@@ -224,11 +222,12 @@ function EventDetails() {
   });
 
   /* ── event data ── */
-  const [event,    setEvent]    = useState(null);
-  const [prizes,   setPrizes]   = useState([]);
-  const [coreTeam, setCoreTeam] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
+  const [event,     setEvent]     = useState(null);
+  const [prizes,    setPrizes]    = useState([]);
+  const [coreTeam,  setCoreTeam]  = useState([]);
+  const [timelines, setTimelines] = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [error,     setError]     = useState(null);
 
   /* ── ui ── */
   const [activeTrackTab, setActiveTrackTab] = useState('physical');
@@ -314,10 +313,11 @@ function EventDetails() {
   const loadEventData = async () => {
     try {
       setLoading(true); setError(null);
-      const [eventRes, prizesRes, teamRes] = await Promise.allSettled([
+      const [eventRes, prizesRes, teamRes, timelineRes] = await Promise.allSettled([
         fetch(`http://localhost:3000/api/events/${id}`),
         fetch(`http://localhost:3000/api/event_prizes/event/${id}`),
         fetch(`http://localhost:3000/api/core_team/event/${id}`),
+        fetch(`http://localhost:3000/api/event_timelines/event/${id}`)
       ]);
 
       if (eventRes.status === 'fulfilled' && eventRes.value.ok) {
@@ -334,6 +334,10 @@ function EventDetails() {
       if (teamRes.status === 'fulfilled' && teamRes.value.ok) {
         const tmData = await teamRes.value.json();
         setCoreTeam(tmData.members || []);
+      }
+      if (timelineRes.status === 'fulfilled' && timelineRes.value.ok) {
+        const tlData = await timelineRes.value.json();
+        setTimelines(Array.isArray(tlData) ? tlData : (tlData.timelines || []));
       }
     } catch (err) {
       setError(err.message || 'Failed to load event details');
@@ -926,6 +930,10 @@ function EventDetails() {
                           ) : (<p className="text-xs text-slate-500 dark:text-zinc-400">Stable internet connection, valid college ID, and GitHub / Git repository setup.</p>)}
                         </div>
                       </div>
+
+                      {/* Track-Specific Timeline & Roadmap */}
+                      <TrackTimelineSection trackType="virtual" timelines={timelines} />
+
                       {showPrizesSection && (
                         <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -992,6 +1000,10 @@ function EventDetails() {
                           ) : (<p className="text-xs text-slate-500 dark:text-zinc-400">Original college ID card, personal laptop with development environment, and approval letter.</p>)}
                         </div>
                       </div>
+
+                      {/* Track-Specific Timeline & Roadmap */}
+                      <TrackTimelineSection trackType="physical" timelines={timelines} />
+
                       {showPrizesSection && (
                         <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
