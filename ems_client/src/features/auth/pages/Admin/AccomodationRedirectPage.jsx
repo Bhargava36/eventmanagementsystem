@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   BedDouble,
   ArrowLeft,
@@ -18,6 +19,13 @@ import {
   Trash2,
   UserPlus,
   CheckCircle,
+  Building2,
+  Layers,
+  Utensils,
+  ShieldAlert,
+  UserMinus,
+  Check,
+  RefreshCw,
 } from 'lucide-react';
 
 function AccomodationRedirectPage() {
@@ -32,71 +40,82 @@ function AccomodationRedirectPage() {
     }
   })();
 
+  // Core Data
+  const [activeTab, setActiveTab] = useState('rooms'); // 'rooms' | 'blocks' | 'requests'
+  const [blocks, setBlocks] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [requestedStudents, setRequestedStudents] = useState([]);
-  const [requestsLoading, setRequestsLoading] = useState(true);
-  const [requestsError, setRequestsError] = useState('');
   const [event, setEvent] = useState(null);
+
+  // Loading & Error States
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [editingRoomId, setEditingRoomId] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Search & Filter
+  const [searchTerm, setSearchTerm] = useState('');
+  const [genderFilter, setGenderFilter] = useState('all'); // 'all' | 'Boys' | 'Girls'
+  const [selectedBlockFilter, setSelectedBlockFilter] = useState('all');
+
+  // Block Modal Form
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [editingBlockId, setEditingBlockId] = useState(null);
+  const [blockSaving, setBlockSaving] = useState(false);
+  const [blockError, setBlockError] = useState('');
+  const [blockForm, setBlockForm] = useState({
+    BlockName: '',
+    Gender: 'Boys',
+    Description: '',
+  });
+
+  // Room Modal Form
+  const [showRoomModal, setShowRoomModal] = useState(false);
+  const [editingRoomId, setEditingRoomId] = useState(null);
+  const [roomSaving, setRoomSaving] = useState(false);
+  const [roomError, setRoomError] = useState('');
+  const [roomForm, setRoomForm] = useState({
+    BlockId: '',
+    roomNumber: '',
+    roomType: 'Standard 4-Bed',
+    capacity: '4',
+    gender: 'Boys',
+    status: 'Available',
+  });
+
+  // Room Details / Inspection Modal
+  const [inspectingRoom, setInspectingRoom] = useState(null);
+  const [deallocatingUserId, setDeallocatingUserId] = useState(null);
+
+  // Allocation Modal & State (Room to Multiple Students)
   const [allocatingRoom, setAllocatingRoom] = useState(null);
   const [eligibleStudents, setEligibleStudents] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [studentSearch, setStudentSearch] = useState('');
-  const [studentsLoading, setStudentsLoading] = useState(false);
   const [allocating, setAllocating] = useState(false);
   const [allocationError, setAllocationError] = useState('');
-  const [allocationMessage, setAllocationMessage] = useState('');
 
-  const [formData, setFormData] = useState({
-    roomNumber: '',
-    roomType: '',
-    capacity: '',
-    gender: 'Boys',
-  });
+  // Single Student Room Assignment Modal & Filter State (Direct from Requests)
+  const [assigningStudent, setAssigningStudent] = useState(null);
+  const [targetRoomId, setTargetRoomId] = useState('');
+  const [isAssigningRoom, setIsAssigningRoom] = useState(false);
+  const [assignRoomError, setAssignRoomError] = useState('');
+  const [requestSearch, setRequestSearch] = useState('');
+  const [requestStatusFilter, setRequestStatusFilter] = useState('all'); // 'all' | 'awaiting' | 'allocated'
+  const [requestGenderFilter, setRequestGenderFilter] = useState('all'); // 'all' | 'male' | 'female'
 
+  // Helper Getters
   const getRoomId = (room) => room.Id ?? room.id;
   const getRoomNumber = (room) => room.room_num ?? 'N/A';
   const getCapacity = (room) => Number(room.Capacity ?? room.capacity ?? 0);
   const getOccupiedCount = (room) => {
     if (room.Occupied != null) return Number(room.Occupied);
-    if (room.occupiedCount != null) return Number(room.occupiedCount);
-    if (room.occupied != null && !Number.isNaN(Number(room.occupied))) {
-      return Number(room.occupied);
-    }
     if (Array.isArray(room.participants)) return room.participants.length;
-    if (Array.isArray(room.studentsList)) return room.studentsList.length;
     return 0;
   };
-  const getGender = (room) => String(room.Gender ?? room.gender ?? room.category ?? '').toLowerCase().trim();
-  const getRoomType = (room) => room.Type ?? room.type ?? room.roomType ?? 'Standard';
-  const getUserId = (user) => user.Id ?? user.id ?? user._id ?? user.UserId ?? user.userId;
-  const getStudentName = (student) => student.UserName ?? student.username ?? student.Name ?? student.name ?? 'Unnamed Student';
-  const getStudentEmail = (student) => student.Email ?? student.email ?? '';
-  const getStudentRollNumber = (student) => student.RollNumber ?? student.rollNumber ?? student.RollNo ?? student.rollNo ?? '';
-  const getStudentGender = (student) => String(student.Gender ?? student.gender ?? '').toLowerCase().trim();
-  const studentAlreadyAllocated = (student) => { const value = student.AccommodationAllocated ?? student.accommodationAllocated ?? student.IsAllocated ?? student.isAllocated ?? student.allocated;
-    return (
-      value === true || value === 1 || Boolean( student.AccommodationId ?? student.accommodationId ?? student.RoomId ?? student.roomId ?? student.allocatedRoom )
-    );
-  };
+  const getRoomGender = (room) => String(room.BlockGender || room.Gender || room.gender || '').trim();
+  const isBoysRoom = (room) => ['boys', 'boy', 'male', 'm'].includes(getRoomGender(room).toLowerCase());
+  const isGirlsRoom = (room) => ['girls', 'girl', 'female', 'f'].includes(getRoomGender(room).toLowerCase());
 
-  const getStudents = (room) => {
-    const students = room.participants ?? room.studentsList;
-    if (Array.isArray(students)) {
-      if (students.length === 0) return 'No students assigned';
-      return students.map((student) => typeof student === 'string' ? student : getStudentName(student)).join(', ');
-    }
-    return typeof room.students === 'string'
-      ? room.students
-      : 'Student details unavailable';
-  };
   const getRoomStatus = (room) => {
     const capacity = getCapacity(room);
     const occupied = getOccupiedCount(room);
@@ -107,486 +126,366 @@ function AccomodationRedirectPage() {
     return 'Available';
   };
 
-  const getStatusBadge = (status) => {
-    if (status === 'Fully Occupied') {
-      return 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400';
-    }
-    if (status === 'Available') {
-      return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400';
-    }
-    if (status === 'Maintenance') {
-      return 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300';
-    }
-    return 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400';
-  };
-
-  const isBoysRoom = (room) =>['male', 'boy', 'boys', 'm'].includes(getGender(room));
-
-  const isGirlsRoom = (room) => ['female', 'girl', 'girls', 'f'].includes(getGender(room));
-
-  const getAvailableRooms = (roomList) =>
-    roomList.filter(
-      (room) =>
-        getRoomStatus(room) !== 'Maintenance' &&
-        getOccupiedCount(room) < getCapacity(room)
-    );
-  const getAllocatedRooms = (roomList) => roomList.filter((room) => getOccupiedCount(room) > 0);
-  const formatDate = (date) => {
-    if (!date) return 'Date not available';
-    const parsedDate = new Date(date);
-    if (Number.isNaN(parsedDate.getTime())) return String(date);
-    return parsedDate.toLocaleDateString('en-IN', {
+  const formatDateTime = (timestamp) => {
+    if (!timestamp) return 'Time not recorded';
+    const parsed = new Date(timestamp);
+    if (Number.isNaN(parsed.getTime())) return String(timestamp);
+    return parsed.toLocaleString('en-IN', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
-      timeZone: 'UTC',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
     });
   };
 
-  const getRoomsFromResponse = (result) => {
-    if (Array.isArray(result)) return result;
-    if (Array.isArray(result.data)) return result.data;
-    if (Array.isArray(result.rooms)) return result.rooms;
-    if (Array.isArray(result.data?.rooms)) return result.data.rooms;
-    return [];
-  };
-
-  const fetchAccommodation = useCallback(async (signal) => {
-    const [response, eventResponse] = await Promise.all([
-      fetch(`http://localhost:3000/api/accommodation`, { signal }),
-      eventId
-        ? fetch(`http://localhost:3000/api/events/${encodeURIComponent(eventId)}`, { signal })
-        : Promise.resolve(null)
-    ]);
-    const result = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      throw new Error(
-        result.message ||
-        `Unable to fetch accommodation details (${response.status}).`
-      );
-    }
-
-    let roomList = getRoomsFromResponse(result);
-    if (eventId) {
-      const hasEventReference = roomList.some(
-        (room) =>
-          room.eventId != null ||
-          room.EventId != null ||
-          room.event?.id != null ||
-          room.event?._id != null
-      );
-
-      if (hasEventReference) {
-        roomList = roomList.filter((room) => {
-          const roomEventId =
-            room.eventId ??
-            room.EventId ??
-            room.event?.id ??
-            room.event?._id;
-
-          return String(roomEventId) === String(eventId);
-        });
-      }
-    }
-
-    let eventDetails =
-      result.event ??
-      result.data?.event ??
-      roomList.find((room) => room.event)?.event ??
-      roomList.find((room) => room.eventDetails)?.eventDetails ??
-      null;
-
-    if (eventResponse) {
-      const eventResult = await eventResponse.json().catch(() => ({}));
-      if (!eventResponse.ok) {
-        throw new Error(
-          eventResult.message || `Unable to fetch event details (${eventResponse.status}).`
-        );
-      }
-      eventDetails =
-        eventResult.event ??
-        eventResult.data?.event ??
-        eventResult.data ??
-        eventResult;
-    }
-
-    setRooms(roomList);
-    setEvent(eventDetails);
-  }, [eventId]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadAccommodation = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        await fetchAccommodation(controller.signal);
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          setError(err.message || 'Failed to load accommodation details.');
-        }
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    };
-
-    loadAccommodation();
-    return () => controller.abort();
-  }, [eventId, fetchAccommodation]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const fetchAccommodationRequests = async () => {
-      if (!eventId) {
-        setRequestsError('No event is assigned to this accommodation page.');
-        setRequestsLoading(false);
-        return;
-      }
-
-      try {
-        setRequestsLoading(true);
-        setRequestsError('');
-        const response = await fetch(
-          `http://localhost:3000/api/physical-services/events/${encodeURIComponent(eventId)}/accommodation-participants`,
-          { signal: controller.signal }
-        );
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(result.message || 'Unable to load accommodation requests.');
-        }
-        setRequestedStudents(Array.isArray(result.participants) ? result.participants : []);
-      } catch (requestError) {
-        if (requestError.name !== 'AbortError') {
-          setRequestsError(requestError.message || 'Unable to load accommodation requests.');
-          setRequestedStudents([]);
-        }
-      } finally {
-        if (!controller.signal.aborted) setRequestsLoading(false);
-      }
-    };
-
-    fetchAccommodationRequests();
-    return () => controller.abort();
-  }, [eventId]);
-
-  const resetForm = () => {
-    setFormData({
-      roomNumber: '',
-      roomType: '',
-      capacity: '',
-      gender: 'Boys',
+  const formatDate = (date) => {
+    if (!date) return 'N/A';
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return String(date);
+    return parsed.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
     });
-    setEditingRoomId(null);
-    setFormError('');
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((previous) => ({ ...previous, [name]: value }));
+  // Fetch all Accommodation Data
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const [blocksRes, roomsRes, eventRes, requestsRes] = await Promise.all([
+        fetch(`http://localhost:3000/api/accommodation/blocks${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`),
+        fetch(`http://localhost:3000/api/accommodation`),
+        eventId ? fetch(`http://localhost:3000/api/events/${encodeURIComponent(eventId)}`) : Promise.resolve(null),
+        eventId ? fetch(`http://localhost:3000/api/physical-services/events/${encodeURIComponent(eventId)}/accommodation-participants`) : Promise.resolve(null),
+      ]);
+
+      const [blocksData, roomsData] = await Promise.all([
+        blocksRes.json().catch(() => ({})),
+        roomsRes.json().catch(() => ({})),
+      ]);
+
+      if (blocksRes.ok && Array.isArray(blocksData.data)) {
+        setBlocks(blocksData.data);
+      }
+      if (roomsRes.ok && Array.isArray(roomsData.data)) {
+        setRooms(roomsData.data);
+      }
+
+      if (eventRes && eventRes.ok) {
+        const evData = await eventRes.json().catch(() => ({}));
+        setEvent(evData.event || evData.data || evData);
+      }
+
+      if (requestsRes && requestsRes.ok) {
+        const reqData = await requestsRes.json().catch(() => ({}));
+        setRequestedStudents(Array.isArray(reqData.participants) ? reqData.participants : []);
+      }
+    } catch (err) {
+      console.error('Fetch accommodation error:', err);
+      setError(err.message || 'Failed to load accommodation data.');
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Block Handlers
+  const openAddBlockModal = () => {
+    setEditingBlockId(null);
+    setBlockForm({
+      BlockName: '',
+      Gender: 'Boys',
+      Description: '',
+    });
+    setBlockError('');
+    setShowBlockModal(true);
   };
 
-  const handleAddRoomClick = () => {
-    resetForm();
-    setSuccessMessage('');
-    setShowForm((previous) => !previous);
+  const openEditBlockModal = (block) => {
+    setEditingBlockId(block.Id);
+    setBlockForm({
+      BlockName: block.BlockName,
+      Gender: block.Gender,
+      Description: block.Description || '',
+    });
+    setBlockError('');
+    setShowBlockModal(true);
   };
 
-  const handleEditRoom = (room) => {
-    const roomId = getRoomId(room);
+  const handleSaveBlock = async (e) => {
+    e.preventDefault();
+    if (!blockForm.BlockName.trim()) {
+      setBlockError('Please provide a block name (e.g. Cauvery Boys Hostel).');
+      return;
+    }
+    setBlockSaving(true);
+    setBlockError('');
+    try {
+      const url = editingBlockId
+        ? `http://localhost:3000/api/accommodation/blocks/${editingBlockId}`
+        : `http://localhost:3000/api/accommodation/blocks`;
+      const method = editingBlockId ? 'PUT' : 'POST';
 
-    if (!roomId) {
-      setError('Room ID not found. Unable to edit this room.');
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          EventId: eventId ? Number(eventId) : null,
+          BlockName: blockForm.BlockName.trim(),
+          Gender: blockForm.Gender,
+          Description: blockForm.Description.trim(),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to save hostel block.');
+      }
+
+      setSuccessMessage(editingBlockId ? 'Block updated successfully.' : 'New block created successfully.');
+      setShowBlockModal(false);
+      await fetchData();
+    } catch (err) {
+      setBlockError(err.message || 'Failed to save block.');
+    } finally {
+      setBlockSaving(false);
+    }
+  };
+
+  const handleDeleteBlock = async (block) => {
+    if (!window.confirm(`Are you sure you want to delete "${block.BlockName}"? This will delete all rooms inside this block.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:3000/api/accommodation/blocks/${block.Id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to delete block.');
+      }
+      setSuccessMessage('Hostel block deleted successfully.');
+      await fetchData();
+    } catch (err) {
+      alert(err.message || 'Could not delete block.');
+    }
+  };
+
+  // Room Handlers
+  const openAddRoomModal = (defaultBlockId = null) => {
+    if (blocks.length === 0) {
+      alert('Please create at least one Hostel Block (Boys or Girls) first before adding rooms.');
+      setActiveTab('blocks');
+      openAddBlockModal();
       return;
     }
 
-    setEditingRoomId(roomId);
-    setFormData({
-      roomNumber: String(
-        getRoomNumber(room) === 'N/A' ? '' : getRoomNumber(room)
-      ),
-      roomType: String(getRoomType(room)),
-      capacity: String(getCapacity(room)),
-      gender: isGirlsRoom(room) ? 'Girls' : 'Boys',
+    const selectedBlock = defaultBlockId
+      ? blocks.find((b) => String(b.Id) === String(defaultBlockId)) || blocks[0]
+      : blocks[0];
+
+    setEditingRoomId(null);
+    setRoomForm({
+      BlockId: String(selectedBlock.Id),
+      roomNumber: '',
+      roomType: 'Standard 4-Bed',
+      capacity: '4',
+      gender: selectedBlock.Gender,
+      status: 'Available',
     });
+    setRoomError('');
+    setShowRoomModal(true);
+  };
 
-    setFormError('');
-    setSuccessMessage('');
-    setShowForm(true);
+  const openEditRoomModal = (room) => {
+    setEditingRoomId(room.Id);
+    setRoomForm({
+      BlockId: room.BlockId ? String(room.BlockId) : '',
+      roomNumber: room.room_num || '',
+      roomType: room.Type || 'Standard',
+      capacity: String(room.Capacity || '4'),
+      gender: room.Gender || 'Boys',
+      status: room.Status || 'Available',
+    });
+    setRoomError('');
+    setShowRoomModal(true);
+  };
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleRoomBlockChange = (e) => {
+    const chosenBlockId = e.target.value;
+    const chosenBlock = blocks.find((b) => String(b.Id) === String(chosenBlockId));
+    setRoomForm((prev) => ({
+      ...prev,
+      BlockId: chosenBlockId,
+      gender: chosenBlock ? chosenBlock.Gender : prev.gender,
+    }));
   };
 
   const handleSaveRoom = async (e) => {
     e.preventDefault();
-    setFormError('');
-    setError('');
-    setSuccessMessage('');
-
-    if (
-      !formData.roomNumber.trim() ||
-      !formData.roomType.trim() ||
-      formData.capacity === ''
-    ) {
-      setFormError('Room number, room type and student capacity are required.');
+    if (!roomForm.roomNumber.trim()) {
+      setRoomError('Room number is required.');
+      return;
+    }
+    const cap = Number(roomForm.capacity);
+    if (!cap || cap < 1) {
+      setRoomError('Capacity must be at least 1.');
       return;
     }
 
-    const capacity = Number(formData.capacity);
-
-    if (!Number.isInteger(capacity) || capacity < 1) {
-      setFormError('Student capacity must be a positive whole number.');
-      return;
-    }
-
-    const existingRoom = editingRoomId
-      ? rooms.find((room) => String(getRoomId(room)) === String(editingRoomId))
-      : null;
-
-    const currentOccupied = existingRoom ? getOccupiedCount(existingRoom) : 0;
-
-    if (capacity < currentOccupied) {
-      setFormError(
-        `This room already has ${currentOccupied} students. Capacity cannot be less than the current occupied count.`
-      );
-      return;
-    }
-
-    const roomData = {
-      room_num: formData.roomNumber.trim(),
-      Type: formData.roomType.trim(),
-      Gender: formData.gender,
-      Capacity: capacity,
-    };
-
-    if (!editingRoomId) {
-      roomData.Occupied = 0;
-      roomData.UserId = null;
-      roomData.Status = 'Available';
-    }
-
+    setRoomSaving(true);
+    setRoomError('');
     try {
-      setSaving(true);
-
       const url = editingRoomId
         ? `http://localhost:3000/api/accommodation/${editingRoomId}`
         : `http://localhost:3000/api/accommodation`;
+      const method = editingRoomId ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
-        method: editingRoomId ? 'PUT' : 'POST',
+      const existingRoom = editingRoomId ? rooms.find((r) => r.Id === editingRoomId) : null;
+      const occupied = existingRoom ? getOccupiedCount(existingRoom) : 0;
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(roomData),
+        body: JSON.stringify({
+          BlockId: roomForm.BlockId ? Number(roomForm.BlockId) : null,
+          room_num: roomForm.roomNumber.trim(),
+          Type: roomForm.roomType.trim(),
+          Gender: roomForm.gender,
+          Capacity: cap,
+          Occupied: occupied,
+          Status: roomForm.status,
+        }),
       });
 
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          result.message ||
-          result.error ||
-          `Unable to ${editingRoomId ? 'update' : 'add'} the room.`
-        );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to save room.');
       }
 
-      const wasEditing = Boolean(editingRoomId);
-      resetForm();
-      setShowForm(false);
-      await fetchAccommodation();
-
-      setSuccessMessage(
-        result.message ||
-        (wasEditing ? 'Room updated successfully.' : 'Room added successfully.')
-      );
+      setSuccessMessage(editingRoomId ? 'Room updated successfully.' : 'Room created successfully.');
+      setShowRoomModal(false);
+      await fetchData();
     } catch (err) {
-      setFormError(err.message || 'Unable to save room details.');
+      setRoomError(err.message || 'Failed to save room.');
     } finally {
-      setSaving(false);
+      setRoomSaving(false);
     }
   };
 
   const handleDeleteRoom = async (room) => {
-    const roomId = getRoomId(room);
-
-    if (!roomId) {
-      setError('Room ID not found. Unable to delete this room.');
+    if (getOccupiedCount(room) > 0) {
+      alert('This room has active student allocations. Please deallocate all students before deleting.');
       return;
     }
-
-    const occupied = getOccupiedCount(room);
-    const message =
-      occupied > 0
-        ? `${getRoomNumber(room)} has ${occupied} allocated student(s). Are you sure you want to delete this room?`
-        : `Are you sure you want to delete room ${getRoomNumber(room)}?`;
-
-    if (!window.confirm(message)) return;
-
-    setError('');
-    setSuccessMessage('');
+    if (!window.confirm(`Delete room "${room.room_num}"?`)) return;
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/accommodation/${roomId}`,
-        { method: 'DELETE' }
-      );
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          result.message || result.error || 'Unable to delete the room.'
-        );
+      const res = await fetch(`http://localhost:3000/api/accommodation/${room.Id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to delete room.');
       }
-
-      if (String(editingRoomId) === String(roomId)) {
-        resetForm();
-        setShowForm(false);
-      }
-
-      if (
-        allocatingRoom &&
-        String(getRoomId(allocatingRoom)) === String(roomId)
-      ) {
-        closeAllocationPanel();
-      }
-
-      await fetchAccommodation();
-      setSuccessMessage(result.message || 'Room deleted successfully.');
+      setSuccessMessage('Room deleted successfully.');
+      if (inspectingRoom?.Id === room.Id) setInspectingRoom(null);
+      await fetchData();
     } catch (err) {
-      setError(err.message || 'Failed to delete the room.');
+      alert(err.message || 'Failed to delete room.');
     }
   };
 
-  const closeAllocationPanel = () => {
-    setAllocatingRoom(null);
-    setEligibleStudents([]);
-    setSelectedStudents([]);
-    setStudentSearch('');
-    setAllocationError('');
-    setAllocationMessage('');
+  // Inspect Room Details (Who & When)
+  const openInspectRoom = (room) => {
+    setInspectingRoom(room);
   };
 
-  const handleAllocateStudents = async (room) => {
-    const roomId = getRoomId(room);
+  // Deallocate Student from Room
+  const handleDeallocateStudent = async (roomId, userId, studentName) => {
+    if (!window.confirm(`Remove ${studentName || 'this participant'} from this room?`)) return;
 
-    if (!roomId) {
-      setAllocationError('Room ID not found.');
-      return;
-    }
+    try {
+      setDeallocatingUserId(userId);
+      const res = await fetch(`http://localhost:3000/api/accommodation/${roomId}/allocate/${userId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to deallocate student.');
+      }
 
-    if (getOccupiedCount(room) >= getCapacity(room)) {
-      setAllocationError('This room is already full.');
-      return;
+      setSuccessMessage(`${studentName} removed from room.`);
+      await fetchData();
+
+      // Refresh inspected room
+      const refreshedRooms = await fetch(`http://localhost:3000/api/accommodation`).then((r) => r.json());
+      if (Array.isArray(refreshedRooms.data)) {
+        const updated = refreshedRooms.data.find((r) => r.Id === roomId);
+        if (updated) setInspectingRoom(updated);
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to deallocate student.');
+    } finally {
+      setDeallocatingUserId(null);
     }
+  };
+
+  // Student Allocation Flow (Strict Gender Enforcement)
+  const openAllocateModal = (room) => {
+    const isBoys = isBoysRoom(room);
+    const isGirls = isGirlsRoom(room);
+
+    // Filter requested students:
+    // 1. Must NOT already be allocated to any room
+    // 2. MUST match the room's gender (Male for Boys block, Female for Girls block)
+    const alreadyAllocatedUserIds = new Set();
+    rooms.forEach((r) => {
+      (r.participants || []).forEach((p) => alreadyAllocatedUserIds.add(String(p.UserId)));
+    });
+
+    const eligible = requestedStudents.filter((student) => {
+      const uId = String(student.UserId);
+      if (alreadyAllocatedUserIds.has(uId)) return false;
+
+      const sGender = String(student.Gender || '').toLowerCase().trim();
+      const isStudentMale = ['male', 'boy', 'boys', 'm'].includes(sGender);
+      const isStudentFemale = ['female', 'girl', 'girls', 'f'].includes(sGender);
+
+      if (isBoys) return isStudentMale;
+      if (isGirls) return isStudentFemale;
+      return true;
+    });
 
     setAllocatingRoom(room);
+    setEligibleStudents(eligible);
     setSelectedStudents([]);
     setStudentSearch('');
     setAllocationError('');
-    setAllocationMessage('');
-    setStudentsLoading(true);
-
-    window.setTimeout(() => {
-      document.getElementById('student-allocation-panel')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }, 100);
-
-    try {
-      const response = await fetch(`http://localhost:3000/api/users`);
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          result.message || 'Unable to load students. Check the users API.'
-        );
-      }
-
-      const users = Array.isArray(result)
-        ? result
-        : result.users || result.students || result.data || [];
-
-      const roomGender = getGender(room);
-
-      const roomStudentIds = new Set(
-        [
-          ...(Array.isArray(room.participants) ? room.participants : []),
-          ...(Array.isArray(room.studentsList) ? room.studentsList : []),
-        ].map((student) =>
-          String(
-            typeof student === 'object' ? getUserId(student) : student
-          )
-        )
-      );
-
-      const usersById = new Map(
-        users.map((student) => [String(getUserId(student)), student])
-      );
-      const eligible = requestedStudents
-        .map((request) => ({
-          ...(usersById.get(String(request.UserId)) || {}),
-          ...request,
-        }))
-        .filter((student) => {
-        const studentId = getUserId(student);
-        const studentGender = getStudentGender(student);
-
-        const genderMatches = isBoysRoom(room)
-          ? ['boy', 'boys', 'male', 'm'].includes(studentGender)
-          : isGirlsRoom(room)
-            ? ['girl', 'girls', 'female', 'f'].includes(studentGender)
-            : studentGender === roomGender;
-
-        return (
-          studentId != null &&
-          genderMatches &&
-          !studentAlreadyAllocated(student) &&
-          !roomStudentIds.has(String(studentId))
-        );
-      });
-
-      setEligibleStudents(eligible);
-    } catch (err) {
-      setAllocationError(
-        err.message ||
-        'Unable to load eligible students. Please check your API.'
-      );
-    } finally {
-      setStudentsLoading(false);
-    }
   };
 
-  const toggleStudent = (student) => {
-    const studentId = getUserId(student);
-
-    if (studentId == null) {
-      setAllocationError('Student ID not found in the API response.');
-      return;
-    }
-
-    const id = String(studentId);
-    const capacityLeft = Math.max(
-      0,
-      getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom)
-    );
-
-    setAllocationError('');
+  const toggleStudentSelection = (student) => {
+    const uId = String(student.UserId);
+    const capacityLeft = Math.max(0, getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom));
 
     setSelectedStudents((current) => {
-      if (current.includes(id)) {
-        return current.filter((selectedId) => selectedId !== id);
+      if (current.includes(uId)) {
+        return current.filter((id) => id !== uId);
       }
-
       if (current.length >= capacityLeft) {
-        setAllocationError(
-          `Only ${capacityLeft} student(s) can be selected for this room.`
-        );
+        setAllocationError(`Only ${capacityLeft} bed(s) available in this room.`);
         return current;
       }
-
-      return [...current, id];
+      setAllocationError('');
+      return [...current, uId];
     });
   };
 
@@ -596,851 +495,1840 @@ function AccomodationRedirectPage() {
       return;
     }
 
-    const capacityLeft = Math.max(
-      0,
-      getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom)
-    );
-
-    if (selectedStudents.length > capacityLeft) {
-      setAllocationError(
-        `Only ${capacityLeft} student(s) can be allocated to this room.`
-      );
-      return;
-    }
-
     setAllocating(true);
     setAllocationError('');
-    setAllocationMessage('');
-
     try {
-      const roomId = getRoomId(allocatingRoom);
+      const res = await fetch(`http://localhost:3000/api/accommodation/${allocatingRoom.Id}/allocate`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: Number(eventId),
+          studentIds: selectedStudents.map(Number),
+        }),
+      });
 
-      const response = await fetch(
-        `http://localhost:3000/api/accommodation/${roomId}/allocate`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            eventId: Number(eventId),
-            studentIds: selectedStudents.map(Number),
-          }),
-        }
-      );
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          result.message ||
-          'Allocation failed. Check whether the backend allocation endpoint exists.'
-        );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to allocate students.');
       }
 
-      setAllocationMessage(
-        result.message || 'Students allocated successfully.'
-      );
-      setSelectedStudents([]);
+      setSuccessMessage('Students successfully allocated to room.');
+      setAllocatingRoom(null);
+      await fetchData();
 
-      await fetchAccommodation();
-
-      const refreshedRoomResponse = await fetch(
-        `http://localhost:3000/api/accommodation/${roomId}`
-      );
-      const refreshedRoomResult = await refreshedRoomResponse
-        .json()
-        .catch(() => ({}));
-
-      if (refreshedRoomResponse.ok) {
-        const refreshedRoom =
-          refreshedRoomResult.data ||
-          refreshedRoomResult.accommodation ||
-          refreshedRoomResult.room ||
-          refreshedRoomResult;
-
-        setAllocatingRoom(refreshedRoom);
-        await handleAllocateStudents(refreshedRoom);
+      // If we were inspecting, refresh inspected room
+      if (inspectingRoom?.Id === allocatingRoom.Id) {
+        const refreshedRooms = await fetch(`http://localhost:3000/api/accommodation`).then((r) => r.json());
+        if (Array.isArray(refreshedRooms.data)) {
+          const updated = refreshedRooms.data.find((r) => r.Id === allocatingRoom.Id);
+          if (updated) setInspectingRoom(updated);
+        }
       }
     } catch (err) {
-      setAllocationError(
-        err.message || 'Unable to allocate participants to this room.'
-      );
+      setAllocationError(err.message || 'Failed to allocate students.');
     } finally {
       setAllocating(false);
     }
   };
 
-  const eventName =
-    event?.eventName ??
-    event?.EventName ??
-    event?.name ??
-    event?.title ??
-    'Accommodation Management';
-
-  const eventStartDate =
-    event?.startDate ??
-    event?.start_date ??
-    event?.eventStartDate ??
-    event?.eventDate ??
-    event?.date;
-
-  const eventEndDate =
-    event?.endDate ?? event?.end_date ?? event?.eventEndDate ?? eventStartDate;
-
-  const eventLocation =
-    event?.location ??
-    event?.Location ??
-    event?.venue ??
-    event?.eventLocation ??
-    event?.address ??
-    'Location not available';
-
-  const boysRooms = rooms.filter(isBoysRoom);
-  const girlsRooms = rooms.filter(isGirlsRoom);
-
-  const totalRooms = rooms.length;
-  const allocatedRooms = rooms.filter(
-    (room) => getOccupiedCount(room) > 0
-  ).length;
-  const availableRooms = getAvailableRooms(rooms).length;
-
-  const totalParticipants = rooms.reduce(
-    (total, room) => total + getOccupiedCount(room),
-    0
-  );
-
-  const stats = [
-    { label: 'Total Rooms', value: totalRooms, icon: BedDouble },
-    { label: 'Allocated Rooms', value: allocatedRooms, icon: Users },
-    { label: 'Available Rooms', value: availableRooms, icon: Clock },
-    { label: 'Allocated Students', value: totalParticipants, icon: Users },
-  ];
-
-  const filteredRooms = (roomList) =>
-    roomList.filter((room) => {
-      const searchText = [
-        getRoomNumber(room),
-        getRoomType(room),
-        getStudents(room),
-        getRoomStatus(room),
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return searchText.includes(searchTerm.trim().toLowerCase());
-    });
-
-  const accommodationSections = [
-    {
-      title: 'Boys Accommodation',
-      gender: 'boys',
-      icon: Mars,
-      rooms: boysRooms,
-    },
-    {
-      title: 'Girls Accommodation',
-      gender: 'girls',
-      icon: Venus,
-      rooms: girlsRooms,
-    },
-  ];
-
-  const renderRoomActions = (room) => {
-    const roomId = getRoomId(room);
-
-    return (
-      <div className="flex flex-wrap justify-end gap-2">
-
-        <button
-          type="button"
-          disabled={!roomId}
-          onClick={() => handleEditRoom(room)}
-          aria-label="Edit room"
-          title="Edit room"
-          className="rounded-lg border border-emerald-200 p-2 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50 dark:border-emerald-900 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
-        >
-          <Edit2 className="h-4 w-4" />
-        </button>
-
-        <button
-          type="button"
-          disabled={!roomId}
-          onClick={() => handleDeleteRoom(room)}
-          aria-label="Delete room"
-          title="Delete room"
-          className="rounded-lg border border-red-200 p-2 text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      </div>
-    );
+  // Direct Student Room Assignment Handlers (From Requests Tab)
+  const openAssignStudentModal = (student) => {
+    setAssigningStudent(student);
+    setTargetRoomId(student.AccommodationId ? String(student.AccommodationId) : '');
+    setAssignRoomError('');
   };
 
-  const filteredEligibleStudents = eligibleStudents.filter((student) => {
-    const text = [
-      getStudentName(student),
-      getStudentEmail(student),
-      getStudentRollNumber(student),
+  const handleConfirmSingleStudentAssignment = async (e) => {
+    e.preventDefault();
+    if (!targetRoomId) {
+      setAssignRoomError('Please choose an available room.');
+      return;
+    }
+    if (!assigningStudent) return;
+
+    setIsAssigningRoom(true);
+    setAssignRoomError('');
+    try {
+      // If student is already allocated to another room and is switching, deallocate first
+      if (assigningStudent.AccommodationId && String(assigningStudent.AccommodationId) !== String(targetRoomId)) {
+        await fetch(`http://localhost:3000/api/accommodation/${assigningStudent.AccommodationId}/allocate/${assigningStudent.UserId}`, {
+          method: 'DELETE',
+        });
+      }
+
+      const res = await fetch(`http://localhost:3000/api/accommodation/${targetRoomId}/allocate`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId: Number(eventId),
+          studentIds: [assigningStudent.UserId],
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to assign room.');
+      }
+
+      setSuccessMessage(`Assigned ${assigningStudent.ParticipantName} to room successfully.`);
+      setAssigningStudent(null);
+      await fetchData();
+    } catch (err) {
+      setAssignRoomError(err.message || 'Failed to assign room.');
+    } finally {
+      setIsAssigningRoom(false);
+    }
+  };
+
+  // Filtered Rooms Computation
+  const filteredRooms = rooms.filter((room) => {
+    const matchesSearch = [
+      room.room_num,
+      room.Type,
+      room.BlockName,
+      ...(room.participants || []).map((p) => p.UserName),
     ]
       .join(' ')
-      .toLowerCase();
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase().trim());
 
-    return text.includes(studentSearch.trim().toLowerCase());
+    const matchesGender =
+      genderFilter === 'all'
+        ? true
+        : genderFilter === 'Boys'
+        ? isBoysRoom(room)
+        : isGirlsRoom(room);
+
+    const matchesBlock =
+      selectedBlockFilter === 'all'
+        ? true
+        : String(room.BlockId) === String(selectedBlockFilter);
+
+    return matchesSearch && matchesGender && matchesBlock;
   });
 
-  return (
-    <main className="min-h-screen w-full bg-slate-50 p-3 font-sans text-slate-900 dark:bg-[#070908] dark:text-white sm:p-5 xl:p-8">
-      <div className="mx-auto w-full max-w-[1600px] space-y-5">
-        <button
-          type="button"
-          onClick={() => navigate('/admin/physical-event')}
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm font-medium text-slate-600 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-400"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Physical Event
-        </button>
+  const totalCapacity = rooms.reduce((sum, r) => sum + getCapacity(r), 0);
+  const totalOccupied = rooms.reduce((sum, r) => sum + getOccupiedCount(r), 0);
+  const totalAvailableBeds = Math.max(0, totalCapacity - totalOccupied);
 
+  return (
+    <main className="min-h-screen w-full bg-slate-50 dark:bg-black font-sans text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto w-full max-w-7xl space-y-6">
+
+        {/* Back Link & Navigation */}
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => navigate('/admin/physical-event')}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Physical Event Hub</span>
+          </button>
+
+        </div>
+
+        {/* Alerts */}
         {error && (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
+          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 text-sm flex items-center justify-between">
             <span>{error}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setError('');
-                setLoading(true);
-                fetchAccommodation()
-                  .catch((err) =>
-                    setError(err.message || 'Unable to load rooms.')
-                  )
-                  .finally(() => setLoading(false));
-              }}
-              className="shrink-0 font-bold underline"
-            >
+            <button type="button" onClick={fetchData} className="font-bold underline cursor-pointer">
               Retry
             </button>
           </div>
         )}
 
         {successMessage && (
-          <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400">
-            <span>{successMessage}</span>
-            <button
-              type="button"
-              onClick={() => setSuccessMessage('')}
-              aria-label="Dismiss success message"
-            >
+          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-sm flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              <span>{successMessage}</span>
+            </div>
+            <button type="button" onClick={() => setSuccessMessage('')}>
               <X className="h-4 w-4" />
             </button>
           </div>
         )}
 
-        <section className="flex flex-col items-start justify-between gap-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 xl:flex-row xl:items-center xl:p-8">
-          <div className="min-w-0 flex-1 space-y-4">
+        {/* Banner */}
+        <section className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
-                <BedDouble className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
-              </div>
-              <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
-                Accommodation Management
-              </h1>
-            </div>
-
-            <p className="max-w-3xl text-sm leading-relaxed text-slate-500 dark:text-slate-400 sm:text-base">
-              Manage rooms, allocate students and maintain accommodation
-              details for the physical event.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm text-slate-500 dark:text-slate-400">
-              <span className="font-bold text-slate-700 dark:text-slate-300">
-                {eventName}
-              </span>
-
-              <span className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 shrink-0 text-emerald-600" />
-                <span>
-                  {eventStartDate
-                    ? formatDate(eventStartDate)
-                    : 'Start date not available'}
-                  {eventEndDate && eventEndDate !== eventStartDate
-                    ? ` – ${formatDate(eventEndDate)}`
-                    : ''}
-                </span>
-              </span>
-
-              <span className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 shrink-0 text-emerald-600" />
-                <span>{eventLocation}</span>
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleAddRoomClick}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3.5 text-sm font-bold text-white hover:bg-emerald-800 dark:bg-emerald-500 dark:hover:bg-emerald-600 sm:w-auto sm:min-w-[190px]"
-          >
-            {showForm ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-            {showForm ? 'Close Form' : 'Add New Room'}
-          </button>
-        </section>
-
-        <section className="rounded-3xl border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-900/60 dark:bg-zinc-950 sm:p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-bold">Team Accommodation Requests</h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Team leads’ saved requests apply to every registered member.
-              </p>
-            </div>
-            <div className="rounded-xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300">
-              {requestsLoading
-                ? 'Loading requests…'
-                : `${requestedStudents.length} members · ${new Set(requestedStudents.map((student) => student.TeamId)).size} teams`}
-            </div>
-          </div>
-
-          {requestsError ? (
-            <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-400">
-              {requestsError}
-            </p>
-          ) : requestsLoading ? (
-            <p className="py-6 text-center text-sm text-slate-500">Loading team requests…</p>
-          ) : requestedStudents.length === 0 ? (
-            <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-zinc-900 dark:text-slate-400">
-              No teams have requested accommodation yet.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[620px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500 dark:border-zinc-800">
-                    <th className="px-3 py-3">Participant</th>
-                    <th className="px-3 py-3">Team</th>
-                    <th className="px-3 py-3">Team lead</th>
-                    <th className="px-3 py-3">Gender</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
-                  {requestedStudents.map((student) => (
-                    <tr key={`${student.TeamId}-${student.UserId}`}>
-                      <td className="px-3 py-3">
-                        <p className="font-semibold">{student.ParticipantName}</p>
-                        <p className="text-xs text-slate-500">{student.Email}</p>
-                      </td>
-                      <td className="px-3 py-3 font-medium">{student.TeamName}</td>
-                      <td className="px-3 py-3">
-                        <p>{student.TeamLeadName}</p>
-                        <p className="text-xs text-slate-500">{student.TeamLeadEmail}</p>
-                      </td>
-                      <td className="px-3 py-3">{student.Gender || 'Not provided'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        {showForm && (
-          <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 xl:p-8">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
-                {editingRoomId ? (
-                  <Edit2 className="h-5 w-5 text-emerald-700 dark:text-emerald-500" />
-                ) : (
-                  <Plus className="h-5 w-5 text-emerald-700 dark:text-emerald-500" />
-                )}
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <BedDouble className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">
-                  {editingRoomId ? 'Edit Room' : 'Add New Room'}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Capacity means the maximum number of students who can stay in
-                  this room.
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                  Hostel &amp; Accommodation Management
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
+                  Manage Boys &amp; Girls hostel blocks, configure rooms, and enforce gender-segregated allocations.
                 </p>
               </div>
             </div>
 
-            {formError && (
-              <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
-                {formError}
+            <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-slate-500 dark:text-zinc-400">
+              <span className="font-bold text-slate-800 dark:text-zinc-200">
+                {event?.EventName || 'Physical Hackathon Hub'}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-emerald-500" />
+                {event?.Location || 'Campus Venue'}
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1.5">
+                <CalendarDays className="w-3.5 h-3.5 text-emerald-500" />
+                {event?.PhysicalStartDate ? formatDate(event.PhysicalStartDate) : 'Live Schedule'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={openAddBlockModal}
+              className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-800 dark:text-white font-bold text-xs flex items-center gap-2 border border-slate-200 dark:border-zinc-800 transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-emerald-500" />
+              <span>Add Hostel Block</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => openAddRoomModal()}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Room</span>
+            </button>
+          </div>
+        </section>
+
+        {/* Global Stats */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-medium">
+              <span>Hostel Blocks</span>
+              <Building2 className="w-4 h-4 text-emerald-500" />
+            </div>
+            <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-white">
+              {blocks.length}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {blocks.filter((b) => b.Gender === 'Boys').length} Boys • {blocks.filter((b) => b.Gender === 'Girls').length} Girls
+            </p>
+          </div>
+
+          <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-medium">
+              <span>Configured Rooms</span>
+              <BedDouble className="w-4 h-4 text-emerald-500" />
+            </div>
+            <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-white">
+              {rooms.length}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {rooms.filter(isBoysRoom).length} Boys rooms • {rooms.filter(isGirlsRoom).length} Girls rooms
+            </p>
+          </div>
+
+          <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm">
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-medium">
+              <span>Bed Occupancy</span>
+              <Users className="w-4 h-4 text-emerald-500" />
+            </div>
+            <p className="text-2xl font-bold mt-2 text-emerald-600 dark:text-emerald-400">
+              {totalOccupied} <span className="text-sm font-normal text-slate-400">/ {totalCapacity} beds</span>
+            </p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {totalAvailableBeds} beds available
+            </p>
+          </div>
+
+          <div
+            onClick={() => setActiveTab('requests')}
+            className={`p-5 rounded-2xl border bg-white dark:bg-black shadow-sm cursor-pointer transition group ${
+              activeTab === 'requests'
+                ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                : 'border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40'
+            }`}
+            title="Click to view and manage participant accommodation requests"
+          >
+            <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-medium">
+              <span className="group-hover:text-emerald-500 transition-colors font-bold">Food &amp; Stay Requests</span>
+              <Utensils className="w-4 h-4 text-emerald-500" />
+            </div>
+            <p className="text-2xl font-bold mt-2 text-slate-900 dark:text-white">
+              {requestedStudents.length}
+            </p>
+            <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
+              <span className="text-emerald-500 font-semibold">{requestedStudents.filter((s) => s.AccommodationAllocated).length} allocated</span>
+              <span>•</span>
+              <span className={`font-semibold ${requestedStudents.filter((s) => !s.AccommodationAllocated).length > 0 ? 'text-amber-500' : 'text-slate-400'}`}>
+                {requestedStudents.filter((s) => !s.AccommodationAllocated).length} awaiting room
+              </span>
+            </p>
+          </div>
+        </section>
+
+        {/* Seamless Navigation Tabs */}
+        <div className="relative pt-2">
+          <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto">
+            {[
+              { id: 'rooms', label: 'Rooms Directory', count: rooms.length, icon: BedDouble },
+              { id: 'blocks', label: 'Hostel Blocks', count: blocks.length, icon: Building2 },
+              {
+                id: 'requests',
+                label: 'Food & Accommodation Requests',
+                count: requestedStudents.length,
+                pendingCount: requestedStudents.filter((s) => !s.AccommodationAllocated).length,
+                icon: Utensils,
+              },
+            ].map((tab) => {
+              const isActive = activeTab === tab.id;
+              const TabIcon = tab.icon;
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className="relative h-12 px-5 sm:px-7 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-colors duration-200 outline-none cursor-pointer shrink-0"
+                >
+                  {isActive ? (
+                    <motion.div
+                      layoutId="accFolderTabActivePill"
+                      className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                      transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                    >
+                      <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-20" />
+                    </motion.div>
+                  ) : (
+                    <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0" />
+                  )}
+
+                  <span className={`relative z-20 flex items-center gap-2 transition-colors ${
+                    isActive
+                      ? 'text-slate-900 dark:text-white font-bold'
+                      : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                  }`}>
+                    <TabIcon className={`w-4 h-4 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
+                    <span>{tab.label}</span>
+                    <span
+                      className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${
+                        isActive
+                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                          : 'bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                    {tab.pendingCount > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                        {tab.pendingCount} Pending
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Main Tab Content Card */}
+          <div className="bg-white dark:bg-black rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 space-y-6 relative z-0">
+
+            {/* TAB 1: ROOMS DIRECTORY */}
+            {activeTab === 'rooms' && (
+              <div className="space-y-6">
+                {/* Pending Allocation Alert Banner */}
+                {requestedStudents.filter((s) => !s.AccommodationAllocated).length > 0 && (
+                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-amber-100 text-sm">
+                          {requestedStudents.filter((s) => !s.AccommodationAllocated).length} Participant(s) Awaiting Room Allocation
+                        </p>
+                        <p className="text-[11px] text-amber-300/80 mt-0.5">
+                          Physical teams have requested accommodation. Allocate them directly into rooms below or manage all student requests.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('requests')}
+                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs inline-flex items-center gap-1.5 transition shrink-0 cursor-pointer shadow-sm"
+                    >
+                      <span>Manage &amp; Assign Requests</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Search & Filter Bar */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search room number, type, block, student..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    {/* Gender Filter */}
+                    <div className="flex items-center rounded-xl bg-slate-100 dark:bg-zinc-900 p-1 border border-slate-200 dark:border-zinc-800">
+                      <button
+                        type="button"
+                        onClick={() => setGenderFilter('all')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${genderFilter === 'all' ? 'bg-white dark:bg-black text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-zinc-400'}`}
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGenderFilter('Boys')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition ${genderFilter === 'Boys' ? 'bg-white dark:bg-black text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400'}`}
+                      >
+                        <Mars className="w-3 h-3" /> Boys
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGenderFilter('Girls')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition ${genderFilter === 'Girls' ? 'bg-white dark:bg-black text-rose-500 dark:text-rose-400 shadow-sm' : 'text-slate-500 dark:text-zinc-400'}`}
+                      >
+                        <Venus className="w-3 h-3" /> Girls
+                      </button>
+                    </div>
+
+                    {/* Block Filter */}
+                    <select
+                      value={selectedBlockFilter}
+                      onChange={(e) => setSelectedBlockFilter(e.target.value)}
+                      className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-800 dark:text-zinc-200 focus:outline-none"
+                    >
+                      <option value="all">All Hostel Blocks</option>
+                      {blocks.map((b) => (
+                        <option key={b.Id} value={b.Id}>
+                          {b.BlockName} ({b.Gender})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Rooms Grid */}
+                {loading ? (
+                  <div className="py-16 text-center text-slate-400 text-sm">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-500" />
+                    <span>Loading rooms...</span>
+                  </div>
+                ) : filteredRooms.length === 0 ? (
+                  <div className="py-16 text-center text-slate-400 dark:text-zinc-500">
+                    <BedDouble className="w-10 h-10 mx-auto mb-3 text-slate-300 dark:text-zinc-700" />
+                    <p className="text-sm font-bold">No rooms found matching your filter.</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {blocks.length === 0
+                        ? 'First create a Hostel Block in the "Hostel Blocks" tab, then add rooms to it.'
+                        : 'Click "+ Add New Room" above to configure a room in one of your blocks.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredRooms.map((room) => {
+                      const capacity = getCapacity(room);
+                      const occupied = getOccupiedCount(room);
+                      const available = Math.max(0, capacity - occupied);
+                      const status = getRoomStatus(room);
+                      const isBoys = isBoysRoom(room);
+                      const isGirls = isGirlsRoom(room);
+                      const isFull = available === 0;
+
+                      return (
+                        <div
+                          key={room.Id}
+                          className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black p-5 space-y-4 hover:border-emerald-500/40 transition group"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 ${
+                                  isBoys
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                    : isGirls
+                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                    : 'bg-slate-200 text-slate-700'
+                                }`}>
+                                  {isBoys ? <Mars className="w-3 h-3" /> : <Venus className="w-3 h-3" />}
+                                  {isBoys ? 'Boys Block' : isGirls ? 'Girls Block' : 'General'}
+                                </span>
+                                {room.BlockName && (
+                                  <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400 truncate max-w-[130px]" title={room.BlockName}>
+                                    {room.BlockName}
+                                  </span>
+                                )}
+                              </div>
+                              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">
+                                Room {room.room_num}
+                              </h3>
+                              <p className="text-xs text-slate-500 dark:text-zinc-400">
+                                {room.Type || 'Standard Room'}
+                              </p>
+                            </div>
+
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                              status === 'Fully Occupied'
+                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                : status === 'Available'
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                            }`}>
+                              {status}
+                            </span>
+                          </div>
+
+                          {/* Capacity Meter */}
+                          <div className="space-y-1.5 pt-1">
+                            <div className="flex items-center justify-between text-xs font-semibold">
+                              <span className="text-slate-500 dark:text-zinc-400">
+                                Occupancy
+                              </span>
+                              <span className={occupied > 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500'}>
+                                {occupied} / {capacity} Beds Filled
+                              </span>
+                            </div>
+                            <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-zinc-800 overflow-hidden">
+                              <div
+                                className={`h-full transition-all duration-300 ${
+                                  isFull
+                                    ? 'bg-rose-500'
+                                    : isBoys
+                                    ? 'bg-emerald-500'
+                                    : 'bg-rose-400'
+                                }`}
+                                style={{ width: `${Math.min(100, (occupied / (capacity || 1)) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Quick Allocated Students Snippet */}
+                          {occupied > 0 ? (
+                            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
+                              <span className="text-[11px] text-slate-400">Allocated ({occupied}):</span>
+                              <p className="text-xs font-medium text-slate-800 dark:text-zinc-200 truncate mt-0.5">
+                                {(room.participants || []).map((p) => p.UserName).join(', ')}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs text-slate-400 italic">
+                              No students currently allocated.
+                            </div>
+                          )}
+
+                          {/* Room Actions */}
+                          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openInspectRoom(room)}
+                                className="px-3 py-1.5 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/50 text-slate-700 dark:text-zinc-200 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                                title="View room details and allocated students"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                                <span>Details ({occupied})</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openEditRoomModal(room)}
+                                className="p-1.5 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/50 text-slate-600 dark:text-zinc-300 transition cursor-pointer"
+                                title="Edit Room"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteRoom(room)}
+                                className="p-1.5 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-rose-500/50 text-slate-600 dark:text-zinc-300 hover:text-rose-500 transition cursor-pointer"
+                                title="Delete Room"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {!isFull && (
+                              <button
+                                type="button"
+                                onClick={() => openAllocateModal(room)}
+                                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 transition cursor-pointer shadow-sm"
+                              >
+                                <UserPlus className="w-3.5 h-3.5" />
+                                <span>Allocate</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
-            <form onSubmit={handleSaveRoom} className="space-y-5">
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                <div>
-                  <label htmlFor="roomNumber" className="mb-2 block text-sm font-semibold">
-                    Room Number *
-                  </label>
-                  <input
-                    id="roomNumber"
-                    name="roomNumber"
-                    value={formData.roomNumber}
-                    onChange={handleInputChange}
-                    placeholder="Example: BH1-21"
-                    required
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-600 dark:border-zinc-700 dark:bg-zinc-900"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="roomType" className="mb-2 block text-sm font-semibold">
-                    Room Type *
-                  </label>
-                  <input
-                    id="roomType"
-                    name="roomType"
-                    value={formData.roomType}
-                    onChange={handleInputChange}
-                    placeholder="Standard / Shared"
-                    required
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-600 dark:border-zinc-700 dark:bg-zinc-900"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="capacity" className="mb-2 block text-sm font-semibold">
-                    Student Capacity *
-                  </label>
-                  <input
-                    id="capacity"
-                    name="capacity"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={formData.capacity}
-                    onChange={handleInputChange}
-                    placeholder="Maximum students"
-                    required
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-600 dark:border-zinc-700 dark:bg-zinc-900"
-                  />
-                  <p className="mt-1 text-xs text-slate-500">
-                    Enter maximum students, not beds.
-                  </p>
-                </div>
-
-                <div>
-                  <label htmlFor="gender" className="mb-2 block text-sm font-semibold">
-                    Accommodation For *
-                  </label>
-                  <select
-                    id="gender"
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-emerald-600 dark:border-zinc-700 dark:bg-zinc-900"
+            {/* TAB 2: HOSTEL BLOCKS */}
+            {activeTab === 'blocks' && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                      Hostel Blocks Configuration
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Create dedicated Boys and Girls hostel blocks. Rooms created in a block are designated for that block's gender.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openAddBlockModal}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 transition cursor-pointer self-start sm:self-center"
                   >
-                    <option value="Boys">Boys</option>
-                    <option value="Girls">Girls</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex flex-col justify-end gap-3 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    resetForm();
-                  }}
-                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold dark:border-zinc-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-60 dark:bg-emerald-500"
-                >
-                  <Save className="h-4 w-4" />
-                  {saving ? 'Saving...' : editingRoomId ? 'Update Room' : 'Save Room'}
-                </button>
-              </div>
-            </form>
-          </section>
-        )}
-
-        <section className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
-            >
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
-                <stat.icon className="h-5 w-5 text-emerald-700 dark:text-emerald-500" />
-              </div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                {stat.label}
-              </p>
-              <p className="mt-1 text-2xl font-extrabold">
-                {loading ? '—' : stat.value}
-              </p>
-            </div>
-          ))}
-        </section>
-
-        {!loading && !error && rooms.length === 0 && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-950">
-            <BedDouble className="mx-auto h-10 w-10 text-slate-400" />
-            <h2 className="mt-3 text-lg font-bold">No accommodation rooms found</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Click Add New Room to create your first room.
-            </p>
-          </div>
-        )}
-
-        {loading && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 dark:border-zinc-800 dark:bg-zinc-950">
-            Loading accommodation details...
-          </div>
-        )}
-
-        {!loading &&
-          !error &&
-          accommodationSections.map((section) => {
-            const availableList = getAvailableRooms(section.rooms);
-            const allocatedList = getAllocatedRooms(section.rooms);
-            const visibleRooms = filteredRooms(allocatedList);
-            const SectionIcon = section.icon;
-
-            return (
-              <section
-                key={section.gender}
-                className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 xl:p-8"
-              >
-                <div className="mb-6 flex flex-col justify-between gap-4 border-b border-slate-100 pb-5 dark:border-zinc-800 sm:flex-row sm:items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
-                      <SectionIcon className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold sm:text-xl">{section.title}</h2>
-                      <p className="text-sm text-slate-500">
-                        Manage rooms and student allocation.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { label: 'Total', value: section.rooms.length },
-                      { label: 'Allocated', value: allocatedList.length },
-                      { label: 'Available', value: availableList.length },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className="rounded-xl bg-slate-50 px-3 py-2 text-center dark:bg-zinc-900"
-                      >
-                        <p className="text-[10px] font-bold uppercase text-slate-400">
-                          {item.label}
-                        </p>
-                        <p className="mt-1 text-lg font-extrabold">{item.value}</p>
-                      </div>
-                    ))}
-                  </div>
+                    <Plus className="w-4 h-4" />
+                    <span>Create Hostel Block</span>
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 gap-5 2xl:grid-cols-12">
-                  <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-zinc-800 2xl:col-span-4">
-                    <div className="flex items-center gap-2 border-b border-slate-100 bg-slate-50 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-900/50">
-                      <BedDouble className="h-4 w-4 text-emerald-700 dark:text-emerald-500" />
-                      <h3 className="text-sm font-bold">Available Rooms</h3>
-                    </div>
+                {blocks.length === 0 ? (
+                  <div className="py-16 text-center text-slate-400 dark:text-zinc-500">
+                    <Building2 className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-zinc-700" />
+                    <p className="text-sm font-bold">No Hostel Blocks created yet.</p>
+                    <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                      First add your Boys and Girls hostel blocks (e.g., "Cauvery Boys Hostel" or "Ganga Girls Hostel"). After that, you can add rooms to them.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={openAddBlockModal}
+                      className="mt-4 px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" /> Add First Block
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {blocks.map((block) => {
+                      const isBoys = block.Gender === 'Boys';
+                      const blockRooms = rooms.filter((r) => String(r.BlockId) === String(block.Id));
+                      const totalCap = blockRooms.reduce((sum, r) => sum + getCapacity(r), 0);
+                      const totalOcc = blockRooms.reduce((sum, r) => sum + getOccupiedCount(r), 0);
+                      const totalAvail = Math.max(0, totalCap - totalOcc);
 
-                    <div className="divide-y divide-slate-100 dark:divide-zinc-800">
-                      {availableList.map((room) => {
-                        const roomId = getRoomId(room);
-                        const capacity = getCapacity(room);
-                        const occupied = getOccupiedCount(room);
-
-                        return (
-                          <div
-                            key={roomId ?? getRoomNumber(room)}
-                            className="space-y-3 px-4 py-4 hover:bg-slate-50 dark:hover:bg-zinc-900/50"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-bold">
-                                  {getRoomNumber(room)}
-                                </p>
-                                <p className="mt-1 text-xs text-slate-500">
-                                  {getRoomType(room)}
-                                </p>
-                              </div>
-                              <span className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold ${getStatusBadge(getRoomStatus(room))}`}>
-                                {getRoomStatus(room)}
+                      return (
+                        <div
+                          key={block.Id}
+                          className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black p-5 space-y-4 hover:border-emerald-500/40 transition group"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 w-fit ${
+                                isBoys
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                  : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                              }`}>
+                                {isBoys ? <Mars className="w-3 h-3" /> : <Venus className="w-3 h-3" />}
+                                {isBoys ? 'Boys Hostel (Male Only)' : 'Girls Hostel (Female Only)'}
                               </span>
+                              <h3 className="text-xl font-extrabold text-slate-900 dark:text-white pt-1">
+                                {block.BlockName}
+                              </h3>
+                              {block.Description && (
+                                <p className="text-xs text-slate-500 dark:text-zinc-400">
+                                  {block.Description}
+                                </p>
+                              )}
                             </div>
 
-                            <div className="flex items-center justify-between text-xs text-slate-500">
-                              <span>Students: {occupied}/{capacity}</span>
-                              <span>{capacity - occupied} spots left</span>
-                            </div>
-
-                            <div className="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-800">
-                              <div
-                                className="h-full rounded-full bg-emerald-500"
-                                style={{
-                                  width: `${capacity > 0 ? Math.min((occupied / capacity) * 100, 100) : 0}%`,
-                                }}
-                              />
-                            </div>
-
-                            <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-1">
                               <button
                                 type="button"
-                                onClick={() => handleAllocateStudents(room)}
-                                disabled={!roomId}
-                                className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50 dark:bg-emerald-500"
+                                onClick={() => openEditBlockModal(block)}
+                                className="p-1.5 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/50 text-slate-600 dark:text-zinc-300 transition cursor-pointer"
+                                title="Edit Block"
                               >
-                                <UserPlus className="h-4 w-4" />
-                                Allocate Students
+                                <Edit2 className="w-3.5 h-3.5" />
                               </button>
-                              {renderRoomActions(room)}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteBlock(block)}
+                                className="p-1.5 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-rose-500/50 text-slate-600 dark:text-zinc-300 hover:text-rose-500 transition cursor-pointer"
+                                title="Delete Block"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
-                        );
-                      })}
 
-                      {availableList.length === 0 && (
-                        <p className="p-5 text-center text-xs text-slate-500">
-                          No available rooms.
-                        </p>
-                      )}
-                    </div>
+                          {/* Stats in Block */}
+                          <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-white dark:bg-black border border-slate-200/80 dark:border-zinc-800 text-center">
+                            <div>
+                              <p className="text-[10px] text-slate-400 font-medium">Rooms</p>
+                              <p className="text-base font-bold text-slate-900 dark:text-white">
+                                {blockRooms.length}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-slate-400 font-medium">Capacity</p>
+                              <p className="text-base font-bold text-slate-900 dark:text-white">
+                                {totalCap}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-slate-400 font-medium">Beds Free</p>
+                              <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                                {totalAvail}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Action Button */}
+                          <button
+                            type="button"
+                            onClick={() => openAddRoomModal(block.Id)}
+                            className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 hover:bg-emerald-600 hover:text-white text-slate-800 dark:text-zinc-200 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span>Add Room to {block.BlockName}</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: FOOD & ACCOMMODATION REQUESTS MANAGEMENT */}
+            {activeTab === 'requests' && (
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Utensils className="w-5 h-5 text-emerald-500" />
+                      <span>Physical Teams — Food &amp; Accommodation Requests</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                      Unified service requests submitted by teams. Directly assign rooms to unallocated participants, manage room transfers, or vacate beds.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
+                      {requestedStudents.length} Total Requests
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      {requestedStudents.filter((s) => !s.AccommodationAllocated).length} Awaiting Room
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      {requestedStudents.filter((s) => s.AccommodationAllocated).length} Allocated
+                    </span>
+                  </div>
+                </div>
+
+                {/* Filter and Search Toolbar */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800/80">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search participant, email, team, college..."
+                      value={requestSearch}
+                      onChange={(e) => setRequestSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                    />
                   </div>
 
-                  <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-zinc-800 2xl:col-span-8">
-                    <div className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50 px-5 py-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-emerald-700 dark:text-emerald-500" />
-                        <h3 className="text-sm font-bold">Allocated Rooms</h3>
-                      </div>
-                      <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <input
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          placeholder="Search room or student..."
-                          className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-xs outline-none focus:border-emerald-600 dark:border-zinc-700 dark:bg-zinc-950"
-                        />
-                      </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Status filter buttons */}
+                    <div className="flex items-center p-1 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800">
+                      <button
+                        type="button"
+                        onClick={() => setRequestStatusFilter('all')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                          requestStatusFilter === 'all'
+                            ? 'bg-slate-900 dark:bg-zinc-800 text-white'
+                            : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                        }`}
+                      >
+                        All ({requestedStudents.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRequestStatusFilter('awaiting')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                          requestStatusFilter === 'awaiting'
+                            ? 'bg-amber-500 text-black'
+                            : 'text-slate-500 dark:text-zinc-400 hover:text-amber-500'
+                        }`}
+                      >
+                        <span>Awaiting</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-900 dark:text-amber-200 font-extrabold">
+                          {requestedStudents.filter((s) => !s.AccommodationAllocated).length}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRequestStatusFilter('allocated')}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                          requestStatusFilter === 'allocated'
+                            ? 'bg-emerald-600 text-white'
+                            : 'text-slate-500 dark:text-zinc-400 hover:text-emerald-500'
+                        }`}
+                      >
+                        <span>Allocated</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-extrabold">
+                          {requestedStudents.filter((s) => s.AccommodationAllocated).length}
+                        </span>
+                      </button>
                     </div>
 
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[850px] text-left text-sm">
+                    {/* Gender filter */}
+                    <select
+                      value={requestGenderFilter}
+                      onChange={(e) => setRequestGenderFilter(e.target.value)}
+                      className="px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                    >
+                      <option value="all">All Genders</option>
+                      <option value="male">Male (Boys Block)</option>
+                      <option value="female">Female (Girls Block)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {requestedStudents.length === 0 ? (
+                  <div className="py-16 text-center text-slate-400 dark:text-zinc-500">
+                    <Utensils className="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-zinc-700" />
+                    <p className="text-sm font-bold">No physical teams have requested Food &amp; Accommodation yet.</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      When physical team leads enable Food &amp; Accommodation on their team dashboard, members appear here.
+                    </p>
+                  </div>
+                ) : (() => {
+                  const filteredRequests = requestedStudents.filter((student) => {
+                    const isAllocated = Boolean(student.AccommodationAllocated || student.AccommodationId);
+                    const sGender = String(student.Gender || '').toLowerCase().trim();
+                    const isMale = ['male', 'boy', 'boys', 'm'].includes(sGender);
+                    const isFemale = ['female', 'girl', 'girls', 'f'].includes(sGender);
+
+                    // Status filter
+                    if (requestStatusFilter === 'awaiting' && isAllocated) return false;
+                    if (requestStatusFilter === 'allocated' && !isAllocated) return false;
+
+                    // Gender filter
+                    if (requestGenderFilter === 'male' && !isMale) return false;
+                    if (requestGenderFilter === 'female' && !isFemale) return false;
+
+                    // Search filter
+                    if (requestSearch.trim()) {
+                      const text = [
+                        student.ParticipantName,
+                        student.Email,
+                        student.TeamName,
+                        student.College,
+                        student.TeamCollege,
+                        student.Mobile,
+                        student.RoomNumber,
+                        student.BlockName,
+                      ]
+                        .filter(Boolean)
+                        .join(' ')
+                        .toLowerCase();
+                      if (!text.includes(requestSearch.toLowerCase().trim())) return false;
+                    }
+
+                    return true;
+                  });
+
+                  if (filteredRequests.length === 0) {
+                    return (
+                      <div className="py-12 text-center text-slate-400 dark:text-zinc-500 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl">
+                        <p className="text-xs font-bold">No participant requests match your search and filter criteria.</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRequestSearch('');
+                            setRequestStatusFilter('all');
+                            setRequestGenderFilter('all');
+                          }}
+                          className="mt-2 text-xs font-bold text-emerald-500 hover:underline cursor-pointer"
+                        >
+                          Reset Filters
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-zinc-800">
+                      <table className="w-full text-left text-xs min-w-[850px]">
                         <thead>
-                          <tr className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-zinc-800">
-                            <th className="px-4 py-3">Room No.</th>
-                            <th className="px-4 py-3">Type</th>
-                            <th className="px-4 py-3 text-center">Student Capacity</th>
-                            <th className="px-4 py-3 text-center">Occupied</th>
-                            <th className="px-4 py-3">Students</th>
-                            <th className="px-4 py-3">Status</th>
-                            <th className="px-4 py-3 text-right">Actions</th>
+                          <tr className="bg-slate-50 dark:bg-zinc-950/80 border-b border-slate-200 dark:border-zinc-800 text-slate-400 font-bold uppercase tracking-wider">
+                            <th className="py-3 px-3.5">Participant</th>
+                            <th className="py-3 px-3.5">Team &amp; College</th>
+                            <th className="py-3 px-3.5">Gender &amp; Block Rule</th>
+                            <th className="py-3 px-3.5">Accommodation Status</th>
+                            <th className="py-3 px-3.5">Allocated Room</th>
+                            <th className="py-3 px-3.5">Allocated At</th>
+                            <th className="py-3 px-3.5 text-right">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
-                          {visibleRooms.map((room) => {
-                            const status = getRoomStatus(room);
-                            const roomId = getRoomId(room);
-                            const capacity = getCapacity(room);
-                            const occupied = getOccupiedCount(room);
+                        <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/80">
+                          {filteredRequests.map((student) => {
+                            const isAllocated = Boolean(student.AccommodationAllocated || student.AccommodationId);
+                            const isMale = ['male', 'boy', 'boys', 'm'].includes(String(student.Gender || '').toLowerCase());
+                            const isFemale = ['female', 'girl', 'girls', 'f'].includes(String(student.Gender || '').toLowerCase());
 
                             return (
-                              <tr
-                                key={roomId ?? getRoomNumber(room)}
-                                className="hover:bg-slate-50 dark:hover:bg-zinc-900/50"
-                              >
-                                <td className="px-4 py-4 font-bold">{getRoomNumber(room)}</td>
-                                <td className="px-4 py-4 text-xs text-slate-500">{getRoomType(room)}</td>
-                                <td className="px-4 py-4 text-center">{capacity} students</td>
-                                <td className="px-4 py-4 text-center">{occupied}/{capacity}</td>
-                                <td className="max-w-[200px] truncate px-4 py-4 text-xs">{getStudents(room)}</td>
-                                <td className="px-4 py-4">
-                                  <span className={`inline-flex rounded px-2 py-1 text-[10px] font-bold ${getStatusBadge(status)}`}>
-                                    {status}
+                              <tr key={`${student.TeamId}-${student.UserId}`} className="hover:bg-slate-50/60 dark:hover:bg-zinc-900/40 transition">
+                                <td className="py-3.5 px-3.5">
+                                  <p className="font-bold text-slate-900 dark:text-white">
+                                    {student.ParticipantName}
+                                  </p>
+                                  <p className="text-[11px] text-slate-400">
+                                    {student.Email} {student.Mobile ? `• ${student.Mobile}` : ''}
+                                  </p>
+                                </td>
+                                <td className="py-3.5 px-3.5">
+                                  <p className="font-semibold text-slate-800 dark:text-zinc-200">
+                                    {student.TeamName}
+                                  </p>
+                                  <p className="text-[11px] text-slate-400">{student.TeamCollege || student.College || 'Participant'}</p>
+                                </td>
+                                <td className="py-3.5 px-3.5">
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-bold text-[10px] ${
+                                    isMale
+                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                      : isFemale
+                                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                      : 'bg-slate-200 text-slate-600'
+                                  }`}>
+                                    {isMale ? <Mars className="w-3 h-3" /> : <Venus className="w-3 h-3" />}
+                                    <span>{student.Gender || 'N/A'} • {isMale ? 'Boys Block' : 'Girls Block'}</span>
                                   </span>
                                 </td>
-                                <td className="px-4 py-4">{renderRoomActions(room)}</td>
+                                <td className="py-3.5 px-3.5">
+                                  {isAllocated ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                      <Check className="w-3 h-3" /> Allocated
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                      <Clock className="w-3 h-3" /> Awaiting Room
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-3.5 px-3.5">
+                                  {isAllocated ? (
+                                    <div>
+                                      <p className="font-bold text-slate-900 dark:text-white">
+                                        Room {student.RoomNumber || 'Assigned'}
+                                      </p>
+                                      {student.BlockName && (
+                                        <p className="text-[11px] text-slate-400">{student.BlockName}</p>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <span className="text-slate-400 italic">Not Assigned</span>
+                                  )}
+                                </td>
+                                <td className="py-3.5 px-3.5 text-slate-500 dark:text-zinc-400">
+                                  {student.AllocatedAt ? formatDateTime(student.AllocatedAt) : (isAllocated ? 'Recorded' : '—')}
+                                </td>
+                                <td className="py-3.5 px-3.5 text-right">
+                                  {!isAllocated ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => openAssignStudentModal(student)}
+                                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                                      title="Assign a room in matching gender block"
+                                    >
+                                      <BedDouble className="w-3.5 h-3.5" />
+                                      <span>Assign Room</span>
+                                    </button>
+                                  ) : (
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => openAssignStudentModal(student)}
+                                        className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/50 text-slate-700 dark:text-zinc-300 text-xs font-semibold inline-flex items-center gap-1 transition cursor-pointer"
+                                        title="Change Room"
+                                      >
+                                        <Edit2 className="w-3 h-3 text-emerald-500" />
+                                        <span>Change</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeallocateStudent(student.AccommodationId, student.UserId, student.ParticipantName)}
+                                        disabled={deallocatingUserId === student.UserId}
+                                        className="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 text-xs font-semibold inline-flex items-center gap-1 transition cursor-pointer disabled:opacity-50"
+                                        title="Vacate Bed / Remove Student"
+                                      >
+                                        {deallocatingUserId === student.UserId ? (
+                                          <RefreshCw className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                          <UserMinus className="w-3 h-3" />
+                                        )}
+                                        <span>Vacate</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
                               </tr>
                             );
                           })}
                         </tbody>
                       </table>
                     </div>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        </div>
 
-                    {visibleRooms.length === 0 && (
-                      <p className="p-6 text-center text-sm text-slate-500">
-                        No allocated rooms match your search.
-                      </p>
-                    )}
+      </div>
+
+      {/* MODAL 1: ADD / EDIT HOSTEL BLOCK */}
+      <AnimatePresence>
+        {showBlockModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-lg rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 sm:p-7 space-y-5"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                      {editingBlockId ? 'Edit Hostel Block' : 'Add New Hostel Block'}
+                    </h3>
+                    <p className="text-xs text-slate-500">Boys or Girls block configuration</p>
                   </div>
                 </div>
-              </section>
-            );
-          })}
+                <button
+                  type="button"
+                  onClick={() => setShowBlockModal(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-        {allocatingRoom && (
-          <section
-            id="student-allocation-panel"
-            className="scroll-mt-5 rounded-3xl border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-900 dark:bg-zinc-950 sm:p-6 xl:p-8"
-          >
-            <div className="mb-6 flex flex-col justify-between gap-4 border-b border-slate-100 pb-5 dark:border-zinc-800 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
-                  <UserPlus className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
+              {blockError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 text-xs">
+                  {blockError}
                 </div>
+              )}
+
+              <form onSubmit={handleSaveBlock} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Hostel Block Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Cauvery Boys Hostel, Block A"
+                    value={blockForm.BlockName}
+                    onChange={(e) => setBlockForm({ ...blockForm, BlockName: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Designated Gender *
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
+                      blockForm.Gender === 'Boys'
+                        ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 font-bold'
+                        : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="blockGender"
+                        value="Boys"
+                        checked={blockForm.Gender === 'Boys'}
+                        onChange={(e) => setBlockForm({ ...blockForm, Gender: e.target.value })}
+                        className="accent-emerald-600"
+                      />
+                      <Mars className="w-4 h-4" />
+                      <span className="text-xs">Boys Block (Male)</span>
+                    </label>
+
+                    <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
+                      blockForm.Gender === 'Girls'
+                        ? 'border-rose-500 bg-rose-50/30 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 font-bold'
+                        : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
+                    }`}>
+                      <input
+                        type="radio"
+                        name="blockGender"
+                        value="Girls"
+                        checked={blockForm.Gender === 'Girls'}
+                        onChange={(e) => setBlockForm({ ...blockForm, Gender: e.target.value })}
+                        className="accent-rose-500"
+                      />
+                      <Venus className="w-4 h-4" />
+                      <span className="text-xs">Girls Block (Female)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Description / Location Details
+                  </label>
+                  <textarea
+                    rows="2"
+                    placeholder="e.g. North Campus near main auditorium, 3 floors"
+                    value={blockForm.Description}
+                    onChange={(e) => setBlockForm({ ...blockForm, Description: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowBlockModal(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={blockSaving}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    {blockSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    <span>{editingBlockId ? 'Update Block' : 'Save Block'}</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 2: ADD / EDIT ROOM */}
+      <AnimatePresence>
+        {showRoomModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-lg rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 sm:p-7 space-y-5"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                    <BedDouble className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                      {editingRoomId ? 'Edit Room' : 'Add New Room'}
+                    </h3>
+                    <p className="text-xs text-slate-500">Configure room inside a hostel block</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRoomModal(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {roomError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 text-xs">
+                  {roomError}
+                </div>
+              )}
+
+              <form onSubmit={handleSaveRoom} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Hostel Block *
+                  </label>
+                  <select
+                    value={roomForm.BlockId}
+                    onChange={handleRoomBlockChange}
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                  >
+                    <option value="">Select a Hostel Block</option>
+                    {blocks.map((b) => (
+                      <option key={b.Id} value={b.Id}>
+                        {b.BlockName} ({b.Gender} Block)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                      Room Number *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 101, B-204"
+                      value={roomForm.roomNumber}
+                      onChange={(e) => setRoomForm({ ...roomForm, roomNumber: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                      Bed Capacity *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={roomForm.capacity}
+                      onChange={(e) => setRoomForm({ ...roomForm, capacity: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                      Room Type
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Standard 4-Bed, AC"
+                      value={roomForm.roomType}
+                      onChange={(e) => setRoomForm({ ...roomForm, roomType: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                      Room Status
+                    </label>
+                    <select
+                      value={roomForm.status}
+                      onChange={(e) => setRoomForm({ ...roomForm, status: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none"
+                    >
+                      <option value="Available">Available</option>
+                      <option value="Maintenance">Maintenance</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Designated Gender Info */}
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 text-xs flex items-center justify-between">
+                  <span className="text-slate-500 dark:text-zinc-400 font-medium">Designated For:</span>
+                  <span className={`font-bold flex items-center gap-1.5 ${roomForm.gender === 'Boys' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
+                    {roomForm.gender === 'Boys' ? <Mars className="w-3.5 h-3.5" /> : <Venus className="w-3.5 h-3.5" />}
+                    <span>{roomForm.gender === 'Boys' ? 'Boys Only (Male Candidates)' : 'Girls Only (Female Candidates)'}</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowRoomModal(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={roomSaving}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    {roomSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    <span>{editingRoomId ? 'Update Room' : 'Save Room'}</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 3: ROOM DETAILS & ALLOCATION INSPECTION (WHO & WHEN DETAILS) */}
+      <AnimatePresence>
+        {inspectingRoom && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 sm:p-7 space-y-6"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between pb-4 border-b border-slate-100 dark:border-zinc-800">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 ${
+                      isBoysRoom(inspectingRoom)
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : isGirlsRoom(inspectingRoom)
+                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {isBoysRoom(inspectingRoom) ? <Mars className="w-3 h-3" /> : <Venus className="w-3 h-3" />}
+                      {isBoysRoom(inspectingRoom) ? 'Boys Block Room' : 'Girls Block Room'}
+                    </span>
+                    <span className="text-xs text-slate-400">•</span>
+                    <span className="text-xs font-bold text-slate-600 dark:text-zinc-300">
+                      {inspectingRoom.BlockName || 'General Block'}
+                    </span>
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white">
+                    Room {inspectingRoom.room_num} Details
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {inspectingRoom.Type || 'Standard'} • Capacity: {getCapacity(inspectingRoom)} Beds • {getOccupiedCount(inspectingRoom)} Occupied
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setInspectingRoom(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Occupancy Bar */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 space-y-2">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="text-slate-700 dark:text-zinc-300">Room Occupancy</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">
+                    {getOccupiedCount(inspectingRoom)} / {getCapacity(inspectingRoom)} Beds Allocated
+                  </span>
+                </div>
+                <div className="w-full h-2.5 rounded-full bg-slate-200 dark:bg-zinc-800 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-300"
+                    style={{
+                      width: `${Math.min(100, (getOccupiedCount(inspectingRoom) / (getCapacity(inspectingRoom) || 1)) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Allocated Students Section */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Users className="w-4 h-4 text-emerald-500" />
+                    <span>Allocated Students ({getOccupiedCount(inspectingRoom)})</span>
+                  </h4>
+                  {getCapacity(inspectingRoom) > getOccupiedCount(inspectingRoom) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = inspectingRoom;
+                        setInspectingRoom(null);
+                        openAllocateModal(target);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Allocate Student</span>
+                    </button>
+                  )}
+                </div>
+
+                {(inspectingRoom.participants || []).length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 dark:text-zinc-500 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl">
+                    <BedDouble className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-zinc-700" />
+                    <p className="text-xs font-semibold">No students currently allocated to this room.</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Click "Allocate Student" to assign participants.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {(inspectingRoom.participants || []).map((student, idx) => (
+                      <div
+                        key={student.UserId || idx}
+                        className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-emerald-500/30 transition"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                            {student.UserName ? student.UserName.charAt(0).toUpperCase() : 'S'}
+                          </div>
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <h5 className="text-xs font-bold text-slate-900 dark:text-white">
+                                {student.UserName}
+                              </h5>
+                              <span className="text-[10px] px-1.5 py-0.2 rounded font-bold bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                                {student.Gender || 'N/A'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                              {student.Email} {student.Mobile ? `• ${student.Mobile}` : ''}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-600 dark:text-zinc-300">
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                Team: {student.TeamName || 'Physical Team'}
+                              </span>
+                              {student.College && <span>• College: {student.College}</span>}
+                            </div>
+                            {/* ALLOCATION TIMESTAMP */}
+                            <div className="flex items-center gap-1.5 pt-1 text-[11px] text-slate-400">
+                              <Clock className="w-3 h-3 text-emerald-500" />
+                              <span className="font-medium">
+                                Allocated on: {student.AllocatedAt ? formatDateTime(student.AllocatedAt) : 'Recorded in Session'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Deallocate button */}
+                        <button
+                          type="button"
+                          disabled={deallocatingUserId === student.UserId}
+                          onClick={() => handleDeallocateStudent(inspectingRoom.Id, student.UserId, student.UserName)}
+                          className="px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center gap-1.5 transition self-end sm:self-center shrink-0 cursor-pointer disabled:opacity-50"
+                          title="Remove student from room"
+                        >
+                          {deallocatingUserId === student.UserId ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <UserMinus className="w-3.5 h-3.5" />
+                          )}
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setInspectingRoom(null)}
+                  className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-zinc-800 cursor-pointer"
+                >
+                  Close Details
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 4: STRICT GENDER-BASED ALLOCATION MODAL */}
+      <AnimatePresence>
+        {allocatingRoom && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 sm:p-7 space-y-5"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1 ${
+                      isBoysRoom(allocatingRoom)
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                    }`}>
+                      {isBoysRoom(allocatingRoom) ? <Mars className="w-3 h-3" /> : <Venus className="w-3 h-3" />}
+                      {isBoysRoom(allocatingRoom) ? 'Boys Block Room' : 'Girls Block Room'}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">
+                      {allocatingRoom.BlockName}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                    Allocate Students to Room {allocatingRoom.room_num}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Remaining capacity: <strong className="text-emerald-600 dark:text-emerald-400">{Math.max(0, getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom))} bed(s)</strong> available.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setAllocatingRoom(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* STRICT GENDER POLICY BANNER */}
+              <div className={`p-3.5 rounded-2xl border text-xs flex items-center gap-3 ${
+                isBoysRoom(allocatingRoom)
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                  : 'bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-400'
+              }`}>
+                <ShieldAlert className="w-5 h-5 shrink-0" />
                 <div>
-                  <h2 className="text-xl font-extrabold">Allocate Students</h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Room {getRoomNumber(allocatingRoom)} · {getRoomType(allocatingRoom)} ·{' '}
-                    {isBoysRoom(allocatingRoom) ? 'Boys' : 'Girls'}
+                  <p className="font-extrabold">
+                    {isBoysRoom(allocatingRoom)
+                      ? 'Strict Gender Policy: Male Candidates Only'
+                      : 'Strict Gender Policy: Female Candidates Only'}
+                  </p>
+                  <p className="text-[11px] opacity-90">
+                    {isBoysRoom(allocatingRoom)
+                      ? 'This room is located in a Boys Block. The candidate list below is automatically filtered to show only Male participants.'
+                      : 'This room is located in a Girls Block. The candidate list below is automatically filtered to show only Female participants.'}
                   </p>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={closeAllocationPanel}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-zinc-700"
-              >
-                <X className="h-4 w-4" />
-                Close
-              </button>
-            </div>
+              {allocationError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 text-xs">
+                  {allocationError}
+                </div>
+              )}
 
-            <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-xl bg-slate-50 p-4 dark:bg-zinc-900">
-                <p className="text-xs font-semibold text-slate-500">Room Capacity</p>
-                <p className="mt-1 text-xl font-extrabold">{getCapacity(allocatingRoom)}</p>
-              </div>
-              <div className="rounded-xl bg-slate-50 p-4 dark:bg-zinc-900">
-                <p className="text-xs font-semibold text-slate-500">Already Allocated</p>
-                <p className="mt-1 text-xl font-extrabold">{getOccupiedCount(allocatingRoom)}</p>
-              </div>
-              <div className="rounded-xl bg-slate-50 p-4 dark:bg-zinc-900">
-                <p className="text-xs font-semibold text-slate-500">Remaining Capacity</p>
-                <p className="mt-1 text-xl font-extrabold">
-                  {Math.max(0, getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom))}
-                </p>
-              </div>
-            </div>
-
-            {allocationError && (
-              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
-                {allocationError}
-              </div>
-            )}
-
-            {allocationMessage && (
-              <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400">
-                {allocationMessage}
-              </div>
-            )}
-
-            <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-              <div>
-                <h3 className="font-bold">Students who requested accommodation</h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Only eligible {isBoysRoom(allocatingRoom) ? 'Boys' : 'Girls'} are shown.
-                </p>
-              </div>
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              {/* Student Filter Search */}
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
+                  type="text"
+                  placeholder="Filter eligible candidates by name, email, college..."
                   value={studentSearch}
                   onChange={(e) => setStudentSearch(e.target.value)}
-                  placeholder="Search name, email or roll number..."
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-3 text-sm outline-none focus:border-emerald-600 dark:border-zinc-700 dark:bg-zinc-900"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                 />
               </div>
-            </div>
 
-            {studentsLoading ? (
-              <div className="rounded-xl bg-slate-50 p-8 text-center text-sm text-slate-500 dark:bg-zinc-900">
-                Loading eligible students...
-              </div>
-            ) : filteredEligibleStudents.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center dark:border-zinc-700">
-                <Users className="mx-auto h-8 w-8 text-slate-400" />
-                <p className="mt-3 font-semibold">No eligible students found</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  Check the accommodation request field and student gender in your users API.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredEligibleStudents.map((student) => {
-                  const studentId = String(getUserId(student));
-                  const checked = selectedStudents.includes(studentId);
-                  const capacityLeft = Math.max(
-                    0,
-                    getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom)
-                  );
+              {/* Candidate Selection List */}
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                {eligibleStudents
+                  .filter((student) => {
+                    const text = [
+                      student.ParticipantName,
+                      student.Email,
+                      student.TeamName,
+                      student.College,
+                    ]
+                      .join(' ')
+                      .toLowerCase();
+                    return text.includes(studentSearch.toLowerCase().trim());
+                  })
+                  .map((student) => {
+                    const isSelected = selectedStudents.includes(String(student.UserId));
+                    const capacityLeft = Math.max(0, getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom));
+                    const disabled = !isSelected && selectedStudents.length >= capacityLeft;
 
-                  return (
-                    <label
-                      key={studentId}
-                      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition ${
-                        checked
-                          ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/5'
-                          : 'border-slate-200 hover:border-emerald-300 dark:border-zinc-800'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={!checked && selectedStudents.length >= capacityLeft}
-                        onChange={() => toggleStudent(student)}
-                        className="h-4 w-4 accent-emerald-600"
-                      />
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 dark:bg-zinc-800 dark:text-white">
-                        {getStudentName(student).charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold">{getStudentName(student)}</p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {getStudentEmail(student) || 'No email available'}
-                        </p>
-                        {getStudentRollNumber(student) && (
-                          <p className="mt-1 text-xs text-slate-500">
-                            Roll No: {getStudentRollNumber(student)}
-                          </p>
+                    return (
+                      <div
+                        key={student.UserId}
+                        onClick={() => !disabled && toggleStudentSelection(student)}
+                        className={`p-3 rounded-xl border flex items-center justify-between gap-3 transition cursor-pointer ${
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20'
+                            : disabled
+                            ? 'opacity-40 border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 cursor-not-allowed'
+                            : 'border-slate-200 dark:border-zinc-800 hover:border-emerald-500/50 bg-white dark:bg-black'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            disabled={disabled}
+                            onChange={() => toggleStudentSelection(student)}
+                            className="accent-emerald-600 h-4 w-4 rounded cursor-pointer"
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                {student.ParticipantName}
+                              </span>
+                              <span className="text-[10px] px-1.5 py-0.2 rounded font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300">
+                                {student.Gender}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-400">
+                              {student.Email} • Team: {student.TeamName}
+                            </p>
+                          </div>
+                        </div>
+
+                        {isSelected && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white">
+                            Selected
+                          </span>
                         )}
                       </div>
-                      {checked && (
-                        <CheckCircle className="h-5 w-5 shrink-0 text-emerald-600" />
-                      )}
-                    </label>
-                  );
-                })}
+                    );
+                  })}
+
+                {eligibleStudents.length === 0 && (
+                  <div className="py-8 text-center text-slate-400 dark:text-zinc-500">
+                    <p className="text-xs font-bold">
+                      No unallocated {isBoysRoom(allocatingRoom) ? 'Male' : 'Female'} students found who requested Food &amp; Accommodation.
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      All matching participants for this gender have already been assigned rooms.
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
 
-            <div className="mt-6 flex flex-col justify-between gap-4 border-t border-slate-100 pt-5 dark:border-zinc-800 sm:flex-row sm:items-center">
-              <p className="text-sm text-slate-500">
-                Selected: <span className="font-bold text-slate-900 dark:text-white">{selectedStudents.length}</span>
-                {' / '}
-                {Math.max(0, getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom))}
-                {' students'}
-              </p>
+              {/* Modal Footer */}
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-zinc-800">
+                <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
+                  Selected: <strong className="text-slate-900 dark:text-white">{selectedStudents.length}</strong> / {Math.max(0, getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom))} beds
+                </span>
 
-              <button
-                type="button"
-                onClick={handleSaveAllocation}
-                disabled={allocating || studentsLoading || selectedStudents.length === 0}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-emerald-500"
-              >
-                <UserPlus className="h-4 w-4" />
-                {allocating ? 'Allocating...' : 'Allocate Selected Students'}
-              </button>
-            </div>
-          </section>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setAllocatingRoom(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveAllocation}
+                    disabled={allocating || selectedStudents.length === 0}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md disabled:opacity-50 cursor-pointer"
+                  >
+                    {allocating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
+                    <span>Confirm Allocation ({selectedStudents.length})</span>
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
-      </div>
+      </AnimatePresence>
+
+      {/* MODAL 5: ASSIGN / CHANGE ROOM FOR INDIVIDUAL PARTICIPANT */}
+      <AnimatePresence>
+        {assigningStudent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 sm:p-7 space-y-5"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <BedDouble className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                      {assigningStudent.AccommodationAllocated || assigningStudent.AccommodationId ? 'Change Room Assignment' : 'Assign Room to Participant'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      {assigningStudent.ParticipantName} ({assigningStudent.Email})
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setAssigningStudent(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Student Details Card */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
+                <div className="space-y-0.5">
+                  <p className="font-bold text-slate-800 dark:text-zinc-200">
+                    Team: {assigningStudent.TeamName}
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                    College: {assigningStudent.College || assigningStudent.TeamCollege || '—'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${
+                    ['male', 'boy', 'boys', 'm'].includes(String(assigningStudent.Gender || '').toLowerCase())
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                  }`}>
+                    {['male', 'boy', 'boys', 'm'].includes(String(assigningStudent.Gender || '').toLowerCase()) ? (
+                      <>
+                        <Mars className="w-3.5 h-3.5" />
+                        <span>Male (Boys Block Only)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Venus className="w-3.5 h-3.5" />
+                        <span>Female (Girls Block Only)</span>
+                      </>
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {assignRoomError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 text-xs">
+                  {assignRoomError}
+                </div>
+              )}
+
+              {/* Room Selection */}
+              <form onSubmit={handleConfirmSingleStudentAssignment} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Select Available Room in {['male', 'boy', 'boys', 'm'].includes(String(assigningStudent.Gender || '').toLowerCase()) ? 'Boys' : 'Girls'} Block:
+                  </label>
+
+                  {(() => {
+                    const isStudentMale = ['male', 'boy', 'boys', 'm'].includes(String(assigningStudent.Gender || '').toLowerCase());
+                    const eligibleRooms = rooms.filter((r) => {
+                      const matchesGender = isStudentMale ? isBoysRoom(r) : isGirlsRoom(r);
+                      if (!matchesGender) return false;
+                      if (r.Status === 'Maintenance') return false;
+                      const bedsAvailable = getCapacity(r) - getOccupiedCount(r);
+                      const isCurrentRoom = String(r.Id) === String(assigningStudent.AccommodationId);
+                      return bedsAvailable > 0 || isCurrentRoom;
+                    });
+
+                    if (eligibleRooms.length === 0) {
+                      return (
+                        <div className="py-8 text-center border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-4 space-y-2">
+                          <BedDouble className="w-8 h-8 mx-auto text-slate-400" />
+                          <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                            No available beds in {isStudentMale ? 'Boys' : 'Girls'} Blocks!
+                          </p>
+                          <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                            All {isStudentMale ? 'Boys' : 'Girls'} rooms are either full or not configured yet. Please add a room to a {isStudentMale ? 'Boys' : 'Girls'} block.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAssigningStudent(null);
+                              openAddRoomModal();
+                            }}
+                            className="mt-2 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add New Room</span>
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[300px] overflow-y-auto pr-1">
+                        {eligibleRooms.map((room) => {
+                          const bedsLeft = Math.max(0, getCapacity(room) - getOccupiedCount(room));
+                          const isSelected = String(room.Id) === String(targetRoomId);
+                          const isCurrent = String(room.Id) === String(assigningStudent.AccommodationId);
+
+                          return (
+                            <div
+                              key={room.Id}
+                              onClick={() => setTargetRoomId(String(room.Id))}
+                              className={`p-3 rounded-2xl border transition cursor-pointer flex flex-col justify-between gap-2 ${
+                                isSelected
+                                  ? 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20 ring-1 ring-emerald-500/30'
+                                  : 'border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 bg-white dark:bg-black'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                                    {room.BlockName || (isBoysRoom(room) ? 'Boys Block' : 'Girls Block')}
+                                  </span>
+                                  <h5 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                                    Room {room.room_num}
+                                  </h5>
+                                  <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                                    {room.Type || 'Standard'}
+                                  </p>
+                                </div>
+                                <input
+                                  type="radio"
+                                  name="targetRoom"
+                                  checked={isSelected}
+                                  onChange={() => setTargetRoomId(String(room.Id))}
+                                  className="accent-emerald-600 mt-0.5"
+                                />
+                              </div>
+
+                              <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100 dark:border-zinc-900">
+                                <span className={`font-bold ${bedsLeft > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                                  {bedsLeft} free bed{bedsLeft !== 1 ? 's' : ''}
+                                </span>
+                                {isCurrent ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                                    Current
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400">
+                                    Cap: {getCapacity(room)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => setAssigningStudent(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isAssigningRoom || !targetRoomId}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50"
+                  >
+                    {isAssigningRoom ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    <span>Confirm Bed Assignment</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </main>
   );
 }

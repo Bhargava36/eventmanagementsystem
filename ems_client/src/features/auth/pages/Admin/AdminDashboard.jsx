@@ -51,17 +51,35 @@ function AdminDashboard() {
     const admin = JSON.parse(localStorage.getItem("admin") || "null");
     const eventId = admin?.EventId;
 
-    const [event, setEvent] = useState(null);
+    const cacheKey = eventId ? `admin_dashboard_cache_${eventId}` : null;
+    const cachedData = (() => {
+        try {
+            return cacheKey ? JSON.parse(localStorage.getItem(cacheKey) || 'null') : null;
+        } catch {
+            return null;
+        }
+    })();
 
-    const [usersCount, setUsersCount] = useState(0);
-    const [teamsCount, setTeamsCount] = useState(0);
-    const [pendingCount, setPendingCount] = useState(0);
-    const [remainingDays, setRemainingDays] = useState(0);
+    const [event, setEvent] = useState(cachedData?.event || null);
 
-    const [recentRegistrations, setRecentRegistrations] = useState([]);
-    const [recentActivities, setRecentActivities] = useState([]);
+    const [usersCount, setUsersCount] = useState(cachedData?.usersCount ?? 0);
+    const [teamsCount, setTeamsCount] = useState(cachedData?.teamsCount ?? 0);
+    const [pendingCount, setPendingCount] = useState(cachedData?.pendingCount ?? 0);
+    const [remainingDays, setRemainingDays] = useState(() => {
+        if (cachedData?.event?.StartDate) {
+            const startDate = new Date(cachedData.event.StartDate);
+            const today = new Date();
+            const difference = startDate - today;
+            const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
+            return Math.max(days, 0);
+        }
+        return 0;
+    });
 
-    const [loading, setLoading] = useState(true);
+    const [recentRegistrations, setRecentRegistrations] = useState(cachedData?.recentRegistrations || []);
+    const [recentActivities, setRecentActivities] = useState(cachedData?.recentActivities || []);
+
+    const [loading, setLoading] = useState(!cachedData);
     const [error, setError] = useState("");
 
     const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
@@ -73,7 +91,7 @@ function AdminDashboard() {
         }
     ]);
 
-    const [declaredPrizes, setDeclaredPrizes] = useState([]);
+    const [declaredPrizes, setDeclaredPrizes] = useState(cachedData?.declaredPrizes || []);
     const [activePrizeTab, setActivePrizeTab] = useState("Physical");
 
     const [isGuidelinesModalOpen, setIsGuidelinesModalOpen] = useState(false);
@@ -150,61 +168,86 @@ function AdminDashboard() {
 
     const fetchDashboard = async () => {
         try {
-            setLoading(true);
+            if (!cachedData) {
+                setLoading(true);
+            }
             setError("");
 
-            const eventResponse = await fetch(
-                `http://localhost:3000/api/events/${eventId}`
-            );
+            // Fast path: Fetch single consolidated summary endpoint (~190ms)
+            try {
+                const summaryRes = await fetch(`http://localhost:3000/api/events/${eventId}/dashboard-summary`);
+                if (summaryRes.ok) {
+                    const result = await summaryRes.json();
+                    const data = result?.data;
+                    if (data && data.event) {
+                        setEvent(data.event);
+                        if (data.event.StartDate) {
+                            const startDate = new Date(data.event.StartDate);
+                            const today = new Date();
+                            const difference = startDate - today;
+                            const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
+                            setRemainingDays(Math.max(days, 0));
+                        }
+                        setDeclaredPrizes(data.declaredPrizes || []);
+                        setRecentRegistrations(data.recentRegistrations || []);
+                        setRecentActivities(data.recentActivities || []);
+                        setUsersCount(data.usersCount || 0);
+                        setTeamsCount(data.teamsCount || 0);
+                        setPendingCount(data.pendingCount || 0);
+                        setLoading(false);
 
-            if (!eventResponse.ok) {
-                throw new Error("Failed to fetch event");
+                        // Cache for instant 0ms subsequent renders
+                        if (cacheKey) {
+                            localStorage.setItem(cacheKey, JSON.stringify(data));
+                        }
+                        return;
+                    }
+                }
+            } catch (summaryErr) {
+                console.warn("Summary endpoint failed, falling back to parallel requests:", summaryErr);
             }
 
-            const eventData = await eventResponse.json();
-            const currentEvent = eventData.event || null;
-            setEvent(currentEvent);
-
-            if (currentEvent?.StartDate) {
-                const startDate = new Date(currentEvent.StartDate);
-                const today = new Date();
-                const difference = startDate - today;
-                const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
-                setRemainingDays(Math.max(days, 0));
-            } else {
-                setRemainingDays(0);
-            }
-
-            setLoading(false);
-
-            Promise.allSettled([
+            // Fallback: parallel fetch all individual endpoints
+            const [eventRes, prizesRes, regRes, actRes, countRes, teamsRes, pendingRes] = await Promise.allSettled([
+                fetch(`http://localhost:3000/api/events/${eventId}`).then(r => r.ok ? r.json() : null),
                 fetch(`http://localhost:3000/api/event_prizes/event/${eventId}`).then(r => r.ok ? r.json() : null),
                 fetch(`http://localhost:3000/api/event_reg/recent`).then(r => r.ok ? r.json() : null),
                 fetch(`http://localhost:3000/api/event_reg/activities`).then(r => r.ok ? r.json() : null),
                 fetch(`http://localhost:3000/api/event_reg/event/${eventId}/count`).then(r => r.ok ? r.json() : null),
                 fetch(`http://localhost:3000/api/teams/event/${eventId}/count`).then(r => r.ok ? r.json() : null),
                 fetch(`http://localhost:3000/api/event_reg/event/${eventId}/pending-count`).then(r => r.ok ? r.json() : null)
-            ]).then(([prizesRes, registrationsRes, activitiesRes, usersRes, teamsRes, pendingRes]) => {
-                if (prizesRes.status === "fulfilled" && prizesRes.value) {
-                    setDeclaredPrizes(prizesRes.value.prizes || prizesRes.value.eventPrizes || []);
-                }
-                if (registrationsRes.status === "fulfilled" && registrationsRes.value) {
-                    setRecentRegistrations(registrationsRes.value.registrations || registrationsRes.value.recentRegistrations || []);
-                }
-                if (activitiesRes.status === "fulfilled" && activitiesRes.value) {
-                    setRecentActivities(activitiesRes.value.activities || []);
-                }
-                if (usersRes.status === "fulfilled" && usersRes.value) {
-                    setUsersCount(usersRes.value.count || 0);
-                }
-                if (teamsRes.status === "fulfilled" && teamsRes.value) {
-                    setTeamsCount(teamsRes.value.count || 0);
-                }
-                if (pendingRes.status === "fulfilled" && pendingRes.value) {
-                    setPendingCount(pendingRes.value.count || 0);
-                }
-            });
+            ]);
 
+            if (eventRes.status === "fulfilled" && eventRes.value) {
+                const currentEvent = eventRes.value.event || null;
+                setEvent(currentEvent);
+                if (currentEvent?.StartDate) {
+                    const startDate = new Date(currentEvent.StartDate);
+                    const today = new Date();
+                    const difference = startDate - today;
+                    const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
+                    setRemainingDays(Math.max(days, 0));
+                }
+            }
+            if (prizesRes.status === "fulfilled" && prizesRes.value) {
+                setDeclaredPrizes(prizesRes.value.prizes || prizesRes.value.eventPrizes || []);
+            }
+            if (regRes.status === "fulfilled" && regRes.value) {
+                setRecentRegistrations(regRes.value.registrations || regRes.value.recentRegistrations || []);
+            }
+            if (actRes.status === "fulfilled" && actRes.value) {
+                setRecentActivities(actRes.value.activities || []);
+            }
+            if (countRes.status === "fulfilled" && countRes.value) {
+                setUsersCount(countRes.value.count || 0);
+            }
+            if (teamsRes.status === "fulfilled" && teamsRes.value) {
+                setTeamsCount(teamsRes.value.count || 0);
+            }
+            if (pendingRes.status === "fulfilled" && pendingRes.value) {
+                setPendingCount(pendingRes.value.count || 0);
+            }
+            setLoading(false);
         } catch (error) {
             console.error("ADMIN DASHBOARD ERROR:", error);
             setError(error.message);
@@ -470,7 +513,7 @@ function AdminDashboard() {
     if (error) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center p-5">
-                <div className="bg-white dark:bg-gray-950 border border-red-200 dark:border-red-900 rounded-xl p-6 text-center max-w-md w-full">
+                <div className="bg-white dark:bg-black border border-red-200 dark:border-red-900 rounded-xl p-6 text-center max-w-md w-full">
                     <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
 
                     <h2 className="text-lg font-semibold mt-3 text-gray-900 dark:text-white">
@@ -516,7 +559,7 @@ function AdminDashboard() {
                     <button
                         type="button"
                         onClick={openGuidelinesModal}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-600/30 bg-emerald-50 dark:bg-emerald-950/40 px-4 py-2.5 text-sm font-medium text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition shadow-sm"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-600/30 dark:border-zinc-800 bg-emerald-50 dark:bg-black px-4 py-2.5 text-sm font-medium text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-zinc-900 transition shadow-sm"
                     >
                         <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                         Manage Guidelines
@@ -547,7 +590,7 @@ function AdminDashboard() {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3, delay: index * 0.06 }}
                                 whileHover={{ y: -3 }}
-                                className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+                                className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm transition-shadow hover:shadow-md"
                             >
                                 <div className="flex items-start justify-between gap-3">
 
@@ -576,7 +619,7 @@ function AdminDashboard() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, delay: 0.2 }}
-                    className="bg-white dark:bg-gray-950 rounded-xl border border-emerald-700 dark:border-emerald-500 shadow-sm overflow-hidden"
+                    className="bg-white dark:bg-black rounded-xl border border-emerald-700 dark:border-emerald-500 shadow-sm overflow-hidden"
                 >
 
                     <div className="p-5 sm:p-6">
@@ -676,39 +719,39 @@ function AdminDashboard() {
 
                             {event?.HackathonMode === 'Both' ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10 space-y-3">
+                                    <div className="p-4 rounded-xl border border-emerald-100 dark:border-zinc-800 bg-emerald-50/30 dark:bg-black space-y-3">
                                         <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider">
                                             <Globe className="w-3.5 h-3.5" />
                                             <span>Virtual Track</span>
                                         </div>
                                         <div>
                                             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Facilities Provided:</p>
-                                            <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line bg-white/60 dark:bg-black/30 p-2.5 rounded-lg border border-emerald-100/60 dark:border-emerald-900/30">
+                                            <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line bg-white/60 dark:bg-black p-2.5 rounded-lg border border-emerald-100/60 dark:border-zinc-800">
                                                 {event?.VirtualFacilities || event?.Facilities || "No virtual facilities added yet."}
                                             </p>
                                         </div>
                                         <div>
                                             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Requirements:</p>
-                                            <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line bg-white/60 dark:bg-black/30 p-2.5 rounded-lg border border-emerald-100/60 dark:border-emerald-900/30">
+                                            <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line bg-white/60 dark:bg-black p-2.5 rounded-lg border border-emerald-100/60 dark:border-zinc-800">
                                                 {event?.VirtualRequirements || event?.Requirements || "No virtual requirements added yet."}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/30 dark:bg-emerald-950/10 space-y-3">
+                                    <div className="p-4 rounded-xl border border-emerald-100 dark:border-zinc-800 bg-emerald-50/30 dark:bg-black space-y-3">
                                         <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider">
                                             <Building2 className="w-3.5 h-3.5" />
                                             <span>Physical / On-Campus Track</span>
                                         </div>
                                         <div>
                                             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Facilities Provided:</p>
-                                            <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line bg-white/60 dark:bg-black/30 p-2.5 rounded-lg border border-emerald-100/60 dark:border-emerald-900/30">
+                                            <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line bg-white/60 dark:bg-black p-2.5 rounded-lg border border-emerald-100/60 dark:border-zinc-800">
                                                 {event?.PhysicalFacilities || event?.Facilities || "No physical facilities added yet."}
                                             </p>
                                         </div>
                                         <div>
                                             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Requirements:</p>
-                                            <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line bg-white/60 dark:bg-black/30 p-2.5 rounded-lg border border-emerald-100/60 dark:border-emerald-900/30">
+                                            <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line bg-white/60 dark:bg-black p-2.5 rounded-lg border border-emerald-100/60 dark:border-zinc-800">
                                                 {event?.PhysicalRequirements || event?.Requirements || "No physical requirements added yet."}
                                             </p>
                                         </div>
@@ -716,13 +759,13 @@ function AdminDashboard() {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30">
+                                    <div className="p-4 rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-black">
                                         <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Facilities Provided:</p>
                                         <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line">
                                             {event?.Facilities || event?.VirtualFacilities || event?.PhysicalFacilities || "No facilities added yet."}
                                         </p>
                                     </div>
-                                    <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30">
+                                    <div className="p-4 rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-black">
                                         <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Requirements:</p>
                                         <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line">
                                             {event?.Requirements || event?.VirtualRequirements || event?.PhysicalRequirements || "No requirements added yet."}
@@ -739,7 +782,7 @@ function AdminDashboard() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, delay: 0.25 }}
-                    className="bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 sm:p-6 shadow-sm"
+                    className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-zinc-800 p-5 sm:p-6 shadow-sm"
                 >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 border-b border-gray-100 dark:border-gray-800/80 pb-4">
                         <div>
@@ -841,14 +884,14 @@ function AdminDashboard() {
                                                         {isActive ? (
                                                             <motion.div
                                                                 layoutId="adminPrizeTabActive"
-                                                                className="absolute inset-0 -bottom-[2px] rounded-t-2xl bg-white dark:bg-zinc-900 border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-20 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                                                                className="absolute inset-0 -bottom-[2px] rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-20 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
                                                                 transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                                                             >
                                                                 {/* Seamless bottom mask */}
-                                                                <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-zinc-900 pointer-events-none z-30" />
+                                                                <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-30" />
                                                             </motion.div>
                                                         ) : (
-                                                            <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 z-0" />
+                                                            <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 z-0" />
                                                         )}
 
                                                         <span className={`relative z-20 flex items-center gap-2 ${
@@ -879,7 +922,7 @@ function AdminDashboard() {
                                 {currentTrackPrizes.length > 0 || activeTrackPool ? (
                                     <div>
                                         {/* Podium Component from Event Details Page */}
-                                        <div className={`p-4 sm:p-6 rounded-2xl ${isDualTrackEvent ? 'rounded-tl-none' : ''} bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xs relative z-0`}>
+                                        <div className={`p-4 sm:p-6 rounded-2xl ${isDualTrackEvent ? 'rounded-tl-none' : ''} bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-xs relative z-0`}>
                                             <PrizePodiumStage
                                                 firstAmount={firstPrizeAmount}
                                                 firstDesc={firstPrizeDesc}
@@ -903,10 +946,10 @@ function AdminDashboard() {
                                                     {additionalPrizes.map((pz, idx) => (
                                                         <div
                                                             key={pz.Id || pz.id || idx}
-                                                            className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/50 flex items-center justify-between gap-3 shadow-xs"
+                                                            className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-black flex items-center justify-between gap-3 shadow-xs"
                                                         >
                                                             <div className="flex items-center gap-2.5">
-                                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/80 dark:bg-black dark:border dark:border-zinc-800 text-slate-700 dark:text-zinc-300">
                                                                     <Medal className="h-4 w-4" />
                                                                 </div>
                                                                 <div>
@@ -930,7 +973,7 @@ function AdminDashboard() {
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-800 p-8 text-center bg-gray-50/50 dark:bg-gray-900/20">
+                                    <div className="rounded-2xl border border-dashed border-gray-200 dark:border-zinc-800 p-8 text-center bg-gray-50/50 dark:bg-black">
                                         <Trophy className="w-10 h-10 mx-auto text-gray-400 dark:text-gray-600 mb-3" />
                                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                             No prize money declared for {activePrizeTab} track yet
@@ -960,7 +1003,7 @@ function AdminDashboard() {
                     className="grid grid-cols-1 xl:grid-cols-2 gap-6"
                 >
 
-                    <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+                    <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm">
 
                         <div className="flex items-center justify-between mb-5">
 
@@ -994,7 +1037,7 @@ function AdminDashboard() {
                                 <table className="w-full text-sm">
 
                                     <thead>
-                                        <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
+                                        <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-zinc-800">
 
                                             <th className="pb-3 font-medium">
                                                 Team / User
@@ -1020,7 +1063,7 @@ function AdminDashboard() {
                                             return (
                                                 <tr
                                                     key={registration.Id || registration.id || index}
-                                                    className="border-b border-gray-100 dark:border-gray-800/50"
+                                                    className="border-b border-gray-100 dark:border-zinc-800/60"
                                                 >
 
                                                     <td className="py-3 font-medium text-gray-900 dark:text-white">
@@ -1060,7 +1103,7 @@ function AdminDashboard() {
 
                     </div>
 
-                    <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm">
+                    <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm">
 
                         <div className="flex items-center justify-between mb-5">
 
@@ -1161,7 +1204,7 @@ function AdminDashboard() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, delay: 0.35 }}
-                    className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                    className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm"
                 >
 
                     <div className="flex items-center justify-between mb-5">
@@ -1252,9 +1295,9 @@ function AdminDashboard() {
 
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
 
-                    <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-emerald-700/20 bg-white dark:bg-gray-950 shadow-xl">
+                    <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-emerald-700/20 bg-white dark:bg-black shadow-xl">
 
-                        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 px-5 py-4">
+                        <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 px-5 py-4">
 
                             <div>
                                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -1420,8 +1463,8 @@ function AdminDashboard() {
 
             {isGuidelinesModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 shadow-2xl">
-                        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-950/95 backdrop-blur px-6 py-4">
+                    <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-2xl">
+                        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 bg-white/95 dark:bg-black/95 backdrop-blur px-6 py-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
                                     <FileText className="w-5 h-5" />
@@ -1463,7 +1506,7 @@ function AdminDashboard() {
 
                             {event?.HackathonMode === 'Both' ? (
                                 <div className="space-y-4">
-                                    <div className="flex items-end gap-2 overflow-x-auto border-b border-gray-200 dark:border-gray-800 -mb-[1px]">
+                                    <div className="flex items-end gap-2 overflow-x-auto border-b border-gray-200 dark:border-zinc-800 -mb-[1px]">
                                         {[
                                             { key: 'virtual', label: 'Virtual Phase Guidelines', icon: Globe },
                                             { key: 'physical', label: 'Physical Phase Guidelines', icon: Building2 },
@@ -1480,11 +1523,11 @@ function AdminDashboard() {
                                                     {isActive ? (
                                                         <motion.div
                                                             layoutId="guidelinesTabActive"
-                                                            className="absolute inset-0 rounded-t-xl bg-white dark:bg-zinc-900 border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10"
+                                                            className="absolute inset-0 rounded-t-xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10"
                                                             transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                                                         />
                                                     ) : (
-                                                        <div className="absolute inset-0 rounded-t-xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 z-0" />
+                                                        <div className="absolute inset-0 rounded-t-xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 z-0" />
                                                     )}
 
                                                     <span className={`relative z-20 flex items-center gap-2 ${
@@ -1504,7 +1547,7 @@ function AdminDashboard() {
                                     </div>
 
                                     {guidelinesActiveTab === 'virtual' && (
-                                        <div className="p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/20 dark:bg-emerald-950/10 space-y-4">
+                                        <div className="p-4 rounded-xl border border-emerald-100 dark:border-zinc-800 bg-emerald-50/20 dark:bg-black space-y-4">
                                             <div>
                                                 <label className="block text-xs font-medium text-emerald-900 dark:text-emerald-300 mb-1.5">
                                                     Virtual Facilities Provided (One per line)
@@ -1514,7 +1557,7 @@ function AdminDashboard() {
                                                     value={guidelinesData.VirtualFacilities}
                                                     onChange={(e) => setGuidelinesData((prev) => ({ ...prev, VirtualFacilities: e.target.value }))}
                                                     placeholder="Discord Server 24/7&#10;Cloud Credits & APIs&#10;Online Mentor Support"
-                                                    className="w-full px-3 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                                                    className="w-full px-3 py-2.5 rounded-xl border border-emerald-200 dark:border-zinc-800 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
                                                 />
                                             </div>
                                             <div>
@@ -1526,14 +1569,14 @@ function AdminDashboard() {
                                                     value={guidelinesData.VirtualRequirements}
                                                     onChange={(e) => setGuidelinesData((prev) => ({ ...prev, VirtualRequirements: e.target.value }))}
                                                     placeholder="Webcam & Microphone&#10;High Speed Internet&#10;Active GitHub Account"
-                                                    className="w-full px-3 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                                                    className="w-full px-3 py-2.5 rounded-xl border border-emerald-200 dark:border-zinc-800 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
                                                 />
                                             </div>
                                         </div>
                                     )}
 
                                     {guidelinesActiveTab === 'physical' && (
-                                        <div className="p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/20 dark:bg-emerald-950/10 space-y-4">
+                                        <div className="p-4 rounded-xl border border-emerald-100 dark:border-zinc-800 bg-emerald-50/20 dark:bg-black space-y-4">
                                             <div>
                                                 <label className="block text-xs font-medium text-emerald-900 dark:text-emerald-300 mb-1.5">
                                                     Physical Phase Facilities (One per line)
@@ -1543,7 +1586,7 @@ function AdminDashboard() {
                                                     value={guidelinesData.PhysicalFacilities}
                                                     onChange={(e) => setGuidelinesData((prev) => ({ ...prev, PhysicalFacilities: e.target.value }))}
                                                     placeholder="Campus Wi-Fi 6&#10;Catered Meals & Refreshments&#10;Overnight Rest Lounge"
-                                                    className="w-full px-3 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                                                    className="w-full px-3 py-2.5 rounded-xl border border-emerald-200 dark:border-zinc-800 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
                                                 />
                                             </div>
                                             <div>
@@ -1555,7 +1598,7 @@ function AdminDashboard() {
                                                     value={guidelinesData.PhysicalRequirements}
                                                     onChange={(e) => setGuidelinesData((prev) => ({ ...prev, PhysicalRequirements: e.target.value }))}
                                                     placeholder="Bring Laptop & Charger&#10;Valid College ID Card&#10;In-Person Check-in"
-                                                    className="w-full px-3 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                                                    className="w-full px-3 py-2.5 rounded-xl border border-emerald-200 dark:border-zinc-800 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
                                                 />
                                             </div>
                                         </div>

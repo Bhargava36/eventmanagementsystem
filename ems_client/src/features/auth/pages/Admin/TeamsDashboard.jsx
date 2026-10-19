@@ -183,14 +183,14 @@ function TeamsDashboard() {
                             placeholder="Search teams or leaders..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full sm:w-64 pl-10 pr-4 py-2 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500 shadow-sm"
+                            className="w-full sm:w-64 pl-10 pr-4 py-2 bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500 shadow-sm"
                         />
                     </div>
 
                     <button
                         type="button"
                         onClick={fetchTeams}
-                        className="relative p-2.5 rounded-xl bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors shadow-sm text-gray-600 dark:text-gray-300"
+                        className="relative p-2.5 rounded-xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors shadow-sm text-gray-600 dark:text-gray-300"
                     >
                         <Bell className="w-4 h-4" />
                         <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500" />
@@ -210,7 +210,7 @@ function TeamsDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.05 }}
                     whileHover={{ y: -3 }}
-                    className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+                    className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm transition-shadow hover:shadow-md"
                 >
                     <div className="flex items-start justify-between">
                         <div>
@@ -235,7 +235,7 @@ function TeamsDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.1 }}
                     whileHover={{ y: -3 }}
-                    className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+                    className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm transition-shadow hover:shadow-md"
                 >
                     <div className="flex items-start justify-between">
                         <div>
@@ -260,7 +260,7 @@ function TeamsDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.15 }}
                     whileHover={{ y: -3 }}
-                    className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+                    className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm transition-shadow hover:shadow-md"
                 >
                     <div className="flex items-start justify-between">
                         <div>
@@ -285,7 +285,7 @@ function TeamsDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: 0.2 }}
                     whileHover={{ y: -3 }}
-                    className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm transition-shadow hover:shadow-md"
+                    className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm transition-shadow hover:shadow-md"
                 >
                     <div className="flex items-start justify-between">
                         <div>
@@ -322,14 +322,14 @@ function TeamsDashboard() {
                                 {isActive ? (
                                     <motion.div
                                         layoutId="teamsActiveTabFolder"
-                                        className="absolute inset-0 rounded-t-2xl bg-white dark:bg-gray-950 border-t border-x border-b-0 border-gray-200 dark:border-gray-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                                        className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-gray-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
                                         transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                                     >
                                         {/* Seamless bottom mask: completely eliminates any hairline separation line */}
-                                        <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-gray-950 pointer-events-none z-20" />
+                                        <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-20" />
                                     </motion.div>
                                 ) : (
-                                    <div className="absolute inset-0 rounded-t-2xl bg-gray-100/80 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 z-0" />
+                                    <div className="absolute inset-0 rounded-t-2xl bg-gray-100/80 dark:bg-black border border-gray-200 dark:border-zinc-800 z-0" />
                                 )}
 
                                 <span className={`relative z-20 flex items-center gap-2 transition-colors ${
@@ -340,7 +340,7 @@ function TeamsDashboard() {
                                     <Icon
                                         className={`w-4 h-4 transition-colors ${
                                             isActive
-                                                ? 'text-emerald-600 dark:text-emerald-400'
+                                                 ? 'text-emerald-600 dark:text-emerald-400'
                                                 : 'text-gray-400'
                                         }`}
                                     />
@@ -350,7 +350,7 @@ function TeamsDashboard() {
                                         className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${
                                             isActive
                                                 ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                                                : 'bg-gray-200/80 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                                                : 'bg-gray-200/80 text-gray-600 dark:bg-zinc-900 dark:text-gray-400'
                                         }`}
                                     >
                                         {tab.count}
@@ -361,8 +361,8 @@ function TeamsDashboard() {
                     })}
                 </div>
 
-                <div className="bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6 relative z-0">
-                    <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden mb-6 relative z-0">
+                    <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                             <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                                 {activeTab === 'virtual'
@@ -384,14 +384,14 @@ function TeamsDashboard() {
                                     placeholder="Filter by name, lead, college..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="w-full sm:w-60 pl-9 pr-4 py-1.5 sm:py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500"
+                                    className="w-full sm:w-60 pl-9 pr-4 py-1.5 sm:py-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500"
                                 />
                             </div>
 
                             <button
                                 type="button"
                                 onClick={() => setSearch('')}
-                                className="p-1.5 sm:p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0"
+                                className="p-1.5 sm:p-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors shrink-0"
                                 title="Reset filter"
                             >
                                 <Filter className="w-4 h-4" />
@@ -402,7 +402,7 @@ function TeamsDashboard() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-xs sm:text-sm min-w-[900px]">
                             <thead>
-                                <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+                                <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-black">
                                     <th className="px-4 py-3 sm:py-4 font-semibold w-12">
                                         #
                                     </th>

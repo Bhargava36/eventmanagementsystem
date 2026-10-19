@@ -416,7 +416,7 @@ export default function AdminEventSettings() {
           <span>Loading event settings...</span>
         </div>
       ) : !eventData ? (
-        <div className="p-8 text-center rounded-3xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+        <div className="p-8 text-center rounded-3xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800">
           <AlertCircle className="h-8 w-8 text-rose-500 mx-auto mb-2" />
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">No Event Found</h3>
           <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">Please select an event to configure settings.</p>
@@ -424,7 +424,7 @@ export default function AdminEventSettings() {
       ) : (
         <div className="space-y-6">
           {/* Active Event Banner */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="p-5 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                 Active Event Target
@@ -441,7 +441,7 @@ export default function AdminEventSettings() {
               <button
                 type="button"
                 onClick={() => loadEventSettings(selectedEventId)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 text-xs font-bold text-slate-600 dark:text-zinc-300 transition"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900 text-xs font-bold text-slate-600 dark:text-zinc-300 transition"
               >
                 Reset
               </button>
@@ -449,7 +449,7 @@ export default function AdminEventSettings() {
                 type="button"
                 disabled={saving}
                 onClick={handleSave}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer"
               >
                 {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                 <span>Save All Settings</span>
@@ -457,7 +457,7 @@ export default function AdminEventSettings() {
             </div>
           </div>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-black">
             <div className="mb-5">
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 Physical Event Services
@@ -476,7 +476,7 @@ export default function AdminEventSettings() {
                 return (
                   <div
                     key={key}
-                    className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-zinc-800"
+                    className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-zinc-800 dark:bg-black"
                   >
                     <div>
                       <p className="text-sm font-semibold text-slate-900 dark:text-white">{label}</p>
@@ -490,7 +490,7 @@ export default function AdminEventSettings() {
                       aria-checked={enabled}
                       aria-label={`Toggle ${label}`}
                       onClick={() => handleToggle(key)}
-                      className={`relative h-7 w-12 rounded-full transition-colors ${enabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                      className={`relative h-7 w-12 rounded-full transition-colors ${enabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-zinc-800'}`}
                     >
                       <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
@@ -501,7 +501,7 @@ export default function AdminEventSettings() {
           </section>
 
           {/* Section 1: Track-Specific Registration Control Hub */}
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-6">
+          <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800/80">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -522,8 +522,8 @@ export default function AdminEventSettings() {
               {/* Virtual Track Card */}
               <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
                 settingsForm.VirtualRegistrationOpen === 1
-                  ? 'bg-slate-50/60 dark:bg-zinc-900/60 border-emerald-500/30'
-                  : 'bg-rose-50/40 dark:bg-rose-950/10 border-rose-500/30'
+                  ? 'bg-slate-50/60 dark:bg-black border-emerald-500/30'
+                  : 'bg-rose-50/40 dark:bg-black border-rose-500/30'
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -577,7 +577,7 @@ export default function AdminEventSettings() {
                       name="VirtualRegistrationStart"
                       value={settingsForm.VirtualRegistrationStart ? settingsForm.VirtualRegistrationStart.split('T')[0] : ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-white"
+                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -587,7 +587,7 @@ export default function AdminEventSettings() {
                       name="VirtualRegistrationEnd"
                       value={settingsForm.VirtualRegistrationEnd ? settingsForm.VirtualRegistrationEnd.split('T')[0] : ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-white"
+                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white"
                     />
                   </div>
                 </div>
@@ -596,8 +596,8 @@ export default function AdminEventSettings() {
               {/* Physical Track Card */}
               <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
                 settingsForm.PhysicalRegistrationOpen === 1
-                  ? 'bg-slate-50/60 dark:bg-zinc-900/60 border-amber-500/30'
-                  : 'bg-rose-50/40 dark:bg-rose-950/10 border-rose-500/30'
+                  ? 'bg-slate-50/60 dark:bg-black border-amber-500/30'
+                  : 'bg-rose-50/40 dark:bg-black border-rose-500/30'
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -651,7 +651,7 @@ export default function AdminEventSettings() {
                       name="PhysicalRegistrationStart"
                       value={settingsForm.PhysicalRegistrationStart ? settingsForm.PhysicalRegistrationStart.split('T')[0] : ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-white"
+                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white"
                     />
                   </div>
                   <div className="space-y-1">
@@ -661,7 +661,7 @@ export default function AdminEventSettings() {
                       name="PhysicalRegistrationEnd"
                       value={settingsForm.PhysicalRegistrationEnd ? settingsForm.PhysicalRegistrationEnd.split('T')[0] : ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-white"
+                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white"
                     />
                   </div>
                 </div>
@@ -670,7 +670,7 @@ export default function AdminEventSettings() {
           </div>
 
           {/* Section 2: Event Story & About the Challenge */}
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -710,7 +710,7 @@ export default function AdminEventSettings() {
                 onChange={handleInputChange}
                 rows={5}
                 placeholder="Enter the complete overview of the hackathon, problem statement tracks, challenge goals, eligibility, and what participants will build..."
-                className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-sm leading-relaxed text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-y"
+                className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm leading-relaxed text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-y"
               />
               <div className="flex items-center justify-between text-[11px] text-slate-400">
                 <span>Supports multi-line formatting and paragraphs.</span>
@@ -720,7 +720,7 @@ export default function AdminEventSettings() {
           </div>
 
           {/* Section 3: Strict Team Formation Constraint Rules */}
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
               <div className="p-2 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
                 <Users className="h-5 w-5" />
@@ -746,14 +746,14 @@ export default function AdminEventSettings() {
                   value={settingsForm.TeamSize}
                   onChange={handleInputChange}
                   placeholder="e.g. 4 or 2-4"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                 />
                 <p className="text-[11px] text-slate-400">
                   Set a single number (e.g. <strong className="text-slate-600 dark:text-zinc-300">4</strong>) or range (e.g. <strong className="text-slate-600 dark:text-zinc-300">2-4</strong>).
                 </p>
               </div>
 
-              <div className="md:col-span-2 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 space-y-2">
+              <div className="md:col-span-2 p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-zinc-200">
                   <ShieldCheck className="h-4 w-4 text-emerald-500" />
                   <span>Enforcement Guarantee:</span>
@@ -768,7 +768,7 @@ export default function AdminEventSettings() {
           </div>
 
           {/* Section 3: Virtual Hackathon Event Settings */}
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
             <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
               <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                 <Video className="h-5 w-5" />
@@ -794,7 +794,7 @@ export default function AdminEventSettings() {
                   value={settingsForm.VirtualMeetUrl}
                   onChange={handleInputChange}
                   placeholder="https://meet.google.com/xxx-yyyy-zzz"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                 />
               </div>
 
@@ -806,7 +806,7 @@ export default function AdminEventSettings() {
                   name="VirtualStatus"
                   value={settingsForm.VirtualStatus}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                 >
                   <option value="NOT_STARTED">NOT STARTED (Scheduled)</option>
                   <option value="LIVE">LIVE (Participants Can Join)</option>
@@ -869,7 +869,7 @@ export default function AdminEventSettings() {
                 >
                   <form
                     onSubmit={handleSaveTimeline}
-                    className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-emerald-500/30 shadow-md space-y-4"
+                    className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-black border border-emerald-500/30 shadow-md space-y-4"
                   >
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
                       <div className="flex items-center gap-2">
@@ -894,7 +894,7 @@ export default function AdminEventSettings() {
                           name="Track"
                           value={timelineForm.Track}
                           onChange={handleTimelineInputChange}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                         >
                           <option value="Virtual">Virtual Track</option>
                           <option value="Physical">Physical / On-Campus Track</option>
@@ -909,7 +909,7 @@ export default function AdminEventSettings() {
                           value={timelineForm.TimelineDate}
                           onChange={handleTimelineInputChange}
                           placeholder="e.g. 2026-10-20 or Day 1"
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                         />
                       </div>
 
@@ -922,7 +922,7 @@ export default function AdminEventSettings() {
                           onChange={handleTimelineInputChange}
                           placeholder="e.g. Project Idea Submissions"
                           required
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                         />
                       </div>
 
@@ -934,7 +934,7 @@ export default function AdminEventSettings() {
                           value={timelineForm.OrderIndex}
                           onChange={handleTimelineInputChange}
                           min="1"
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                         />
                       </div>
                     </div>
@@ -947,7 +947,7 @@ export default function AdminEventSettings() {
                         onChange={handleTimelineInputChange}
                         rows="2"
                         placeholder="Detailed explanation of what participants need to complete during this milestone..."
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
                       />
                     </div>
 
@@ -955,7 +955,7 @@ export default function AdminEventSettings() {
                       <button
                         type="button"
                         onClick={handleCancelTimelineEdit}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800"
+                        className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900"
                       >
                         Cancel
                       </button>
@@ -994,14 +994,14 @@ export default function AdminEventSettings() {
                       {isActive ? (
                         <motion.div
                           layoutId="timelineFolderTabActivePill"
-                          className="absolute inset-0 rounded-t-2xl bg-white dark:bg-zinc-900 border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                          className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
                           transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                         >
                           {/* Seamless bottom mask */}
-                          <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-zinc-900 pointer-events-none z-20" />
+                          <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-20" />
                         </motion.div>
                       ) : (
-                        <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-800 z-0" />
+                        <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 z-0" />
                       )}
 
                       <span className={`relative z-20 flex items-center gap-2 transition-colors ${
@@ -1015,7 +1015,7 @@ export default function AdminEventSettings() {
                           className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${
                             isActive
                               ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                              : 'bg-slate-200/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400'
+                              : 'bg-slate-200/80 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400'
                           }`}
                         >
                           {tab.count}
@@ -1027,7 +1027,7 @@ export default function AdminEventSettings() {
               </div>
 
               {/* Milestones Card Section with Seamless Connection */}
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 space-y-4 relative z-0">
+              <div className="bg-white dark:bg-black rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 space-y-4 relative z-0">
                 {loadingTimelines ? (
                   <div className="py-12 text-center text-slate-400 dark:text-zinc-500 text-sm">
                     <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2 text-emerald-500" />
@@ -1053,7 +1053,7 @@ export default function AdminEventSettings() {
                       {filtered.map((item, idx) => (
                         <div
                           key={item.Id || idx}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50/70 dark:bg-zinc-800/40 border border-slate-200/80 dark:border-zinc-800 hover:border-emerald-500/30 transition group"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50/70 dark:bg-black border border-slate-200/80 dark:border-zinc-800 hover:border-emerald-500/30 transition group"
                         >
                           <div className="flex items-start gap-3.5">
                             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
@@ -1091,7 +1091,7 @@ export default function AdminEventSettings() {
                             <button
                               type="button"
                               onClick={() => handleEditTimeline(item)}
-                              className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-emerald-600 hover:border-emerald-500/50 transition cursor-pointer"
+                              className="p-2 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-emerald-600 hover:border-emerald-500/50 transition cursor-pointer"
                               title="Edit milestone"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -1099,7 +1099,7 @@ export default function AdminEventSettings() {
                             <button
                               type="button"
                               onClick={() => handleDeleteTimeline(item.Id)}
-                              className="p-2 rounded-lg bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:text-rose-600 hover:border-rose-500/50 transition cursor-pointer"
+                              className="p-2 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-rose-600 hover:border-rose-500/50 transition cursor-pointer"
                               title="Delete milestone"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1115,7 +1115,7 @@ export default function AdminEventSettings() {
           </div>
 
           {/* Bottom Save Bar */}
-          <div className="p-4 rounded-2xl bg-slate-100 dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800 flex items-center justify-between">
+          <div className="p-4 rounded-2xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 flex items-center justify-between">
             <span className="text-xs text-slate-500 dark:text-zinc-400">
               Ensure you click <strong>Save All Settings</strong> after modifying registration toggles or team sizes.
             </span>

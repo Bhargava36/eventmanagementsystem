@@ -662,40 +662,32 @@ function TeamInfo() {
                                 <p className="text-sm text-slate-500">Loading available choices...</p>
                             ) : (
                                 <div className="space-y-3">
-                                    {serviceAvailability.accommodationEnabled && (
-                                        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 dark:border-zinc-800">
+                                    {(serviceAvailability.accommodationEnabled || serviceAvailability.foodEnabled) && (
+                                        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 dark:border-zinc-800 p-4 bg-emerald-50/20 dark:bg-black hover:border-emerald-500/50 transition">
                                             <input
                                                 type="checkbox"
-                                                checked={servicePreferences.accommodationRequested}
+                                                checked={Boolean(servicePreferences.accommodationRequested || servicePreferences.foodAccepted)}
                                                 disabled={serviceSaving || servicePreferencesSubmitted}
                                                 onChange={(event) => setServicePreferences((previous) => ({
                                                     ...previous,
-                                                    accommodationRequested: event.target.checked
-                                                }))}
-                                                className="mt-1 accent-emerald-600"
-                                            />
-                                            <BedDouble className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                                                Yes — request accommodation for all {members.length} registered team member{members.length === 1 ? "" : "s"}
-                                            </span>
-                                        </label>
-                                    )}
-                                    {serviceAvailability.foodEnabled && (
-                                        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 dark:border-zinc-800">
-                                            <input
-                                                type="checkbox"
-                                                checked={servicePreferences.foodAccepted}
-                                                disabled={serviceSaving || servicePreferencesSubmitted}
-                                                onChange={(event) => setServicePreferences((previous) => ({
-                                                    ...previous,
+                                                    accommodationRequested: event.target.checked,
                                                     foodAccepted: event.target.checked
                                                 }))}
-                                                className="mt-1 accent-emerald-600"
+                                                className="mt-1 accent-emerald-600 h-4 w-4 cursor-pointer"
                                             />
-                                            <Utensils className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
-                                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                                                Yes — accept event meals for all {members.length} registered team member{members.length === 1 ? "" : "s"}
-                                            </span>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2">
+                                                    <BedDouble className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">&amp;</span>
+                                                    <Utensils className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                                        Request Food &amp; Accommodation
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+                                                    Yes — request both campus accommodation (in designated Boys/Girls blocks) and daily meal tokens for all {members.length} registered team member{members.length === 1 ? "" : "s"}.
+                                                </p>
+                                            </div>
                                         </label>
                                     )}
                                     {serviceError && (

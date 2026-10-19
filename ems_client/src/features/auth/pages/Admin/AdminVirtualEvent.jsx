@@ -240,9 +240,9 @@ export default function AdminVirtualEvent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50/60 dark:bg-black/60 p-4 sm:p-6 md:p-8 space-y-6">
+    <div className="min-h-screen bg-slate-50/60 dark:bg-black p-4 sm:p-6 md:p-8 space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
             <Radio className="h-3.5 w-3.5 animate-pulse" />
@@ -267,7 +267,7 @@ export default function AdminVirtualEvent() {
               <span>LIVE IN PROGRESS</span>
             </div>
           ) : isCompleted ? (
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 font-bold text-sm">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-100 dark:bg-black border dark:border-zinc-800 text-slate-600 dark:text-zinc-300 font-bold text-sm">
               <CheckCircle2 className="h-4 w-4 text-slate-500" />
               <span>Event Completed</span>
             </div>
@@ -281,7 +281,7 @@ export default function AdminVirtualEvent() {
           <button
             type="button"
             onClick={() => loadData(currentEventId)}
-            className="p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-300 transition"
+            className="p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-600 dark:text-zinc-300 transition"
             title="Refresh details"
           >
             <RefreshCw className="h-4 w-4" />
@@ -292,13 +292,13 @@ export default function AdminVirtualEvent() {
       {/* Main Action Banner: START VIRTUAL EVENT */}
       <div className={`p-6 sm:p-8 rounded-3xl border transition-all ${
         isLive
-          ? 'bg-white dark:bg-zinc-950 border-emerald-500/40 shadow-sm'
-          : 'bg-white dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 shadow-sm'
+          ? 'bg-white dark:bg-black border-emerald-500/40 shadow-sm'
+          : 'bg-white dark:bg-black border-slate-200 dark:border-zinc-800 shadow-sm'
       }`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-2.5">
-              <div className={`p-2 rounded-xl ${isLive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300'}`}>
+              <div className={`p-2 rounded-xl ${isLive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-black border dark:border-zinc-800 text-slate-700 dark:text-zinc-300'}`}>
                 {isLive ? <Radio className="h-5 w-5 animate-pulse" /> : <Play className="h-5 w-5" />}
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
@@ -378,7 +378,7 @@ export default function AdminVirtualEvent() {
       {/* Grid: Meeting Link Manager + Virtual Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Google Meet / Video Conference Manager */}
-        <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
+        <div className="lg:col-span-2 bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
@@ -410,7 +410,7 @@ export default function AdminVirtualEvent() {
                 value={meetUrlInput}
                 onChange={(e) => setMeetUrlInput(e.target.value)}
                 placeholder="https://meet.google.com/abc-defg-hij"
-                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -429,7 +429,7 @@ export default function AdminVirtualEvent() {
                   <button
                     type="button"
                     onClick={copyMeetLink}
-                    className="p-3 rounded-2xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition"
+                    className="p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 transition"
                     title="Copy Link"
                   >
                     {copiedMeet ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
@@ -438,7 +438,7 @@ export default function AdminVirtualEvent() {
                     href={event.VirtualMeetUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-4 py-3 rounded-2xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-semibold text-xs transition"
+                    className="inline-flex items-center gap-1.5 px-4 py-3 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-semibold text-xs transition"
                   >
                     <span>Test</span>
                     <ExternalLink className="h-3.5 w-3.5" />
@@ -448,7 +448,7 @@ export default function AdminVirtualEvent() {
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800 text-xs text-slate-500 dark:text-zinc-400 flex items-start gap-2.5">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-black border border-slate-100 dark:border-zinc-800 text-xs text-slate-500 dark:text-zinc-400 flex items-start gap-2.5">
             <Sparkles className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
             <span>
               <strong>Tip:</strong> You can paste any conference link here (Google Meet, Zoom, Microsoft Teams, Discord). When participants open their Virtual Event page, they will see a one-click <strong>"Join Live Room"</strong> button.
@@ -457,18 +457,18 @@ export default function AdminVirtualEvent() {
         </div>
 
         {/* Quick Virtual Track Overview */}
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
+        <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
           <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Calendar className="h-4 w-4 text-emerald-500" />
             Virtual Track Stats
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-800">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-100 dark:border-zinc-800">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Virtual Teams</span>
               <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{virtualTeams.length}</p>
             </div>
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-800">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-100 dark:border-zinc-800">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Participants</span>
               <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{totalVirtualParticipants}</p>
             </div>
@@ -494,7 +494,7 @@ export default function AdminVirtualEvent() {
       </div>
 
       {/* Registered Virtual Teams Section */}
-      <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm p-6 space-y-5">
+      <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm p-6 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -513,7 +513,7 @@ export default function AdminVirtualEvent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search team or lead..."
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-zinc-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
             />
           </div>
         </div>
@@ -526,7 +526,7 @@ export default function AdminVirtualEvent() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-600 dark:text-zinc-300">
-              <thead className="bg-slate-50 dark:bg-zinc-800/60 uppercase font-bold text-[10px] tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-200 dark:border-zinc-800">
+              <thead className="bg-slate-50 dark:bg-black uppercase font-bold text-[10px] tracking-wider text-slate-400 dark:text-zinc-500 border-b border-slate-200 dark:border-zinc-800">
                 <tr>
                   <th className="py-3 px-4">Team Name</th>
                   <th className="py-3 px-4">Team Lead</th>
@@ -538,7 +538,7 @@ export default function AdminVirtualEvent() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                 {filteredTeams.map((team) => (
-                  <tr key={team.Id || team.TeamId} className="hover:bg-slate-50/70 dark:hover:bg-zinc-800/40 transition">
+                  <tr key={team.Id || team.TeamId} className="hover:bg-slate-50/70 dark:hover:bg-zinc-900/60 transition">
                     <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                       {team.TeamName}
                     </td>
@@ -576,7 +576,7 @@ export default function AdminVirtualEvent() {
 
       {/* Virtual Timelines / Day Milestones Preview */}
       {timelines.length > 0 && (
-        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm p-6 space-y-4">
+        <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -596,7 +596,7 @@ export default function AdminVirtualEvent() {
             {timelines.map((tl, index) => (
               <div
                 key={tl.Id || index}
-                className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-800 space-y-1.5"
+                className="p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-1.5"
               >
                 <div className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
                   <Calendar className="h-3 w-3" />

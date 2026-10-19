@@ -338,6 +338,69 @@ const updateEventSettings = (id, settings, callback) => {
     });
 };
 
+const getAdminDashboardSummary = (eventId, callback) => {
+    const q = (sql, params) => new Promise((resolve) => {
+        db.query(sql, params, (err, rows) => {
+            if (err) {
+                console.error('getAdminDashboardSummary subquery error:', err.message);
+                resolve([]);
+            } else {
+                resolve(rows || []);
+            }
+        });
+    });
+
+    Promise.all([
+        q('SELECT * FROM events WHERE Id = ?', [eventId]),
+        q('SELECT * FROM event_prizes WHERE EventId = ? ORDER BY PrizeRank ASC', [eventId]),
+        q(
+            `SELECT er.*, rt.TeamName, u.UserName AS LeaderName, u.Email AS LeaderEmail 
+             FROM event_registrations er 
+             LEFT JOIN registered_teams rt ON er.TeamId = rt.Id 
+             LEFT JOIN users u ON rt.TeamLeadUserId = u.Id 
+             WHERE er.EventId = ? 
+             ORDER BY er.CreatedAt DESC 
+             LIMIT 5`,
+            [eventId]
+        ),
+        q(
+            `SELECT er.Id, er.EventId, er.TeamId, er.ParticipationMode, er.Status, er.CreatedAt, rt.TeamName 
+             FROM event_registrations er 
+             LEFT JOIN registered_teams rt ON er.TeamId = rt.Id 
+             WHERE er.EventId = ? 
+             ORDER BY er.CreatedAt DESC 
+             LIMIT 5`,
+            [eventId]
+        ),
+        q(
+            `SELECT 
+               (SELECT COUNT(*) FROM event_registrations WHERE EventId = ?) AS usersCount,
+               (SELECT COUNT(*) FROM registered_teams WHERE EventId = ?) AS teamsCount,
+               (SELECT COUNT(*) FROM event_registrations WHERE EventId = ? AND Status = 'pending') AS pendingCount`,
+            [eventId, eventId, eventId]
+        )
+    ])
+        .then(([events, prizes, registrations, activities, counts]) => {
+            if (!events || events.length === 0) {
+                return callback(null, null);
+            }
+            const countRow = counts && counts[0] ? counts[0] : {};
+            return callback(null, {
+                event: events[0],
+                declaredPrizes: prizes || [],
+                recentRegistrations: registrations || [],
+                recentActivities: activities || [],
+                usersCount: Number(countRow.usersCount || 0),
+                teamsCount: Number(countRow.teamsCount || 0),
+                pendingCount: Number(countRow.pendingCount || 0)
+            });
+        })
+        .catch((err) => {
+            console.error('getAdminDashboardSummary error:', err);
+            return callback(err, null);
+        });
+};
+
 module.exports = {
     createEvent,
     getAllEvents,
@@ -349,5 +412,6 @@ module.exports = {
     saveEventGuidelines,
     updateVirtualEventStatus,
     updateVirtualMeetUrl,
-    updateEventSettings
+    updateEventSettings,
+    getAdminDashboardSummary
 };

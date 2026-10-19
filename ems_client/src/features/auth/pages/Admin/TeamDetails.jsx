@@ -163,7 +163,7 @@ function TeamDetails() {
             </div>
 
             {/* Header Banner */}
-            <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden mb-6">
+            <div className="bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden mb-6">
                 <div className="p-4 sm:p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                     <div className="flex items-start gap-4">
                         <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-lg">
@@ -184,7 +184,7 @@ function TeamDetails() {
                             </p>
 
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-900 px-2.5 py-1 rounded-md">
+                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-black border border-transparent dark:border-zinc-800 px-2.5 py-1 rounded-md">
                                     Team ID: TEAM-{team.Id}
                                 </span>
 
@@ -201,7 +201,7 @@ function TeamDetails() {
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 sm:gap-6 xl:gap-8 border-t xl:border-t-0 border-gray-200 dark:border-gray-800 pt-4 xl:pt-0">
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 sm:gap-6 xl:gap-8 border-t xl:border-t-0 border-gray-200 dark:border-zinc-800 pt-4 xl:pt-0">
                         <div className="flex flex-col items-center xl:items-start gap-1">
                             <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                                 <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -210,12 +210,12 @@ function TeamDetails() {
                                 </span>
                             </div>
 
-                            <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                            <span className="text-sm sm:base font-semibold text-gray-900 dark:text-white">
                                 {registeredDate}
                             </span>
                         </div>
 
-                        <div className="hidden sm:block w-px h-8 bg-gray-200 dark:bg-gray-800" />
+                        <div className="hidden sm:block w-px h-8 bg-gray-200 dark:border-zinc-800" />
 
                         <div className="flex flex-col items-center xl:items-start gap-1">
                             <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
@@ -236,7 +236,7 @@ function TeamDetails() {
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
 
                 {/* Team Information Card */}
-                <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm col-span-1">
+                <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
                     <div className="flex items-center justify-between mb-4 sm:mb-5">
                         <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                             Team Information
@@ -324,7 +324,7 @@ function TeamDetails() {
                 </div>
 
                 {/* Event Information */}
-                <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm col-span-1">
+                <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
                     <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 sm:mb-5">
                         Registered Event
                     </h2>
@@ -348,14 +348,14 @@ function TeamDetails() {
                     </div>
 
                     <div className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300 pt-1">
-                        <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-gray-800">
+                        <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800">
                             <span className="text-gray-400">Registration Status:</span>
                             <span className="font-semibold text-emerald-600 dark:text-emerald-400 uppercase">
                                 {team.RegistrationStatus || 'Approved'}
                             </span>
                         </div>
 
-                        <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-gray-800">
+                        <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800">
                             <span className="text-gray-400">State:</span>
                             <span className="font-semibold text-gray-800 dark:text-gray-200">
                                 {team.State || 'Not available'}
@@ -365,7 +365,7 @@ function TeamDetails() {
                 </div>
 
                 {/* Team Lead Card */}
-                <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm col-span-1">
+                <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
                     <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 sm:mb-5">
                         Team Lead
                     </h2>
@@ -398,7 +398,7 @@ function TeamDetails() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
+                            <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-black p-3 rounded-lg border border-gray-100 dark:border-zinc-800">
                                 <div>
                                     <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
                                         Gender
@@ -426,7 +426,7 @@ function TeamDetails() {
                 </div>
 
                 {/* Team Members Table */}
-                <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm col-span-1 lg:col-span-2 xl:col-span-3">
+                <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1 lg:col-span-2 xl:col-span-3">
                     <div className="flex items-center justify-between mb-4 sm:mb-5">
                         <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
                             Team Members ({members.length})

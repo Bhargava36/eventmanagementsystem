@@ -287,7 +287,7 @@ function AdminProfile() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
-          className="relative overflow-hidden rounded-3xl bg-white dark:bg-gray-950 border border-gray-200 dark:border-emerald-500/20 shadow-xl p-6 sm:p-8 lg:p-10"
+          className="relative overflow-hidden rounded-3xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-xl p-6 sm:p-8 lg:p-10"
         >
           <WaveDots
             rows={8}
@@ -304,7 +304,7 @@ function AdminProfile() {
                   <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <span>{adminName.charAt(0).toUpperCase()}</span>
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-1.5 rounded-xl shadow-md border-2 border-white dark:border-gray-950">
+                <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-1.5 rounded-xl shadow-md border-2 border-white dark:border-black">
                   <Crown className="w-4 h-4" />
                 </div>
               </div>
@@ -326,19 +326,19 @@ function AdminProfile() {
                 </p>
 
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-y-2 gap-x-4 pt-2 text-xs text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-gray-800">
+                  <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-zinc-800">
                     <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span className="truncate max-w-[200px]">{currentAdmin.Email}</span>
                   </div>
 
                   {currentAdmin.Mobile && (
-                    <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-gray-800">
+                    <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-zinc-800">
                       <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>{currentAdmin.Mobile}</span>
                     </div>
                   )}
 
-                  <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-gray-800">
+                  <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-zinc-800">
                     <CalendarDays className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Joined {joinedDate}</span>
                   </div>
@@ -354,7 +354,7 @@ function AdminProfile() {
           transition={{ duration: 0.4, delay: 0.1 }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
+          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Assigned Event</span>
               <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -374,7 +374,7 @@ function AdminProfile() {
 
           <Link
             to="/admin/teams"
-            className="bg-white dark:bg-gray-950 rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group cursor-pointer"
+            className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Registered Teams</span>
@@ -395,7 +395,7 @@ function AdminProfile() {
 
           <Link
             to="/admin/dashboard"
-            className="bg-white dark:bg-gray-950 rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group cursor-pointer"
+            className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Total Participants</span>
@@ -414,7 +414,7 @@ function AdminProfile() {
             </div>
           </Link>
 
-          <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between">
+          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Security Clearance</span>
               <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -443,7 +443,7 @@ function AdminProfile() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.25 }}
-                  className="bg-white dark:bg-gray-950 rounded-3xl border-2 border-emerald-500/40 shadow-xl overflow-hidden p-6 sm:p-8"
+                  className="bg-white dark:bg-black rounded-3xl border-2 border-emerald-500/40 shadow-xl overflow-hidden p-6 sm:p-8"
                 >
                   <div className="flex items-center justify-between pb-5 mb-6 border-b border-gray-200 dark:border-gray-800">
                     <div className="flex items-center gap-3">
@@ -631,7 +631,7 @@ function AdminProfile() {
             transition={{ duration: 0.4, delay: 0.2 }}
             className="lg:col-span-4 space-y-6"
           >
-            <div className="bg-white dark:bg-gray-950 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
+            <div className="bg-white dark rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
               <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">
                 Quick Actions
               </h3>
@@ -668,7 +668,6 @@ function AdminProfile() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 group-hover:text-emerald-500 transition-all" />
                 </Link>
-
                 <Link
                   to="/admin/dashboard"
                   className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900/70 border border-gray-200/80 dark:border-gray-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"

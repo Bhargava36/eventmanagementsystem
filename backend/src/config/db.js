@@ -240,8 +240,21 @@ const migrationQueries = [
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
      
+    `CREATE TABLE IF NOT EXISTS accommodation_blocks (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NULL,
+        BlockName VARCHAR(100) NOT NULL,
+        Gender ENUM('Boys', 'Girls') NOT NULL,
+        Description VARCHAR(255) NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_block_gender (Gender),
+        INDEX idx_block_event (EventId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
     `CREATE TABLE IF NOT EXISTS Accommodation (
     Id INT AUTO_INCREMENT PRIMARY KEY,
+    BlockId INT NULL,
     room_num VARCHAR(20) NOT NULL UNIQUE,
     Type VARCHAR(50) NOT NULL,
     Gender ENUM('Girls', 'Boys') NOT NULL,
@@ -253,8 +266,10 @@ const migrationQueries = [
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_accommodation_gender (Gender),
-    INDEX idx_accommodation_status (Status)
+    INDEX idx_accommodation_status (Status),
+    INDEX idx_accommodation_block (BlockId)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `ALTER TABLE Accommodation ADD COLUMN IF NOT EXISTS BlockId INT NULL`,
 
 `CREATE TABLE IF NOT EXISTS accommodation_allocations (
     Id INT AUTO_INCREMENT PRIMARY KEY,

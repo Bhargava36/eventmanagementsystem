@@ -296,7 +296,7 @@ function CoreTeam() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.08 }}
                 whileHover={{ y: -3 }}
-                className="rounded-xl border border-emerald-700/20 bg-white p-5 shadow-sm dark:border-emerald-500/30 dark:bg-gray-950 transition-shadow hover:shadow-md"
+                className="rounded-xl border border-emerald-700/20 bg-white p-5 shadow-sm dark:border-emerald-500/30 dark:bg-black transition-shadow hover:shadow-md"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -325,7 +325,7 @@ function CoreTeam() {
                 key={n}
                 animate={{ opacity: [0.35, 0.8, 0.35] }}
                 transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }}
-                className="h-48 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-gray-950/60 p-6"
+                className="h-48 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-black p-6"
               />
             ))}
           </div>
@@ -338,7 +338,7 @@ function CoreTeam() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: idx * 0.07 }}
                 whileHover={{ y: -3 }}
-                className="rounded-xl border border-emerald-700/20 bg-white p-5 shadow-sm transition hover:border-emerald-500/40 dark:border-emerald-500/30 dark:bg-gray-950 sm:p-6"
+                className="rounded-xl border border-emerald-700/20 bg-white p-5 shadow-sm transition hover:border-emerald-500/40 dark:border-emerald-500/30 dark:bg-black sm:p-6"
               >
                 <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-4 dark:border-gray-800">
                   <div className="flex items-center gap-3.5">
@@ -412,7 +412,7 @@ function CoreTeam() {
         )}
 
         {!loading && coreTeam.length === 0 && (
-          <div className="mt-5 rounded-xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-gray-950">
+          <div className="mt-5 rounded-xl border border-gray-200 bg-white p-10 text-center dark:border-gray-800 dark:bg-black">
             <Users className="mx-auto h-10 w-10 text-gray-400" />
             <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
               No core team members added yet.
@@ -437,7 +437,7 @@ function CoreTeam() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-emerald-700/20 bg-white shadow-xl dark:border-emerald-500/30 dark:bg-gray-950"
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-emerald-700/20 bg-white shadow-xl dark:border-emerald-500/30 dark:bg-black"
             >
             <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
               <div>
@@ -454,14 +454,14 @@ function CoreTeam() {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-900 dark:hover:text-white"
+                className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-zinc-900 dark:hover:text-white"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 p-5">
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-4 bg-gray-50/50 dark:bg-gray-900/30">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-4 bg-gray-50/50 dark:bg-black">
                 {formData.photo ? (
                   <div className="relative">
                     <img

@@ -45,16 +45,15 @@ const saveTeamPreference = async ( teamId, userId, accommodationRequested, foodA
         error.status = 403;
         throw error;
     }
-    if (accommodationRequested && Number(team.AccommodationEnabled) !== 1) {
-        const error = new Error("Accommodation selection is not enabled.");
+    // Unified Food & Accommodation preference: they are requested together
+    const unifiedRequest = Boolean(accommodationRequested || foodAccepted);
+
+    if (unifiedRequest && Number(team.AccommodationEnabled) !== 1 && Number(team.FoodEnabled) !== 1) {
+        const error = new Error("Food & Accommodation selection is not enabled for this event.");
         error.status = 403;
         throw error;
     }
-    if (foodAccepted && Number(team.FoodEnabled) !== 1) {
-        const error = new Error("Food selection is not enabled.");
-        error.status = 403;
-        throw error;
-    }
+
     const [existingPreferences] = await db.promise().query(
         `SELECT TeamId
         FROM physical_team_preferences
@@ -75,8 +74,8 @@ const saveTeamPreference = async ( teamId, userId, accommodationRequested, foodA
             [
                 team.EventId,
                 teamId,
-                accommodationRequested ? 1 : 0,
-                foodAccepted ? 1 : 0
+                unifiedRequest ? 1 : 0,
+                unifiedRequest ? 1 : 0
             ]
         );
     } catch (insertError) {
@@ -93,7 +92,7 @@ const saveTeamPreference = async ( teamId, userId, accommodationRequested, foodA
 
 const getFoodParticipants = async (eventId) => {
     const [events] = await db.promise().query(
-        "SELECT FoodEnabled FROM events WHERE Id = ?",
+        "SELECT FoodEnabled, AccommodationEnabled FROM events WHERE Id = ?",
         [eventId]
     );
     if (!events[0]) {
@@ -101,7 +100,7 @@ const getFoodParticipants = async (eventId) => {
         error.status = 404;
         throw error;
     }
-    if (Number(events[0].FoodEnabled) !== 1) {
+    if (Number(events[0].FoodEnabled) !== 1 && Number(events[0].AccommodationEnabled) !== 1) {
         const error = new Error("Food selection is not enabled for this event.");
         error.status = 403;
         throw error;
@@ -145,7 +144,7 @@ const getFoodParticipants = async (eventId) => {
             ON dinner.EventId = preference.EventId
             AND dinner.UserId = member.UserId
             AND dinner.MealType = 'dinner'
-        WHERE preference.EventId = ? AND preference.FoodAccepted = 1
+        WHERE preference.EventId = ? AND (preference.FoodAccepted = 1 OR preference.AccommodationRequested = 1)
         ORDER BY t.TeamName, participant.UserName`,
         [eventId]
     );
@@ -155,7 +154,7 @@ const getFoodParticipants = async (eventId) => {
 
 const getAccommodationParticipants = async (eventId) => {
     const [events] = await db.promise().query(
-        "SELECT AccommodationEnabled FROM events WHERE Id = ?",
+        "SELECT AccommodationEnabled, FoodEnabled FROM events WHERE Id = ?",
         [eventId]
     );
     if (!events[0]) {
@@ -163,7 +162,7 @@ const getAccommodationParticipants = async (eventId) => {
         error.status = 404;
         throw error;
     }
-    if (Number(events[0].AccommodationEnabled) !== 1) {
+    if (Number(events[0].AccommodationEnabled) !== 1 && Number(events[0].FoodEnabled) !== 1) {
         const error = new Error("Accommodation requests are not enabled for this event.");
         error.status = 403;
         throw error;
@@ -173,13 +172,21 @@ const getAccommodationParticipants = async (eventId) => {
         `SELECT DISTINCT
             t.Id AS TeamId,
             t.TeamName,
+            t.College AS TeamCollege,
             lead.UserName AS TeamLeadName,
             lead.Email AS TeamLeadEmail,
             member.UserId,
             participant.UserName AS ParticipantName,
             participant.Email,
             participant.Gender,
+            participant.College,
+            participant.Mobile,
             allocation.RoomId AS AccommodationId,
+            allocation.CreatedAt AS AllocatedAt,
+            acc.room_num AS RoomNumber,
+            acc.BlockId,
+            block.BlockName,
+            block.Gender AS BlockGender,
             (allocation.RoomId IS NOT NULL) AS AccommodationAllocated
         FROM physical_team_preferences preference
         INNER JOIN registered_teams t ON t.Id = preference.TeamId
@@ -194,7 +201,11 @@ const getAccommodationParticipants = async (eventId) => {
         LEFT JOIN accommodation_allocations allocation
             ON allocation.EventId = preference.EventId
             AND allocation.UserId = member.UserId
-        WHERE preference.EventId = ? AND preference.AccommodationRequested = 1
+        LEFT JOIN Accommodation acc
+            ON acc.Id = allocation.RoomId
+        LEFT JOIN accommodation_blocks block
+            ON block.Id = acc.BlockId
+        WHERE preference.EventId = ? AND (preference.AccommodationRequested = 1 OR preference.FoodAccepted = 1)
         ORDER BY t.TeamName, participant.UserName`,
         [eventId]
     );
@@ -206,23 +217,21 @@ const getEventTeamPreferences = async (eventId) => {
     const [rows] = await db.promise().query(
         `SELECT
             t.Id AS TeamId,
-            (
-                SELECT COUNT(*)
-                FROM registered_team_members member
-                WHERE member.TeamId = t.Id
-            ) AS MemberCount,
-            COALESCE(preference.AccommodationRequested, 0) AS AccommodationRequested,
-            COALESCE(preference.FoodAccepted, 0) AS FoodAccepted,
-            (preference.TeamId IS NOT NULL) AS PreferencesSubmitted
+            COUNT(DISTINCT member.UserId) AS MemberCount,
+            COALESCE(MAX(preference.AccommodationRequested), 0) AS AccommodationRequested,
+            COALESCE(MAX(preference.FoodAccepted), 0) AS FoodAccepted,
+            (MAX(preference.TeamId) IS NOT NULL) AS PreferencesSubmitted
         FROM registered_teams t
         INNER JOIN event_registrations registration
             ON registration.TeamId = t.Id
             AND registration.EventId = t.EventId
             AND registration.ParticipationMode = 'Physical'
             AND registration.Status = 'approved'
+        LEFT JOIN registered_team_members member ON member.TeamId = t.Id
         LEFT JOIN physical_team_preferences preference
             ON preference.EventId = t.EventId AND preference.TeamId = t.Id
         WHERE t.EventId = ?
+        GROUP BY t.Id
         ORDER BY t.Id`,
         [eventId]
     );
