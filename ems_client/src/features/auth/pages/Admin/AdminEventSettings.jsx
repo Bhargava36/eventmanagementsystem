@@ -48,6 +48,7 @@ export default function AdminEventSettings() {
   const [eventData, setEventData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('virtual'); // 'virtual' | 'physical' | 'general'
 
   // Editable settings form state
   const [settingsForm, setSettingsForm] = useState({
@@ -211,7 +212,7 @@ export default function AdminEventSettings() {
     setEditingTimelineId(null);
     setShowTimelineForm(false);
     setTimelineForm({
-      Track: timelineTab === 'Physical' ? 'Physical' : 'Virtual',
+      Track: activeTab === 'physical' ? 'Physical' : 'Virtual',
       TimelineDate: '',
       Heading: '',
       Description: '',
@@ -389,6 +390,225 @@ export default function AdminEventSettings() {
     }
   };
 
+  const renderTimelineSection = (trackName) => {
+    const trackTimelines = timelines
+      .filter((t) => t.Track === trackName)
+      .sort((a, b) => (a.OrderIndex || 0) - (b.OrderIndex || 0));
+
+    const isPhysical = trackName === 'Physical';
+
+    return (
+      <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-zinc-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <Milestone className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                {trackName} Track Timelines &amp; Roadmap
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
+                Milestones and round schedules designated exclusively for the {trackName} track.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (showTimelineForm && timelineForm.Track === trackName) {
+                handleCancelTimelineEdit();
+              } else {
+                setEditingTimelineId(null);
+                setTimelineForm({
+                  Track: trackName,
+                  TimelineDate: '',
+                  Heading: '',
+                  Description: '',
+                  OrderIndex: (trackTimelines.length || 0) + 1
+                });
+                setShowTimelineForm(true);
+              }
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition cursor-pointer self-start sm:self-auto bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20"
+          >
+            {showTimelineForm && timelineForm.Track === trackName ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            <span>{showTimelineForm && timelineForm.Track === trackName ? 'Close Form' : `Add ${trackName} Milestone`}</span>
+          </button>
+        </div>
+
+        {/* Collapsible Milestone Editor Form */}
+        <AnimatePresence>
+          {showTimelineForm && timelineForm.Track === trackName && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="overflow-hidden"
+            >
+              <form
+                onSubmit={handleSaveTimeline}
+                className="p-5 sm:p-6 rounded-2xl bg-slate-50/70 dark:bg-zinc-950 border border-emerald-500/30 shadow-md space-y-4"
+              >
+                <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-zinc-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {editingTimelineId ? `Edit ${trackName} Milestone` : `Create New ${trackName} Milestone`}
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCancelTimelineEdit}
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Milestone Date / Day</label>
+                    <input
+                      type="text"
+                      name="TimelineDate"
+                      value={timelineForm.TimelineDate}
+                      onChange={handleTimelineInputChange}
+                      placeholder="e.g. 2026-10-20 or Day 1"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Milestone Title / Heading *</label>
+                    <input
+                      type="text"
+                      name="Heading"
+                      value={timelineForm.Heading}
+                      onChange={handleTimelineInputChange}
+                      placeholder="e.g. Project Idea Submissions"
+                      required
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Order / Sequence Index</label>
+                    <input
+                      type="number"
+                      name="OrderIndex"
+                      value={timelineForm.OrderIndex}
+                      onChange={handleTimelineInputChange}
+                      min="1"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Description / Details</label>
+                  <textarea
+                    name="Description"
+                    value={timelineForm.Description}
+                    onChange={handleTimelineInputChange}
+                    rows="2"
+                    placeholder={`Detailed explanation of what participants in the ${trackName} track must complete...`}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelTimelineEdit}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingTimeline}
+                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
+                  >
+                    {savingTimeline ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                    <span>{editingTimelineId ? 'Update Milestone' : 'Save Milestone'}</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Milestones List */}
+        {loadingTimelines ? (
+          <div className="py-8 text-center text-slate-400 text-xs">
+            <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-1 text-emerald-500" />
+            <span>Loading {trackName} milestones...</span>
+          </div>
+        ) : trackTimelines.length === 0 ? (
+          <div className="py-10 text-center text-slate-400 dark:text-zinc-500 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl">
+            <Milestone className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-zinc-700" />
+            <p className="text-xs font-bold text-slate-700 dark:text-zinc-300">No milestones configured for {trackName} Track yet.</p>
+            <p className="text-[11px] text-slate-400 mt-1">Click "Add {trackName} Milestone" above to schedule track stages.</p>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {trackTimelines.map((item, idx) => (
+              <div
+                key={item.Id || idx}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-slate-50/70 dark:bg-black border border-slate-200/80 dark:border-zinc-800 hover:border-emerald-500/30 transition group"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 mt-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    #{item.OrderIndex || idx + 1}
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <h5 className="text-xs font-bold text-slate-900 dark:text-white">
+                        {item.Heading}
+                      </h5>
+                      {item.TimelineDate && (
+                        <span className="text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
+                          • {item.TimelineDate}
+                        </span>
+                      )}
+                    </div>
+                    {item.Description && (
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 max-w-xl leading-relaxed">
+                        {item.Description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleEditTimeline(item)}
+                    className="p-1.5 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-emerald-600 hover:border-emerald-500/50 transition cursor-pointer"
+                    title="Edit milestone"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTimeline(item.Id)}
+                    className="p-1.5 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:border-zinc-400 dark:hover:border-zinc-600 transition cursor-pointer"
+                    title="Delete milestone"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto text-slate-800 dark:text-zinc-100">
       {/* Page Header */}
@@ -417,7 +637,7 @@ export default function AdminEventSettings() {
         </div>
       ) : !eventData ? (
         <div className="p-8 text-center rounded-3xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800">
-          <AlertCircle className="h-8 w-8 text-rose-500 mx-auto mb-2" />
+          <AlertCircle className="h-8 w-8 text-slate-400 dark:text-zinc-500 mx-auto mb-2" />
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">No Event Found</h3>
           <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">Please select an event to configure settings.</p>
         </div>
@@ -457,660 +677,493 @@ export default function AdminEventSettings() {
             </div>
           </div>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-black">
-            <div className="mb-5">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                Physical Event Services
-              </h3>
-              <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
-                Accommodation and food choices become available to approved physical team leads; ID card generation is controlled here.
-              </p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
+          {/* Seamless Navigation Tabs */}
+          <div className="relative pt-2">
+            <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto">
               {[
-                ['AccommodationEnabled', 'Accommodation'],
-                ['FoodEnabled', 'Food selection'],
-                ['IDCardEnabled', 'ID card generation']
-              ].map(([key, label]) => {
-                const enabled = settingsForm[key] === 1;
+                {
+                  id: 'virtual',
+                  label: 'Virtual Track Settings',
+                  icon: Globe,
+                  status: settingsForm.VirtualRegistrationOpen === 1 ? 'Open' : 'Paused',
+                },
+                {
+                  id: 'physical',
+                  label: 'Physical Track Settings',
+                  icon: MapPin,
+                  status: settingsForm.PhysicalRegistrationOpen === 1 ? 'Open' : 'Paused',
+                },
+                {
+                  id: 'general',
+                  label: 'General & Policy Rules',
+                  icon: Sliders,
+                  status: null,
+                },
+              ].map((tab) => {
+                const isActive = activeTab === tab.id;
+                const TabIcon = tab.icon;
+
                 return (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-zinc-800 dark:bg-black"
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className="relative h-12 px-5 sm:px-7 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-colors duration-200 outline-none cursor-pointer shrink-0"
                   >
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{label}</p>
-                      <p className={`mt-1 text-xs ${enabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-zinc-400'}`}>
-                        {enabled ? 'Enabled' : 'Disabled'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={enabled}
-                      aria-label={`Toggle ${label}`}
-                      onClick={() => handleToggle(key)}
-                      className={`relative h-7 w-12 rounded-full transition-colors ${enabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-zinc-800'}`}
-                    >
-                      <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
+                    {isActive ? (
+                      <motion.div
+                        layoutId="settingsFolderTabActivePill"
+                        className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                        transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                      >
+                        <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-20" />
+                      </motion.div>
+                    ) : (
+                      <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0" />
+                    )}
+
+                    <span className={`relative z-20 flex items-center gap-2 transition-colors ${
+                      isActive
+                        ? 'text-slate-900 dark:text-white font-bold'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                    }`}>
+                      <TabIcon className={`w-4 h-4 ${
+                        isActive
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-slate-400 dark:text-zinc-500'
+                      }`} />
+                      <span>{tab.label}</span>
+                      {tab.status && (
+                        <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                          tab.status === 'Open'
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                            : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                        }`}>
+                          {tab.status}
+                        </span>
+                      )}
+                    </span>
+                  </button>
                 );
               })}
             </div>
-          </section>
 
-          {/* Section 1: Track-Specific Registration Control Hub */}
-          <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800/80">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                  <Lock className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Registration Pause & Resume Controls
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-zinc-400">
-                    Instantly pause or open registrations independently for Virtual and Physical tracks.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Virtual Track Card */}
-              <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
-                settingsForm.VirtualRegistrationOpen === 1
-                  ? 'bg-slate-50/60 dark:bg-black border-emerald-500/30'
-                  : 'bg-rose-50/40 dark:bg-black border-rose-500/30'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Virtual Track Registration</h4>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                    settingsForm.VirtualRegistrationOpen === 1
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                  }`}>
-                    {settingsForm.VirtualRegistrationOpen === 1 ? 'Open' : 'Paused by Admin'}
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
-                  When paused, participants cannot register new teams for the Virtual track, and the UI displays registration paused.
-                </p>
-
-                {/* Toggle Button */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => handleToggle('VirtualRegistrationOpen')}
-                    className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-2 ${
-                      settingsForm.VirtualRegistrationOpen === 1
-                        ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
-                    }`}
-                  >
-                    {settingsForm.VirtualRegistrationOpen === 1 ? (
-                      <>
-                        <Lock className="h-3.5 w-3.5" />
-                        <span>Pause Virtual Registrations</span>
-                      </>
-                    ) : (
-                      <>
-                        <Unlock className="h-3.5 w-3.5" />
-                        <span>Resume / Open Virtual Registrations</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Deadlines */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60 dark:border-zinc-800">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">Virtual Reg Start</label>
-                    <input
-                      type="date"
-                      name="VirtualRegistrationStart"
-                      value={settingsForm.VirtualRegistrationStart ? settingsForm.VirtualRegistrationStart.split('T')[0] : ''}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">Virtual Reg Deadline</label>
-                    <input
-                      type="date"
-                      name="VirtualRegistrationEnd"
-                      value={settingsForm.VirtualRegistrationEnd ? settingsForm.VirtualRegistrationEnd.split('T')[0] : ''}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Physical Track Card */}
-              <div className={`p-5 rounded-2xl border transition-all space-y-4 ${
-                settingsForm.PhysicalRegistrationOpen === 1
-                  ? 'bg-slate-50/60 dark:bg-black border-amber-500/30'
-                  : 'bg-rose-50/40 dark:bg-black border-rose-500/30'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Physical / Campus Track Registration</h4>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
-                    settingsForm.PhysicalRegistrationOpen === 1
-                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                      : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                  }`}>
-                    {settingsForm.PhysicalRegistrationOpen === 1 ? 'Open' : 'Paused by Admin'}
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
-                  When paused, campus registrations stop immediately, preventing teams from signing up for the on-ground track.
-                </p>
-
-                {/* Toggle Button */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => handleToggle('PhysicalRegistrationOpen')}
-                    className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs transition cursor-pointer flex items-center justify-center gap-2 ${
-                      settingsForm.PhysicalRegistrationOpen === 1
-                        ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
-                    }`}
-                  >
-                    {settingsForm.PhysicalRegistrationOpen === 1 ? (
-                      <>
-                        <Lock className="h-3.5 w-3.5" />
-                        <span>Pause Physical Registrations</span>
-                      </>
-                    ) : (
-                      <>
-                        <Unlock className="h-3.5 w-3.5" />
-                        <span>Resume / Open Physical Registrations</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {/* Deadlines */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60 dark:border-zinc-800">
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">Physical Reg Start</label>
-                    <input
-                      type="date"
-                      name="PhysicalRegistrationStart"
-                      value={settingsForm.PhysicalRegistrationStart ? settingsForm.PhysicalRegistrationStart.split('T')[0] : ''}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">Physical Reg Deadline</label>
-                    <input
-                      type="date"
-                      name="PhysicalRegistrationEnd"
-                      value={settingsForm.PhysicalRegistrationEnd ? settingsForm.PhysicalRegistrationEnd.split('T')[0] : ''}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Event Story & About the Challenge */}
-          <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Event Story & About the Challenge
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-zinc-400">
-                    Challenge summary, problem themes, and overview displayed to all participants on the public details page.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="self-start sm:self-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-sm shadow-emerald-600/20 transition cursor-pointer"
-              >
-                <Save className="h-3.5 w-3.5" />
-                <span>{saving ? 'Saving...' : 'Save Description'}</span>
-              </button>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center justify-between">
-                <span>About the Challenge / Event Overview Text</span>
-                <span className="text-[11px] font-medium text-slate-400">
-                  Visible under "About the Challenge" on public event page
-                </span>
-              </label>
-              <textarea
-                name="Description"
-                value={settingsForm.Description}
-                onChange={handleInputChange}
-                rows={5}
-                placeholder="Enter the complete overview of the hackathon, problem statement tracks, challenge goals, eligibility, and what participants will build..."
-                className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm leading-relaxed text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-y"
-              />
-              <div className="flex items-center justify-between text-[11px] text-slate-400">
-                <span>Supports multi-line formatting and paragraphs.</span>
-                <span>{settingsForm.Description?.length || 0} characters</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Strict Team Formation Constraint Rules */}
-          <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
-              <div className="p-2 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Team Formation Rules & Size Policy
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
-                  Enforces strict participant count per team. Teams cannot register without meeting this rule.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                  Allowed Team Size Specification
-                </label>
-                <input
-                  type="text"
-                  name="TeamSize"
-                  value={settingsForm.TeamSize}
-                  onChange={handleInputChange}
-                  placeholder="e.g. 4 or 2-4"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                />
-                <p className="text-[11px] text-slate-400">
-                  Set a single number (e.g. <strong className="text-slate-600 dark:text-zinc-300">4</strong>) or range (e.g. <strong className="text-slate-600 dark:text-zinc-300">2-4</strong>).
-                </p>
-              </div>
-
-              <div className="md:col-span-2 p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-zinc-200">
-                  <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                  <span>Enforcement Guarantee:</span>
-                </div>
-                <ul className="text-xs text-slate-600 dark:text-zinc-400 space-y-1 list-disc list-inside">
-                  <li>Participants must provide exactly 1 Team Lead + required members to form a team.</li>
-                  <li>Incomplete teams (e.g. fewer members than specified) will be rejected automatically.</li>
-                  <li>Duplicate registrations within the same track remain strictly disallowed.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 3: Virtual Hackathon Event Settings */}
-          <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <Video className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Virtual Hackathon Hub & Meeting URL
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-zinc-400">
-                  Set meeting room links and control event day live state.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                  Google Meet / Video Conference Link
-                </label>
-                <input
-                  type="url"
-                  name="VirtualMeetUrl"
-                  value={settingsForm.VirtualMeetUrl}
-                  onChange={handleInputChange}
-                  placeholder="https://meet.google.com/xxx-yyyy-zzz"
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                  Virtual Track Status
-                </label>
-                <select
-                  name="VirtualStatus"
-                  value={settingsForm.VirtualStatus}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                >
-                  <option value="NOT_STARTED">NOT STARTED (Scheduled)</option>
-                  <option value="LIVE">LIVE (Participants Can Join)</option>
-                  <option value="COMPLETED">COMPLETED (Concluded)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Track Timelines & Milestone Roadmaps Manager */}
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                  <Milestone className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Track Timelines & Milestone Roadmaps Manager
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-zinc-400">
-                    Add, edit, and organize milestones for Virtual and Physical tracks displayed on the public event page.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (showTimelineForm) {
-                    handleCancelTimelineEdit();
-                  } else {
-                    setEditingTimelineId(null);
-                    setTimelineForm({
-                      Track: timelineTab === 'Physical' ? 'Physical' : 'Virtual',
-                      TimelineDate: '',
-                      Heading: '',
-                      Description: '',
-                      OrderIndex: (timelines.length || 0) + 1
-                    });
-                    setShowTimelineForm(true);
-                  }
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer self-start sm:self-auto"
-              >
-                {showTimelineForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                <span>{showTimelineForm ? 'Close Form' : 'Add New Track Milestone'}</span>
-              </button>
-            </div>
-
-            {/* Collapsible Milestone Editor Form */}
-            <AnimatePresence>
-              {showTimelineForm && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
-                  className="overflow-hidden"
-                >
-                  <form
-                    onSubmit={handleSaveTimeline}
-                    className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-black border border-emerald-500/30 shadow-md space-y-4"
-                  >
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                          {editingTimelineId ? 'Edit Timeline Milestone' : 'Create New Track Milestone'}
-                        </h4>
+            {/* Main Content Area */}
+            <div className="bg-white dark:bg-black rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 space-y-6 relative z-0">
+              {/* TAB 1: VIRTUAL TRACK SETTINGS */}
+              {activeTab === 'virtual' && (
+                <div className="space-y-6">
+                  {/* Virtual Track Header Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Globe className="h-6 w-6" />
                       </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Virtual Track Controls &amp; Stage
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Configure online registrations, live video conference links, event status, and virtual milestones.
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                      settingsForm.VirtualRegistrationOpen === 1
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                    }`}>
+                      {settingsForm.VirtualRegistrationOpen === 1 ? '● Virtual Registrations Open' : '● Virtual Registrations Paused'}
+                    </span>
+                  </div>
+
+                  {/* Virtual Registration Controls Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Virtual Track Registration Availability</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xl">
+                          When paused, new participants cannot sign up or submit team registrations for the Virtual Track on the public portal.
+                        </p>
+                      </div>
+
                       <button
                         type="button"
-                        onClick={handleCancelTimelineEdit}
-                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                        onClick={() => handleToggle('VirtualRegistrationOpen')}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 shrink-0 ${
+                          settingsForm.VirtualRegistrationOpen === 1
+                            ? 'bg-white dark:bg-black hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+                        }`}
                       >
-                        <X className="w-4 h-4" />
+                        {settingsForm.VirtualRegistrationOpen === 1 ? (
+                          <>
+                            <Lock className="h-4 w-4" />
+                            <span>Pause Virtual Registrations</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="h-4 w-4" />
+                            <span>Resume / Open Virtual Registrations</span>
+                          </>
+                        )}
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Virtual Registration Dates */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Track</label>
-                        <select
-                          name="Track"
-                          value={timelineForm.Track}
-                          onChange={handleTimelineInputChange}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                        >
-                          <option value="Virtual">Virtual Track</option>
-                          <option value="Physical">Physical / On-Campus Track</option>
-                        </select>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Milestone Date</label>
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Virtual Registration Start Date</span>
+                        </label>
                         <input
-                          type="text"
-                          name="TimelineDate"
-                          value={timelineForm.TimelineDate}
-                          onChange={handleTimelineInputChange}
-                          placeholder="e.g. 2026-10-20 or Day 1"
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                          type="date"
+                          name="VirtualRegistrationStart"
+                          value={settingsForm.VirtualRegistrationStart ? settingsForm.VirtualRegistrationStart.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                         />
                       </div>
-
                       <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Milestone Title / Heading</label>
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Virtual Registration Deadline</span>
+                        </label>
                         <input
-                          type="text"
-                          name="Heading"
-                          value={timelineForm.Heading}
-                          onChange={handleTimelineInputChange}
-                          placeholder="e.g. Project Idea Submissions"
-                          required
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                        />
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Sequence / Order Index</label>
-                        <input
-                          type="number"
-                          name="OrderIndex"
-                          value={timelineForm.OrderIndex}
-                          onChange={handleTimelineInputChange}
-                          min="1"
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                          type="date"
+                          name="VirtualRegistrationEnd"
+                          value={settingsForm.VirtualRegistrationEnd ? settingsForm.VirtualRegistrationEnd.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                         />
                       </div>
                     </div>
+                  </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Description / Details</label>
+                  {/* Virtual Hackathon Meeting & Live Status */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-4">
+                    <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200/60 dark:border-zinc-800">
+                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Video className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                          Virtual Stage &amp; Video Conference Link
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400">
+                          Configure meeting links and control live broadcast status for virtual participants.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Google Meet / Video Conference Link
+                        </label>
+                        <input
+                          type="url"
+                          name="VirtualMeetUrl"
+                          value={settingsForm.VirtualMeetUrl}
+                          onChange={handleInputChange}
+                          placeholder="https://meet.google.com/xxx-yyyy-zzz"
+                          className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        />
+                        <p className="text-[11px] text-slate-400">
+                          Participants with approved virtual registrations can join via this link when live.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Virtual Stage Status
+                        </label>
+                        <select
+                          name="VirtualStatus"
+                          value={settingsForm.VirtualStatus}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        >
+                          <option value="NOT_STARTED">NOT STARTED (Scheduled)</option>
+                          <option value="LIVE">LIVE (Participants Can Join)</option>
+                          <option value="COMPLETED">COMPLETED (Concluded)</option>
+                        </select>
+                        <p className="text-[11px] text-slate-400">
+                          Controls the live indicator and join button on the Virtual Event dashboard.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Virtual Track Timelines Section */}
+                  {renderTimelineSection('Virtual')}
+                </div>
+              )}
+
+              {/* TAB 2: PHYSICAL TRACK SETTINGS */}
+              {activeTab === 'physical' && (
+                <div className="space-y-6">
+                  {/* Physical Track Header Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <MapPin className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Physical Track Controls &amp; Campus Services
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Manage campus registrations, food &amp; accommodation services, and physical track milestones.
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                      settingsForm.PhysicalRegistrationOpen === 1
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                    }`}>
+                      {settingsForm.PhysicalRegistrationOpen === 1 ? '● Physical Registrations Open' : '● Physical Registrations Paused'}
+                    </span>
+                  </div>
+
+                  {/* Physical Registration Controls Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Physical / On-Campus Registration Availability</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xl">
+                          When paused, new participants cannot sign up for the physical on-campus hackathon track.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggle('PhysicalRegistrationOpen')}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 shrink-0 ${
+                          settingsForm.PhysicalRegistrationOpen === 1
+                            ? 'bg-white dark:bg-black hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+                        }`}
+                      >
+                        {settingsForm.PhysicalRegistrationOpen === 1 ? (
+                          <>
+                            <Lock className="h-4 w-4" />
+                            <span>Pause Physical Registrations</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="h-4 w-4" />
+                            <span>Resume / Open Physical Registrations</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Physical Registration Dates */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Physical Registration Start Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="PhysicalRegistrationStart"
+                          value={settingsForm.PhysicalRegistrationStart ? settingsForm.PhysicalRegistrationStart.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Physical Registration Deadline</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="PhysicalRegistrationEnd"
+                          value={settingsForm.PhysicalRegistrationEnd ? settingsForm.PhysicalRegistrationEnd.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Physical Campus Services Toggles */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-4">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                        Physical Event Campus Services
+                      </h3>
+                      <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                        Enable or disable hostel accommodation requests, meal token distribution, and ID card generation for on-campus participants.
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-3 pt-1">
+                      {[
+                        ['AccommodationEnabled', 'Accommodation & Stay', 'Enables lodging requests and room allocations'],
+                        ['FoodEnabled', 'Food & Meal Selection', 'Enables meal token requests (Tiffin, Lunch, Dinner)'],
+                        ['IDCardEnabled', 'ID Card Generation', 'Allows approved participants to generate badges']
+                      ].map(([key, label, desc]) => {
+                        const enabled = settingsForm[key] === 1;
+                        return (
+                          <div
+                            key={key}
+                            className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-4"
+                          >
+                            <div>
+                              <p className="text-xs font-bold text-slate-900 dark:text-white">{label}</p>
+                              <p className="text-[11px] text-slate-400 mt-0.5">{desc}</p>
+                              <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                enabled
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-500'
+                              }`}>
+                                {enabled ? 'Enabled' : 'Disabled'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={enabled}
+                              aria-label={`Toggle ${label}`}
+                              onClick={() => handleToggle(key)}
+                              className={`relative h-7 w-12 rounded-full transition-colors shrink-0 cursor-pointer ${enabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-zinc-800'}`}
+                            >
+                              <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Physical Track Timelines Section */}
+                  {renderTimelineSection('Physical')}
+                </div>
+              )}
+
+              {/* TAB 3: GENERAL & POLICY RULES */}
+              {activeTab === 'general' && (
+                <div className="space-y-6">
+                  {/* General Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Sliders className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          General Event Configuration &amp; Policy Rules
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Configure public event story, strict team formation rules, and general challenge policies.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-md cursor-pointer self-start sm:self-auto"
+                    >
+                      {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      <span>Save Settings</span>
+                    </button>
+                  </div>
+
+                  {/* Event Story & About the Challenge */}
+                  <div className="bg-slate-50/50 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-4">
+                    <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200/60 dark:border-zinc-800">
+                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                          Event Story &amp; About the Challenge
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400">
+                          Overview and problem statement displayed to participants on the public details page.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
                       <textarea
                         name="Description"
-                        value={timelineForm.Description}
-                        onChange={handleTimelineInputChange}
-                        rows="2"
-                        placeholder="Detailed explanation of what participants need to complete during this milestone..."
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
+                        value={settingsForm.Description}
+                        onChange={handleInputChange}
+                        rows={6}
+                        placeholder="Enter the complete overview of the hackathon, problem statement tracks, challenge goals, eligibility, and what participants will build..."
+                        className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs leading-relaxed text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-y"
                       />
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2.5 pt-2">
-                      <button
-                        type="button"
-                        onClick={handleCancelTimelineEdit}
-                        className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={savingTimeline}
-                        className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 disabled:opacity-50 cursor-pointer"
-                      >
-                        {savingTimeline ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                        <span>{editingTimelineId ? 'Update Milestone' : 'Save Milestone'}</span>
-                      </button>
-                    </div>
-                  </form>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Seamless Track Tabs */}
-            <div className="relative pt-2">
-              <div className="flex items-end gap-2 px-4 sm:px-6 relative z-10 -mb-px">
-                {[
-                  { id: 'all', label: 'All Tracks', count: timelines.length, icon: Layers },
-                  { id: 'Virtual', label: 'Virtual Track', count: timelines.filter(t => t.Track === 'Virtual').length, icon: Globe },
-                  { id: 'Physical', label: 'Physical Track', count: timelines.filter(t => t.Track === 'Physical').length, icon: MapPin },
-                ].map((tab) => {
-                  const isActive = timelineTab === tab.id;
-                  const TabIcon = tab.icon;
-
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setTimelineTab(tab.id)}
-                      className="relative h-12 px-5 sm:px-7 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-colors duration-200 outline-none cursor-pointer"
-                    >
-                      {isActive ? (
-                        <motion.div
-                          layoutId="timelineFolderTabActivePill"
-                          className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
-                          transition={{ type: 'spring', stiffness: 500, damping: 38 }}
-                        >
-                          {/* Seamless bottom mask */}
-                          <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-20" />
-                        </motion.div>
-                      ) : (
-                        <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 z-0" />
-                      )}
-
-                      <span className={`relative z-20 flex items-center gap-2 transition-colors ${
-                        isActive
-                          ? 'text-slate-900 dark:text-white font-bold'
-                          : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
-                      }`}>
-                        <TabIcon className={`w-4 h-4 ${isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
-                        <span>{tab.label}</span>
-                        <span
-                          className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-bold transition-colors ${
-                            isActive
-                              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                              : 'bg-slate-200/80 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400'
-                          }`}
-                        >
-                          {tab.count}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Milestones Card Section with Seamless Connection */}
-              <div className="bg-white dark:bg-black rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 space-y-4 relative z-0">
-                {loadingTimelines ? (
-                  <div className="py-12 text-center text-slate-400 dark:text-zinc-500 text-sm">
-                    <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2 text-emerald-500" />
-                    <span>Loading milestones...</span>
-                  </div>
-                ) : (() => {
-                  const filtered = timelines
-                    .filter((t) => timelineTab === 'all' || t.Track === timelineTab)
-                    .sort((a, b) => (a.OrderIndex || 0) - (b.OrderIndex || 0));
-
-                  if (filtered.length === 0) {
-                    return (
-                      <div className="py-12 text-center text-slate-400 dark:text-zinc-500">
-                        <Milestone className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-zinc-700" />
-                        <p className="text-sm font-semibold">No milestones found for {timelineTab === 'all' ? 'any track' : `${timelineTab} track`}.</p>
-                        <p className="text-xs text-slate-400 mt-1">Click "Add New Track Milestone" above to create one.</p>
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span>Supports multi-line descriptions and paragraph formatting.</span>
+                        <span>{settingsForm.Description?.length || 0} characters</span>
                       </div>
-                    );
-                  }
-
-                  return (
-                    <div className="space-y-3">
-                      {filtered.map((item, idx) => (
-                        <div
-                          key={item.Id || idx}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-50/70 dark:bg-black border border-slate-200/80 dark:border-zinc-800 hover:border-emerald-500/30 transition group"
-                        >
-                          <div className="flex items-start gap-3.5">
-                            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">
-                              #{item.OrderIndex || idx + 1}
-                            </div>
-                            <div className="space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                    item.Track === 'Virtual'
-                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                                  }`}
-                                >
-                                  {item.Track || 'General'}
-                                </span>
-                                {item.TimelineDate && (
-                                  <span className="text-xs font-semibold text-slate-400 dark:text-zinc-500">
-                                    • {item.TimelineDate}
-                                  </span>
-                                )}
-                              </div>
-                              <h5 className="text-sm font-bold text-slate-900 dark:text-white">
-                                {item.Heading}
-                              </h5>
-                              {item.Description && (
-                                <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-2xl leading-relaxed">
-                                  {item.Description}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleEditTimeline(item)}
-                              className="p-2 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-emerald-600 hover:border-emerald-500/50 transition cursor-pointer"
-                              title="Edit milestone"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteTimeline(item.Id)}
-                              className="p-2 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-rose-600 hover:border-rose-500/50 transition cursor-pointer"
-                              title="Delete milestone"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
                     </div>
-                  );
-                })()}
-              </div>
+                  </div>
+
+                  {/* Team Formation Rules & Size Policy */}
+                  <div className="bg-slate-50/50 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-4">
+                    <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200/60 dark:border-zinc-800">
+                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Users className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                          Team Formation Rules &amp; Size Policy
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400">
+                          Enforces strict participant count per squad. Registrations cannot proceed unless rules are satisfied.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-1">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Allowed Team Size Specification
+                        </label>
+                        <input
+                          type="text"
+                          name="TeamSize"
+                          value={settingsForm.TeamSize}
+                          onChange={handleInputChange}
+                          placeholder="e.g. 4 or 2-4"
+                          className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        />
+                        <p className="text-[11px] text-slate-400">
+                          Specify exact size (e.g. <strong>4</strong>) or allowed member range (e.g. <strong>2-4</strong>).
+                        </p>
+                      </div>
+
+                      <div className="md:col-span-2 p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-zinc-200">
+                          <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                          <span>Enforcement Policy Guarantees:</span>
+                        </div>
+                        <ul className="text-xs text-slate-600 dark:text-zinc-400 space-y-1 list-disc list-inside">
+                          <li>Teams must designate 1 Team Lead and satisfy the allowed member count.</li>
+                          <li>Incomplete squads with fewer members than required will be blocked at registration.</li>
+                          <li>Duplicate registrations across different teams in the same track are strictly prevented.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
