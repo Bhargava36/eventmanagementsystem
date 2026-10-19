@@ -1,5 +1,6 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import ParticipantIdCanvas from "./ParticipantIdCanvas";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   IdCard,
   ArrowLeft,
@@ -10,472 +11,673 @@ import {
   Search,
   MapPin,
   CalendarDays,
-  Info,
-  Check,
   Eye,
-  Download
-} from 'lucide-react';
+  X,
+  RefreshCw,
+} from "lucide-react";
+
+const getAssignedEventId = () => {
+  try {
+    return String(JSON.parse(localStorage.getItem("admin") || "null")?.EventId || "");
+  } catch {
+    return "";
+  }
+};
+
+const getArray = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.participants)) return data.participants;
+  if (Array.isArray(data?.data?.participants)) return data.data.participants;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.events)) return data.events;
+  if (Array.isArray(data?.teams)) return data.teams;
+  return [];
+};
+
+const getValue = (object, ...keys) => {
+  for (const key of keys) {
+    const value = object?.[key];
+
+    if (value !== undefined && value !== null && value !== "") {
+      return value;
+    }
+  }
+
+  return "";
+};
+
+const getName = (participant) =>
+  getValue(
+    participant,
+    "ParticipantName",
+    "UserName",
+    "Name",
+    "participantName",
+    "userName",
+    "name"
+  ) || "Participant";
+
+const getUserId = (participant) =>
+  getValue(participant, "UserId", "userId", "Id", "id");
+
+const getCardId = (participant) =>
+  getValue(
+    participant,
+    "IdCardNumber",
+    "idCardNumber",
+    "CardNumber",
+    "cardNumber"
+  );
+
+const isGenerated = (participant) => {
+  const cardId = getCardId(participant);
+  const status =
+    participant?.IdCardGenerated ?? participant?.idCardGenerated;
+
+  return (
+    Boolean(cardId) ||
+    status === true ||
+    status === 1 ||
+    status === "1"
+  );
+};
+
+const formatDate = (value) => {
+  if (!value) return "Date not available";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
 function IdRedirectionPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const eventId =
+    searchParams.get("eventId")?.trim() || getAssignedEventId();
+
+  const [event, setEvent] = useState(null);
+  const [participants, setParticipants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [selected, setSelected] = useState(null);
+  const idCardEnabled =
+    event?.IDCardEnabled ?? event?.idCardEnabled ??
+    event?.EnableIDCard ?? event?.enableIDCard ?? false;
+  const isFeatureEnabled =
+    idCardEnabled === true ||
+    idCardEnabled === 1 ||
+    ["1", "true", "yes", "enabled", "on"].includes(
+      String(idCardEnabled).trim().toLowerCase()
+    );
+
+  const loadData = useCallback(async () => {
+    if (!/^[1-9]\d*$/.test(eventId)) {
+      setEvent(null);
+      setParticipants([]);
+      setError("Please provide a valid event ID.");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const eventResponse = await fetch(
+        `http://localhost:3000/api/events/${encodeURIComponent(eventId)}`
+      );
+
+      const eventJson = await eventResponse.json().catch(() => ({}));
+
+      if (!eventResponse.ok) {
+        throw new Error(
+          eventJson.message || "Unable to fetch event details."
+        );
+      }
+
+      const eventData =
+        eventJson.event ??
+        eventJson.data?.event ??
+        eventJson.data ??
+        eventJson;
+
+      setEvent(eventData);
+
+      const participantResponse = await fetch(
+        `http://localhost:3000/api/id-cards/events/${encodeURIComponent(eventId)}/participants`
+      );
+
+      const participantJson = await participantResponse
+        .json()
+        .catch(() => ({}));
+
+      if (!participantResponse.ok) {
+        throw new Error(
+          participantJson.message ||
+            "Event loaded, but participant fetching failed."
+        );
+      }
+
+      setParticipants(getArray(participantJson));
+    } catch (err) {
+      setError(
+        err.message || "Unable to load data. Check the backend server."
+      );
+      setParticipants([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [eventId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const stats = useMemo(() => {
+    const teams = new Set(
+      participants
+        .map((participant) =>
+          participant?.TeamId ?? participant?.teamId
+        )
+        .filter(
+          (id) => id !== null && id !== undefined && id !== ""
+        )
+    );
+
+    const generated = participants.filter(isGenerated).length;
+
+    return {
+      teams: teams.size,
+      total: participants.length,
+      generated,
+      pending: participants.length - generated,
+    };
+  }, [participants]);
+
+  const filteredParticipants = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return participants.filter((participant) => {
+      const generated = isGenerated(participant);
+
+      const matchesFilter =
+        filter === "all" ||
+        (filter === "generated" && generated) ||
+        (filter === "pending" && !generated);
+
+      const searchableText = [
+        getName(participant),
+        getValue(participant, "Email", "email"),
+        getValue(participant, "TeamName", "teamName"),
+        getValue(participant, "College", "college"),
+        getCardId(participant),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return matchesFilter && searchableText.includes(query);
+    });
+  }, [participants, filter, search]);
+
+  async function generateCards() {
+    if (!/^[1-9]\d*$/.test(eventId)) {
+      setError("A valid event ID is required.");
+      return;
+    }
+
+    if (participants.length === 0) {
+      setError(
+        "No eligible participants are available for this event."
+      );
+      return;
+    }
+
+    if (stats.pending === 0) {
+      setMessage(
+        "All participant ID cards have already been generated."
+      );
+      return;
+    }
+
+    setGenerating(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/id-cards/events/${encodeURIComponent(eventId)}/generate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "ID card generation failed."
+        );
+      }
+
+      setMessage(
+        result.message ||
+          `ID card generation completed. Generated: ${
+            result.generated ?? "check updated list"
+          }.`
+      );
+
+      await loadData();
+    } catch (err) {
+      setError(err.message || "Unable to generate ID cards.");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  const eventName =
+    getValue(event, "EventName", "eventName", "Name", "name") ||
+    "HackHub Event";
+
+  const startDate = getValue(
+    event,
+    "StartDate",
+    "startDate",
+    "EventDate"
+  );
+
+  const endDate = getValue(event, "EndDate", "endDate") || startDate;
+
+  const location =
+    getValue(event, "Location", "location", "Venue", "venue") ||
+    "Venue not available";
+
+  const themeColor =
+    getValue(event, "ThemeColor", "themeColor", "PrimaryColor") ||
+    "#102B59";
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 p-4 font-sans text-slate-900 dark:bg-[#070908] dark:text-white sm:p-6 lg:p-8">
+    <div className="min-h-screen w-full bg-[#F4F6FA] p-4 font-sans text-slate-900 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
         <button
           type="button"
-          onClick={() => navigate('/admin/physical-event')}
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm font-medium text-slate-600 transition-colors hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-400 cursor-pointer"
+          onClick={() => navigate("/admin/physical-event")}
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-slate-600 transition hover:text-blue-900"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Physical Event
         </button>
 
-        <div className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-8 lg:flex-row lg:items-center">
+        <section className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 lg:flex-row lg:items-center">
           <div className="flex-1 space-y-4">
-            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
-                <IdCard className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
+            <div className="flex items-center gap-4">
+              <div
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white"
+                style={{ backgroundColor: themeColor }}
+              >
+                <IdCard className="h-6 w-6" />
               </div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl lg:text-4xl">
-                ID Card Generation
-              </h1>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                  Event Management
+                </p>
+                <h1 className="text-2xl font-extrabold sm:text-4xl">
+                  ID Card Generation
+                </h1>
+              </div>
             </div>
-            <p className="max-w-3xl text-sm leading-relaxed text-slate-500 dark:text-slate-400 sm:text-base">
-              Generate and manage participant ID cards for registered teams and individuals.
+
+            <p className="max-w-2xl text-sm leading-6 text-slate-500">
+              Generate, preview, and download individual participant ID
+              cards with event branding and QR-based verification.
             </p>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-slate-500 dark:text-slate-400 sm:text-sm">
-              <span className="font-bold text-slate-700 dark:text-slate-300">Avishkaar 4</span>
-              <span className="hidden h-1 w-1 rounded-full bg-slate-300 dark:bg-zinc-700 sm:block" />
-              <span className="flex items-center gap-1.5"><CalendarDays className="h-4 w-4" /> 24 Nov 2026 – 25 Nov 2026</span>
-              <span className="hidden h-1 w-1 rounded-full bg-slate-300 dark:bg-zinc-700 sm:block" />
-              <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /> AITAM Campus, Tekkali</span>
-            </div>
-          </div>
-          <div className="flex w-full flex-col items-center gap-3 sm:w-auto lg:items-end">
-            <button className="flex w-full items-center justify-center gap-4 rounded-2xl bg-emerald-700 p-4 text-sm font-bold text-white shadow-lg shadow-emerald-700/20 transition-all hover:-translate-y-0.5 hover:bg-emerald-800 dark:bg-emerald-500 dark:shadow-emerald-500/20 dark:hover:bg-emerald-600 sm:w-auto cursor-pointer">
-              <IdCard className="h-7 w-7" />
-              <div className="text-left">
-                <div className="flex items-center gap-2 text-sm font-bold tracking-wide text-white ">
-                  GENERATE ID CARDS <ArrowRight className="h-4 w-4" />
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-            <div className="mb-4 flex items-start justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 dark:bg-zinc-900">
-                <Users className="h-5 w-5 text-emerald-700 dark:text-emerald-500" />
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Total Registered Teams</p>
-              <p className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">48</p>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+              <strong className="text-slate-900">{eventName}</strong>
+
+              <span className="flex items-center gap-1.5">
+                <CalendarDays className="h-4 w-4" />
+                {formatDate(startDate)} – {formatDate(endDate)}
+              </span>
+
+              <span className="flex items-center gap-1.5">
+                <MapPin className="h-4 w-4" />
+                {location}
+              </span>
             </div>
           </div>
 
-          <div className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-            <div className="mb-4 flex items-start justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
-                <IdCard className="h-5 w-5 text-emerald-700 dark:text-emerald-500" />
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">ID Cards Generated Teams</p>
-              <div className="mt-1 flex items-baseline gap-2">
-                <p className="text-2xl font-extrabold text-slate-900 dark:text-white">42</p>
-              </div>
-            </div>
+          <button
+            type="button"
+            disabled={
+              loading ||
+              generating ||
+              !/^[1-9]\d*$/.test(eventId) ||
+              !isFeatureEnabled ||
+              stats.pending === 0
+            }
+            onClick={generateCards}
+            className="flex w-full items-center justify-center gap-3 rounded-2xl px-5 py-4 text-sm font-extrabold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            style={{ backgroundColor: themeColor }}
+          >
+            {generating ? (
+              <RefreshCw className="h-5 w-5 animate-spin" />
+            ) : (
+              <IdCard className="h-5 w-5" />
+            )}
+
+            {generating ? "GENERATING..." : "GENERATE ID CARDS"}
+
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </section>
+
+        {error && (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+          >
+            {error}
           </div>
+        )}
 
-          <div className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-            <div className="mb-4 flex items-start justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
-                <Clock className="h-5 w-5 text-emerald-700 dark:text-emerald-500" />
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Pending Generation Teams</p>
-              <div className="mt-1 flex items-baseline gap-2">
-                <p className="text-2xl font-extrabold text-slate-900 dark:text-white">6</p>
-              </div>
-            </div>
+        {message && (
+          <div
+            role="status"
+            className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"
+          >
+            {message}
           </div>
+        )}
 
-          <div className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6">
-            <div className="mb-4 flex items-start justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 dark:bg-zinc-900">
-                <Users className="h-5 w-5 text-emerald-700 dark:text-emerald-500" />
-              </div>
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Total Participants</p>
-              <p className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">312</p>
-            </div>
+        {!loading && event && !isFeatureEnabled && (
+          <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            ID card generation is currently disabled by the event admin.
           </div>
+        )}
 
-        </div>
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              label: "Registered Teams",
+              value: stats.teams,
+              Icon: Users,
+            },
+            {
+              label: "Generated ID Cards",
+              value: stats.generated,
+              Icon: CheckCircle2,
+            },
+            {
+              label: "Pending ID Cards",
+              value: stats.pending,
+              Icon: Clock,
+            },
+            {
+              label: "Total Participants",
+              value: stats.total,
+              Icon: Users,
+            },
+          ].map(({ label, value, Icon }) => (
+            <div
+              key={label}
+              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+            >
+              <div
+                className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl"
+                style={{ backgroundColor: `${themeColor}12` }}
+              >
+                {React.createElement(Icon, {
+                  className: "h-5 w-5",
+                  style: { color: themeColor },
+                })}
+              </div>
 
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                {label}
+              </p>
 
-        <div className="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-          
-          <div className="flex flex-col gap-4 border-b border-slate-100 p-6 dark:border-zinc-800 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              <button className="flex items-center gap-2 rounded-full bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-700/20 dark:bg-emerald-500 dark:shadow-emerald-500/20">
-                <Users className="h-4 w-4" /> All Teams (48)
-              </button>
-              <button className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-slate-300 dark:hover:bg-zinc-900">
-                <Check className="h-4 w-4" /> Generated (42)
-              </button>
-              <button className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-slate-300 dark:hover:bg-zinc-900">
-                <Clock className="h-4 w-4" /> Pending (6)
-              </button>
+              <p className="mt-1 text-3xl font-extrabold">
+                {loading ? "—" : value}
+              </p>
             </div>
-            
-            <div className="relative w-full lg:w-80">
+          ))}
+        </section>
+
+        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-slate-100 p-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {[
+                ["all", `All Participants (${stats.total})`],
+                ["generated", `Generated (${stats.generated})`],
+                ["pending", `Pending (${stats.pending})`],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setFilter(value)}
+                  className={`rounded-full px-4 py-2.5 text-sm font-bold transition ${
+                    filter === value
+                      ? "text-white"
+                      : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                  style={
+                    filter === value
+                      ? { backgroundColor: themeColor }
+                      : {}
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative w-full lg:w-96">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
               <input
-                type="text"
-                placeholder="Search team name, lead or college..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-emerald-700 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-white dark:focus:border-emerald-500"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search participant, team or college..."
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-slate-500"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-4 p-6 sm:p-8 border-b border-slate-100 dark:border-zinc-800">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
-              <IdCard className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Registered Teams (Physical Event)</h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">ID generation status for all teams registered in the physical event.</p>
-            </div>
+          <div className="border-b border-slate-100 p-6">
+            <h2 className="text-lg font-bold">
+              Physical Event Participants
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Each registered participant receives an individual ID card.
+            </p>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/50 dark:border-zinc-800 dark:bg-zinc-900/30">
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Team Name</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Team Lead</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">College / State</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Members</th>
-                  <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">ID Generation Status</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Actions</th>
+            <table className="w-full min-w-[1000px] text-left text-sm">
+              <thead className="bg-slate-50">
+                <tr>
+                  {[
+                    "Participant",
+                    "ID Number",
+                    "Team",
+                    "College",
+                    "Status",
+                    "Actions",
+                  ].map((heading) => (
+                    <th
+                      key={heading}
+                      className="px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-400"
+                    >
+                      {heading}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
-                <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 font-bold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
-                        TB
-                      </div>
-                      <span className="font-bold text-slate-900 dark:text-white">Tech Blazers</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-semibold text-slate-900 dark:text-slate-200">Rohit Kumar</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">rohit@aitam.edu.in</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-medium text-slate-700 dark:text-slate-300">AITAM</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Andhra Pradesh</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-300">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span className="font-semibold">4</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Generated
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center">
-                      <button type="button" aria-label="View ID card" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:border-emerald-700 dark:hover:bg-emerald-500/10">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
 
-                <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-100 font-bold text-purple-700 dark:bg-purple-500/20 dark:text-purple-400">
-                        AI
-                      </div>
-                      <span className="font-bold text-slate-900 dark:text-white">Alpha Innovators</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-semibold text-slate-900 dark:text-slate-200">Sneha Reddy</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">sneha@rguktn.edu.in</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-medium text-slate-700 dark:text-slate-300">RGUKT</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Andhra Pradesh</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-300">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span className="font-semibold">5</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Generated
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center">
-                      <button type="button" aria-label="View ID card" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:border-emerald-700 dark:hover:bg-emerald-500/10">
-                        <Eye className="h-4 w-4" /> 
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+              <tbody className="divide-y divide-slate-100">
+                {loading && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-6 py-12 text-center text-slate-500"
+                    >
+                      Loading event and participants...
+                    </td>
+                  </tr>
+                )}
 
-                <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 font-bold text-orange-700 dark:bg-orange-500/20 dark:text-orange-400">
-                        CS
-                      </div>
-                      <span className="font-bold text-slate-900 dark:text-white">Code Spartans</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-semibold text-slate-900 dark:text-slate-200">Vikram Naidu</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">vikram@svp.ac.in</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-medium text-slate-700 dark:text-slate-300">SVPEC</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Andhra Pradesh</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-300">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span className="font-semibold">3</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-orange-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
-                      <Clock className="h-3.5 w-3.5" />
-                      Pending
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center">
-                     <button type="button" aria-label="View ID card" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:border-emerald-700 dark:hover:bg-emerald-500/10">
-                        <Eye className="h-4 w-4" /> 
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                {!loading &&
+                  filteredParticipants.map((participant, index) => (
+                    <tr
+                      key={getUserId(participant) ?? index}
+                      className="transition hover:bg-slate-50"
+                    >
+                      <td className="px-6 py-4">
+                        <p className="font-bold">
+                          {getName(participant)}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {getValue(participant, "Email", "email")}
+                        </p>
+                      </td>
 
-                <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 font-bold text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">
-                        BD
-                      </div>
-                      <span className="font-bold text-slate-900 dark:text-white">Byte Dreamers</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-semibold text-slate-900 dark:text-slate-200">Priya Sree</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">priya@aitam.edu.in</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-medium text-slate-700 dark:text-slate-300">AITAM</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Andhra Pradesh</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-300">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span className="font-semibold">5</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Generated
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center">
-                      <button type="button" aria-label="View ID card" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:border-emerald-700 dark:hover:bg-emerald-500/10">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      <td className="px-6 py-4 font-mono text-xs">
+                        {getCardId(participant) || "Pending"}
+                      </td>
 
-                <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-100 font-bold text-pink-700 dark:bg-pink-500/20 dark:text-pink-400">
-                        ZX
-                      </div>
-                      <span className="font-bold text-slate-900 dark:text-white">Zero X</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-semibold text-slate-900 dark:text-slate-200">Sai Charan</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">saicharan@jntuk.edu.in</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-medium text-slate-700 dark:text-slate-300">JNTUK</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Andhra Pradesh</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-300">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span className="font-semibold">4</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Generated
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center">
-                      <button type="button" aria-label="View ID card" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:border-emerald-700 dark:hover:bg-emerald-500/10">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      <td className="px-6 py-4">
+                        {getValue(
+                          participant,
+                          "TeamName",
+                          "teamName"
+                        ) || "Individual"}
+                      </td>
 
-                <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100 font-bold text-teal-700 dark:bg-teal-500/20 dark:text-teal-400">
-                        DR
-                      </div>
-                      <span className="font-bold text-slate-900 dark:text-white">Dream Runners</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-semibold text-slate-900 dark:text-slate-200">Karthik Varma</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">karthik@svpc.ac.in</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-medium text-slate-700 dark:text-slate-300">SVPEC</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Andhra Pradesh</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-300">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span className="font-semibold">3</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-orange-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
-                      <Clock className="h-3.5 w-3.5" />
-                      Pending
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center">
-                     <button type="button" aria-label="View ID card" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:border-emerald-700 dark:hover:bg-emerald-500/10">
-                        <Eye className="h-4 w-4" /> 
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      <td className="px-6 py-4">
+                        {getValue(participant, "College", "college") || "—"}
+                      </td>
 
-                <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 font-bold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400">
-                        NT
-                      </div>
-                      <span className="font-bold text-slate-900 dark:text-white">NextGen Techies</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-semibold text-slate-900 dark:text-slate-200">Lavanya</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">lavanya@aitam.edu.in</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-medium text-slate-700 dark:text-slate-300">AITAM</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Andhra Pradesh</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-300">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span className="font-semibold">5</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Generated
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center">
-                      <button type="button" aria-label="View ID card" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:border-emerald-700 dark:hover:bg-emerald-500/10">
-                        <Eye className="h-4 w-4" /> 
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold ${
+                            isGenerated(participant)
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-orange-50 text-orange-700"
+                          }`}
+                        >
+                          {isGenerated(participant) ? (
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                          ) : (
+                            <Clock className="h-3.5 w-3.5" />
+                          )}
 
-                <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 font-bold text-rose-700 dark:bg-rose-500/20 dark:text-rose-400">
-                        SK
-                      </div>
-                      <span className="font-bold text-slate-900 dark:text-white">Skywalkers</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-semibold text-slate-900 dark:text-slate-200">Harsha Vardhan</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">harsha@rgukt.edu.in</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <p className="font-medium text-slate-700 dark:text-slate-300">RGUKT</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Andhra Pradesh</p>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-300">
-                      <Users className="h-4 w-4 text-slate-400" />
-                      <span className="font-semibold">4</span>
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-orange-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
-                      <Clock className="h-3.5 w-3.5" />
-                      Pending
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center">
-                    <div className="flex items-center justify-center">
-                     <button type="button" aria-label="View ID card" className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-emerald-700 transition-colors hover:border-emerald-300 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-emerald-400 dark:hover:border-emerald-700 dark:hover:bg-emerald-500/10">
-                        <Eye className="h-4 w-4" /> 
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                          {isGenerated(participant)
+                            ? "Generated"
+                            : "Pending"}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          disabled={!isGenerated(participant)}
+                          onClick={() => setSelected(participant)}
+                          title="View ID card"
+                          className="rounded-lg border border-slate-200 p-2 disabled:cursor-not-allowed disabled:opacity-40"
+                          style={{ color: themeColor }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+
+                {!loading && filteredParticipants.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-6 py-12 text-center text-slate-500"
+                    >
+                      No participants found for this filter.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
+        {selected && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-3 sm:p-5"
+            onClick={() => setSelected(null)}
+          >
+            <div
+              className="my-auto w-full max-w-lg rounded-3xl bg-white p-4 text-slate-900 shadow-2xl sm:p-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                    Preview
+                  </p>
+                  <h2 className="text-lg font-extrabold">
+                    Participant ID Card
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className="rounded-lg p-2 transition hover:bg-slate-100"
+                  aria-label="Close preview"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="mx-auto w-full max-w-[330px]">
+                <ParticipantIdCanvas
+                  participant={selected}
+                  event={event}
+                  eventId={eventId}
+                  cardNumber={getCardId(selected)}
+                />
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold transition hover:bg-slate-50"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

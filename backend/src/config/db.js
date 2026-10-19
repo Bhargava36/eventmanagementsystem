@@ -180,6 +180,9 @@ const migrationQueries = [
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualRequirements TEXT`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalFacilities TEXT`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalRequirements TEXT`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS AccommodationEnabled TINYINT(1) NOT NULL DEFAULT 0`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS FoodEnabled TINYINT(1) NOT NULL DEFAULT 0`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS IDCardEnabled TINYINT(1) NOT NULL DEFAULT 0`,
 
     `CREATE TABLE IF NOT EXISTS event_descriptions (
         Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -235,7 +238,70 @@ const migrationQueries = [
         INDEX idx_timeline_event (EventId),
         INDEX idx_timeline_track (Track),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+     
+    `CREATE TABLE IF NOT EXISTS Accommodation (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    room_num VARCHAR(20) NOT NULL UNIQUE,
+    Type VARCHAR(50) NOT NULL,
+    Gender ENUM('Girls', 'Boys') NOT NULL,
+    Capacity INT NOT NULL,
+    Occupied INT NOT NULL DEFAULT 0,
+    UserId INT NULL,
+    Status ENUM('Available', 'Occupied', 'Full', 'Maintenance')
+        NOT NULL DEFAULT 'Available',
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_accommodation_gender (Gender),
+    INDEX idx_accommodation_status (Status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+`CREATE TABLE IF NOT EXISTS accommodation_allocations (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    EventId INT NOT NULL,
+    RoomId INT NOT NULL,
+    TeamId INT NOT NULL,
+    UserId INT NOT NULL,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_event_participant_accommodation (EventId, UserId),
+    INDEX idx_accommodation_allocations_room (RoomId),
+    FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+    FOREIGN KEY (RoomId) REFERENCES Accommodation(Id) ON DELETE CASCADE,
+    FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
+    FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+`CREATE TABLE IF NOT EXISTS participant_id_cards (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    EventId INT NOT NULL,
+    UserId INT NOT NULL,
+    IdCardNumber VARCHAR(50) NOT NULL UNIQUE,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_event_participant (EventId, UserId)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `CREATE TABLE IF NOT EXISTS physical_team_preferences (
+    EventId INT NOT NULL,
+    TeamId INT NOT NULL,
+    AccommodationRequested TINYINT(1) NOT NULL DEFAULT 0,
+    FoodAccepted TINYINT(1) NOT NULL DEFAULT 0,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (EventId, TeamId),
+    FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+    FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `CREATE TABLE IF NOT EXISTS physical_food_tokens (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    EventId INT NOT NULL,
+    TeamId INT NOT NULL,
+    UserId INT NOT NULL,
+    MealType ENUM('tiffin', 'lunch', 'dinner') NOT NULL,
+    Token VARCHAR(40) NOT NULL UNIQUE,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_event_user_meal (EventId, UserId, MealType),
+    FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+    FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
+    FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 
 let isMigrating = false;

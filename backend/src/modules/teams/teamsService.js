@@ -356,7 +356,7 @@ const getTeamInfo = (teamId, userId, callback) => {
             return callback(null, null);
         }
 
-        const teamQuery = `SELECT t.Id AS TeamId, t.TeamName, t.TeamSize, t.College, t.State, t.TeamLeadUserId, e.Id AS EventId, e.EventName, e.Posters, e.Description AS EventDescription, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus FROM registered_teams t INNER JOIN events e ON t.EventId = e.Id WHERE t.Id = ? LIMIT 1`;
+        const teamQuery = `SELECT t.Id AS TeamId, t.TeamName, t.TeamSize, t.College, t.State, t.TeamLeadUserId, e.Id AS EventId, e.EventName, e.Posters, e.Description AS EventDescription, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus, er.ParticipationMode, er.Status AS RegistrationStatus FROM registered_teams t INNER JOIN events e ON t.EventId = e.Id LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId WHERE t.Id = ? LIMIT 1`;
         db.query(teamQuery, [teamId], (err, result) => {
             if (err) {
                 return callback(err, null);

@@ -40,6 +40,7 @@ import AdminPhysicalEvent from '../features/auth/pages/Admin/AdminPhysicalEvent'
 import AccomodationRedirectPage from '../features/auth/pages/Admin/AccomodationRedirectPage';
 import FoodRedirectionPage from '../features/auth/pages/Admin/FoodRedirectionPage';
 import IdRedirectionPage from '../features/auth/pages/Admin/IdRedirectionPage';
+import VerifyIdPage from '../features/public/pages/VerifyIdPage';
 
 
 function App() {
@@ -113,6 +114,7 @@ function App() {
         </Route>
 
         <Route path="/events/:id/virtual" element={<ParticipantVirtualEventPage />} />
+        <Route path="/verify-id" element={<VerifyIdPage />} />
 
 
           

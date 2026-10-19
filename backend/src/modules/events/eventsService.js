@@ -287,7 +287,10 @@ const updateEventSettings = (id, settings, callback) => {
         'TeamSize',
         'VirtualStatus',
         'VirtualMeetUrl',
-        'HackathonMode'
+        'HackathonMode',
+        'AccommodationEnabled',
+        'FoodEnabled',
+        'IDCardEnabled'
     ];
 
     const updates = [];

@@ -64,7 +64,10 @@ export default function AdminEventSettings() {
     TeamSize: '4',
     VirtualStatus: 'NOT_STARTED',
     VirtualMeetUrl: '',
-    HackathonMode: 'Both'
+    HackathonMode: 'Both',
+    AccommodationEnabled: 0,
+    FoodEnabled: 0,
+    IDCardEnabled: 0
   });
 
   // Track Timelines State
@@ -155,7 +158,10 @@ export default function AdminEventSettings() {
         TeamSize: ev.TeamSize || '4',
         VirtualStatus: ev.VirtualStatus || 'NOT_STARTED',
         VirtualMeetUrl: ev.VirtualMeetUrl || '',
-        HackathonMode: ev.HackathonMode || 'Both'
+        HackathonMode: ev.HackathonMode || 'Both',
+        AccommodationEnabled: ev.AccommodationEnabled === true || Number(ev.AccommodationEnabled) === 1 ? 1 : 0,
+        FoodEnabled: ev.FoodEnabled === true || Number(ev.FoodEnabled) === 1 ? 1 : 0,
+        IDCardEnabled: ev.IDCardEnabled === true || Number(ev.IDCardEnabled) === 1 ? 1 : 0
       });
     } catch (err) {
       console.error(err);
@@ -312,9 +318,17 @@ export default function AdminEventSettings() {
           ? 'Virtual Track'
           : key === 'PhysicalRegistrationOpen'
           ? 'Physical Track'
+          : key === 'AccommodationEnabled'
+          ? 'Accommodation'
+          : key === 'FoodEnabled'
+          ? 'Food selection'
+          : key === 'IDCardEnabled'
+          ? 'ID card generation'
           : 'All Registrations';
 
-      if (newVal === 1) {
+      if (key.endsWith('Enabled')) {
+        toast.success(`${trackName} ${newVal === 1 ? 'enabled' : 'disabled'}.`);
+      } else if (newVal === 1) {
         toast.success(`${trackName} registrations resumed & opened!`);
       } else {
         toast.success(`${trackName} registrations paused!`);
@@ -442,6 +456,49 @@ export default function AdminEventSettings() {
               </button>
             </div>
           </div>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="mb-5">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                Physical Event Services
+              </h3>
+              <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
+                Accommodation and food choices become available to approved physical team leads; ID card generation is controlled here.
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                ['AccommodationEnabled', 'Accommodation'],
+                ['FoodEnabled', 'Food selection'],
+                ['IDCardEnabled', 'ID card generation']
+              ].map(([key, label]) => {
+                const enabled = settingsForm[key] === 1;
+                return (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 p-4 dark:border-zinc-800"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{label}</p>
+                      <p className={`mt-1 text-xs ${enabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-zinc-400'}`}>
+                        {enabled ? 'Enabled' : 'Disabled'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={enabled}
+                      aria-label={`Toggle ${label}`}
+                      onClick={() => handleToggle(key)}
+                      className={`relative h-7 w-12 rounded-full transition-colors ${enabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-zinc-700'}`}
+                    >
+                      <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
 
           {/* Section 1: Track-Specific Registration Control Hub */}
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-6">

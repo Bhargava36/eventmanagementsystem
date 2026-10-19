@@ -12,11 +12,14 @@ import {
     Building2,
     Crown,
     Mail,
-    ExternalLink
+    ExternalLink,
+    BedDouble,
+    Utensils,
+    Save
 } from "lucide-react";
 
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 function formatDate(date) {
     if (!date) {
@@ -49,16 +52,23 @@ function TeamInfo() {
     const [teamData, setTeamData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [currentUserId, setCurrentUserId] = useState(null);
+    const [serviceAvailability, setServiceAvailability] = useState({
+        accommodationEnabled: false,
+        foodEnabled: false
+    });
+    const [servicePreferences, setServicePreferences] = useState({
+        accommodationRequested: false,
+        foodAccepted: false
+    });
+    const [servicePreferencesSubmitted, setServicePreferencesSubmitted] = useState(false);
+    const [serviceLoading, setServiceLoading] = useState(false);
+    const [serviceSaving, setServiceSaving] = useState(false);
+    const [serviceError, setServiceError] = useState("");
+    const [serviceMessage, setServiceMessage] = useState("");
 
-    useEffect(() => {
-        fetchTeamInfo();
-    }, [teamId]);
-
-    const fetchTeamInfo = async () => {
+    const fetchTeamInfo = useCallback(async () => {
         try {
-            setLoading(true);
-            setError("");
-
             if (!teamId) {
                 throw new Error("Team ID is missing");
             }
@@ -96,12 +106,89 @@ function TeamInfo() {
             }
 
             setTeamData(data);
+            setCurrentUserId(userId);
+            setError("");
+
+            const targetTeam = data.team;
+            const isApprovedPhysical =
+                String(targetTeam.ParticipationMode || "").toLowerCase() === "physical" &&
+                String(targetTeam.RegistrationStatus || "").toLowerCase() === "approved";
+            const isLead = Number(targetTeam.TeamLeadUserId) === Number(userId);
+
+            if (isApprovedPhysical && isLead) {
+                setServiceLoading(true);
+                try {
+                    const preferencesResponse = await fetch(
+                        `http://localhost:3000/api/physical-services/teams/${teamId}/preferences?userId=${userId}`
+                    );
+                    const preferencesData = await preferencesResponse.json();
+                    if (!preferencesResponse.ok) {
+                        throw new Error(
+                            preferencesData.message || "Unable to load physical event choices."
+                        );
+                    }
+                    setServiceAvailability({
+                        accommodationEnabled: preferencesData.event.accommodationEnabled,
+                        foodEnabled: preferencesData.event.foodEnabled
+                    });
+                    setServicePreferences(preferencesData.preference);
+                    setServicePreferencesSubmitted(
+                        preferencesData.preference.submitted === true
+                    );
+                } catch (preferenceError) {
+                    console.error("Load physical event preferences error:", preferenceError);
+                    setServiceError(preferenceError.message);
+                } finally {
+                    setServiceLoading(false);
+                }
+            }
 
         } catch (error) {
             console.error("TEAM INFO ERROR:", error);
             setError(error.message);
         } finally {
             setLoading(false);
+        }
+    }, [teamId]);
+
+    useEffect(() => {
+        let current = true;
+        Promise.resolve().then(() => {
+            if (current) fetchTeamInfo();
+        });
+        return () => {
+            current = false;
+        };
+    }, [fetchTeamInfo]);
+
+    const saveServicePreferences = async () => {
+        setServiceSaving(true);
+        setServiceError("");
+        setServiceMessage("");
+        try {
+            const response = await fetch(
+                `http://localhost:3000/api/physical-services/teams/${teamId}/preferences`,
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        ...servicePreferences
+                    })
+                }
+            );
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.message || "Unable to save physical event choices.");
+            }
+            setServicePreferences(result.preference);
+            setServicePreferencesSubmitted(result.preference.submitted === true);
+            setServiceMessage(result.message);
+        } catch (saveError) {
+            console.error("Save physical event preferences error:", saveError);
+            setServiceError(saveError.message);
+        } finally {
+            setServiceSaving(false);
         }
     };
 
@@ -144,6 +231,10 @@ function TeamInfo() {
     const team = teamData.team;
     const members = teamData.members || [];
     const teamLead = members.find(member => isTeamLead(member.Role));
+    const isTeamLeadViewer = Number(team.TeamLeadUserId) === Number(currentUserId);
+    const isApprovedPhysical =
+        String(team.ParticipationMode || "").toLowerCase() === "physical" &&
+        String(team.RegistrationStatus || "").toLowerCase() === "approved";
 
     return (
         <div className="min-h-screen w-full bg-slate-100 p-3 text-slate-900 sm:p-4 md:p-6 dark:bg-black dark:text-white font-sans">
@@ -555,6 +646,83 @@ function TeamInfo() {
                             </div>
                         </div>
                     </div>
+
+                    {isTeamLeadViewer && isApprovedPhysical &&
+                        (serviceAvailability.accommodationEnabled || serviceAvailability.foodEnabled) && (
+                        <section className="rounded-xl border border-emerald-700/20 bg-white p-4 shadow-sm dark:border-emerald-500/30 dark:bg-gray-950 sm:p-5">
+                            <div className="mb-4">
+                                <h2 className="font-semibold text-base text-slate-900 dark:text-white">
+                                    Physical Event Choices
+                                </h2>
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Choose for your full team ({members.length} registered member{members.length === 1 ? "" : "s"}). Once saved, your selections are final.
+                                </p>
+                            </div>
+                            {serviceLoading ? (
+                                <p className="text-sm text-slate-500">Loading available choices...</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {serviceAvailability.accommodationEnabled && (
+                                        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 dark:border-zinc-800">
+                                            <input
+                                                type="checkbox"
+                                                checked={servicePreferences.accommodationRequested}
+                                                disabled={serviceSaving || servicePreferencesSubmitted}
+                                                onChange={(event) => setServicePreferences((previous) => ({
+                                                    ...previous,
+                                                    accommodationRequested: event.target.checked
+                                                }))}
+                                                className="mt-1 accent-emerald-600"
+                                            />
+                                            <BedDouble className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                                                Yes — request accommodation for all {members.length} registered team member{members.length === 1 ? "" : "s"}
+                                            </span>
+                                        </label>
+                                    )}
+                                    {serviceAvailability.foodEnabled && (
+                                        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 dark:border-zinc-800">
+                                            <input
+                                                type="checkbox"
+                                                checked={servicePreferences.foodAccepted}
+                                                disabled={serviceSaving || servicePreferencesSubmitted}
+                                                onChange={(event) => setServicePreferences((previous) => ({
+                                                    ...previous,
+                                                    foodAccepted: event.target.checked
+                                                }))}
+                                                className="mt-1 accent-emerald-600"
+                                            />
+                                            <Utensils className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                            <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
+                                                Yes — accept event meals for all {members.length} registered team member{members.length === 1 ? "" : "s"}
+                                            </span>
+                                        </label>
+                                    )}
+                                    {serviceError && (
+                                        <p role="alert" className="text-sm text-red-600">{serviceError}</p>
+                                    )}
+                                    {serviceMessage && (
+                                        <p role="status" className="text-sm text-emerald-700">{serviceMessage}</p>
+                                    )}
+                                    {servicePreferencesSubmitted ? (
+                                        <p role="status" className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                                            Your choices have been submitted and can no longer be changed.
+                                        </p>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={saveServicePreferences}
+                                            disabled={serviceSaving || serviceLoading}
+                                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-60"
+                                        >
+                                            <Save className="h-4 w-4" />
+                                            {serviceSaving ? "Saving..." : "Save final choices"}
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </section>
+                    )}
 
                 </div>
 

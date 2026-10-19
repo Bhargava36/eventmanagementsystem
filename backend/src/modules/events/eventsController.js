@@ -376,7 +376,24 @@ const updateVirtualMeetUrl = (req, res) => {
 
 const updateEventSettings = (req, res) => {
     const { id } = req.params;
-    const settings = req.body;
+    const settings = { ...req.body };
+    const featureFlags = [
+        'AccommodationEnabled',
+        'FoodEnabled',
+        'IDCardEnabled'
+    ];
+
+    for (const key of featureFlags) {
+        if (settings[key] !== undefined) {
+            const value = settings[key];
+            if (![true, false, 0, 1, '0', '1'].includes(value)) {
+                return res.status(400).json({
+                    message: `${key} must be a boolean value`
+                });
+            }
+            settings[key] = value === true || value === 1 || value === '1' ? 1 : 0;
+        }
+    }
 
     eventsService.updateEventSettings(id, settings, (err, updated) => {
         if (err) {
