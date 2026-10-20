@@ -39,10 +39,50 @@ export default function HomeFaqSection() {
     setOpenIndex(openIndex === idx ? null : idx);
   };
 
-  // GSAP: Support card hover micro-interaction
+  const sectionRef = useRef(null);
+  const sidebarRef = useRef(null);
+  const faqListRef = useRef(null);
+
+  // GSAP ScrollTrigger Scroll-Reveal & Support Card Hover
   useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Sidebar reveal (re-triggers whenever on screen)
+      if (sidebarRef.current) {
+        gsap.from(sidebarRef.current, {
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 88%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+          },
+          y: 40,
+          opacity: 0,
+          duration: 0.8,
+          ease: 'power3.out',
+        });
+      }
+
+      // FAQ Rows Stagger reveal (re-triggers whenever on screen)
+      const items = faqListRef.current?.children;
+      if (items && items.length) {
+        gsap.from(items, {
+          scrollTrigger: {
+            trigger: faqListRef.current,
+            start: 'top 85%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+          },
+          y: 35,
+          opacity: 0,
+          duration: 0.7,
+          stagger: 0.08,
+          ease: 'power3.out',
+        });
+      }
+    }, sectionRef);
+
     const card = supportCardRef.current;
-    if (!card) return;
+    if (!card) return () => ctx.revert();
 
     const onEnter = () => gsap.to(card, { y: -4, borderColor: '#10b981', duration: 0.3, ease: 'power2.out' });
     const onLeave = () => gsap.to(card, { y: 0, borderColor: 'var(--card-border, rgba(39, 39, 42, 1))', duration: 0.3, ease: 'power2.out' });
@@ -51,16 +91,21 @@ export default function HomeFaqSection() {
     card.addEventListener('mouseleave', onLeave);
 
     return () => {
+      ctx.revert();
       card.removeEventListener('mouseenter', onEnter);
       card.removeEventListener('mouseleave', onLeave);
     };
   }, []);
 
   return (
-    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <section
+      ref={sectionRef}
+      id="faq"
+      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-        {/* Left Column: Sticky Title & Direct Support Box */}
-        <div className="lg:col-span-5 lg:sticky lg:top-28 space-y-6">
+        {/* Left Column: Sticky Title & Direct Support Box with ScrollReveal */}
+        <div ref={sidebarRef} className="lg:col-span-5 lg:sticky lg:top-28 space-y-6">
           <div className="space-y-3">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
               Frequently Asked Questions.
@@ -94,8 +139,8 @@ export default function HomeFaqSection() {
           </div>
         </div>
 
-        {/* Right Column: Framer Motion Spring Accordions */}
-        <div className="lg:col-span-7 divide-y divide-slate-200 dark:divide-zinc-800">
+        {/* Right Column: Framer Motion Spring Accordions with ScrollReveal */}
+        <div ref={faqListRef} className="lg:col-span-7 divide-y divide-slate-200 dark:divide-zinc-800">
           {FAQS.map((faq, idx) => {
             const isOpen = openIndex === idx;
             return (

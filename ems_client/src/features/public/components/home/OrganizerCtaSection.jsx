@@ -206,38 +206,79 @@ export default function OrganizerCtaSection() {
     };
   }, []);
 
-  // 2. Anime.js Stats Ticker Animation
-  useEffect(() => {
-    const targets = statValues.current;
+  // 2. Anime.js Stats Ticker Animation Function
+  const triggerStats = () => {
+    statValues.current = { hackathons: 0, universities: 0, builders: 0 };
     try {
-      animate(targets, {
+      animate(statValues.current, {
         hackathons: 250,
         universities: 48,
         builders: 15400,
-        duration: 2200,
+        duration: 2000,
         ease: 'outExpo',
         onUpdate: () => {
-          if (stat1Ref.current) stat1Ref.current.innerText = `${Math.floor(targets.hackathons)}+`;
-          if (stat2Ref.current) stat2Ref.current.innerText = `${Math.floor(targets.universities)}`;
-          if (stat3Ref.current) stat3Ref.current.innerText = `${Math.floor(targets.builders).toLocaleString()}+`;
+          if (stat1Ref.current) stat1Ref.current.innerText = `${Math.floor(statValues.current.hackathons)}+`;
+          if (stat2Ref.current) stat2Ref.current.innerText = `${Math.floor(statValues.current.universities)}`;
+          if (stat3Ref.current) stat3Ref.current.innerText = `${Math.floor(statValues.current.builders).toLocaleString()}+`;
         },
       });
     } catch (e) {
-      // Fallback if anime signature varies
       if (stat1Ref.current) stat1Ref.current.innerText = '250+';
       if (stat2Ref.current) stat2Ref.current.innerText = '48';
       if (stat3Ref.current) stat3Ref.current.innerText = '15,400+';
     }
-  }, []);
-
-  // 3. GSAP Button Hover & Card Micro-Interactions
-  const btnPrimaryRef = useRef(null);
-  const btnSecondaryRef = useRef(null);
+  };
 
   useEffect(() => {
+    triggerStats();
+  }, []);
+
+  // 3. GSAP ScrollTrigger Scroll-Reveal & Button Hover
+  const btnPrimaryRef = useRef(null);
+  const btnSecondaryRef = useRef(null);
+  const leftColRef = useRef(null);
+  const rightColRef = useRef(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Left column reveal (re-triggers whenever on screen)
+      if (leftColRef.current) {
+        gsap.from(leftColRef.current, {
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: 'top 88%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+            onEnter: triggerStats,
+            onEnterBack: triggerStats,
+          },
+          y: 40,
+          opacity: 0,
+          duration: 0.85,
+          ease: 'power3.out',
+        });
+      }
+
+      // Right 3D globe reveal (re-triggers whenever on screen)
+      if (rightColRef.current) {
+        gsap.from(rightColRef.current, {
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: 'top 88%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+          },
+          scale: 0.9,
+          opacity: 0,
+          duration: 1,
+          ease: 'power3.out',
+        });
+      }
+    }, containerRef);
+
     const btn1 = btnPrimaryRef.current;
     const btn2 = btnSecondaryRef.current;
-    if (!btn1 || !btn2) return;
+    if (!btn1 || !btn2) return () => ctx.revert();
 
     const onEnter1 = () => gsap.to(btn1, { scale: 1.03, duration: 0.25, ease: 'power2.out' });
     const onLeave1 = () => gsap.to(btn1, { scale: 1, duration: 0.25, ease: 'power2.out' });
@@ -250,6 +291,7 @@ export default function OrganizerCtaSection() {
     btn2.addEventListener('mouseleave', onLeave2);
 
     return () => {
+      ctx.revert();
       btn1.removeEventListener('mouseenter', onEnter1);
       btn1.removeEventListener('mouseleave', onLeave1);
       btn2.removeEventListener('mouseenter', onEnter2);
@@ -258,7 +300,7 @@ export default function OrganizerCtaSection() {
   }, []);
 
   return (
-    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+    <section id="command" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20">
       <div
         ref={containerRef}
         className="rounded-3xl bg-slate-950 dark:bg-black border border-slate-200 dark:border-zinc-800 p-8 sm:p-12 lg:p-16 overflow-hidden relative shadow-2xl"
@@ -267,8 +309,8 @@ export default function OrganizerCtaSection() {
         <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center relative z-10">
-          {/* Left Column: Text & Actions */}
-          <div className="lg:col-span-6 space-y-6">
+          {/* Left Column: Text & Actions with ScrollReveal */}
+          <div ref={leftColRef} className="lg:col-span-6 space-y-6">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight">
               Host Your Hackathon on HackHub.
             </h2>
@@ -343,32 +385,14 @@ export default function OrganizerCtaSection() {
             </div>
           </div>
 
-          {/* Right Column: Three.js Interactive 3D HackHub Network Cluster */}
-          <div className="lg:col-span-6 relative flex flex-col items-center justify-center">
+          {/* Right Column: Three.js Interactive 3D HackHub Network Cluster with ScrollReveal */}
+          <div ref={rightColRef} className="lg:col-span-6 relative flex flex-col items-center justify-center">
             <div className="relative w-full aspect-square max-w-[460px] flex items-center justify-center">
               {/* Three.js Canvas Container */}
               <div
                 ref={mountRef}
                 className="w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-center"
               />
-
-              {/* Floating Overlay Node Badge 1 */}
-              <div className="absolute top-4 left-4 p-3 rounded-xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800 text-xs shadow-lg space-y-1 pointer-events-none">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="font-semibold text-white">Live Cluster</span>
-                </div>
-                <p className="text-[10px] text-zinc-400">Global Node Telemetry: Active</p>
-              </div>
-
-              {/* Floating Overlay Node Badge 2 */}
-              <div className="absolute bottom-4 right-4 p-3 rounded-xl bg-zinc-900/90 backdrop-blur-md border border-zinc-800 text-xs shadow-lg space-y-1 pointer-events-none">
-                <div className="flex items-center gap-2">
-                  <Cpu className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="font-semibold text-white">Consensus Engine</span>
-                </div>
-                <p className="text-[10px] text-zinc-400">Real-time Jury Rubric Sync</p>
-              </div>
             </div>
           </div>
         </div>

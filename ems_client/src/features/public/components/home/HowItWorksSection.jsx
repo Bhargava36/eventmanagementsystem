@@ -47,30 +47,73 @@ const STEPS = [
 
 export default function HowItWorksSection() {
   const cardsRef = useRef([]);
+  const sectionRef = useRef(null);
+  const headerRef = useRef(null);
+  const gridRef = useRef(null);
   const pathRef = useRef(null);
 
-  // 1. Anime.js Animated Connection Beam
+  // 1. GSAP ScrollTrigger Scroll-Reveal & Hover Interactions
   useEffect(() => {
-    const path = pathRef.current;
-    if (!path) return;
+    let animInstance = null;
+    const triggerAnime = () => {
+      const path = pathRef.current;
+      if (!path) return;
+      try {
+        if (animInstance) animInstance.pause();
+        animInstance = animate(path, {
+          strokeDashoffset: [200, 0],
+          duration: 2200,
+          ease: 'linear',
+          loop: true,
+        });
+      } catch (e) {}
+    };
 
-    try {
-      animate(path, {
-        strokeDashoffset: [200, 0],
-        duration: 2500,
-        ease: 'linear',
-        loop: true,
-      });
-    } catch (e) {
-      // anime fallback
-    }
-  }, []);
+    const ctx = gsap.context(() => {
+      // Header reveal (re-triggers whenever on screen)
+      if (headerRef.current) {
+        gsap.from(headerRef.current, {
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 88%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+          },
+          y: 40,
+          opacity: 0,
+          duration: 0.8,
+          ease: 'power3.out',
+        });
+      }
 
-  // 2. GSAP Card Hover & Micro-Interactions
-  useEffect(() => {
+      // 4 Steps Stagger reveal (re-triggers whenever on screen)
+      const cards = cardsRef.current.filter(Boolean);
+      if (cards.length) {
+        gsap.from(cards, {
+          scrollTrigger: {
+            trigger: gridRef.current || sectionRef.current,
+            start: 'top 85%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+            onEnter: triggerAnime,
+            onEnterBack: triggerAnime,
+          },
+          y: 60,
+          opacity: 0,
+          scale: 0.95,
+          duration: 0.85,
+          stagger: 0.12,
+          ease: 'power3.out',
+        });
+      }
+    }, sectionRef);
+
+    // Initial Anime.js Animated Connection Beam
+    triggerAnime();
+
+    // 3. Hover Micro-Interactions
     const cleanupFns = [];
-
-    cardsRef.current.forEach((card, idx) => {
+    cardsRef.current.forEach((card) => {
       if (!card) return;
 
       const iconEl = card.querySelector('.step-icon');
@@ -132,14 +175,19 @@ export default function HowItWorksSection() {
     });
 
     return () => {
+      ctx.revert();
       cleanupFns.forEach((fn) => fn());
     };
   }, []);
 
   return (
-    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
-      {/* Header without badges */}
-      <div className="max-w-3xl mb-12 sm:mb-16 space-y-3">
+    <section
+      ref={sectionRef}
+      id="blueprint"
+      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative scroll-mt-20"
+    >
+      {/* Header with ScrollReveal */}
+      <div ref={headerRef} className="max-w-3xl mb-12 sm:mb-16 space-y-3">
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
           How HackHub Works
         </h2>
@@ -179,7 +227,7 @@ export default function HowItWorksSection() {
       </div>
 
       {/* 4 Clean Step Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {STEPS.map((step, idx) => {
           const IconComp = step.icon;
           return (

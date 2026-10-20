@@ -163,8 +163,49 @@ export default function TechTracksBentoSection() {
     };
   }, []);
 
-  // 2. GSAP 3D Interactive Card Tilt on Hover
+  const sectionRef = useRef(null);
+  const headerRef = useRef(null);
+  const gridRef = useRef(null);
+
+  // 2. GSAP ScrollTrigger Scroll-Reveal & 3D Interactive Card Tilt
   useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Header reveal (re-triggers whenever on screen)
+      if (headerRef.current) {
+        gsap.from(headerRef.current, {
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 88%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+          },
+          y: 40,
+          opacity: 0,
+          duration: 0.8,
+          ease: 'power3.out',
+        });
+      }
+
+      // 6 Cards Stagger reveal (re-triggers whenever on screen)
+      const cards = cardsRef.current.filter(Boolean);
+      if (cards.length) {
+        gsap.from(cards, {
+          scrollTrigger: {
+            trigger: gridRef.current || sectionRef.current,
+            start: 'top 85%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+          },
+          y: 60,
+          opacity: 0,
+          scale: 0.95,
+          duration: 0.85,
+          stagger: 0.1,
+          ease: 'power3.out',
+        });
+      }
+    }, sectionRef);
+
     const cleanups = [];
 
     cardsRef.current.forEach((card) => {
@@ -211,19 +252,29 @@ export default function TechTracksBentoSection() {
       });
     });
 
-    return () => cleanups.forEach((c) => c());
+    return () => {
+      ctx.revert();
+      cleanups.forEach((c) => c());
+    };
   }, []);
 
   return (
-    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative overflow-hidden">
+    <section
+      ref={sectionRef}
+      id="domains"
+      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative overflow-hidden scroll-mt-20"
+    >
       {/* Three.js Ambient 3D Particle Layer */}
       <div
         ref={threeMountRef}
         className="absolute inset-0 pointer-events-none z-0 opacity-40"
       />
 
-      {/* Header without badges */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16 relative z-10">
+      {/* Header with ScrollReveal */}
+      <div
+        ref={headerRef}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16 relative z-10"
+      >
         <div className="space-y-3 max-w-2xl">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
             Competitions by Technology Track
@@ -242,8 +293,8 @@ export default function TechTracksBentoSection() {
         </Link>
       </div>
 
-      {/* Grid of 6 interactive 3D Tilt cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+      {/* Grid of 6 interactive 3D Tilt cards with ScrollReveal */}
+      <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
         {TRACKS.map((track, idx) => {
           const IconComp = track.icon;
           return (

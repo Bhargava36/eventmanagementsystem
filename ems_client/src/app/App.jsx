@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import HomePage from '../features/public/pages/HomePage';
 import Login from '../features/auth/pages/SuperAdmin/Login';
@@ -41,12 +42,19 @@ import AccomodationRedirectPage from '../features/auth/pages/Admin/AccomodationR
 import FoodRedirectionPage from '../features/auth/pages/Admin/FoodRedirectionPage';
 import IdRedirectionPage from '../features/auth/pages/Admin/IdRedirectionPage';
 import VerifyIdPage from '../features/public/pages/VerifyIdPage';
-
+import ThreePreloader from '../components/ui/ThreePreloader';
 
 function App() {
+  const [isReady, setIsReady] = useState(false);
+
   return (
-    <div>
-      <Routes>
+    <div className="min-h-screen bg-white dark:bg-black">
+      {/* Three.js 4-Dots Official Website Preloader - Runs strictly once */}
+      {!isReady && <ThreePreloader onComplete={() => setIsReady(true)} />}
+
+      {/* Website loads and renders only AFTER preloader completes */}
+      {isReady && (
+        <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/events" element={<ExploreEvents />} />
@@ -120,6 +128,7 @@ function App() {
           
 
       </Routes>
+      )}
     </div>
   );
 }

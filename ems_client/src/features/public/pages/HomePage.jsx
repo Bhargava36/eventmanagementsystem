@@ -1,4 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import Lenis from 'lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
 import HeroSection from '../../../components/ui/HeroSection';
 import FeaturedHackathonsSection from '../components/home/FeaturedHackathonsSection';
 import HowItWorksSection from '../components/home/HowItWorksSection';
@@ -6,40 +10,63 @@ import TechTracksBentoSection from '../components/home/TechTracksBentoSection';
 import LogisticsAutomationSection from '../components/home/LogisticsAutomationSection';
 import OrganizerCtaSection from '../components/home/OrganizerCtaSection';
 import HomeFaqSection from '../components/home/HomeFaqSection';
+import ParallaxStoryBackdrop from '../components/home/ParallaxStoryBackdrop';
+
+gsap.registerPlugin(ScrollTrigger);
 
 /**
  * HomePage
- * Premium Landing Page composed of modular, high-performance components:
- * 1. HeroSection - 3D Circular Dot Matrix & Real-time Platform Metrics Strip
- * 2. FeaturedHackathonsSection - Dynamic live/upcoming competitions from MySQL
- * 3. HowItWorksSection - 4-step interactive builder pathway
- * 4. TechTracksBentoSection - Domains & specializations Bento grid
- * 5. LogisticsAutomationSection - Campus ID Passes, Food Tokens & Room Allocations
- * 6. OrganizerCtaSection - University & Enterprise Host Hackathon invitation
- * 7. HomeFaqSection - Smooth accordion FAQ answers
+ * Continuous storytelling landing page powered by Lenis smooth scrolling
+ * and GSAP ScrollTrigger orchestrated reveals across every section.
  */
 export default function HomePage() {
+  // Lenis Smooth Scroll Integration with GSAP ScrollTrigger
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.15,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wheelMultiplier: 1.1,
+    });
+
+    lenis.on('scroll', ScrollTrigger.update);
+
+    const tickerCb = (time) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(tickerCb);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      gsap.ticker.remove(tickerCb);
+      lenis.destroy();
+    };
+  }, []);
+
   return (
-    <div className="bg-white dark:bg-black text-slate-900 dark:text-white transition-colors duration-300 selection:bg-emerald-500 selection:text-white overflow-hidden">
-      {/* 1. Hero Section */}
+    <div className="relative bg-white dark:bg-black text-slate-900 dark:text-white transition-colors duration-300 selection:bg-emerald-500 selection:text-white overflow-hidden">
+      {/* GSAP ScrollTrigger Parallax Ambient Depth Backdrop */}
+      <ParallaxStoryBackdrop />
+
+      {/* 1. The Vision & Real-time Platform Scale */}
       <HeroSection />
 
-      {/* 2. Featured Competitions */}
+      {/* 2. The Arena: Live & Upcoming Hackathons with Staggered ScrollReveal */}
       <FeaturedHackathonsSection />
 
-      {/* 3. The Builder Pathway (How It Works) */}
+      {/* 3. The Builder Pathway: 4-Step Execution Blueprint with Scroll-driven Circuit */}
       <HowItWorksSection />
 
-      {/* 4. Tech Tracks Bento Grid */}
+      {/* 4. Domain Mastery: 3D Perspective Bento Grid */}
       <TechTracksBentoSection />
 
-      {/* 5. End-to-End Logistics & Automation */}
+      {/* 5. Physical & Virtual Operational Infrastructure with Live Simulators */}
       <LogisticsAutomationSection />
 
-      {/* 6. University & Corporate Organizer CTA */}
+      {/* 6. Command Center: Interactive Three.js 3D Globe for Organizers */}
       <OrganizerCtaSection />
 
-      {/* 7. Frequently Asked Questions */}
+      {/* 7. Knowledge Base: Transparent Operations FAQ */}
       <HomeFaqSection />
     </div>
   );

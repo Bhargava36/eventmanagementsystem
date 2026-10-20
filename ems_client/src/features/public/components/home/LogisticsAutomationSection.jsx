@@ -68,8 +68,49 @@ export default function LogisticsAutomationSection() {
     } catch (e) {}
   }, []);
 
-  // 4. GSAP: Smooth Card Elevation on Hover
+  const sectionRef = useRef(null);
+  const headerRef = useRef(null);
+  const gridRef = useRef(null);
+
+  // 4. GSAP ScrollTrigger Scroll-Reveal & Smooth Card Hover
   useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Header reveal (re-triggers whenever on screen)
+      if (headerRef.current) {
+        gsap.from(headerRef.current, {
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 88%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+          },
+          y: 40,
+          opacity: 0,
+          duration: 0.8,
+          ease: 'power3.out',
+        });
+      }
+
+      // 4 Cards Stagger reveal (re-triggers whenever on screen)
+      const cards = cardsRef.current.filter(Boolean);
+      if (cards.length) {
+        gsap.from(cards, {
+          scrollTrigger: {
+            trigger: gridRef.current || sectionRef.current,
+            start: 'top 85%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+          },
+          y: 60,
+          opacity: 0,
+          scale: 0.95,
+          duration: 0.85,
+          stagger: 0.12,
+          ease: 'power3.out',
+        });
+      }
+    }, sectionRef);
+
     const cleanups = [];
     cardsRef.current.forEach((card) => {
       if (!card) return;
@@ -85,13 +126,21 @@ export default function LogisticsAutomationSection() {
         card.removeEventListener('mouseleave', onLeave);
       });
     });
-    return () => cleanups.forEach((c) => c());
+
+    return () => {
+      ctx.revert();
+      cleanups.forEach((c) => c());
+    };
   }, []);
 
   return (
-    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Header without badges */}
-      <div className="max-w-3xl mb-12 sm:mb-16 space-y-3">
+    <section
+      ref={sectionRef}
+      id="logistics"
+      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20"
+    >
+      {/* Header with ScrollReveal */}
+      <div ref={headerRef} className="max-w-3xl mb-12 sm:mb-16 space-y-3">
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
           Campus & Virtual Event Infrastructure
         </h2>
@@ -101,7 +150,7 @@ export default function LogisticsAutomationSection() {
       </div>
 
       {/* 4 Clean Capability Cards with Anime.js Micro-Simulations */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Card 1: Digital Passes */}
         <div
           ref={(el) => (cardsRef.current[0] = el)}

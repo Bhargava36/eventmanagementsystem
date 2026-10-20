@@ -71,11 +71,53 @@ export default function FeaturedHackathonsSection() {
     }
   };
 
-  // GSAP: Parallax zoom and card elevation
+  const sectionRef = useRef(null);
+  const headerRef = useRef(null);
+  const gridRef = useRef(null);
+
+  // GSAP: ScrollTrigger Scroll-Reveal & Hover Parallax
   useEffect(() => {
     if (loading || !events.length) return;
-    const cleanups = [];
 
+    const ctx = gsap.context(() => {
+      // 1. Smooth Header Reveal (re-triggers whenever on screen)
+      if (headerRef.current) {
+        gsap.from(headerRef.current, {
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 88%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+          },
+          y: 40,
+          opacity: 0,
+          duration: 0.8,
+          ease: 'power3.out',
+        });
+      }
+
+      // 2. Staggered Cards Reveal (re-triggers whenever on screen)
+      const cards = cardsRef.current.filter(Boolean);
+      if (cards.length) {
+        gsap.from(cards, {
+          scrollTrigger: {
+            trigger: gridRef.current || sectionRef.current,
+            start: 'top 85%',
+            end: 'bottom 12%',
+            toggleActions: 'play reverse play reverse',
+          },
+          y: 60,
+          opacity: 0,
+          scale: 0.96,
+          duration: 0.85,
+          stagger: 0.12,
+          ease: 'power3.out',
+        });
+      }
+    }, sectionRef);
+
+    // 3. Hover Micro-Interactions
+    const cleanups = [];
     cardsRef.current.forEach((card) => {
       if (!card) return;
 
@@ -103,13 +145,23 @@ export default function FeaturedHackathonsSection() {
       });
     });
 
-    return () => cleanups.forEach((c) => c());
+    return () => {
+      ctx.revert();
+      cleanups.forEach((c) => c());
+    };
   }, [loading, events]);
 
   return (
-    <section className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      {/* Header without badges or dividers */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-14">
+    <section
+      ref={sectionRef}
+      id="arena"
+      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20"
+    >
+      {/* Header with ScrollReveal */}
+      <div
+        ref={headerRef}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-14"
+      >
         <div className="space-y-3 max-w-2xl">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
             Live & Upcoming Hackathons
@@ -128,7 +180,7 @@ export default function FeaturedHackathonsSection() {
         </Link>
       </div>
 
-      {/* Grid */}
+      {/* Grid with ScrollReveal Stagger */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
@@ -145,7 +197,7 @@ export default function FeaturedHackathonsSection() {
           <p className="text-xs text-slate-500 dark:text-zinc-500">New events will be announced shortly.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {events.map((event, idx) => {
             const posterUrl = getEventPosterUrl(event.Posters);
             const mode = String(event.HackathonMode || 'Virtual');
