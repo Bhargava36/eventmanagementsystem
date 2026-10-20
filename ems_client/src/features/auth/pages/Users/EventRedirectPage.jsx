@@ -5,6 +5,7 @@ import useTheme from '../../../../Hooks/useTheme';
 import useAuth from '../../../../Hooks/useAuth';
 import FlipCountdown from '../../../../components/Molecules/FlipCountdown';
 import TrackTimelineSection from '../../../../components/Molecules/TrackTimelineSection';
+import { getEventTheme } from '../../../../lib/utils';
 import {
   ArrowLeft,
   Calendar,
@@ -666,8 +667,10 @@ function EventDetails() {
   }
 
   /* ── derived values ── */
+  const isDark      = theme === 'dark';
+  const eventTheme  = getEventTheme(event, isDark);
   const posterImg   = getPoster();
-  const primaryBg   = event.PrimaryColor || '#059669';
+  const primaryBg   = eventTheme.primary;
   const hasBothTracks =
     availableModes.length > 1 ||
     (event.HackathonMode || '').toLowerCase() === 'both' ||
@@ -733,50 +736,56 @@ function EventDetails() {
         {/* breadcrumb + share */}
         <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
-            <button onClick={() => navigate('/user/competitions')} className="inline-flex items-center gap-1.5 font-medium hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+            <button onClick={() => navigate('/user/competitions')} className="inline-flex items-center gap-1.5 font-medium hover:opacity-80 transition-opacity">
               <ArrowLeft className="h-4 w-4" /> Back to Competitions
             </button>
             <span>/</span>
             <span className="text-slate-800 dark:text-zinc-200 font-semibold truncate max-w-[240px] sm:max-w-md">{event.EventName}</span>
           </div>
           <div className="flex items-center gap-2.5">
-            <button onClick={handleShare} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all shadow-sm">
-              {copiedLink ? (<><Check className="h-3.5 w-3.5 text-emerald-500" /><span className="text-emerald-600 dark:text-emerald-400">Link Copied!</span></>) : (<><Share2 className="h-3.5 w-3.5" /><span>Share Event</span></>)}
+            <button onClick={handleShare} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:border-slate-400 dark:hover:border-zinc-700 transition-all shadow-sm">
+              {copiedLink ? (<><Check className="h-3.5 w-3.5" style={{ color: eventTheme.accent }} /><span style={{ color: eventTheme.accent }}>Link Copied!</span></>) : (<><Share2 className="h-3.5 w-3.5" /><span>Share Event</span></>)}
             </button>
           </div>
         </motion.div>
 
         {/* ── HERO CARD ── */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xl">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black shadow-xl">
           <div className="p-6 sm:p-8 lg:p-10">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
               <div className="lg:col-span-7 space-y-5">
                 {/* status + type + mode badges */}
                 <div className="flex flex-wrap items-center gap-2">
                   {(event.EventStatus || '').toLowerCase() === 'ongoing' ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />Live Ongoing
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold"
+                      style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                    >
+                      <span className="h-2 w-2 rounded-full animate-ping" style={{ backgroundColor: eventTheme.accent }} />Live Ongoing
                     </span>
                   ) : (event.EventStatus || '').toLowerCase() === 'completed' ? (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/30">
                       <CheckCircle2 className="h-3.5 w-3.5" />Event Concluded
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                      <Clock className="h-3.5 w-3.5" />Registrations Open
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold"
+                      style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                    >
+                      <Clock className="h-3.5 w-3.5" style={{ color: eventTheme.accent }} />Registrations Open
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
-                    <Tag className="h-3 w-3 text-emerald-500" />{event.EventType || 'Hackathon'}
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-950 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
+                    <Tag className="h-3 w-3" style={{ color: eventTheme.accent }} />{event.EventType || 'Hackathon'}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-950 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
                     {(() => {
                       const m = (event.HackathonMode || '').toLowerCase();
-                      if (m === 'virtual') return <Monitor className="h-3 w-3 text-emerald-500" />;
-                      if (m === 'physical') return <Building2 className="h-3 w-3 text-emerald-500" />;
-                      if (m === 'virtual and physical' || m === 'both') return <Layers className="h-3 w-3 text-emerald-500" />;
-                      if (m === 'hybrid') return <Radio className="h-3 w-3 text-emerald-500" />;
-                      return <Globe className="h-3 w-3 text-emerald-500" />;
+                      if (m === 'virtual') return <Monitor className="h-3 w-3" style={{ color: eventTheme.accent }} />;
+                      if (m === 'physical') return <Building2 className="h-3 w-3" style={{ color: eventTheme.accent }} />;
+                      if (m === 'virtual and physical' || m === 'both') return <Layers className="h-3 w-3" style={{ color: eventTheme.accent }} />;
+                      if (m === 'hybrid') return <Radio className="h-3 w-3" style={{ color: eventTheme.accent }} />;
+                      return <Globe className="h-3 w-3" style={{ color: eventTheme.accent }} />;
                     })()}
                     {event.HackathonMode ? `${event.HackathonMode} Mode` : 'Standard Track'}
                   </span>
@@ -789,16 +798,20 @@ function EventDetails() {
 
                 {/* meta grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80">
-                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0"><Calendar className="h-4 w-4" /></div>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800">
+                    <div className="p-2 rounded-lg shrink-0" style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}>
+                      <Calendar className="h-4 w-4" />
+                    </div>
                     <div className="min-w-0">
                       <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Event Dates</span>
                       <span className="block text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">{formatDate(event.StartDate)} – {formatDate(event.EndDate)}</span>
                     </div>
                   </div>
                   {event.Location && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80">
-                      <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0"><MapPin className="h-4 w-4" /></div>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="p-2 rounded-lg shrink-0" style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}>
+                        <MapPin className="h-4 w-4" />
+                      </div>
                       <div className="min-w-0">
                         <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Venue Location</span>
                         <span className="block text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">{event.Location}</span>
@@ -806,8 +819,10 @@ function EventDetails() {
                     </div>
                   )}
                   {event.TeamSize && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80">
-                      <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0"><Users className="h-4 w-4" /></div>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800">
+                      <div className="p-2 rounded-lg shrink-0" style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}>
+                        <Users className="h-4 w-4" />
+                      </div>
                       <div className="min-w-0">
                         <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Team Formation</span>
                         <span className="block text-xs font-semibold text-slate-800 dark:text-zinc-200 truncate">{event.TeamSize} Members per Team</span>
@@ -815,11 +830,19 @@ function EventDetails() {
                     </div>
                   )}
                   {(event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney) && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20">
-                      <div className="p-2 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0"><Trophy className="h-4 w-4" /></div>
+                    <div
+                      className="flex items-center gap-3 p-3 rounded-xl"
+                      style={{ backgroundColor: eventTheme.iconBg, borderColor: eventTheme.border, borderWidth: 1 }}
+                    >
+                      <div
+                        className="p-2 rounded-lg shrink-0"
+                        style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.accent }}
+                      >
+                        <Trophy className="h-4 w-4" />
+                      </div>
                       <div className="min-w-0">
-                        <span className="block text-[10px] font-bold uppercase tracking-wider text-amber-600/80 dark:text-amber-400/80">Prize Bounty</span>
-                        <span className="block text-xs font-black text-amber-700 dark:text-amber-300 truncate">
+                        <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Prize Bounty</span>
+                        <span className="block text-xs font-black truncate" style={{ color: eventTheme.statNumberColor || eventTheme.accent }}>
                           {event.PrizeMoney || `${event.PhysicalPrizeMoney || ''} ${event.VirtualPrizeMoney ? `/ ${event.VirtualPrizeMoney}` : ''}`}
                         </span>
                       </div>
@@ -830,12 +853,14 @@ function EventDetails() {
 
               {/* poster */}
               <div className="lg:col-span-5">
-                <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-lg group bg-slate-100 dark:bg-zinc-900 aspect-[16/10] sm:aspect-[16/9] lg:aspect-[4/3] w-full flex items-center justify-center">
+                <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-lg group bg-slate-100 dark:bg-black aspect-[16/10] sm:aspect-[16/9] lg:aspect-[4/3] w-full flex items-center justify-center">
                   {posterImg ? (
                     <img src={posterImg} alt={event.EventName} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center" style={{ background: theme === 'dark' ? `linear-gradient(135deg, ${primaryBg}33 0%, #09090b 80%)` : `linear-gradient(135deg, ${primaryBg}20 0%, #f1f5f9 80%)` }}>
-                      <div className="w-16 h-16 rounded-2xl bg-white/20 dark:bg-white/10 backdrop-blur-md flex items-center justify-center shadow-inner mb-3"><Trophy className="h-8 w-8 text-emerald-500" /></div>
+                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center" style={{ background: eventTheme.subtleBg }}>
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-inner mb-3" style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}>
+                        <Trophy className="h-8 w-8" />
+                      </div>
                       <span className="text-base font-bold text-slate-800 dark:text-white">{event.EventName}</span>
                       <span className="text-xs text-slate-500 dark:text-zinc-400 mt-1">{event.EventType || 'Hackathon'}</span>
                     </div>
@@ -846,16 +871,19 @@ function EventDetails() {
           </div>
 
           {/* register bar */}
-          <div className="p-5 sm:p-6 bg-slate-100/70 dark:bg-zinc-950/80 backdrop-blur-xl border-t border-slate-200/90 dark:border-zinc-800">
+          <div className="p-5 sm:p-6 bg-slate-100/70 dark:bg-black backdrop-blur-xl border-t border-slate-200/90 dark:border-zinc-800">
             {(() => {
               const modes = getAvailableModes(event?.HackathonMode);
               if (modes.length > 1) {
                 return (
                   <div className="space-y-3.5">
                     {/* ROW 1: VIRTUAL TRACK CARD */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4 transition-all duration-200 hover:border-slate-300 dark:hover:border-zinc-700">
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4 transition-all duration-200 hover:border-slate-300 dark:hover:border-zinc-700">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3.5 w-full lg:w-auto">
-                        <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20 shadow-xs">
+                        <div
+                          className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs"
+                          style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                        >
                           <Globe className="h-5 w-5" />
                         </div>
                         <div className="text-center sm:text-left">
@@ -864,8 +892,11 @@ function EventDetails() {
                               Virtual Track
                             </span>
                             {isVirtualRegistered ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                              <span
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                                style={{ backgroundColor: eventTheme.registeredBg, color: eventTheme.registeredText, borderColor: eventTheme.registeredBorder, borderWidth: 1 }}
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" style={{ color: eventTheme.accent }} />
                                 <span>Registered</span>
                               </span>
                             ) : isVirtualPaused ? (
@@ -879,8 +910,11 @@ function EventDetails() {
                                 <span>Closed</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                              <span
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                                style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: eventTheme.accent }} />
                                 <span>Live Now</span>
                               </span>
                             )}
@@ -904,9 +938,9 @@ function EventDetails() {
                           </div>
                         ) : (
                           <div className="flex flex-col items-center gap-1.5">
-                            <FlipCountdown targetDate={effectiveVirtualRegEnd || event.StartDate} />
+                            <FlipCountdown targetDate={effectiveVirtualRegEnd || event.StartDate} eventTheme={eventTheme} />
                             <span className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400">
-                              Virtual Closes on: <strong className="text-emerald-600 dark:text-emerald-400">{formatDate(effectiveVirtualRegEnd)}</strong>
+                              Virtual Closes on: <strong style={{ color: eventTheme.accent }}>{formatDate(effectiveVirtualRegEnd)}</strong>
                             </span>
                           </div>
                         )}
@@ -918,20 +952,26 @@ function EventDetails() {
                           <button
                             type="button"
                             onClick={() => navigate(`/user/teamInfo/${virtualTeam.TeamId}`)}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300 font-bold text-xs tracking-wide shadow-xs hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group"
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs tracking-wide shadow-xs hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group"
+                            style={{
+                              backgroundColor: eventTheme.registeredBg,
+                              borderColor: eventTheme.registeredBorder,
+                              color: eventTheme.registeredText,
+                              borderWidth: 1,
+                            }}
                             title="Click to view team details"
                           >
-                            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: eventTheme.accent }} />
                             <span>
                               Registered for the Virtual as{' '}
-                              <span className="underline decoration-emerald-500/60 font-extrabold text-emerald-800 dark:text-emerald-200 group-hover:decoration-emerald-600">
+                              <span className="underline font-extrabold">
                                 {virtualTeam.TeamName}
                               </span>
                             </span>
-                            <ChevronRight className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                            <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform shrink-0" style={{ color: eventTheme.accent }} />
                           </button>
                         ) : isVirtualRegistrationClosed ? (
-                          <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-xs border border-slate-200 dark:border-zinc-700 cursor-not-allowed select-none">
+                          <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-400 dark:text-zinc-500 font-bold text-xs border border-slate-200 dark:border-zinc-800 cursor-not-allowed select-none">
                             <AlertCircle className="h-3.5 w-3.5" />
                             <span>{isVirtualPaused ? 'Virtual Paused' : 'Virtual Ended'}</span>
                           </div>
@@ -939,7 +979,8 @@ function EventDetails() {
                           <button
                             type="button"
                             onClick={() => handleRegisterClick('Virtual')}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/25 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs tracking-wide shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                            style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                           >
                             <Globe className="h-4 w-4" />
                             <span>Register Virtual Track</span>
@@ -950,9 +991,12 @@ function EventDetails() {
                     </div>
 
                     {/* ROW 2: PHYSICAL TRACK CARD */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4 transition-all duration-200 hover:border-slate-300 dark:hover:border-zinc-700">
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4 transition-all duration-200 hover:border-slate-300 dark:hover:border-zinc-700">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3.5 w-full lg:w-auto">
-                        <div className="w-11 h-11 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/20 shadow-xs">
+                        <div
+                          className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-xs"
+                          style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                        >
                           <MapPin className="h-5 w-5" />
                         </div>
                         <div className="text-center sm:text-left">
@@ -961,8 +1005,11 @@ function EventDetails() {
                               Physical Track
                             </span>
                             {isPhysicalRegistered ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" />
+                              <span
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                                style={{ backgroundColor: eventTheme.registeredBg, color: eventTheme.registeredText, borderColor: eventTheme.registeredBorder, borderWidth: 1 }}
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" style={{ color: eventTheme.accent }} />
                                 <span>Registered</span>
                               </span>
                             ) : isPhysicalPaused ? (
@@ -976,10 +1023,13 @@ function EventDetails() {
                                 <span>Closed</span>
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                              <span
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                                style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                              >
                                 <span className="relative flex h-1.5 w-1.5">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: eventTheme.accent }} />
+                                  <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ backgroundColor: eventTheme.accent }} />
                                 </span>
                                 <span>Accepting Teams</span>
                               </span>
@@ -1004,9 +1054,9 @@ function EventDetails() {
                           </div>
                         ) : (
                           <div className="flex flex-col items-center gap-1.5">
-                            <FlipCountdown targetDate={effectivePhysicalRegEnd || event.StartDate} />
+                            <FlipCountdown targetDate={effectivePhysicalRegEnd || event.StartDate} eventTheme={eventTheme} />
                             <span className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400">
-                              Physical Closes on: <strong className="text-amber-600 dark:text-amber-400">{formatDate(effectivePhysicalRegEnd)}</strong>
+                              Physical Closes on: <strong style={{ color: eventTheme.accent }}>{formatDate(effectivePhysicalRegEnd)}</strong>
                             </span>
                           </div>
                         )}
@@ -1018,20 +1068,26 @@ function EventDetails() {
                           <button
                             type="button"
                             onClick={() => navigate(`/user/teamInfo/${physicalTeam.TeamId}`)}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-800 dark:text-amber-300 font-bold text-xs tracking-wide shadow-xs hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group"
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs tracking-wide shadow-xs hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group"
+                            style={{
+                              backgroundColor: eventTheme.registeredBg,
+                              borderColor: eventTheme.registeredBorder,
+                              color: eventTheme.registeredText,
+                              borderWidth: 1,
+                            }}
                             title="Click to view team details"
                           >
-                            <CheckCircle2 className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: eventTheme.accent }} />
                             <span>
                               Registered for the Physical as{' '}
-                              <span className="underline decoration-amber-500/60 font-extrabold text-amber-900 dark:text-amber-200 group-hover:decoration-amber-600">
+                              <span className="underline font-extrabold">
                                 {physicalTeam.TeamName}
                               </span>
                             </span>
-                            <ChevronRight className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                            <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform shrink-0" style={{ color: eventTheme.accent }} />
                           </button>
                         ) : isPhysicalRegistrationClosed ? (
-                          <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-xs border border-slate-200 dark:border-zinc-700 cursor-not-allowed select-none">
+                          <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-400 dark:text-zinc-500 font-bold text-xs border border-slate-200 dark:border-zinc-800 cursor-not-allowed select-none">
                             <AlertCircle className="h-3.5 w-3.5" />
                             <span>{isPhysicalPaused ? 'Physical Paused' : 'Physical Ended'}</span>
                           </div>
@@ -1039,7 +1095,8 @@ function EventDetails() {
                           <button
                             type="button"
                             onClick={() => handleRegisterClick('Physical')}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-600/25 hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs tracking-wide shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                            style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                           >
                             <MapPin className="h-4 w-4" />
                             <span>Register for Physical Track</span>
@@ -1066,8 +1123,8 @@ function EventDetails() {
                     <div className="flex items-center gap-2">
                       {!isClosed ? (
                         <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: eventTheme.accent }}></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ backgroundColor: eventTheme.accent }}></span>
                         </span>
                       ) : (
                         <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
@@ -1082,7 +1139,7 @@ function EventDetails() {
                         {isPaused ? 'Registration Paused' : 'Registration has ended'}
                       </div>
                     ) : (
-                      <FlipCountdown targetDate={effectiveEnd || event.StartDate} />
+                      <FlipCountdown targetDate={effectiveEnd || event.StartDate} eventTheme={eventTheme} />
                     )}
                   </div>
 
@@ -1091,21 +1148,23 @@ function EventDetails() {
                       <button
                         type="button"
                         onClick={() => navigate(`/user/teamInfo/${myTrackTeam?.TeamId || registeredTeam?.TeamId}`)}
-                        className={`w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl font-bold text-xs sm:text-sm tracking-wide shadow-sm hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group ${
-                          isPhysical
-                            ? 'bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-800 dark:text-amber-300'
-                            : 'bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-700 dark:text-emerald-300'
-                        }`}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl font-bold text-xs sm:text-sm tracking-wide shadow-sm hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer group"
+                        style={{
+                          backgroundColor: eventTheme.registeredBg,
+                          borderColor: eventTheme.registeredBorder,
+                          color: eventTheme.registeredText,
+                          borderWidth: 1,
+                        }}
                         title="Click to view team details"
                       >
-                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: eventTheme.accent }} />
                         <span>
                           Registered for the {singleMode} as{' '}
                           <span className="underline font-extrabold ml-1">
                             {myTrackTeam?.TeamName || registeredTeam?.TeamName}
                           </span>
                         </span>
-                        <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                        <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform shrink-0" style={{ color: eventTheme.accent }} />
                       </button>
                     ) : isClosed ? (
                       <button
@@ -1118,11 +1177,8 @@ function EventDetails() {
                       <button
                         type="button"
                         onClick={() => handleRegisterClick(singleMode)}
-                        className={`w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl text-white font-bold text-sm tracking-wide shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 ${
-                          isPhysical
-                            ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/30'
-                            : 'bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/30'
-                        }`}
+                        className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl font-bold text-sm tracking-wide shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                        style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                       >
                         {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
                         <span>Register for {singleMode} Hackathon</span>
@@ -1143,9 +1199,9 @@ function EventDetails() {
           <div className="lg:col-span-2 space-y-8">
 
             {/* About */}
-            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-4">
+            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-4">
               <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
-                <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <FileText className="h-5 w-5" style={{ color: eventTheme.accent }} />
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">About the Challenge</h2>
               </div>
               <div className="text-slate-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed whitespace-pre-line space-y-3">
@@ -1163,13 +1219,13 @@ function EventDetails() {
                     return (
                       <button key={tab.key} type="button" onClick={() => setActiveTrackTab(tab.key)} className="relative h-12 px-6 sm:px-8 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-colors duration-200 outline-none">
                         {isActive ? (
-                          <motion.div layoutId="folderTabActivePill2" className="absolute inset-0 rounded-t-2xl bg-white dark:bg-zinc-950 border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />
+                          <motion.div layoutId="folderTabActivePill2" className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />
                         ) : (
-                          <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 z-0" />
+                          <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 z-0" />
                         )}
                         <span className={`relative z-20 flex items-center gap-2.5 ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'}`}>
                           <IconComp className="h-4 w-4" /><span>{tab.label}</span>
-                          {isActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                          {isActive && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: eventTheme.accent }} />}
                         </span>
                       </button>
                     );
@@ -1177,10 +1233,12 @@ function EventDetails() {
                 </div>
               )}
 
-              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6 relative z-0">
+              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6 relative z-0">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-zinc-800/80">
                   <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><Layers className="h-5 w-5" /></div>
+                    <div className="p-2.5 rounded-2xl" style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}>
+                      <Layers className="h-5 w-5" />
+                    </div>
                     <div>
                       <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
                         {activeTrackTab === 'virtual' ? 'Virtual Track Specifications & Prizes' : 'On-Campus Venue Specifications & Prizes'}
@@ -1196,7 +1254,7 @@ function EventDetails() {
                   {activeTrackTab === 'virtual' ? (
                     <motion.div key="virtual-track-specs" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="space-y-6">
                       {(event.VirtualStartDate || event.VirtualRegistrationStart) && (
-                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
                           <div className="space-y-1">
                             <span className="text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[10px] block">Virtual Registration Window</span>
                             <span className="font-bold text-slate-900 dark:text-white block">{formatDate(event.VirtualRegistrationStart)} – {formatDate(event.VirtualRegistrationEnd)}</span>
@@ -1208,36 +1266,45 @@ function EventDetails() {
                         </div>
                       )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 space-y-3">
-                          <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /><span>Digital Infrastructure Provided</span></div>
+                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-3">
+                          <div className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: eventTheme.accent }}>
+                            <CheckCircle2 className="h-4 w-4" /><span>Digital Infrastructure Provided</span>
+                          </div>
                           {virtualFacList.length > 0 ? (
-                            <ul className="space-y-2.5">{virtualFacList.map((item, idx) => (<li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 dark:text-zinc-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" /><span>{item}</span></li>))}</ul>
+                            <ul className="space-y-2.5">{virtualFacList.map((item, idx) => (<li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 dark:text-zinc-300"><span className="h-1.5 w-1.5 rounded-full mt-2 shrink-0" style={{ backgroundColor: eventTheme.accent }} /><span>{item}</span></li>))}</ul>
                           ) : (<p className="text-xs text-slate-500 dark:text-zinc-400">Cloud collaboration platform, discord coordination, and mentor office hours provided.</p>)}
                         </div>
-                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 space-y-3">
-                          <div className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 flex items-center gap-2"><ShieldCheck className="h-4 w-4" /><span>Virtual Track Requirements</span></div>
+                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-3">
+                          <div className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: eventTheme.secondary || eventTheme.accent }}>
+                            <ShieldCheck className="h-4 w-4" /><span>Virtual Track Requirements</span>
+                          </div>
                           {virtualReqList.length > 0 ? (
-                            <ul className="space-y-2.5">{virtualReqList.map((item, idx) => (<li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 dark:text-zinc-300"><span className="h-1.5 w-1.5 rounded-full bg-teal-500 mt-2 shrink-0" /><span>{item}</span></li>))}</ul>
+                            <ul className="space-y-2.5">{virtualReqList.map((item, idx) => (<li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 dark:text-zinc-300"><span className="h-1.5 w-1.5 rounded-full mt-2 shrink-0" style={{ backgroundColor: eventTheme.secondary || eventTheme.accent }} /><span>{item}</span></li>))}</ul>
                           ) : (<p className="text-xs text-slate-500 dark:text-zinc-400">Stable internet connection, valid college ID, and GitHub / Git repository setup.</p>)}
                         </div>
                       </div>
 
                       {/* Track-Specific Timeline & Roadmap */}
-                      <TrackTimelineSection trackType="virtual" timelines={timelines} />
+                      <TrackTimelineSection trackType="virtual" timelines={timelines} eventTheme={eventTheme} />
 
                       {showPrizesSection && (
                         <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
-                              <div className="p-2.5 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"><Trophy className="h-5 w-5" /></div>
+                              <div className="p-2.5 rounded-2xl" style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}>
+                                <Trophy className="h-5 w-5" />
+                              </div>
                               <div>
                                 <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Virtual Track Prizes & Recognitions</h3>
                                 <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Cash bounties, trophies and global incubation for online innovators</p>
                               </div>
                             </div>
                             {event.VirtualPrizeMoney && (
-                              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20 text-xs font-black self-start sm:self-auto">
-                                <Trophy className="h-3.5 w-3.5 text-cyan-500" /><span>Track Pool: {event.VirtualPrizeMoney}</span>
+                              <div
+                                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black self-start sm:self-auto"
+                                style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                              >
+                                <Trophy className="h-3.5 w-3.5" style={{ color: eventTheme.accent }} /><span>Track Pool: {event.VirtualPrizeMoney}</span>
                               </div>
                             )}
                           </div>
@@ -1248,9 +1315,9 @@ function EventDetails() {
                                 <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-3">Special Recognitions & Track Awards</div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                                   {additionalPrizes.map((pz, idx) => (
-                                    <div key={pz.Id || idx} className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/50 flex items-center justify-between gap-3">
+                                    <div key={pz.Id || idx} className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950 flex items-center justify-between gap-3">
                                       <div className="flex items-center gap-2.5">
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300"><Medal className="h-4 w-4" /></div>
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/80 dark:bg-zinc-900" style={{ color: eventTheme.accent }}><Medal className="h-4 w-4" /></div>
                                         <div><div className="text-xs font-bold text-slate-800 dark:text-zinc-200">{pz.PrizeRank ? `Rank ${pz.PrizeRank}` : 'Special Award'}</div>{pz.Track && <div className="text-[10px] text-slate-500 dark:text-zinc-400">{pz.Track} Track</div>}</div>
                                       </div>
                                       <div className="text-sm font-black font-mono text-slate-900 dark:text-white">{formatPrizeText(pz.Prize, pz.Prize)}</div>
@@ -1266,7 +1333,7 @@ function EventDetails() {
                   ) : (
                     <motion.div key="physical-track-specs" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="space-y-6">
                       {(event.PhysicalStartDate || event.PhysicalRegistrationStart) && (
-                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
                           <div className="space-y-1">
                             <span className="text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[10px] block">Campus Registration Window</span>
                             <span className="font-bold text-slate-900 dark:text-white block">{formatDate(event.PhysicalRegistrationStart)} – {formatDate(event.PhysicalRegistrationEnd)}</span>
@@ -1278,36 +1345,45 @@ function EventDetails() {
                         </div>
                       )}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 space-y-3">
-                          <div className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /><span>Campus Amenities & Lab Facilities</span></div>
+                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-3">
+                          <div className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: eventTheme.accent }}>
+                            <CheckCircle2 className="h-4 w-4" /><span>Campus Amenities & Lab Facilities</span>
+                          </div>
                           {physicalFacList.length > 0 ? (
-                            <ul className="space-y-2.5">{physicalFacList.map((item, idx) => (<li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 dark:text-zinc-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 mt-2 shrink-0" /><span>{item}</span></li>))}</ul>
+                            <ul className="space-y-2.5">{physicalFacList.map((item, idx) => (<li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 dark:text-zinc-300"><span className="h-1.5 w-1.5 rounded-full mt-2 shrink-0" style={{ backgroundColor: eventTheme.accent }} /><span>{item}</span></li>))}</ul>
                           ) : (<p className="text-xs text-slate-500 dark:text-zinc-400">High-speed campus Wi-Fi, power workstations, overnight lodging, meals & snacks provided.</p>)}
                         </div>
-                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 space-y-3">
-                          <div className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400 flex items-center gap-2"><ShieldCheck className="h-4 w-4" /><span>On-Campus Prerequisites</span></div>
+                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-3">
+                          <div className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: eventTheme.secondary || eventTheme.accent }}>
+                            <ShieldCheck className="h-4 w-4" /><span>On-Campus Prerequisites</span>
+                          </div>
                           {physicalReqList.length > 0 ? (
-                            <ul className="space-y-2.5">{physicalReqList.map((item, idx) => (<li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 dark:text-zinc-300"><span className="h-1.5 w-1.5 rounded-full bg-teal-500 mt-2 shrink-0" /><span>{item}</span></li>))}</ul>
+                            <ul className="space-y-2.5">{physicalReqList.map((item, idx) => (<li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700 dark:text-zinc-300"><span className="h-1.5 w-1.5 rounded-full mt-2 shrink-0" style={{ backgroundColor: eventTheme.secondary || eventTheme.accent }} /><span>{item}</span></li>))}</ul>
                           ) : (<p className="text-xs text-slate-500 dark:text-zinc-400">Original college ID card, personal laptop with development environment, and approval letter.</p>)}
                         </div>
                       </div>
 
                       {/* Track-Specific Timeline & Roadmap */}
-                      <TrackTimelineSection trackType="physical" timelines={timelines} />
+                      <TrackTimelineSection trackType="physical" timelines={timelines} eventTheme={eventTheme} />
 
                       {showPrizesSection && (
                         <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-3">
-                              <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400"><Trophy className="h-5 w-5" /></div>
+                              <div className="p-2.5 rounded-2xl" style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}>
+                                <Trophy className="h-5 w-5" />
+                              </div>
                               <div>
                                 <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">On-Campus Track Prizes & Recognitions</h3>
                                 <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Cash bounties, trophies and incubation fast-track for campus participants</p>
                               </div>
                             </div>
                             {event.PhysicalPrizeMoney && (
-                              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-xs font-black self-start sm:self-auto">
-                                <Trophy className="h-3.5 w-3.5 text-amber-500" /><span>Track Pool: {event.PhysicalPrizeMoney}</span>
+                              <div
+                                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-black self-start sm:self-auto"
+                                style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                              >
+                                <Trophy className="h-3.5 w-3.5" style={{ color: eventTheme.accent }} /><span>Track Pool: {event.PhysicalPrizeMoney}</span>
                               </div>
                             )}
                           </div>
@@ -1318,9 +1394,9 @@ function EventDetails() {
                                 <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-3">Special Recognitions & Track Awards</div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                                   {additionalPrizes.map((pz, idx) => (
-                                    <div key={pz.Id || idx} className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/50 flex items-center justify-between gap-3">
+                                    <div key={pz.Id || idx} className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950 flex items-center justify-between gap-3">
                                       <div className="flex items-center gap-2.5">
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300"><Medal className="h-4 w-4" /></div>
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/80 dark:bg-zinc-900" style={{ color: eventTheme.accent }}><Medal className="h-4 w-4" /></div>
                                         <div><div className="text-xs font-bold text-slate-800 dark:text-zinc-200">{pz.PrizeRank ? `Rank ${pz.PrizeRank}` : 'Special Award'}</div>{pz.Track && <div className="text-[10px] text-slate-500 dark:text-zinc-400">{pz.Track} Track</div>}</div>
                                       </div>
                                       <div className="text-sm font-black font-mono text-slate-900 dark:text-white">{formatPrizeText(pz.Prize, pz.Prize)}</div>
@@ -1338,26 +1414,28 @@ function EventDetails() {
               </div>
             </div>
 
-            {/* Core team */}
             {coreTeam.length > 0 && (
-              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6">
+              <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6">
                 <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
-                  <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  <Users className="h-5 w-5" style={{ color: eventTheme.accent }} />
                   <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Organizing Committee & Leads</h2>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {coreTeam.map((member, idx) => (
-                    <div key={member.Id || idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 flex items-center gap-3.5">
+                    <div key={member.Id || idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3.5">
                       {member.Photo ? (
-                        <img src={member.Photo} alt={member.Name} className="w-12 h-12 rounded-xl object-cover border border-emerald-500/20 shrink-0" />
+                        <img src={member.Photo} alt={member.Name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-zinc-800 shrink-0" />
                       ) : (
-                        <div className="w-12 h-12 rounded-xl bg-emerald-600/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0">
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm shrink-0"
+                          style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}
+                        >
                           {(member.Name || 'U').charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{member.Name}</h4>
-                        <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 truncate">{member.Role}</p>
+                        <p className="text-xs font-semibold truncate" style={{ color: eventTheme.accent }}>{member.Role}</p>
                         {member.Department && <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">{member.Department}</p>}
                       </div>
                     </div>
@@ -1369,9 +1447,9 @@ function EventDetails() {
 
           {/* ── STICKY SIDEBAR ── */}
           <div className="space-y-6 sticky top-24">
-            <div className="p-6 rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-md space-y-6">
+            <div className="p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-md space-y-6">
               <div className="space-y-1">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Participation Details</span>
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: eventTheme.accent }}>Participation Details</span>
                 <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">Ready to Build?</h3>
               </div>
               <div className="space-y-3.5 text-xs text-slate-700 dark:text-zinc-300">
@@ -1393,7 +1471,7 @@ function EventDetails() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 dark:text-zinc-400">Format</span>
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{event.HackathonMode || 'Online & Campus'}</span>
+                  <span className="font-bold" style={{ color: eventTheme.accent }}>{event.HackathonMode || 'Online & Campus'}</span>
                 </div>
               </div>
               <div className="space-y-2.5 pt-2">
@@ -1404,22 +1482,28 @@ function EventDetails() {
                       <button
                         type="button"
                         onClick={() => navigate(`/user/teamInfo/${virtualTeam.TeamId}`)}
-                        className="w-full py-2.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer text-left"
+                        className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer text-left"
+                        style={{
+                          backgroundColor: eventTheme.registeredBg,
+                          borderColor: eventTheme.registeredBorder,
+                          color: eventTheme.registeredText,
+                          borderWidth: 1,
+                        }}
                         title="Click to view team details"
                       >
                         <span className="inline-flex items-center gap-1.5 truncate">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: eventTheme.accent }} />
                           <span className="truncate">
                             Registered for the Virtual as{' '}
-                            <strong className="underline decoration-emerald-500/60 font-extrabold group-hover:decoration-emerald-500">
+                            <strong className="underline font-extrabold">
                               {virtualTeam.TeamName}
                             </strong>
                           </span>
                         </span>
-                        <ChevronRight className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                        <ChevronRight className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" style={{ color: eventTheme.accent }} />
                       </button>
                     ) : isVirtualRegistrationClosed ? (
-                      <div className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-slate-400 dark:text-zinc-500 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed">
+                      <div className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed">
                         <AlertCircle className="h-3.5 w-3.5" />
                         <span>Virtual Registration Closed</span>
                       </div>
@@ -1427,7 +1511,8 @@ function EventDetails() {
                       <button
                         type="button"
                         onClick={() => handleRegisterClick('Virtual')}
-                        className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs tracking-wide shadow-md shadow-emerald-600/20 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                        className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl font-bold text-xs tracking-wide shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                        style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                       >
                         <Globe className="h-4 w-4" />
                         <span>Register for Virtual Hackathon</span>
@@ -1439,22 +1524,28 @@ function EventDetails() {
                       <button
                         type="button"
                         onClick={() => navigate(`/user/teamInfo/${physicalTeam.TeamId}`)}
-                        className="w-full py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer text-left"
+                        className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer text-left"
+                        style={{
+                          backgroundColor: eventTheme.registeredBg,
+                          borderColor: eventTheme.registeredBorder,
+                          color: eventTheme.registeredText,
+                          borderWidth: 1,
+                        }}
                         title="Click to view team details"
                       >
                         <span className="inline-flex items-center gap-1.5 truncate">
-                          <CheckCircle2 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: eventTheme.accent }} />
                           <span className="truncate">
                             Registered for the Physical as{' '}
-                            <strong className="underline decoration-amber-500/60 font-extrabold group-hover:decoration-amber-500">
+                            <strong className="underline font-extrabold">
                               {physicalTeam.TeamName}
                             </strong>
                           </span>
                         </span>
-                        <ChevronRight className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                        <ChevronRight className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" style={{ color: eventTheme.accent }} />
                       </button>
                     ) : isPhysicalRegistrationClosed ? (
-                      <div className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-slate-400 dark:text-zinc-500 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed">
+                      <div className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed">
                         <AlertCircle className="h-3.5 w-3.5" />
                         <span>Physical Registration Closed</span>
                       </div>
@@ -1462,7 +1553,8 @@ function EventDetails() {
                       <button
                         type="button"
                         onClick={() => handleRegisterClick('Physical')}
-                        className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs tracking-wide shadow-md shadow-amber-600/20 hover:shadow-amber-600/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                        className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-2xl font-bold text-xs tracking-wide shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                        style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                       >
                         <MapPin className="h-4 w-4" />
                         <span>Register for Physical Hackathon</span>
@@ -1482,15 +1574,17 @@ function EventDetails() {
                         <button
                           type="button"
                           onClick={() => navigate(`/user/teamInfo/${myTeam?.TeamId || registeredTeam?.TeamId}`)}
-                          className={`w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer text-left ${
-                            isPhysical
-                              ? 'bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-800 dark:text-amber-300'
-                              : 'bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300'
-                          }`}
+                          className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer text-left"
+                          style={{
+                            backgroundColor: eventTheme.registeredBg,
+                            borderColor: eventTheme.registeredBorder,
+                            color: eventTheme.registeredText,
+                            borderWidth: 1,
+                          }}
                           title="Click to view team details"
                         >
                           <span className="inline-flex items-center gap-1.5 truncate">
-                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: eventTheme.accent }} />
                             <span className="truncate">
                               Registered for the {singleMode} as{' '}
                               <strong className="underline font-bold">
@@ -1498,7 +1592,7 @@ function EventDetails() {
                               </strong>
                             </span>
                           </span>
-                          <ChevronRight className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
+                          <ChevronRight className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" style={{ color: eventTheme.accent }} />
                         </button>
                       );
                     }
@@ -1515,11 +1609,8 @@ function EventDetails() {
                       <button
                         type="button"
                         onClick={() => handleRegisterClick(singleMode)}
-                        className={`w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl text-white font-bold text-xs tracking-wide shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 ${
-                          isPhysical
-                            ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/30'
-                            : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/30'
-                        }`}
+                        className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl font-bold text-xs tracking-wide shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
+                        style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                       >
                         {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
                         <span>Register for {singleMode} Hackathon</span>
@@ -1536,18 +1627,18 @@ function EventDetails() {
               </div>
             </div>
 
-            <div className="p-6 rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-4">
+            <div className="p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-4">
               <div className="flex items-center gap-2.5 text-slate-900 dark:text-white font-bold text-sm">
-                <MapPin className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /><span>Host Location & Venue</span>
+                <MapPin className="h-4 w-4" style={{ color: eventTheme.accent }} /><span>Host Location & Venue</span>
               </div>
               <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
                 {event.Location || 'Campus Main Auditorium & Department Innovation Lab. Directions will be shared with shortlisted teams.'}
               </p>
             </div>
 
-            <div className="p-6 rounded-3xl bg-slate-100/60 dark:bg-zinc-900/40 border border-slate-200/80 dark:border-zinc-800/80 space-y-3">
+            <div className="p-6 rounded-3xl bg-slate-100/60 dark:bg-black border border-slate-200/80 dark:border-zinc-800 space-y-3">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-zinc-200">
-                <Info className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" /><span>Need Assistance?</span>
+                <Info className="h-4 w-4 shrink-0" style={{ color: eventTheme.accent }} /><span>Need Assistance?</span>
               </div>
               <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
                 Have questions regarding guidelines, hardware requirements, or accommodation? Contact event leads through your student dashboard.
@@ -1561,16 +1652,15 @@ function EventDetails() {
       {showRegistration && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-6 sm:py-10">
           <div className="w-full max-w-4xl">
-            <div className="max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 dark:text-slate-100 sm:p-6 md:p-8">
+            <div className="max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl dark:border-zinc-800 dark:bg-black dark:text-slate-100 sm:p-6 md:p-8">
 
               <div className="mb-8 flex items-start justify-between gap-4">
                 <div>
                   <div className="mb-2 flex items-center gap-2">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                      registrationMode === 'Physical'
-                        ? 'bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400'
-                        : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
-                    }`}>
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+                      style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                    >
                       {registrationMode === 'Physical' ? <MapPin className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
                       {registrationMode} Hackathon Form
                     </span>
@@ -1590,9 +1680,24 @@ function EventDetails() {
               {/* Step indicator */}
               <div className="mb-8">
                 <div className="flex items-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-sm font-bold text-white">1</div>
-                  <div className={`h-1 flex-1 ${currentStep >= 2 ? 'bg-emerald-600' : 'bg-slate-200 dark:bg-slate-800'}`} />
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${currentStep >= 2 ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}>2</div>
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
+                    style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
+                  >
+                    1
+                  </div>
+                  <div
+                    className="h-1 flex-1 transition-colors"
+                    style={{ backgroundColor: currentStep >= 2 ? eventTheme.buttonBg : undefined }}
+                  />
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${
+                      currentStep < 2 ? 'bg-slate-200 text-slate-500 dark:bg-zinc-800 dark:text-slate-300' : ''
+                    }`}
+                    style={currentStep >= 2 ? { backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText } : undefined}
+                  >
+                    2
+                  </div>
                 </div>
                 <div className="mt-2 flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
                   <span>Team Details</span><span>Team Members</span>
@@ -1602,21 +1707,18 @@ function EventDetails() {
               {currentStep === 1 && (
                 <div className="space-y-6">
                   {getAvailableModes(event?.HackathonMode).length > 1 && (
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <p className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Event Mode Selection</p>
                         <p className="text-sm font-bold text-slate-900 dark:text-white">Track: {registrationMode} Hackathon</p>
                       </div>
-                      <div className="inline-flex rounded-xl bg-slate-200/80 dark:bg-zinc-800 p-1 self-start sm:self-auto">
+                      <div className="inline-flex rounded-xl bg-slate-200/80 dark:bg-zinc-900 p-1 self-start sm:self-auto">
                         <button
                           type="button"
                           disabled={isVirtualRegistered}
                           onClick={() => setRegistrationMode('Virtual')}
-                          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                            registrationMode === 'Virtual'
-                              ? 'bg-emerald-600 text-white shadow-sm'
-                              : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-                          }`}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={registrationMode === 'Virtual' ? { backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText } : {}}
                         >
                           <Globe className="h-3.5 w-3.5" />
                           Virtual Track {isVirtualRegistered ? '(Registered)' : ''}
@@ -1625,11 +1727,8 @@ function EventDetails() {
                           type="button"
                           disabled={isPhysicalRegistered}
                           onClick={() => setRegistrationMode('Physical')}
-                          className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                            registrationMode === 'Physical'
-                              ? 'bg-amber-600 text-white shadow-sm'
-                              : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-                          }`}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={registrationMode === 'Physical' ? { backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText } : {}}
                         >
                           <MapPin className="h-3.5 w-3.5" />
                           Physical Track {isPhysicalRegistered ? '(Registered)' : ''}
@@ -1638,7 +1737,7 @@ function EventDetails() {
                     </div>
                   )}
 
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
                     <div className="mb-6"><h2 className="text-lg font-bold">Team Details</h2><p className="text-sm text-slate-500 dark:text-slate-400">Enter your team information.</p></div>
                     <div className="grid gap-5 md:grid-cols-2">
                       <div>
@@ -1655,14 +1754,17 @@ function EventDetails() {
                     </div>
                   </section>
 
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <h2 className="text-lg font-bold">Team Lead</h2>
                         <p className="text-sm text-slate-500 dark:text-slate-400">Team lead details (automatically filled for current user).</p>
                       </div>
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span
+                        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                        style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" style={{ color: eventTheme.accent }} />
                         Auto-filled (You)
                       </span>
                     </div>
@@ -1676,18 +1778,25 @@ function EventDetails() {
 
                   <div className="flex justify-between">
                     <button type="button" onClick={closeRegistration} className="flex items-center gap-2 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900">Back</button>
-                    <button type="button" onClick={handleNext} className="flex items-center gap-2 rounded-xl bg-emerald-600 px-7 py-3 text-sm font-semibold text-white hover:bg-emerald-700">Continue</button>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold text-white shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                      style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
+                    >
+                      Continue
+                    </button>
                   </div>
                 </div>
               )}
 
               {currentStep === 2 && (
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
                     <div className="mb-6"><h2 className="text-lg font-bold">Team Members</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Enter details of each team member (EMS account is optional).</p></div>
                     <div className="space-y-5">
                       {members.map((member, index) => (
-                        <div key={index} className="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
+                        <div key={index} className="rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
                           <div className="mb-3"><p className="text-sm font-bold">Team Member {index + 2}</p><p className="text-xs text-slate-600 dark:text-slate-400">Enter team member details</p></div>
                           <div className="grid gap-4 sm:grid-cols-2">
                             <input type="text" value={member.Name} onChange={(e) => setMembers((prev) => prev.map((item, mi) => mi === index ? { ...item, Name: e.target.value } : item))} placeholder="Team member name" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
@@ -1700,23 +1809,23 @@ function EventDetails() {
                     </div>
                   </section>
 
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
                     <div className="mb-4"><h3 className="font-bold">Event Registration Details</h3></div>
                     <div className="grid gap-4 md:grid-cols-2">
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-zinc-800 dark:bg-black"><p className="text-xs text-slate-600 dark:text-slate-400">Team Size</p><p className="mt-1 font-semibold">{teamSize} Members</p></div>
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-zinc-800 dark:bg-black">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"><p className="text-xs text-slate-600 dark:text-slate-400">Team Size</p><p className="mt-1 font-semibold">{teamSize} Members</p></div>
+                      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
                         <p className="text-xs text-slate-600 dark:text-slate-400">Participation Mode</p>
                         <p className="mt-1 font-semibold inline-flex items-center gap-1.5">
-                          <span className={`inline-block h-2 w-2 rounded-full ${registrationMode === 'Physical' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                          <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: eventTheme.accent }} />
                           {registrationMode} Hackathon
                         </p>
                       </div>
                     </div>
                   </section>
 
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
                     <label className="flex cursor-pointer items-start gap-3">
-                      <input type="checkbox" required className="mt-1 h-4 w-4 cursor-pointer accent-emerald-600 focus:ring-2 focus:ring-emerald-500" />
+                      <input type="checkbox" required className="mt-1 h-4 w-4 cursor-pointer" style={{ accentColor: eventTheme.accent }} />
                       <span className="text-sm text-slate-600 dark:text-slate-300">I confirm that all the team member details provided are accurate.</span>
                     </label>
                   </section>
@@ -1726,11 +1835,8 @@ function EventDetails() {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className={`rounded-xl px-7 py-3 text-sm font-semibold text-white shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:cursor-not-allowed ${
-                        registrationMode === 'Physical'
-                          ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-600/30 disabled:opacity-50'
-                          : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-600/30 disabled:opacity-50'
-                      }`}
+                      className="rounded-xl px-7 py-3 text-sm font-semibold text-white shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                     >
                       {submitting ? 'Registering...' : `Register for ${registrationMode} Hackathon`}
                     </button>

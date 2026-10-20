@@ -5,15 +5,28 @@ import { motion } from 'framer-motion';
  * Precision Time Segment
  * Renders a clean, official digit card with smooth, non-blocking motion.
  */
-const TimeSegment = ({ value, label, isAccent = false }) => {
+const TimeSegment = ({ value, label, isAccent = false, eventTheme = null }) => {
   const formattedVal = String(Math.max(0, value || 0)).padStart(2, '0');
+
+  const accentStyle = isAccent && eventTheme ? {
+    backgroundColor: eventTheme.badgeBg,
+    borderColor: eventTheme.badgeBorder,
+    borderWidth: 1,
+  } : {};
+
+  const accentTextStyle = isAccent && eventTheme ? {
+    color: eventTheme.accent,
+  } : {};
 
   return (
     <div
+      style={accentStyle}
       className={`flex flex-col items-center justify-center min-w-[58px] sm:min-w-[68px] px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl border transition-colors duration-200 select-none ${
         isAccent
-          ? 'bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
-          : 'bg-white dark:bg-[#111115] border-slate-200/90 dark:border-zinc-800 shadow-sm'
+          ? eventTheme
+            ? 'shadow-xs'
+            : 'bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
+          : 'bg-white dark:bg-black border-slate-200/90 dark:border-zinc-800 shadow-sm'
       }`}
     >
       {/* Number Display with smooth micro-nudge */}
@@ -23,9 +36,12 @@ const TimeSegment = ({ value, label, isAccent = false }) => {
           initial={{ opacity: 0.5, y: -2 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
+          style={accentTextStyle}
           className={`font-mono text-2xl sm:text-3xl font-black tracking-tight tabular-nums leading-none ${
             isAccent
-              ? 'text-emerald-700 dark:text-emerald-400'
+              ? eventTheme
+                ? ''
+                : 'text-emerald-700 dark:text-emerald-400'
               : 'text-slate-900 dark:text-white'
           }`}
         >
@@ -35,9 +51,12 @@ const TimeSegment = ({ value, label, isAccent = false }) => {
 
       {/* Segment Label */}
       <span
+        style={accentTextStyle}
         className={`text-[9px] sm:text-[10px] uppercase font-bold tracking-widest mt-1 ${
           isAccent
-            ? 'text-emerald-700/90 dark:text-emerald-400/90'
+            ? eventTheme
+              ? ''
+              : 'text-emerald-700/90 dark:text-emerald-400/90'
             : 'text-slate-600 dark:text-zinc-300'
         }`}
       >
@@ -61,7 +80,7 @@ const ColonSeparator = () => (
  * Official Smooth Countdown Display
  * Self-manages its timer so parent pages NEVER re-render on every tick.
  */
-export default function FlipCountdown({ targetDate, timeLeft: externalTimeLeft }) {
+export default function FlipCountdown({ targetDate, timeLeft: externalTimeLeft, eventTheme = null }) {
   const [internalTimeLeft, setInternalTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -102,14 +121,14 @@ export default function FlipCountdown({ targetDate, timeLeft: externalTimeLeft }
   const tl = targetDate ? internalTimeLeft : (externalTimeLeft || internalTimeLeft);
 
   return (
-    <div className="inline-flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-2xl bg-slate-100/90 dark:bg-[#09090c] border border-slate-200/90 dark:border-zinc-800 shadow-inner backdrop-blur-sm">
-      <TimeSegment value={tl.days} label="Days" />
+    <div className="inline-flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-2xl bg-slate-100/90 dark:bg-black border border-slate-200/90 dark:border-zinc-800 shadow-inner backdrop-blur-sm">
+      <TimeSegment value={tl.days} label="Days" eventTheme={eventTheme} />
       <ColonSeparator />
-      <TimeSegment value={tl.hours} label="Hours" />
+      <TimeSegment value={tl.hours} label="Hours" eventTheme={eventTheme} />
       <ColonSeparator />
-      <TimeSegment value={tl.minutes} label="Mins" />
+      <TimeSegment value={tl.minutes} label="Mins" eventTheme={eventTheme} />
       <ColonSeparator />
-      <TimeSegment value={tl.seconds} label="Secs" isAccent={true} />
+      <TimeSegment value={tl.seconds} label="Secs" isAccent={true} eventTheme={eventTheme} />
     </div>
   );
 }
