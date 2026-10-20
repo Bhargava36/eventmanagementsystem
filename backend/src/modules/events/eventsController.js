@@ -432,11 +432,25 @@ const getAdminDashboardSummary = (req, res) => {
     });
 };
 
+const getPublicStats = (req, res) => {
+    eventsService.getPublicPlatformStats((err, stats) => {
+        if (err) {
+            console.error('getPublicStats error:', err);
+            return res.status(500).json({ message: 'Failed to fetch platform stats', error: err.message });
+        }
+        return res.status(200).json({
+            message: 'Platform stats fetched successfully',
+            stats
+        });
+    });
+};
+
 module.exports = {
     createEvent,
     getAllEvents,
     getEventById,
     getEventCount,
+    getPublicStats,
     updateEvent,
     deleteEvent,
     updateEventGuidelines,

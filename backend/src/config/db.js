@@ -319,6 +319,30 @@ const migrationQueries = [
     FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
     FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
     FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE
+)`,
+    `CREATE TABLE IF NOT EXISTS event_sponsors (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    EventId INT NOT NULL,
+    Name VARCHAR(255) NOT NULL,
+    LogoUrl LONGTEXT,
+    Tier VARCHAR(100) DEFAULT 'Partner',
+    WebsiteUrl VARCHAR(500) NULL,
+    DisplayOrder INT DEFAULT 0,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_sponsor_event (EventId),
+    FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `CREATE TABLE IF NOT EXISTS event_gallery (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    EventId INT NOT NULL,
+    ImageUrl LONGTEXT NOT NULL,
+    Caption VARCHAR(255) NULL,
+    Season VARCHAR(100) DEFAULT 'Highlights',
+    Year VARCHAR(50) NULL,
+    DisplayOrder INT DEFAULT 0,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_gallery_event (EventId),
+    FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 

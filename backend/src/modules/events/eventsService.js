@@ -194,11 +194,16 @@ const getEventById = (id, callback) => {
             ev.EventStatus = getEventStatus(ev.StartDate, ev.EndDate);
             ev.Posters = parsePosters(ev.Posters);
 
-            const [[descRows], [facRows], [reqRows]] = await Promise.all([
+            const [[descRows], [facRows], [reqRows], [sponsorRows], [galleryRows]] = await Promise.all([
                 conn.promise().query('SELECT Description FROM event_descriptions WHERE EventId = ?', [id]),
                 conn.promise().query('SELECT Phase, Facility FROM event_facilities WHERE EventId = ? ORDER BY Id ASC', [id]),
-                conn.promise().query('SELECT Phase, Requirement FROM event_requirements WHERE EventId = ? ORDER BY Id ASC', [id])
+                conn.promise().query('SELECT Phase, Requirement FROM event_requirements WHERE EventId = ? ORDER BY Id ASC', [id]),
+                conn.promise().query('SELECT Id, EventId, Name, LogoUrl, Tier, WebsiteUrl, DisplayOrder FROM event_sponsors WHERE EventId = ? ORDER BY DisplayOrder ASC, Id ASC', [id]),
+                conn.promise().query('SELECT Id, EventId, ImageUrl, Caption, Season, Year, DisplayOrder FROM event_gallery WHERE EventId = ? ORDER BY Season ASC, DisplayOrder ASC, Id DESC', [id])
             ]);
+
+            ev.Sponsors = sponsorRows || [];
+            ev.Gallery = galleryRows || [];
 
             if (descRows.length > 0 && descRows[0].Description !== null) {
                 ev.Description = descRows[0].Description;
@@ -455,11 +460,72 @@ const getAdminDashboardSummary = (eventId, callback) => {
         });
 };
 
+const getPublicPlatformStats = (callback) => {
+    const query = `
+        SELECT 
+            (SELECT COUNT(*) FROM events) AS eventCount,
+            (SELECT COUNT(*) FROM users) AS userCount,
+            (SELECT COUNT(*) FROM registered_teams) AS teamCount,
+            (SELECT COUNT(*) FROM registered_team_members) AS memberCount
+    `;
+
+    db.query(query, (err, countResults) => {
+        if (err) {
+            return callback(err, null);
+        }
+
+        const prizeQuery = `SELECT PrizeMoney, VirtualPrizeMoney, PhysicalPrizeMoney FROM events`;
+        db.query(prizeQuery, (prizeErr, prizeResults) => {
+            let totalPrize = 0;
+            if (!prizeErr && Array.isArray(prizeResults)) {
+                prizeResults.forEach(row => {
+                    let amount = 0;
+                    if (row.PrizeMoney) {
+                        const num = parseFloat(String(row.PrizeMoney).replace(/[^0-9.]/g, ''));
+                        if (!isNaN(num) && num > 0) amount = num;
+                    } else {
+                        const vNum = parseFloat(String(row.VirtualPrizeMoney || '').replace(/[^0-9.]/g, '')) || 0;
+                        const pNum = parseFloat(String(row.PhysicalPrizeMoney || '').replace(/[^0-9.]/g, '')) || 0;
+                        amount = vNum + pNum;
+                    }
+                    totalPrize += amount;
+                });
+            }
+
+            const counts = countResults[0] || {};
+            const totalBuilders = (counts.userCount || 0) + (counts.memberCount || 0);
+
+            let prizeFormatted = '₹0';
+            if (totalPrize >= 10000000) {
+                prizeFormatted = `₹${(totalPrize / 10000000).toFixed(1)}Cr+`;
+            } else if (totalPrize >= 100000) {
+                prizeFormatted = `₹${(totalPrize / 100000).toFixed(totalPrize % 100000 === 0 ? 0 : 1)}L+`;
+            } else if (totalPrize >= 1000) {
+                prizeFormatted = `₹${(totalPrize / 1000).toFixed(0)}K+`;
+            } else if (totalPrize > 0) {
+                prizeFormatted = `₹${totalPrize.toLocaleString()}+`;
+            }
+
+            return callback(null, {
+                eventsCount: counts.eventCount || 0,
+                eventsFormatted: `${counts.eventCount || 0}+`,
+                buildersCount: totalBuilders,
+                buildersFormatted: totalBuilders > 0 ? `${totalBuilders}+` : '0+',
+                teamsCount: counts.teamCount || 0,
+                totalPrizeMoney: totalPrize,
+                prizesFormatted: prizeFormatted,
+                freeForStudents: '100%'
+            });
+        });
+    });
+};
+
 module.exports = {
     createEvent,
     getAllEvents,
     getEventById,
     getEventCount,
+    getPublicPlatformStats,
     getEventStatus,
     updateEventById,
     deleteEvent,

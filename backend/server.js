@@ -20,6 +20,8 @@ const timelineRoutes = require("./src/modules/event_timelines/timelineRoutes");
 const accRoutes = require( "./src/modules/accommodation/accRoute");
 const idCardRoutes = require("./src/modules/id_cards/idRoutes");
 const physicalServicesRoutes = require("./src/modules/physical_services/physicalServicesRoute");
+const sponsorRoutes = require("./src/modules/sponsors/sponsorRoutes");
+const galleryRoutes = require("./src/modules/gallery/galleryRoutes");
 
 const app = express();
 
@@ -45,6 +47,8 @@ app.use("/api/event_timelines", timelineRoutes);
 app.use("/api/accommodation", accRoutes);
 app.use("/api/id-cards", idCardRoutes);
 app.use("/api/physical-services", physicalServicesRoutes);
+app.use("/api/sponsors", sponsorRoutes);
+app.use("/api/gallery", galleryRoutes);
 
 
 app.listen(3000, () => {

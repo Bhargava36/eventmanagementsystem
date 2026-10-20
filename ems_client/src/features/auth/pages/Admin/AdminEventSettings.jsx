@@ -24,10 +24,14 @@ import {
   X,
   Milestone,
   Layers,
-  FileText
+  FileText,
+  Award,
+  Camera
 } from 'lucide-react';
 import useToast from '../../../../Hooks/useToast';
 import useAuth from '../../../../Hooks/useAuth';
+import EventSponsorsManager from '../../../../components/Organisms/EventSponsorsManager';
+import EventGalleryManager from '../../../../components/Organisms/EventGalleryManager';
 
 export default function AdminEventSettings() {
   const toast = useToast();
@@ -699,6 +703,18 @@ export default function AdminEventSettings() {
                   icon: Sliders,
                   status: null,
                 },
+                {
+                  id: 'sponsors',
+                  label: 'Sponsors & Partners',
+                  icon: Award,
+                  status: null,
+                },
+                {
+                  id: 'gallery',
+                  label: 'Event Gallery',
+                  icon: Camera,
+                  status: null,
+                },
               ].map((tab) => {
                 const isActive = activeTab === tab.id;
                 const TabIcon = tab.icon;
@@ -1162,6 +1178,18 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'sponsors' && (
+                <div className="p-6 sm:p-8">
+                  <EventSponsorsManager eventId={selectedEventId} />
+                </div>
+              )}
+
+              {activeTab === 'gallery' && (
+                <div className="p-6 sm:p-8">
+                  <EventGalleryManager eventId={selectedEventId} />
                 </div>
               )}
             </div>

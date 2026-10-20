@@ -5,6 +5,7 @@ const eventsController = require('./eventsController');
 router.post('/create', eventsController.createEvent);
 router.get('/', eventsController.getAllEvents);
 router.get('/count', eventsController.getEventCount);
+router.get('/public-stats', eventsController.getPublicStats);
 router.get('/:id/dashboard-summary', eventsController.getAdminDashboardSummary);
 router.get('/:id', eventsController.getEventById);
 router.put('/:id/virtual-status', eventsController.updateVirtualStatus);

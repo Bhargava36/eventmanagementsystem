@@ -5,6 +5,9 @@ import useTheme from '../../../Hooks/useTheme';
 import { getEventTheme } from '../../../lib/utils';
 import FlipCountdown from '../../../components/Molecules/FlipCountdown';
 import TrackTimelineSection from '../../../components/Molecules/TrackTimelineSection';
+import EventMediaSlider from '../../../components/Molecules/EventMediaSlider';
+import EventGallerySection from '../../../components/Molecules/EventGallerySection';
+import EventSponsorsSection from '../../../components/Molecules/EventSponsorsSection';
 import {
   ArrowLeft,
   Calendar,
@@ -370,6 +373,8 @@ function PublicEventDetails() {
   const [prizes, setPrizes] = useState([]);
   const [coreTeam, setCoreTeam] = useState([]);
   const [timelines, setTimelines] = useState([]);
+  const [sponsors, setSponsors] = useState([]);
+  const [gallery, setGallery] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -389,16 +394,24 @@ function PublicEventDetails() {
       setLoading(true);
       setError(null);
 
-      const [eventRes, prizesRes, teamRes, timelineRes] = await Promise.allSettled([
+      const [eventRes, prizesRes, teamRes, timelineRes, sponsorsRes, galleryRes] = await Promise.allSettled([
         fetch(`http://localhost:3000/api/events/${id}`),
         fetch(`http://localhost:3000/api/event_prizes/event/${id}`),
         fetch(`http://localhost:3000/api/core_team/event/${id}`),
-        fetch(`http://localhost:3000/api/event_timelines/event/${id}`)
+        fetch(`http://localhost:3000/api/event_timelines/event/${id}`),
+        fetch(`http://localhost:3000/api/sponsors/event/${id}`),
+        fetch(`http://localhost:3000/api/gallery/event/${id}`)
       ]);
 
       if (eventRes.status === 'fulfilled' && eventRes.value.ok) {
         const evData = await eventRes.value.json();
         setEvent(evData.event || null);
+        if (evData.event?.Sponsors && (!sponsorsRes.value || !sponsorsRes.value.ok)) {
+          setSponsors(evData.event.Sponsors);
+        }
+        if (evData.event?.Gallery && (!galleryRes.value || !galleryRes.value.ok)) {
+          setGallery(evData.event.Gallery);
+        }
 
         const mode = (evData.event?.HackathonMode || '').toLowerCase();
         if (mode === 'virtual') {
@@ -423,6 +436,16 @@ function PublicEventDetails() {
       if (timelineRes.status === 'fulfilled' && timelineRes.value.ok) {
         const tlData = await timelineRes.value.json();
         setTimelines(Array.isArray(tlData) ? tlData : (tlData.timelines || []));
+      }
+
+      if (sponsorsRes.status === 'fulfilled' && sponsorsRes.value.ok) {
+        const spData = await sponsorsRes.value.json();
+        setSponsors(spData.sponsors || []);
+      }
+
+      if (galleryRes.status === 'fulfilled' && galleryRes.value.ok) {
+        const glData = await galleryRes.value.json();
+        setGallery(glData.gallery || []);
       }
     } catch (err) {
       setError(err.message || 'Failed to load event details');
@@ -519,6 +542,22 @@ function PublicEventDetails() {
     }
     return url;
   };
+
+  const sliderImages = useMemo(() => {
+    const list = [];
+    if (event?.Posters && Array.isArray(event.Posters)) {
+      list.push(...event.Posters);
+    } else if (typeof event?.Posters === 'string') {
+      try {
+        const parsed = JSON.parse(event.Posters);
+        if (Array.isArray(parsed)) list.push(...parsed);
+        else list.push(parsed);
+      } catch {
+        list.push(event.Posters);
+      }
+    }
+    return list;
+  }, [event?.Posters]);
 
   const effectiveVirtualRegEnd = useMemo(() => {
     return event?.VirtualRegistrationEnd || event?.RegistrationEnd;
@@ -942,35 +981,11 @@ function PublicEventDetails() {
               </div>
 
               <div className="lg:col-span-5">
-                <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-lg group bg-slate-100 dark:bg-black aspect-[16/10] sm:aspect-[16/9] lg:aspect-[4/3] w-full flex items-center justify-center">
-                  {posterImg ? (
-                    <img
-                      src={posterImg}
-                      alt={event.EventName}
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div
-                      className="w-full h-full flex flex-col items-center justify-center p-6 text-center"
-                      style={{
-                        backgroundColor: eventTheme.subtleBg,
-                      }}
-                    >
-                      <div
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-inner mb-3"
-                        style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}
-                      >
-                        <Trophy className="h-8 w-8" />
-                      </div>
-                      <span className="text-base font-bold text-slate-800 dark:text-white">
-                        {event.EventName}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
-                        {event.EventType || 'Hackathon'}
-                      </span>
-                    </div>
-                  )}
-                </div>
+                <EventMediaSlider
+                  images={sliderImages}
+                  eventName={event.EventName}
+                  eventTheme={eventTheme}
+                />
               </div>
             </div>
           </div>
@@ -1603,6 +1618,20 @@ function PublicEventDetails() {
                 </AnimatePresence>
               </div>
             </div>
+
+            {/* Event Photo Gallery */}
+            <EventGallerySection
+              gallery={gallery}
+              eventName={event.EventName}
+              eventTheme={eventTheme}
+            />
+
+            {/* Event Sponsors & Official Partners */}
+            <EventSponsorsSection
+              sponsors={sponsors}
+              eventName={event.EventName}
+              eventTheme={eventTheme}
+            />
 
             {coreTeam.length > 0 && (
               <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6">

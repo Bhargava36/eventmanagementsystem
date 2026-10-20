@@ -1,5 +1,5 @@
 import { Route, Routes, Navigate } from 'react-router-dom';
-import HeroSection from '../components/ui/HeroSection';
+import HomePage from '../features/public/pages/HomePage';
 import Login from '../features/auth/pages/SuperAdmin/Login';
 import Register from '../features/auth/pages/SuperAdmin/Register';
 import Sidebar from '../components/Organisms/SideBar';
@@ -48,7 +48,7 @@ function App() {
     <div>
       <Routes>
         <Route element={<PublicLayout />}>
-          <Route path="/" element={<HeroSection />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/events" element={<ExploreEvents />} />
           <Route path="/explore" element={<ExploreEvents />} />
           <Route path="/events/:id" element={<PublicEventDetails />} />

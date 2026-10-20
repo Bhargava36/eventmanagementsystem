@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '../../../../components/Organisms/Footer';
+import EventSponsorsManager from '../../../../components/Organisms/EventSponsorsManager';
+import EventGalleryManager from '../../../../components/Organisms/EventGalleryManager';
 
 import {
     ArrowLeft,
@@ -978,6 +980,12 @@ function EventInfo() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Event Sponsors Manager */}
+                                <EventSponsorsManager eventId={id} />
+
+                                {/* Event Season Gallery & Highlights Manager */}
+                                <EventGalleryManager eventId={id} />
 
                                 <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
                                     <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
@@ -2434,6 +2442,12 @@ function EventInfo() {
                             </div>
 
                         </motion.div>
+
+                        {/* Event Sponsors Manager in View Mode */}
+                        <EventSponsorsManager eventId={id} />
+
+                        {/* Season Archives & Highlights Gallery in View Mode */}
+                        <EventGalleryManager eventId={id} />
 
                     </div>
 

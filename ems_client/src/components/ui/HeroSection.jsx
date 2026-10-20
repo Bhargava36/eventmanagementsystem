@@ -151,8 +151,10 @@ const DotMatrix = ({
             float show_offset = random(st2);
             float rand = random(st2 * floor((u_time / frequency) + show_offset + frequency));
             opacity *= u_opacities[int(rand * 10.0)];
-            opacity *= 1.0 - step(u_dot_size / u_total_size, fract(st.x / u_total_size));
-            opacity *= 1.0 - step(u_dot_size / u_total_size, fract(st.y / u_total_size));
+            vec2 cell_coord = fract(st / u_total_size) * u_total_size;
+            float radius = u_dot_size * 0.5;
+            float dist_to_center = length(cell_coord - vec2(radius));
+            opacity *= 1.0 - smoothstep(radius - 0.75, radius + 0.25, dist_to_center);
 
             vec3 color = u_colors[int(show_offset * 6.0)];
 
@@ -333,6 +335,25 @@ const HeroSection = ({ className }) => {
   const codeInputRefs = useRef([]);
   const [initialCanvasVisible, setInitialCanvasVisible] = useState(true);
   const [reverseCanvasVisible, setReverseCanvasVisible] = useState(false);
+  const [stats, setStats] = useState({
+    eventsFormatted: '5+',
+    buildersFormatted: '29+',
+    prizesFormatted: '₹7L+',
+    freeForStudents: '100%',
+  });
+
+  useEffect(() => {
+    fetch('http://localhost:3000/api/events/public-stats')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.stats) {
+          setStats(data.stats);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch realtime platform stats:', err);
+      });
+  }, []);
 
   const handleEmailSubmit = (e) => {
     e.preventDefault();
@@ -500,22 +521,30 @@ const HeroSection = ({ className }) => {
                       </Link>
                     </div>
 
-                    {/* Subtle Metrics Strip */}
+                    {/* Subtle Metrics Strip with Real-time Database Counts */}
                     <div className="pt-8 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 max-w-2xl mx-auto border-t border-black/10 dark:border-white/10 mt-6 text-center">
                       <div>
-                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">50+</div>
+                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">
+                          {stats.eventsFormatted || `${stats.eventsCount || 0}+`}
+                        </div>
                         <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Hackathons Hosted</div>
                       </div>
                       <div>
-                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">10K+</div>
+                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">
+                          {stats.buildersFormatted || `${stats.buildersCount || 0}+`}
+                        </div>
                         <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Builders Connected</div>
                       </div>
                       <div>
-                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">₹25L+</div>
+                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">
+                          {stats.prizesFormatted || '₹0'}
+                        </div>
                         <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Prizes Awarded</div>
                       </div>
                       <div>
-                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">100%</div>
+                        <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">
+                          {stats.freeForStudents || '100%'}
+                        </div>
                         <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Free for Students</div>
                       </div>
                     </div>
