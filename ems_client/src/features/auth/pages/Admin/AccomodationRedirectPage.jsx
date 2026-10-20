@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   BedDouble,
   ArrowLeft,
+  ArrowRight,
   Users,
   Clock,
   Mars,

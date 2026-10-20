@@ -10,7 +10,11 @@ const createUser = async (UserName, Email, Password, Mobile, Gender, College, Lo
                 return callback(err, null);
             }
 
-            return callback(null, result);
+            const newUserId = result.insertId;
+            const linkSql = `UPDATE registered_team_members SET UserId = ? WHERE LOWER(MemberEmail) = LOWER(?) AND UserId IS NULL`;
+            db.query(linkSql, [newUserId, Email], () => {
+                return callback(null, result);
+            });
         });
     }
     catch (err) {
@@ -28,6 +32,12 @@ const loginUser = (Email, callback) => {
     db.query(query, [Email], (err, result) => {
         if (err) {
             return callback(err, null);
+        }
+
+        if (result && result.length > 0) {
+            const u = result[0];
+            const linkSql = `UPDATE registered_team_members SET UserId = ? WHERE LOWER(MemberEmail) = LOWER(?) AND UserId IS NULL`;
+            db.query(linkSql, [u.Id, Email], () => {});
         }
 
         return callback(null, result);
@@ -67,7 +77,12 @@ const getUserById = (id, callback) => {
 };
 
 const getUserCount = (callback) => {
-    const query = `SELECT COUNT(*) AS userCount FROM users WHERE RoleId = 3`;
+    const query = `
+        SELECT 
+            (SELECT COUNT(*) FROM users WHERE RoleId = 3) AS userCount,
+            (SELECT COUNT(*) FROM registered_team_members) AS totalMembersCount,
+            COALESCE((SELECT COUNT(DISTINCT tm.Id) FROM registered_team_members tm JOIN event_registrations er ON tm.TeamId = er.TeamId), 0) AS registeredMembersCount
+    `;
     db.query(query, (err, result) => {
         if (err) {
             return callback(err, null);

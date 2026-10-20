@@ -139,7 +139,11 @@ const getUserCount = (req, res) => {
         }
 
         res.status(200).json({
-            count: result.userCount
+            count: result.userCount,
+            userCount: result.userCount,
+            membersCount: result.registeredMembersCount || result.totalMembersCount || 0,
+            totalMembersCount: result.totalMembersCount || 0,
+            registeredMembersCount: result.registeredMembersCount || 0
         });
     });
 };

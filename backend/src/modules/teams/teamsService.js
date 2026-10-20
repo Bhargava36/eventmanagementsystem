@@ -12,15 +12,30 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
 
     const leadEmailClean = String(TeamLeadEmail).trim().toLowerCase();
     const rawMembers = Array.isArray(MemberEmails) ? MemberEmails : [];
-    const memberEmailsClean = rawMembers
-        .map((e) => (typeof e === 'string' ? e.trim().toLowerCase() : ''))
-        .filter(Boolean);
+    const memberDetails = rawMembers.map((m) => {
+        if (typeof m === 'string') {
+            const email = m.trim().toLowerCase();
+            return email ? { Name: '', Email: email, College: '', State: '', Gender: 'Male' } : null;
+        } else if (m && typeof m === 'object') {
+            const email = (m.Email || m.email || '').trim().toLowerCase();
+            return email ? {
+                Name: (m.Name || m.UserName || m.name || '').trim(),
+                Email: email,
+                College: (m.College || m.college || '').trim(),
+                State: (m.State || m.state || '').trim(),
+                Gender: (m.Gender || m.gender || 'Male')
+            } : null;
+        }
+        return null;
+    }).filter(Boolean);
+
+    const memberEmailsClean = memberDetails.map((m) => m.Email);
 
     // Check duplicate emails in the form submission
     const allEmails = [leadEmailClean, ...memberEmailsClean];
     const uniqueEmails = new Set(allEmails);
     if (uniqueEmails.size !== allEmails.length) {
-        const err = new Error('Duplicate emails detected. Each team member (including Team Lead) must have a unique registered email.');
+        const err = new Error('Duplicate emails detected. Each team member (including Team Lead) must have a unique email.');
         err.status = 400;
         return callback(err, null);
     }
@@ -106,133 +121,157 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
 
             const leader = leadRows[0];
 
-        // 2. Check if Team Lead is ALREADY registered in this Event for the same track
-        const checkLeadRegQuery = `
-            SELECT t.TeamName, u.Email, u.UserName, er.ParticipationMode
-            FROM registered_team_members tm
-            INNER JOIN registered_teams t ON tm.TeamId = t.Id
-            INNER JOIN users u ON tm.UserId = u.Id
-            LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
-            WHERE t.EventId = ? AND tm.UserId = ?
-        `;
-        db.query(checkLeadRegQuery, [EventId, leader.Id], (err, existingLeadReg) => {
-            if (err) return callback(err, null);
-            if (existingLeadReg && existingLeadReg.length > 0) {
-                const leadConflict = existingLeadReg.find((r) => {
-                    if (!ParticipationMode) return true;
-                    if (!r.ParticipationMode) return true;
-                    return r.ParticipationMode.toLowerCase() === ParticipationMode.toLowerCase();
-                });
-                if (leadConflict) {
-                    const trackText = ParticipationMode ? `for the ${ParticipationMode} track of` : 'for';
-                    const errAlready = new Error(
-                        `Team Lead (${leader.Email}) is already registered ${trackText} this event in team "${leadConflict.TeamName}". A participant can only register once per track.`
-                    );
-                    errAlready.status = 400;
-                    return callback(errAlready, null);
+            // 2. Check if Team Lead is ALREADY registered in this Event for the same track
+            const checkLeadRegQuery = `
+                SELECT t.TeamName, u.Email, u.UserName, er.ParticipationMode
+                FROM registered_team_members tm
+                INNER JOIN registered_teams t ON tm.TeamId = t.Id
+                INNER JOIN users u ON tm.UserId = u.Id
+                LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
+                WHERE t.EventId = ? AND tm.UserId = ?
+            `;
+            db.query(checkLeadRegQuery, [EventId, leader.Id], (err, existingLeadReg) => {
+                if (err) return callback(err, null);
+                if (existingLeadReg && existingLeadReg.length > 0) {
+                    const leadConflict = existingLeadReg.find((r) => {
+                        if (!ParticipationMode) return true;
+                        if (!r.ParticipationMode) return true;
+                        return r.ParticipationMode.toLowerCase() === ParticipationMode.toLowerCase();
+                    });
+                    if (leadConflict) {
+                        const trackText = ParticipationMode ? `for the ${ParticipationMode} track of` : 'for';
+                        const errAlready = new Error(
+                            `Team Lead (${leader.Email}) is already registered ${trackText} this event in team "${leadConflict.TeamName}". A participant can only register once per track.`
+                        );
+                        errAlready.status = 400;
+                        return callback(errAlready, null);
+                    }
                 }
-            }
 
-            // 3. If there are team members, check them
-            const proceedWithMembers = (membersList) => {
-                // Check if any member is ALREADY registered in this Event for the same track
-                if (membersList.length > 0) {
-                    const memberUserIds = membersList.map((m) => m.Id);
-                    const checkMemberRegQuery = `
-                        SELECT t.TeamName, u.Email, u.UserName, er.ParticipationMode
-                        FROM registered_team_members tm
-                        INNER JOIN registered_teams t ON tm.TeamId = t.Id
-                        INNER JOIN users u ON tm.UserId = u.Id
-                        LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
-                        WHERE t.EventId = ? AND tm.UserId IN (?)
-                    `;
-                    db.query(checkMemberRegQuery, [EventId, memberUserIds], (err, existingMemberReg) => {
-                        if (err) return callback(err, null);
-                        if (existingMemberReg && existingMemberReg.length > 0) {
-                            const memberConflict = existingMemberReg.find((r) => {
-                                if (!ParticipationMode) return true;
-                                if (!r.ParticipationMode) return true;
-                                return r.ParticipationMode.toLowerCase() === ParticipationMode.toLowerCase();
-                            });
-                            if (memberConflict) {
-                                const trackText = ParticipationMode ? `for the ${ParticipationMode} track of` : 'for';
-                                const errMemAlready = new Error(
-                                    `Team member (${memberConflict.Email}) is already registered ${trackText} this event in team "${memberConflict.TeamName}". A participant can only register once per track.`
-                                );
-                                errMemAlready.status = 400;
-                                return callback(errMemAlready, null);
-                            }
+                // 3. Process team members (both EMS users and outside participants)
+                const checkAndProceedWithMembers = (foundUsersMap) => {
+                    const membersList = memberDetails.map((m) => {
+                        const u = foundUsersMap.get(m.Email);
+                        return {
+                            UserId: u ? u.Id : null,
+                            Name: u ? (u.UserName || m.Name) : m.Name,
+                            Email: m.Email,
+                            College: u ? (u.College || m.College) : m.College,
+                            State: u ? (u.State || m.State) : m.State,
+                            Gender: u ? (u.Gender || m.Gender || 'Male') : (m.Gender || 'Male')
+                        };
+                    });
+
+                    const memberUserIds = membersList.filter((m) => m.UserId).map((m) => m.UserId);
+                    const allMemberEmails = membersList.map((m) => m.Email);
+
+                    if (membersList.length > 0) {
+                        let checkMemberRegQuery = `
+                            SELECT t.TeamName, tm.MemberEmail, u.Email, u.UserName, er.ParticipationMode
+                            FROM registered_team_members tm
+                            INNER JOIN registered_teams t ON tm.TeamId = t.Id
+                            LEFT JOIN users u ON tm.UserId = u.Id
+                            LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
+                            WHERE t.EventId = ? AND (
+                        `;
+                        const queryParams = [EventId];
+                        if (memberUserIds.length > 0) {
+                            checkMemberRegQuery += ` tm.UserId IN (?) OR LOWER(tm.MemberEmail) IN (?) ) `;
+                            queryParams.push(memberUserIds, allMemberEmails);
+                        } else {
+                            checkMemberRegQuery += ` LOWER(tm.MemberEmail) IN (?) ) `;
+                            queryParams.push(allMemberEmails);
                         }
 
-                        insertTeamAndMembers(leader, membersList);
-                    });
-                } else {
-                    insertTeamAndMembers(leader, []);
-                }
-            };
+                        db.query(checkMemberRegQuery, queryParams, (err, existingMemberReg) => {
+                            if (err) return callback(err, null);
+                            if (existingMemberReg && existingMemberReg.length > 0) {
+                                const memberConflict = existingMemberReg.find((r) => {
+                                    if (!ParticipationMode) return true;
+                                    if (!r.ParticipationMode) return true;
+                                    return r.ParticipationMode.toLowerCase() === ParticipationMode.toLowerCase();
+                                });
+                                if (memberConflict) {
+                                    const trackText = ParticipationMode ? `for the ${ParticipationMode} track of` : 'for';
+                                    const conflictEmail = memberConflict.Email || memberConflict.MemberEmail;
+                                    const errMemAlready = new Error(
+                                        `Team member (${conflictEmail}) is already registered ${trackText} this event in team "${memberConflict.TeamName}". A participant can only register once per track.`
+                                    );
+                                    errMemAlready.status = 400;
+                                    return callback(errMemAlready, null);
+                                }
+                            }
 
-            const insertTeamAndMembers = (leader, membersList) => {
-                const insertTeamSql = `
-                    INSERT INTO registered_teams (TeamName, TeamLeadUserId, TeamSize, College, State, EventId)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                `;
-                const teamValues = [
-                    TeamName,
-                    leader.Id,
-                    Number(TeamSize),
-                    leader.College || '',
-                    leader.State || '',
-                    Number(EventId)
-                ];
+                            insertTeamAndMembers(leader, membersList);
+                        });
+                    } else {
+                        insertTeamAndMembers(leader, []);
+                    }
+                };
 
-                db.query(insertTeamSql, teamValues, (err, teamResult) => {
-                    if (err) return callback(err, null);
-                    const newTeamId = teamResult.insertId;
-
-                    // Insert Team Lead into registered_team_members
-                    const memberInserts = [
-                        [leader.Id, newTeamId, 'TeamLead', leader.Gender || 'Male']
+                const insertTeamAndMembers = (leader, membersList) => {
+                    const insertTeamSql = `
+                        INSERT INTO registered_teams (TeamName, TeamLeadUserId, TeamSize, College, State, EventId)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    `;
+                    const teamValues = [
+                        TeamName,
+                        leader.Id,
+                        Number(TeamSize),
+                        leader.College || '',
+                        leader.State || '',
+                        Number(EventId)
                     ];
 
-                    // Insert other members into registered_team_members
-                    for (const m of membersList) {
-                        memberInserts.push([m.Id, newTeamId, 'TeamMember', m.Gender || 'Male']);
-                    }
-
-                    const insertMembersSql = `
-                        INSERT INTO registered_team_members (UserId, TeamId, Role, Gender)
-                        VALUES ?
-                    `;
-                    db.query(insertMembersSql, [memberInserts], (err) => {
+                    db.query(insertTeamSql, teamValues, (err, teamResult) => {
                         if (err) return callback(err, null);
-                        return callback(null, { teamId: newTeamId });
+                        const newTeamId = teamResult.insertId;
+
+                        // Insert Team Lead into registered_team_members
+                        const memberInserts = [
+                            [leader.Id, newTeamId, 'TeamLead', leader.Gender || 'Male', leader.UserName || '', leader.Email, leader.College || '', leader.State || '']
+                        ];
+
+                        // Insert other members into registered_team_members (whether they have a UserId or are external)
+                        for (const m of membersList) {
+                            memberInserts.push([
+                                m.UserId || null,
+                                newTeamId,
+                                'TeamMember',
+                                m.Gender || 'Male',
+                                m.Name || '',
+                                m.Email,
+                                m.College || '',
+                                m.State || ''
+                            ]);
+                        }
+
+                        const insertMembersSql = `
+                            INSERT INTO registered_team_members (UserId, TeamId, Role, Gender, MemberName, MemberEmail, MemberCollege, MemberState)
+                            VALUES ?
+                        `;
+                        db.query(insertMembersSql, [memberInserts], (err) => {
+                            if (err) return callback(err, null);
+                            return callback(null, { teamId: newTeamId });
+                        });
                     });
-                });
-            };
+                };
 
-            if (memberEmailsClean.length > 0) {
-                const membersQuery = `SELECT Id, UserName, Email, College, State, Gender FROM users WHERE LOWER(Email) IN (?)`;
-                db.query(membersQuery, [memberEmailsClean], (err, memberRows) => {
-                    if (err) return callback(err, null);
-                    const foundRows = memberRows || [];
-                    const foundEmails = new Set(foundRows.map((r) => r.Email.toLowerCase()));
-                    const missingEmails = memberEmailsClean.filter((e) => !foundEmails.has(e));
-
-                    if (missingEmails.length > 0) {
-                        const errMissing = new Error(
-                            `Team member email(s) not registered in EMS: ${missingEmails.join(', ')}. All members must have an active EMS account.`
-                        );
-                        errMissing.status = 404;
-                        return callback(errMissing, null);
-                    }
-
-                    proceedWithMembers(foundRows);
-                });
-            } else {
-                proceedWithMembers([]);
-            }
+                if (memberEmailsClean.length > 0) {
+                    const membersQuery = `SELECT Id, UserName, Email, College, State, Gender FROM users WHERE LOWER(Email) IN (?)`;
+                    db.query(membersQuery, [memberEmailsClean], (err, memberRows) => {
+                        if (err) return callback(err, null);
+                        const foundUsersMap = new Map();
+                        (memberRows || []).forEach((u) => {
+                            foundUsersMap.set(u.Email.toLowerCase(), u);
+                        });
+                        checkAndProceedWithMembers(foundUsersMap);
+                    });
+                } else {
+                    checkAndProceedWithMembers(new Map());
+                }
+            });
         });
-    });
     });
 };
 
@@ -257,7 +296,7 @@ const getTeamById = (id, callback) => {
             return callback(null, []);
         }
 
-        const memberQuery = `SELECT tm.UserId, tm.Role, tm.Gender, tm.CreatedAt, u.UserName, u.Email, u.College, u.State FROM registered_team_members tm INNER JOIN users u ON tm.UserId = u.Id WHERE tm.TeamId = ? ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, u.UserName`;
+        const memberQuery = `SELECT tm.UserId, tm.Role, tm.Gender, tm.CreatedAt, COALESCE(u.UserName, tm.MemberName, 'Member') AS UserName, COALESCE(u.Email, tm.MemberEmail, '') AS Email, COALESCE(u.College, tm.MemberCollege, '') AS College, COALESCE(u.State, tm.MemberState, '') AS State FROM registered_team_members tm LEFT JOIN users u ON tm.UserId = u.Id WHERE tm.TeamId = ? ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, UserName`;
         db.query(memberQuery, [id], (mErr, memberResult) => {
             if (mErr) {
                 return callback(null, result);
@@ -323,6 +362,24 @@ const getTeamsCount = (callback) => {
     });
 };
 
+const getMembersCount = (callback) => {
+    const query = `
+        SELECT 
+            COUNT(*) AS totalMembersCount,
+            COUNT(DISTINCT LOWER(MemberEmail)) AS uniqueMembersCount,
+            COALESCE((
+                SELECT COUNT(DISTINCT tm.Id) 
+                FROM registered_team_members tm 
+                JOIN event_registrations er ON tm.TeamId = er.TeamId
+            ), 0) AS registeredMembersCount
+        FROM registered_team_members
+    `;
+    db.query(query, (err, result) => {
+        if (err) return callback(err, null);
+        return callback(null, result[0]);
+    });
+};
+
 const getTeamCountByEvent = (EventId, callback) => {
     const query = ` SELECT COUNT(*) AS teamCount FROM registered_teams WHERE EventId = ?`;
     db.query(query, [EventId], (err, result) => {
@@ -335,29 +392,71 @@ const getTeamCountByEvent = (EventId, callback) => {
 };
 
 const getMyTeams = (userId, callback) => {
-    const query = `SELECT registered_teams.Id AS TeamId, registered_teams.TeamName, registered_teams.TeamSize, registered_teams.EventId, registered_teams.College, registered_teams.State, events.EventName, events.StartDate, events.EndDate, registered_team_members.Role, event_registrations.Id AS RegistrationId, event_registrations.Status AS RegistrationStatus, event_registrations.ParticipationMode FROM registered_team_members INNER JOIN registered_teams ON registered_team_members.TeamId = registered_teams.Id INNER JOIN events ON registered_teams.EventId = events.Id LEFT JOIN event_registrations ON event_registrations.TeamId = registered_teams.Id AND event_registrations.EventId = registered_teams.EventId WHERE registered_team_members.UserId = ? ORDER BY events.StartDate DESC`;
+    const getUserSql = `SELECT Id, Email FROM users WHERE Id = ? LIMIT 1`;
+    db.query(getUserSql, [userId], (uErr, uRows) => {
+        const userEmail = (uRows && uRows.length > 0 && uRows[0].Email) ? uRows[0].Email.toLowerCase() : null;
 
-    db.query(query, [userId], (err, result) => {
-        if (err) {
-            return callback(err, null);
+        // Auto-link any team memberships by email that didn't have UserId set
+        if (userEmail) {
+            const linkSql = `UPDATE registered_team_members SET UserId = ? WHERE LOWER(MemberEmail) = ? AND UserId IS NULL`;
+            db.query(linkSql, [userId, userEmail], () => {
+                runQuery();
+            });
+        } else {
+            runQuery();
         }
 
-        callback(null, result);
+        function runQuery() {
+            const query = `
+                SELECT DISTINCT 
+                    registered_teams.Id AS TeamId, 
+                    registered_teams.TeamName, 
+                    registered_teams.TeamSize, 
+                    registered_teams.EventId, 
+                    registered_teams.College, 
+                    registered_teams.State, 
+                    events.EventName, 
+                    events.StartDate, 
+                    events.EndDate, 
+                    registered_team_members.Role, 
+                    event_registrations.Id AS RegistrationId, 
+                    event_registrations.Status AS RegistrationStatus, 
+                    event_registrations.ParticipationMode 
+                FROM registered_team_members 
+                INNER JOIN registered_teams ON registered_team_members.TeamId = registered_teams.Id 
+                INNER JOIN events ON registered_teams.EventId = events.Id 
+                LEFT JOIN event_registrations ON event_registrations.TeamId = registered_teams.Id AND event_registrations.EventId = registered_teams.EventId 
+                WHERE registered_team_members.UserId = ? 
+                   ${userEmail ? `OR LOWER(registered_team_members.MemberEmail) = ?` : ''} 
+                ORDER BY events.StartDate DESC
+            `;
+            const params = userEmail ? [userId, userEmail] : [userId];
+            db.query(query, params, (err, result) => {
+                if (err) {
+                    return callback(err, null);
+                }
+
+                callback(null, result);
+            });
+        }
     });
 };
 
 const getTeamInfo = (teamId, userId, callback) => {
-    const query = ` SELECT tm.TeamId, tm.UserId FROM registered_team_members tm WHERE tm.TeamId = ? AND tm.UserId = ? LIMIT 1 `;
-    db.query(query, [teamId, userId], (err, result) => {
-        if (err) {
-            return callback(err, null);
-        }
-        if (result.length === 0) {
-            return callback(null, null);
-        }
-
-        const teamQuery = `SELECT t.Id AS TeamId, t.TeamName, t.TeamSize, t.College, t.State, t.TeamLeadUserId, e.Id AS EventId, e.EventName, e.Posters, e.Description AS EventDescription, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus, er.ParticipationMode, er.Status AS RegistrationStatus FROM registered_teams t INNER JOIN events e ON t.EventId = e.Id LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId WHERE t.Id = ? LIMIT 1`;
-        db.query(teamQuery, [teamId], (err, result) => {
+    const getUserSql = `SELECT Email FROM users WHERE Id = ? LIMIT 1`;
+    db.query(getUserSql, [userId], (uErr, uRows) => {
+        const userEmail = (uRows && uRows.length > 0 && uRows[0].Email) ? uRows[0].Email.toLowerCase() : null;
+        const query = `
+            SELECT tm.TeamId, tm.UserId 
+            FROM registered_team_members tm 
+            WHERE tm.TeamId = ? AND (
+                tm.UserId = ? 
+                ${userEmail ? `OR LOWER(tm.MemberEmail) = ?` : ''}
+            ) 
+            LIMIT 1 
+        `;
+        const params = userEmail ? [teamId, userId, userEmail] : [teamId, userId];
+        db.query(query, params, (err, result) => {
             if (err) {
                 return callback(err, null);
             }
@@ -365,25 +464,35 @@ const getTeamInfo = (teamId, userId, callback) => {
                 return callback(null, null);
             }
 
-            const team = result[0];
-            if (typeof team.Posters === "string") {
-                try {
-                    const parsedPosters = JSON.parse(team.Posters);
-                    team.Posters = Array.isArray(parsedPosters) ? parsedPosters : [parsedPosters];
-                } catch (error) {
-                    team.Posters = team.Posters ? [team.Posters] : [];
-                }
-            } else if (!Array.isArray(team.Posters)) {
-                team.Posters = [];
-            }
-            const memberQuery = `SELECT tm.UserId, tm.Role, tm.Gender, tm.CreatedAt, u.UserName, u.Email, u.College, u.State FROM registered_team_members tm INNER JOIN users u ON tm.UserId = u.Id WHERE tm.TeamId = ? ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, u.UserName`;
-            db.query(memberQuery, [teamId], (err, memberResult) => {
+            const teamQuery = `SELECT t.Id AS TeamId, t.TeamName, t.TeamSize, t.College, t.State, t.TeamLeadUserId, e.Id AS EventId, e.EventName, e.Posters, e.Description AS EventDescription, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus, er.ParticipationMode, er.Status AS RegistrationStatus FROM registered_teams t INNER JOIN events e ON t.EventId = e.Id LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId WHERE t.Id = ? LIMIT 1`;
+            db.query(teamQuery, [teamId], (err, result) => {
                 if (err) {
                     return callback(err, null);
                 }
-                return callback(null, {
-                    team: team,
-                    members: memberResult
+                if (result.length === 0) {
+                    return callback(null, null);
+                }
+
+                const team = result[0];
+                if (typeof team.Posters === "string") {
+                    try {
+                        const parsedPosters = JSON.parse(team.Posters);
+                        team.Posters = Array.isArray(parsedPosters) ? parsedPosters : [parsedPosters];
+                    } catch (error) {
+                        team.Posters = team.Posters ? [team.Posters] : [];
+                    }
+                } else if (!Array.isArray(team.Posters)) {
+                    team.Posters = [];
+                }
+                const memberQuery = `SELECT tm.UserId, tm.Role, tm.Gender, tm.CreatedAt, COALESCE(u.UserName, tm.MemberName, 'Member') AS UserName, COALESCE(u.Email, tm.MemberEmail, '') AS Email, COALESCE(u.College, tm.MemberCollege, '') AS College, COALESCE(u.State, tm.MemberState, '') AS State FROM registered_team_members tm LEFT JOIN users u ON tm.UserId = u.Id WHERE tm.TeamId = ? ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, UserName`;
+                db.query(memberQuery, [teamId], (err, memberResult) => {
+                    if (err) {
+                        return callback(err, null);
+                    }
+                    return callback(null, {
+                        team: team,
+                        members: memberResult
+                    });
                 });
             });
         });
@@ -439,6 +548,7 @@ module.exports = {
     getTeamByStatement,
     getTeamByTech,
     getTeamsCount,
+    getMembersCount,
     getMyTeams,
     getTeamInfo,
     getTeamCountByEvent,

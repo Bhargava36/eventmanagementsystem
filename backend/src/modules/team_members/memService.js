@@ -16,7 +16,7 @@ const createUser = (UserId, TeamId, Role, Gender, callback) => {
 
 const getAllUsers = (callback) => {
     const query = `
-        SELECT tm.Id, tm.UserId, u.UserName, u.Email, u.Mobile, u.Mobile AS PhoneNumber, COALESCE(u.Gender, tm.Gender) AS UserGender, u.College, u.State, tm.TeamId, tm.Role, COALESCE(u.Gender, tm.Gender) AS Gender, tm.CreatedAt 
+        SELECT tm.Id, tm.UserId, COALESCE(u.UserName, tm.MemberName, 'Member') AS UserName, COALESCE(u.Email, tm.MemberEmail, '') AS Email, u.Mobile, u.Mobile AS PhoneNumber, COALESCE(u.Gender, tm.Gender) AS UserGender, COALESCE(u.College, tm.MemberCollege, '') AS College, COALESCE(u.State, tm.MemberState, '') AS State, tm.TeamId, tm.Role, COALESCE(u.Gender, tm.Gender) AS Gender, tm.CreatedAt 
         FROM registered_team_members tm 
         LEFT JOIN users u ON tm.UserId = u.Id 
         ORDER BY tm.CreatedAt DESC
@@ -33,7 +33,7 @@ const getAllUsers = (callback) => {
 
 const getusersById = (id, callback) => {
     const query = `
-        SELECT tm.Id, tm.UserId, u.UserName, u.Email, u.Mobile, u.Mobile AS PhoneNumber, COALESCE(u.Gender, tm.Gender) AS UserGender, u.College, u.State, tm.TeamId, tm.Role, COALESCE(u.Gender, tm.Gender) AS Gender, tm.CreatedAt 
+        SELECT tm.Id, tm.UserId, COALESCE(u.UserName, tm.MemberName, 'Member') AS UserName, COALESCE(u.Email, tm.MemberEmail, '') AS Email, u.Mobile, u.Mobile AS PhoneNumber, COALESCE(u.Gender, tm.Gender) AS UserGender, COALESCE(u.College, tm.MemberCollege, '') AS College, COALESCE(u.State, tm.MemberState, '') AS State, tm.TeamId, tm.Role, COALESCE(u.Gender, tm.Gender) AS Gender, tm.CreatedAt 
         FROM registered_team_members tm 
         LEFT JOIN users u ON tm.UserId = u.Id 
         WHERE tm.Id = ?
@@ -50,7 +50,7 @@ const getusersById = (id, callback) => {
 
 const getusersByTeamId = (teamId, callback) => {
     const query = `
-        SELECT tm.Id, tm.UserId, u.UserName, u.Email, u.Mobile, u.Mobile AS PhoneNumber, COALESCE(u.Gender, tm.Gender) AS UserGender, u.College, u.State, tm.TeamId, tm.Role, COALESCE(u.Gender, tm.Gender) AS Gender, tm.CreatedAt 
+        SELECT tm.Id, tm.UserId, COALESCE(u.UserName, tm.MemberName, 'Member') AS UserName, COALESCE(u.Email, tm.MemberEmail, '') AS Email, u.Mobile, u.Mobile AS PhoneNumber, COALESCE(u.Gender, tm.Gender) AS UserGender, COALESCE(u.College, tm.MemberCollege, '') AS College, COALESCE(u.State, tm.MemberState, '') AS State, tm.TeamId, tm.Role, COALESCE(u.Gender, tm.Gender) AS Gender, tm.CreatedAt 
         FROM registered_team_members tm 
         LEFT JOIN users u ON tm.UserId = u.Id 
         WHERE tm.TeamId = ? 

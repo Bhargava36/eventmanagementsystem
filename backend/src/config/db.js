@@ -139,12 +139,15 @@ const migrationQueries = [
 
     `CREATE TABLE IF NOT EXISTS registered_team_members (
         Id INT AUTO_INCREMENT PRIMARY KEY,
-        UserId INT NOT NULL,
+        UserId INT NULL DEFAULT NULL,
         TeamId INT NOT NULL,
         Role ENUM('TeamLead', 'TeamMember', 'teamlead', 'member') NOT NULL DEFAULT 'member',
         Gender ENUM('Male', 'Female', 'Other') DEFAULT NULL,
+        MemberName VARCHAR(150) NULL DEFAULT NULL,
+        MemberEmail VARCHAR(150) NULL DEFAULT NULL,
+        MemberCollege VARCHAR(255) NULL DEFAULT NULL,
+        MemberState VARCHAR(100) NULL DEFAULT NULL,
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_user_team (UserId, TeamId),
         INDEX idx_team_members_user (UserId),
         INDEX idx_team_members_team (TeamId),
         FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE,

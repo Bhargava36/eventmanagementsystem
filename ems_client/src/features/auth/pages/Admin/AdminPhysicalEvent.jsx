@@ -1184,7 +1184,7 @@ function AdminPhysicalEvent() {
               {/* Header bar with action */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-zinc-800/80">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                     <Utensils className="h-6 w-6" />
                   </div>
                   <div>
@@ -1201,7 +1201,7 @@ function AdminPhysicalEvent() {
                   type="button"
                   onClick={handleFoodRedirect}
                   disabled={!isEnabled(foodEnabled)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition disabled:opacity-50 cursor-pointer dark:bg-amber-500 dark:hover:bg-amber-600 dark:text-zinc-950"
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition disabled:opacity-50 cursor-pointer dark:bg-emerald-600 dark:hover:bg-emerald-500"
                 >
                   <Utensils className="h-4 w-4" />
                   <span>{isEnabled(foodEnabled) ? 'Manage Food Distribution' : 'Food Disabled'}</span>
@@ -1213,21 +1213,21 @@ function AdminPhysicalEvent() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black">
                   <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Opted-In Participants</p>
-                  <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
                     {serviceCountsLoading ? '—' : foodCounts.participants}
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">Headcount needing meals</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black">
                   <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Opted-In Teams</p>
-                  <p className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
+                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
                     {serviceCountsLoading ? '—' : foodCounts.teams}
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">Registered physical teams</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black">
                   <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Meal Tokens Issued</p>
-                  <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">
+                  <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
                     {serviceCountsLoading ? '—' : foodCounts.tokens}
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">Breakfast, Lunch & Dinner</p>
@@ -1238,7 +1238,7 @@ function AdminPhysicalEvent() {
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-black space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
                   <div className="flex items-center gap-2.5">
-                    <Utensils className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    <Utensils className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
                       Teams Opted into Food ({teams.filter((t) => isEnabled(teamServicePreferences[String(t.TeamId ?? t.TeamID ?? t.Id ?? t.id)]?.FoodAccepted)).length})
                     </h3>
@@ -1321,7 +1321,7 @@ function AdminPhysicalEvent() {
               {/* Header bar with action */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-zinc-800/80">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                     <IdCard className="h-6 w-6" />
                   </div>
                   <div>
@@ -1338,7 +1338,7 @@ function AdminPhysicalEvent() {
                   type="button"
                   onClick={handleIdRedirect}
                   disabled={!isEnabled(idCardEnabled)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition disabled:opacity-50 cursor-pointer dark:bg-blue-500 dark:hover:bg-blue-600 dark:text-zinc-950"
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition disabled:opacity-50 cursor-pointer dark:bg-emerald-600 dark:hover:bg-emerald-500"
                 >
                   <IdCard className="h-4 w-4" />
                   <span>{isEnabled(idCardEnabled) ? 'Open ID Card Studio' : 'ID Cards Disabled'}</span>
@@ -1390,7 +1390,7 @@ function AdminPhysicalEvent() {
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-black space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
                   <div className="flex items-center gap-2.5">
-                    <IdCard className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <IdCard className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
                       Physical Teams ID Card Status ({teams.length})
                     </h3>
@@ -1541,7 +1541,7 @@ function AdminPhysicalEvent() {
                 <div className="rounded-3xl border border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/70 dark:bg-black p-6 shadow-xs flex flex-col justify-between space-y-5">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                         <Utensils className="h-6 w-6" />
                       </div>
                       <StatusBadge enabled={isEnabled(foodEnabled)} />
@@ -1571,7 +1571,7 @@ function AdminPhysicalEvent() {
                 <div className="rounded-3xl border border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/70 dark:bg-black p-6 shadow-xs flex flex-col justify-between space-y-5">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                         <IdCard className="h-6 w-6" />
                       </div>
                       <StatusBadge enabled={isEnabled(idCardEnabled)} />

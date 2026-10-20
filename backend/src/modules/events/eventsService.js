@@ -57,7 +57,27 @@ const createEvent = (EventName, Description, Facilities, Requirements, TeamSize,
 };
 
 const getAllEvents = (callback) => {
-    const query = `SELECT * FROM events ORDER BY CreatedAt DESC`;
+    const query = `
+        SELECT 
+            e.*,
+            COALESCE(
+                (SELECT COUNT(DISTINCT er.TeamId) FROM event_registrations er WHERE er.EventId = e.Id),
+                (SELECT COUNT(*) FROM registered_teams t WHERE t.EventId = e.Id),
+                0
+            ) AS TeamCount,
+            COALESCE(
+                NULLIF((SELECT COUNT(DISTINCT tm.Id) FROM registered_team_members tm 
+                 JOIN event_registrations er ON tm.TeamId = er.TeamId 
+                 WHERE er.EventId = e.Id), 0),
+                (SELECT COUNT(DISTINCT tm.Id) FROM registered_team_members tm 
+                 JOIN registered_teams t ON tm.TeamId = t.Id 
+                 WHERE t.EventId = e.Id),
+                (SELECT COUNT(*) FROM event_registrations er WHERE er.EventId = e.Id),
+                0
+            ) AS MemberCount
+        FROM events e 
+        ORDER BY e.CreatedAt DESC
+    `;
 
     db.query(query, (err, result) => {
         if (err) {
@@ -65,6 +85,9 @@ const getAllEvents = (callback) => {
         }
 
         result.forEach((event) => {
+            event.TeamCount = Number(event.TeamCount || 0);
+            event.MemberCount = Number(event.MemberCount || 0);
+            event.UserCount = event.MemberCount;
             event.EventStatus = getEventStatus( event.StartDate, event.EndDate);
             event.Posters = parsePosters(event.Posters);
         });
@@ -138,13 +161,36 @@ const getEventById = (id, callback) => {
     db.getConnection(async (connErr, conn) => {
         if (connErr) return callback(connErr, null);
         try {
-            const [rows] = await conn.promise().query(`SELECT * FROM events WHERE Id = ?`, [id]);
+            const [rows] = await conn.promise().query(`
+                SELECT 
+                    e.*,
+                    COALESCE(
+                        (SELECT COUNT(DISTINCT er.TeamId) FROM event_registrations er WHERE er.EventId = e.Id),
+                        (SELECT COUNT(*) FROM registered_teams t WHERE t.EventId = e.Id),
+                        0
+                    ) AS TeamCount,
+                    COALESCE(
+                        NULLIF((SELECT COUNT(DISTINCT tm.Id) FROM registered_team_members tm 
+                         JOIN event_registrations er ON tm.TeamId = er.TeamId 
+                         WHERE er.EventId = e.Id), 0),
+                        (SELECT COUNT(DISTINCT tm.Id) FROM registered_team_members tm 
+                         JOIN registered_teams t ON tm.TeamId = t.Id 
+                         WHERE t.EventId = e.Id),
+                        (SELECT COUNT(*) FROM event_registrations er WHERE er.EventId = e.Id),
+                        0
+                    ) AS MemberCount
+                FROM events e 
+                WHERE e.Id = ?
+            `, [id]);
             if (!rows || rows.length === 0) {
                 conn.release();
                 return callback(null, []);
             }
 
             const ev = rows[0];
+            ev.TeamCount = Number(ev.TeamCount || 0);
+            ev.MemberCount = Number(ev.MemberCount || 0);
+            ev.UserCount = ev.MemberCount;
             ev.EventStatus = getEventStatus(ev.StartDate, ev.EndDate);
             ev.Posters = parsePosters(ev.Posters);
 
@@ -374,10 +420,18 @@ const getAdminDashboardSummary = (eventId, callback) => {
         ),
         q(
             `SELECT 
-               (SELECT COUNT(*) FROM event_registrations WHERE EventId = ?) AS usersCount,
-               (SELECT COUNT(*) FROM registered_teams WHERE EventId = ?) AS teamsCount,
+               COALESCE(
+                   NULLIF((SELECT COUNT(DISTINCT tm.Id) FROM registered_team_members tm JOIN event_registrations er ON tm.TeamId = er.TeamId WHERE er.EventId = ?), 0),
+                   (SELECT COUNT(DISTINCT tm.Id) FROM registered_team_members tm JOIN registered_teams t ON tm.TeamId = t.Id WHERE t.EventId = ?),
+                   0
+               ) AS usersCount,
+               COALESCE(
+                   (SELECT COUNT(DISTINCT er.TeamId) FROM event_registrations er WHERE er.EventId = ?),
+                   (SELECT COUNT(*) FROM registered_teams WHERE EventId = ?),
+                   0
+               ) AS teamsCount,
                (SELECT COUNT(*) FROM event_registrations WHERE EventId = ? AND Status = 'pending') AS pendingCount`,
-            [eventId, eventId, eventId]
+            [eventId, eventId, eventId, eventId, eventId]
         )
     ])
         .then(([events, prizes, registrations, activities, counts]) => {

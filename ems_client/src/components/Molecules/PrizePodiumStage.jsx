@@ -4,13 +4,10 @@ import { motion } from 'framer-motion';
 export default function PrizePodiumStage({
   firstAmount = '—',
   firstDesc = 'Grand Champion',
-  firstTrack,
   secondAmount = '—',
   secondDesc = 'First Runner Up',
-  secondTrack,
   thirdAmount = '—',
-  thirdDesc = 'Second Runner Up',
-  thirdTrack
+  thirdDesc = 'Second Runner Up'
 }) {
   return (
     <div className="relative pt-4 sm:pt-6 pb-2 max-w-3xl mx-auto">
@@ -188,11 +185,7 @@ export default function PrizePodiumStage({
             <p className="text-[10px] text-white/95 font-medium leading-relaxed max-w-[170px] line-clamp-2">
               {secondDesc}
             </p>
-            {secondTrack && (
-              <span className="mt-auto px-2 py-0.5 rounded text-[9px] font-bold bg-white/20 text-white border border-white/30">
-                {secondTrack} Track
-              </span>
-            )}
+            
           </div>
         </foreignObject>
 
@@ -207,11 +200,7 @@ export default function PrizePodiumStage({
             <p className="text-xs text-white/95 font-medium leading-relaxed max-w-[210px] line-clamp-3">
               {firstDesc}
             </p>
-            {firstTrack && (
-              <span className="mt-auto px-2.5 py-0.5 rounded text-[10px] font-bold bg-white/20 text-white border border-white/30">
-                {firstTrack} Track
-              </span>
-            )}
+            
           </div>
         </foreignObject>
 
@@ -226,11 +215,7 @@ export default function PrizePodiumStage({
             <p className="text-[10px] text-white/95 font-medium leading-relaxed max-w-[170px] line-clamp-2">
               {thirdDesc}
             </p>
-            {thirdTrack && (
-              <span className="mt-auto px-2 py-0.5 rounded text-[9px] font-bold bg-white/20 text-white border border-white/30">
-                {thirdTrack} Track
-              </span>
-            )}
+            
           </div>
         </foreignObject>
       </svg>

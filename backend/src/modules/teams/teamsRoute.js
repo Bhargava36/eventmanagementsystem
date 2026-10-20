@@ -5,6 +5,7 @@ const teamsController = require('./teamsController');
 router.post('/create', teamsController.createTeam);
 router.get('/', teamsController.getAllTeams);
 router.get('/count', teamsController.getTeamsCount);
+router.get('/members/count', teamsController.getMembersCount);
 router.get('/event/:eventId/count', teamsController.getTeamCountByEvent);
 router.get('/state/:state', teamsController.getTeamByState);
 router.get('/college/:clg', teamsController.getTeamByCollege);

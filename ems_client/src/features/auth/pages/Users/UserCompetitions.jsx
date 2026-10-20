@@ -25,6 +25,7 @@ import {
   Radio,
   Layers,
 } from 'lucide-react';
+import { resolveEventMode } from '../../../public/pages/ExploreEvents';
 
 export default function UserCompetitions() {
   const navigate = useNavigate();
@@ -79,13 +80,13 @@ export default function UserCompetitions() {
           (ev.Location    && ev.Location.toLowerCase().includes(query))    ||
           (ev.EventType   && ev.EventType.toLowerCase().includes(query));
 
-        const modeN = (ev.HackathonMode || '').toLowerCase();
+        const mode = resolveEventMode(ev);
         const matchesMode =
           selectedMode === 'ALL' ||
-          (selectedMode === 'VIRTUAL'              && modeN === 'virtual') ||
-          (selectedMode === 'PHYSICAL'             && modeN === 'physical') ||
-          (selectedMode === 'VIRTUAL_AND_PHYSICAL' && (modeN === 'virtual and physical' || modeN === 'both')) ||
-          (selectedMode === 'HYBRID'               && modeN === 'hybrid');
+          (selectedMode === 'VIRTUAL'              && (mode === 'virtual' || mode === 'both')) ||
+          (selectedMode === 'PHYSICAL'             && (mode === 'physical' || mode === 'both')) ||
+          (selectedMode === 'VIRTUAL_AND_PHYSICAL' && mode === 'both') ||
+          (selectedMode === 'HYBRID'               && mode === 'hybrid');
 
         const statusN = (ev.EventStatus || '').toLowerCase();
         const matchesStatus =
@@ -111,13 +112,16 @@ export default function UserCompetitions() {
 
   const stats = useMemo(() => {
     const total            = events.length;
-    const virtual          = events.filter(e => (e.HackathonMode || '').toLowerCase() === 'virtual').length;
-    const physical         = events.filter(e => (e.HackathonMode || '').toLowerCase() === 'physical').length;
-    const virtualAndPhysical = events.filter(e => {
-      const m = (e.HackathonMode || '').toLowerCase();
-      return m === 'virtual and physical' || m === 'both';
+    const virtual          = events.filter(e => {
+      const m = resolveEventMode(e);
+      return m === 'virtual' || m === 'both';
     }).length;
-    const hybrid  = events.filter(e => (e.HackathonMode || '').toLowerCase() === 'hybrid').length;
+    const physical         = events.filter(e => {
+      const m = resolveEventMode(e);
+      return m === 'physical' || m === 'both';
+    }).length;
+    const virtualAndPhysical = events.filter(e => resolveEventMode(e) === 'both').length;
+    const hybrid  = events.filter(e => resolveEventMode(e) === 'hybrid').length;
     const ongoing = events.filter(e => (e.EventStatus  || '').toLowerCase() === 'ongoing').length;
     return { total, virtual, physical, virtualAndPhysical, hybrid, ongoing };
   }, [events]);
@@ -339,7 +343,7 @@ export default function UserCompetitions() {
               const customBg   = event.PrimaryColor || '#059669';
               const isOngoing  = (event.EventStatus || '').toLowerCase() === 'ongoing';
               const isCompleted= (event.EventStatus || '').toLowerCase() === 'completed';
-              const mode       = event.HackathonMode || 'Virtual';
+              const mode       = resolveEventMode(event);
 
               return (
                 <motion.div
@@ -391,18 +395,17 @@ export default function UserCompetitions() {
                     {/* top badges */}
                     <div className="flex items-center justify-between gap-2 transform -translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ease-out">
                       {(() => {
-                        const m = (mode || '').toLowerCase();
-                        if (m === 'virtual and physical' || m === 'both') return (
+                        if (mode === 'both') return (
                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-zinc-800 text-emerald-700 dark:text-emerald-300">
                             <Layers className="h-3 w-3 text-emerald-600 dark:text-emerald-400" /><span>Virtual &amp; Physical</span>
                           </div>
                         );
-                        if (m === 'hybrid') return (
+                        if (mode === 'hybrid') return (
                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-teal-50 dark:bg-zinc-900 border border-teal-200 dark:border-zinc-800 text-teal-700 dark:text-teal-300">
                             <Radio className="h-3 w-3 text-teal-600 dark:text-teal-400" /><span>Hybrid</span>
                           </div>
                         );
-                        if (m === 'physical') return (
+                        if (mode === 'physical') return (
                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-zinc-800 text-emerald-700 dark:text-emerald-300">
                             <Building2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" /><span>Physical</span>
                           </div>

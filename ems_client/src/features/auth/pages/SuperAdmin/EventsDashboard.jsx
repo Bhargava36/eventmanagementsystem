@@ -15,7 +15,10 @@ import {
   MapPin,
   Layers,
   Users,
-  Trophy
+  Trophy,
+  Palette,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
@@ -41,13 +44,64 @@ const getCategoryStyles = () => {
   return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-500';
 };
 
+const COLOR_PRESETS = [
+  {
+    name: 'Emerald Brand',
+    PrimaryColor: '#059669',
+    PrimaryTextColor: '#FFFFFF',
+    SecondaryColor: '#FFFFFF',
+    SecondaryTextColor: '#0F172A',
+    TertiaryColor: '#0F172A',
+    TertiaryTextColor: '#FFFFFF'
+  },
+  {
+    name: 'Royal Indigo',
+    PrimaryColor: '#4F46E5',
+    PrimaryTextColor: '#FFFFFF',
+    SecondaryColor: '#F8FAFC',
+    SecondaryTextColor: '#1E1B4B',
+    TertiaryColor: '#1E1B4B',
+    TertiaryTextColor: '#FFFFFF'
+  },
+  {
+    name: 'Cyber Violet',
+    PrimaryColor: '#7C3AED',
+    PrimaryTextColor: '#FFFFFF',
+    SecondaryColor: '#FAF5FF',
+    SecondaryTextColor: '#2E1065',
+    TertiaryColor: '#2E1065',
+    TertiaryTextColor: '#FFFFFF'
+  },
+  {
+    name: 'Crimson Rose',
+    PrimaryColor: '#E11D48',
+    PrimaryTextColor: '#FFFFFF',
+    SecondaryColor: '#FFF1F2',
+    SecondaryTextColor: '#4C0519',
+    TertiaryColor: '#4C0519',
+    TertiaryTextColor: '#FFFFFF'
+  },
+  {
+    name: 'Midnight Teal',
+    PrimaryColor: '#0D9488',
+    PrimaryTextColor: '#FFFFFF',
+    SecondaryColor: '#F0FDFA',
+    SecondaryTextColor: '#134E4A',
+    TertiaryColor: '#134E4A',
+    TertiaryTextColor: '#FFFFFF'
+  }
+];
+
 function EventsDashboard() {
   const toast = useToast();
 
   const [eventData, setEventData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [colorSelected, setColorSelected] = useState(false);
+  const [selectedPresetName, setSelectedPresetName] = useState('');
   const [sortOpen, setSortOpen] = useState(false);
   const [sortValue, setSortValue] = useState('Latest First');
 
@@ -132,16 +186,6 @@ function EventsDashboard() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    if (name === 'EventType') {
-      setFormData((previousData) => ({
-        ...previousData,
-        EventType: value,
-        HackathonMode: value === 'Hackathon'? previousData.HackathonMode : ''
-      }));
-
-      return;
-    }
 
     setFormData((previousData) => ({
       ...previousData,
@@ -258,10 +302,116 @@ function EventsDashboard() {
     });
   };
 
+  const validateStep = (step) => {
+    if (step === 1) {
+      if (!formData.EventName?.trim()) {
+        toast.error('Event Name is required before proceeding.');
+        return false;
+      }
+      return true;
+    }
+
+    if (step === 2) {
+      const mode = formData.HackathonMode || 'Physical';
+      if (mode === 'Both' || mode === 'Virtual and Physical') {
+        if (!formData.VirtualRegistrationStart || !formData.VirtualRegistrationEnd || !formData.VirtualStartDate || !formData.VirtualEndDate) {
+          toast.error('Please complete all Virtual Phase schedule dates.');
+          return false;
+        }
+        if (!formData.PhysicalRegistrationStart || !formData.PhysicalRegistrationEnd || !formData.PhysicalStartDate || !formData.PhysicalEndDate) {
+          toast.error('Please complete all Physical Phase schedule dates.');
+          return false;
+        }
+      } else if (mode === 'Virtual') {
+        const vRegStart = formData.VirtualRegistrationStart || formData.RegistrationStart;
+        const vRegEnd = formData.VirtualRegistrationEnd || formData.RegistrationEnd;
+        const vStart = formData.VirtualStartDate || formData.StartDate;
+        const vEnd = formData.VirtualEndDate || formData.EndDate;
+        if (!vRegStart || !vRegEnd || !vStart || !vEnd) {
+          toast.error('Please complete all registration and event dates.');
+          return false;
+        }
+      } else {
+        const regStart = formData.RegistrationStart || formData.PhysicalRegistrationStart;
+        const regEnd = formData.RegistrationEnd || formData.PhysicalRegistrationEnd;
+        const start = formData.StartDate || formData.PhysicalStartDate;
+        const end = formData.EndDate || formData.PhysicalEndDate;
+        if (!regStart || !regEnd || !start || !end) {
+          toast.error('Please complete all registration and event dates.');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    if (step === 3) {
+      if (!formData.EventType) {
+        toast.error('Please select an Event Type.');
+        return false;
+      }
+      if (!formData.TeamSize?.trim()) {
+        toast.error('Please specify Team Size.');
+        return false;
+      }
+      if (!formData.Location?.trim()) {
+        toast.error('Location / Venue is required.');
+        return false;
+      }
+      return true;
+    }
+
+    if (step === 4) {
+      if (!colorSelected) {
+        toast.error('Please select an event theme preset or customize brand colors before submitting.');
+        return false;
+      }
+      const colorKeys = [
+        ['PrimaryColor', 'Primary Color'],
+        ['PrimaryTextColor', 'Primary Text Color'],
+        ['SecondaryColor', 'Secondary Color'],
+        ['SecondaryTextColor', 'Secondary Text Color'],
+        ['TertiaryColor', 'Tertiary Color'],
+        ['TertiaryTextColor', 'Tertiary Text Color']
+      ];
+      for (const [key, label] of colorKeys) {
+        if (!formData[key]?.trim()) {
+          toast.error(`Please configure a valid ${label}.`);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (validateStep(currentStep)) {
+      if (currentStep < 4) {
+        setCurrentStep((prev) => prev + 1);
+      }
+    }
+  };
+
   const handleCreateEvent = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+
+    // Guard: Under NO circumstances allow premature submission before Step 4!
+    if (currentStep < 4) {
+      handleNextStep();
+      return;
+    }
+
+    // Validate all steps from 1 to 4 before calling backend
+    for (let s = 1; s <= 4; s++) {
+      if (!validateStep(s)) {
+        setCurrentStep(s);
+        return;
+      }
+    }
 
     try {
+      setCreating(true);
       const payload = { ...formData };
 
       if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') {
@@ -280,6 +430,8 @@ function EventsDashboard() {
       } else if (formData.HackathonMode === 'Virtual') {
         payload.StartDate = formData.VirtualStartDate || formData.StartDate;
         payload.EndDate = formData.VirtualEndDate || formData.EndDate;
+        payload.RegistrationStart = formData.VirtualRegistrationStart || formData.RegistrationStart;
+        payload.RegistrationEnd = formData.VirtualRegistrationEnd || formData.RegistrationEnd;
         payload.Facilities = formData.VirtualFacilities || formData.Facilities;
         payload.Requirements = formData.VirtualRequirements || formData.Requirements;
         payload.VirtualFacilities = payload.Facilities;
@@ -289,6 +441,8 @@ function EventsDashboard() {
       } else if (formData.HackathonMode === 'Physical') {
         payload.StartDate = formData.PhysicalStartDate || formData.StartDate;
         payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
+        payload.RegistrationStart = formData.PhysicalRegistrationStart || formData.RegistrationStart;
+        payload.RegistrationEnd = formData.PhysicalRegistrationEnd || formData.RegistrationEnd;
         payload.Facilities = formData.PhysicalFacilities || formData.Facilities;
         payload.Requirements = formData.PhysicalRequirements || formData.Requirements;
         payload.PhysicalFacilities = payload.Facilities;
@@ -315,7 +469,7 @@ function EventsDashboard() {
         );
       }
 
-      toast.success('Event created successfully!');
+      toast.success('Event created successfully with branding colors!');
 
       setFormData(initialForm);
       setCurrentStep(1);
@@ -327,6 +481,8 @@ function EventsDashboard() {
       toast.error(
         error.message || 'Failed to create event'
       );
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -344,7 +500,7 @@ function EventsDashboard() {
         return sortedEvents.filter((event) => event.EventStatus?.toLowerCase() === 'upcoming');
 
       case 'Ongoing':
-        return sortedEvents.filter((event) => event.EventStatus?.toLowerCase() ==='ongoing');
+        return sortedEvents.filter((event) => event.EventStatus?.toLowerCase() === 'ongoing');
 
       case 'Completed':
         return sortedEvents.filter((event) => event.EventStatus?.toLowerCase() === 'completed');
@@ -364,9 +520,21 @@ function EventsDashboard() {
   const ongoingEvents = eventData.filter((event) => event.EventStatus?.toLowerCase() === 'ongoing').length;
   const completedEvents = eventData.filter((event) => event.EventStatus?.toLowerCase() === 'completed').length;
 
+  const openCreateForm = () => {
+    setFormData(initialForm);
+    setCurrentStep(1);
+    setColorSelected(false);
+    setSelectedPresetName('');
+    setCreating(false);
+    setShowCreateForm(true);
+  };
+
   const closeCreateForm = () => {
     setFormData(initialForm);
     setCurrentStep(1);
+    setColorSelected(false);
+    setSelectedPresetName('');
+    setCreating(false);
     setShowCreateForm(false);
   };
 
@@ -393,7 +561,7 @@ function EventsDashboard() {
         </div>
 
         <motion.button
-          onClick={() => setShowCreateForm(true)}
+          onClick={openCreateForm}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           className="flex items-center gap-2 bg-emerald-700 dark:bg-emerald-500 hover:bg-emerald-800 dark:hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-fit cursor-pointer shadow-sm"
@@ -452,29 +620,72 @@ function EventsDashboard() {
 
               <div className="px-7 pt-6">
                 <div className="flex items-center">
-                  {[1, 2, 3, 4].map((step) => (
-                    <React.Fragment key={step}>
-                      <div className="flex flex-col items-center">
-                        <div
-                          className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition ${currentStep >= step
-                            ? 'bg-emerald-700 text-white'
-                            : 'bg-gray-200 dark:bg-gray-800 text-gray-500'
-                            }`}
+                  {[1, 2, 3, 4].map((step) => {
+                    const stepTitles = [
+                      'Basic Info',
+                      'Schedule',
+                      'Details',
+                      'Colors'
+                    ];
+                    return (
+                      <React.Fragment key={step}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (step < currentStep) {
+                              setCurrentStep(step);
+                            } else if (step > currentStep) {
+                              let canAdvance = true;
+                              for (let s = currentStep; s < step; s++) {
+                                if (!validateStep(s)) {
+                                  setCurrentStep(s);
+                                  canAdvance = false;
+                                  break;
+                                }
+                              }
+                              if (canAdvance) setCurrentStep(step);
+                            }
+                          }}
+                          className="flex flex-col items-center group cursor-pointer focus:outline-none"
                         >
-                          {step}
-                        </div>
-                      </div>
-
-                      {step < 4 && (
-                        <div
-                          className={`h-1 flex-1 mx-2 rounded ${currentStep > step
-                            ? 'bg-emerald-700'
-                            : 'bg-gray-200 dark:bg-gray-800'
+                          <div
+                            className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold transition ${
+                              currentStep === step
+                                ? 'bg-emerald-700 text-white ring-4 ring-emerald-500/20'
+                                : currentStep > step
+                                ? 'bg-emerald-700 text-white'
+                                : 'bg-gray-200 dark:bg-gray-800 text-gray-500 group-hover:bg-gray-300 dark:group-hover:bg-gray-700'
                             }`}
-                        />
-                      )}
-                    </React.Fragment>
-                  ))}
+                          >
+                            {currentStep > step ? (
+                              <CheckCircle2 className="w-5 h-5 text-white" />
+                            ) : (
+                              step
+                            )}
+                          </div>
+                          <span
+                            className={`text-[11px] mt-1 font-medium transition ${
+                              currentStep === step
+                                ? 'text-emerald-700 dark:text-emerald-400 font-semibold'
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`}
+                          >
+                            {stepTitles[step - 1]}
+                          </span>
+                        </button>
+
+                        {step < 4 && (
+                          <div
+                            className={`h-1 flex-1 mx-2 rounded mb-4 ${
+                              currentStep > step
+                                ? 'bg-emerald-700'
+                                : 'bg-gray-200 dark:bg-gray-800'
+                            }`}
+                          />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </div>
 
                 <div className="mt-5">
@@ -482,16 +693,28 @@ function EventsDashboard() {
                     {currentStep === 1 && 'Basic Information & Posters'}
                     {currentStep === 2 && 'Participation Mode & Schedule'}
                     {currentStep === 3 && 'Type, Team & Location'}
-                    {currentStep === 4 && 'Event Colors'}
+                    {currentStep === 4 && 'Event Colors & Branding Setup'}
                   </h3>
 
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Step {currentStep} of 4
+                    Step {currentStep} of 4 {currentStep === 4 ? '— Required: Setup colors to create event' : ''}
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleCreateEvent}>
+              <form
+                onSubmit={handleCreateEvent}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    if (currentStep < 4) {
+                      handleNextStep();
+                    } else {
+                      handleCreateEvent(e);
+                    }
+                  }
+                }}
+              >
                 <div className="px-7 py-6">
 
                   {currentStep === 1 && (
@@ -982,44 +1205,220 @@ function EventsDashboard() {
                   )}
 
                   {currentStep === 4 && (
-                    <div className="grid grid-cols-2 gap-5">
-                      {[
-                        ['PrimaryColor', 'Primary Color'],
-                        ['PrimaryTextColor', 'Primary Text Color'],
-                        ['SecondaryColor', 'Secondary Color'],
-                        ['SecondaryTextColor', 'Secondary Text Color'],
-                        ['TertiaryColor', 'Tertiary Color'],
-                        ['TertiaryTextColor', 'Tertiary Text Color']
-                      ].map(([name, label]) => (
-                        <div key={name}>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            {label}
-                          </label>
+                    <div className="space-y-6">
+                      {/* Brand Info Banner */}
+                      <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 flex items-start gap-3">
+                        <Palette className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-300">
+                            Brand Palette & Theme Customization (Required)
+                          </p>
+                          <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
+                            Colors must be set and reviewed before the event can be created. Choose a curated theme preset below or customize each color to match your event branding.
+                          </p>
+                        </div>
+                      </div>
 
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="color"
-                              value={formData[name]}
-                              onChange={(e) =>
-                                setFormData((previousData) => ({
-                                  ...previousData,
-                                  [name]: e.target.value
-                                }))
-                              }
-                              className="w-12 h-11 rounded-lg cursor-pointer border-0 p-0"
-                            />
-
-                            <input
-                              type="text"
-                              name={name}
-                              value={formData[name]}
-                              onChange={handleChange}
-                              required
-                              className="flex-1 px-3 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white uppercase"
-                            />
+                      {/* Selection Status Banner */}
+                      {!colorSelected ? (
+                        <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/30 flex items-start gap-3">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping mt-1 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                              Color Selection Required
+                            </p>
+                            <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                              Click any of the curated theme presets below or adjust the custom color values. The "Create Event" button will unlock once a color is chosen.
+                            </p>
                           </div>
                         </div>
-                      ))}
+                      ) : (
+                        <div className="p-3.5 rounded-xl border border-emerald-300 dark:border-emerald-700/60 bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <p className="text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                              Theme Configured:{' '}
+                              <span className="font-bold underline">
+                                {selectedPresetName || 'Custom Palette'}
+                              </span>
+                            </p>
+                          </div>
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-600 text-white font-medium">
+                            Ready to Submit
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Quick Palette Presets */}
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-2.5">
+                          <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                            Curated Theme Presets
+                          </label>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                          {COLOR_PRESETS.map((preset) => {
+                            const isSelected =
+                              selectedPresetName === preset.name ||
+                              (formData.PrimaryColor === preset.PrimaryColor &&
+                                formData.SecondaryColor === preset.SecondaryColor &&
+                                formData.TertiaryColor === preset.TertiaryColor);
+                            return (
+                              <button
+                                key={preset.name}
+                                type="button"
+                                onClick={() => {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    PrimaryColor: preset.PrimaryColor,
+                                    PrimaryTextColor: preset.PrimaryTextColor,
+                                    SecondaryColor: preset.SecondaryColor,
+                                    SecondaryTextColor: preset.SecondaryTextColor,
+                                    TertiaryColor: preset.TertiaryColor,
+                                    TertiaryTextColor: preset.TertiaryTextColor
+                                  }));
+                                  setColorSelected(true);
+                                  setSelectedPresetName(preset.name);
+                                }}
+                                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                                  isSelected && colorSelected
+                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 ring-2 ring-emerald-500/30'
+                                    : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'
+                                }`}
+                              >
+                                <div className="flex items-center gap-1.5 mb-2">
+                                  <div
+                                    className="w-4 h-4 rounded-full border border-black/10 shadow-sm"
+                                    style={{ backgroundColor: preset.PrimaryColor }}
+                                    title="Primary Color"
+                                  />
+                                  <div
+                                    className="w-4 h-4 rounded-full border border-black/10 shadow-sm"
+                                    style={{ backgroundColor: preset.SecondaryColor }}
+                                    title="Secondary Color"
+                                  />
+                                  <div
+                                    className="w-4 h-4 rounded-full border border-black/10 shadow-sm"
+                                    style={{ backgroundColor: preset.TertiaryColor }}
+                                    title="Tertiary Color"
+                                  />
+                                </div>
+                                <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">
+                                  {preset.name}
+                                </p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Live Brand Preview Card */}
+                      <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">
+                          Live Event Theme Preview
+                        </p>
+                        <div
+                          className="rounded-xl p-4 border transition-colors shadow-sm"
+                          style={{
+                            backgroundColor: formData.SecondaryColor || '#FFFFFF',
+                            borderColor: formData.PrimaryColor || '#10B981',
+                            color: formData.SecondaryTextColor || '#000000'
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-3 mb-3">
+                            <span
+                              className="px-2.5 py-1 rounded-full text-xs font-bold tracking-wide shadow-sm"
+                              style={{
+                                backgroundColor: formData.PrimaryColor || '#10B981',
+                                color: formData.PrimaryTextColor || '#FFFFFF'
+                              }}
+                            >
+                              {formData.EventType || 'Hackathon'}
+                            </span>
+                            <span className="text-xs font-semibold opacity-75">
+                              {formData.HackathonMode || 'Physical'}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-base line-clamp-1 mb-1">
+                            {formData.EventName || 'Your Event Title Preview'}
+                          </h4>
+                          <p className="text-xs opacity-75 line-clamp-1 mb-3">
+                            {formData.Location || 'Venue / Online'} • {formData.TeamSize || '2 - 4 members'}
+                          </p>
+                          <div className="flex items-center justify-between pt-3 border-t border-black/10 dark:border-white/10">
+                            <span className="text-xs font-semibold opacity-90">
+                              {formData.PrizeMoney
+                                ? `Prize: ${formData.PrizeMoney}`
+                                : formData.PhysicalPrizeMoney
+                                ? `Physical: ${formData.PhysicalPrizeMoney}`
+                                : 'Prize Pool Configured'}
+                            </span>
+                            <span
+                              className="px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm inline-block"
+                              style={{
+                                backgroundColor: formData.TertiaryColor || '#000000',
+                                color: formData.TertiaryTextColor || '#FFFFFF'
+                              }}
+                            >
+                              Register Now
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Manual Color Pickers */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                          Custom Color Palette Values
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {[
+                            ['PrimaryColor', 'Primary Color (Brand Accent)'],
+                            ['PrimaryTextColor', 'Primary Text Color'],
+                            ['SecondaryColor', 'Secondary Color (Card Background)'],
+                            ['SecondaryTextColor', 'Secondary Text Color'],
+                            ['TertiaryColor', 'Tertiary Color (Action Button)'],
+                            ['TertiaryTextColor', 'Tertiary Text Color']
+                          ].map(([name, label]) => (
+                            <div key={name}>
+                              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                {label}
+                              </label>
+
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="color"
+                                  value={formData[name] || '#000000'}
+                                  onChange={(e) => {
+                                    setFormData((previousData) => ({
+                                      ...previousData,
+                                      [name]: e.target.value
+                                    }));
+                                    setColorSelected(true);
+                                    setSelectedPresetName('Custom Palette');
+                                  }}
+                                  className="w-11 h-10 rounded-lg cursor-pointer border border-gray-200 dark:border-gray-700 p-0.5 bg-white dark:bg-gray-900 shrink-0"
+                                />
+
+                                <input
+                                  type="text"
+                                  name={name}
+                                  value={formData[name] || ''}
+                                  onChange={(e) => {
+                                    handleChange(e);
+                                    setColorSelected(true);
+                                    setSelectedPresetName('Custom Palette');
+                                  }}
+                                  required
+                                  placeholder="#000000"
+                                  className="flex-1 px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white uppercase font-mono text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1029,12 +1428,8 @@ function EventsDashboard() {
                     {currentStep > 1 && (
                       <button
                         type="button"
-                        onClick={() =>
-                          setCurrentStep(
-                            currentStep - 1
-                          )
-                        }
-                        className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900"
+                        onClick={() => setCurrentStep(currentStep - 1)}
+                        className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer"
                       >
                         Back
                       </button>
@@ -1045,7 +1440,7 @@ function EventsDashboard() {
                     <button
                       type="button"
                       onClick={closeCreateForm}
-                      className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900"
+                      className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -1053,21 +1448,38 @@ function EventsDashboard() {
                     {currentStep < 4 ? (
                       <button
                         type="button"
-                        onClick={() =>
-                          setCurrentStep(
-                            currentStep + 1
-                          )
-                        }
-                        className="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium"
+                        onClick={handleNextStep}
+                        className="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium cursor-pointer"
                       >
-                        Continue
+                        {currentStep === 1 && 'Continue to Schedule'}
+                        {currentStep === 2 && 'Continue to Details'}
+                        {currentStep === 3 && 'Continue to Colors Setup'}
                       </button>
                     ) : (
                       <button
                         type="submit"
-                        className="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium"
+                        disabled={creating || !colorSelected}
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium transition-all ${
+                          colorSelected && !creating
+                            ? 'bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer shadow-md'
+                            : 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed border border-gray-300 dark:border-gray-700 opacity-80'
+                        }`}
+                        title={
+                          !colorSelected
+                            ? 'Please select a color theme preset or customize colors first'
+                            : 'Create Event'
+                        }
                       >
-                        Create Event
+                        {creating ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Creating Event...
+                          </>
+                        ) : !colorSelected ? (
+                          'Select Colors to Enable Submit'
+                        ) : (
+                          'Create Event'
+                        )}
                       </button>
                     )}
                   </div>

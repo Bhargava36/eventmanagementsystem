@@ -22,7 +22,38 @@ const addPrizes = (eventId, prizes, callback) => {
             if (err) {
                 return callback(err, null);
             }
-            callback(null, result);
+
+            // Also synchronize track prize pools on the parent event record
+            let physicalSum = 0;
+            let virtualSum = 0;
+            let overallSum = 0;
+
+            prizes.forEach((p) => {
+                const trk = String(p.track || p.Track || '').trim().toLowerCase();
+                const val = parseFloat(String(p.prize || p.Prize || p.amount || '').replace(/[^0-9.]/g, '')) || 0;
+                if (trk === 'physical') {
+                    physicalSum += val;
+                } else if (trk === 'virtual') {
+                    virtualSum += val;
+                } else {
+                    overallSum += val;
+                }
+            });
+
+            const total = physicalSum + virtualSum + overallSum;
+            const updateEvQuery = `UPDATE events SET 
+                PhysicalPrizeMoney = COALESCE(?, PhysicalPrizeMoney), 
+                VirtualPrizeMoney = COALESCE(?, VirtualPrizeMoney), 
+                PrizeMoney = COALESCE(?, PrizeMoney) 
+                WHERE Id = ?`;
+
+            const physVal = physicalSum > 0 ? `₹${physicalSum.toLocaleString('en-IN')}` : null;
+            const virtVal = virtualSum > 0 ? `₹${virtualSum.toLocaleString('en-IN')}` : null;
+            const totVal = total > 0 ? `₹${total.toLocaleString('en-IN')}` : null;
+
+            db.query(updateEvQuery, [physVal, virtVal, totVal, eventId], () => {
+                callback(null, result);
+            });
         });
     });
 };

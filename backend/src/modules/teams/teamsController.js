@@ -2,9 +2,10 @@ const teamsService = require('./teamsService');
 const db = require('../../config/db');
 
 const createTeam = (req, res) => {
-    const {TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, ParticipationMode } = req.body;
+    const { TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Members, ParticipationMode } = req.body;
+    const membersData = Members || MemberEmails;
 
-    teamsService.createTeam( TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, ParticipationMode, (err, result) => {
+    teamsService.createTeam( TeamName, TeamLeadEmail, TeamSize, EventId, membersData, ParticipationMode, (err, result) => {
             if (err) {
                 return res.status(err.status || 500).json({
                     message: err.message
@@ -143,6 +144,25 @@ const getTeamsCount = (req, res) => {
         res.status(200).json({
             message: 'Teams count fetched successfully',
             count: result.teamsCount
+        });
+    });
+};
+
+const getMembersCount = (req, res) => {
+    teamsService.getMembersCount((err, result) => {
+        if (err) {
+            return res.status(500).json({
+                message: 'Failed to fetch members count',
+                error: err.message
+            });
+        }
+
+        res.status(200).json({
+            message: 'Members count fetched successfully',
+            count: result.registeredMembersCount || result.totalMembersCount || 0,
+            registeredMembersCount: result.registeredMembersCount || 0,
+            totalMembersCount: result.totalMembersCount || 0,
+            uniqueMembersCount: result.uniqueMembersCount || 0
         });
     });
 };
@@ -288,6 +308,7 @@ module.exports = {
     getTeamByState,
     getTeamByTech,
     getTeamsCount,
+    getMembersCount,
     getMyTeams,
     getTeamInfo,
     getTeamCountByEvent,

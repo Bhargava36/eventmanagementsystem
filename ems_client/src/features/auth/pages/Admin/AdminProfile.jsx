@@ -578,9 +578,9 @@ function AdminProfile() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.25 }}
-                  className="relative bg-white dark:bg-gray-950 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden"
+                  className="relative bg-white dark:bg-black rounded-3xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden"
                 >
-                  <div className="p-5 sm:p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between relative z-10">
+                  <div className="p-5 sm:p-6 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between relative z-10">
                     <div className="flex items-center gap-2.5">
                       <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                       <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
@@ -588,17 +588,17 @@ function AdminProfile() {
                       </h3>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800">
+                      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-zinc-800">
                         Verified Details
                       </span>
                     </div>
                   </div>
 
-                  <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                  <div className="divide-y divide-gray-100 dark:divide-zinc-800/80">
                     {credentialItems.map((item, idx) => (
                       <div
                         key={idx}
-                        className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50/80 dark:hover:bg-gray-900/40 transition-colors"
+                        className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50/80 dark:hover:bg-zinc-900/40 transition-colors"
                       >
                         <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
                           {item.label}
@@ -631,7 +631,7 @@ function AdminProfile() {
             transition={{ duration: 0.4, delay: 0.2 }}
             className="lg:col-span-4 space-y-6"
           >
-            <div className="bg-white dark rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
+            <div className="bg-white dark:bg-black rounded-3xl border border-gray-200 dark:border-zinc-800 shadow-sm p-6">
               <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">
                 Quick Actions
               </h3>
@@ -639,7 +639,7 @@ function AdminProfile() {
               <div className="space-y-3 relative z-10">
                 <Link
                   to="/admin/teams"
-                  className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900/70 border border-gray-200/80 dark:border-gray-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
+                  className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-900/70 border border-gray-200/80 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
@@ -655,7 +655,7 @@ function AdminProfile() {
 
                 <Link
                   to="/admin/core-team"
-                  className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900/70 border border-gray-200/80 dark:border-gray-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
+                  className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-900/70 border border-gray-200/80 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
@@ -668,9 +668,10 @@ function AdminProfile() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 group-hover:text-emerald-500 transition-all" />
                 </Link>
+
                 <Link
                   to="/admin/dashboard"
-                  className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900/70 border border-gray-200/80 dark:border-gray-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
+                  className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-900/70 border border-gray-200/80 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">

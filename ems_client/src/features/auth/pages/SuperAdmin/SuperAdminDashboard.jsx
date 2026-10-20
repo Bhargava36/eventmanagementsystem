@@ -23,12 +23,14 @@ const recentActivities = [
 
 function SuperAdminDashboard() {
   const [usersCount, setUsersCount] = useState(0);
+  const [membersCount, setMembersCount] = useState(0);
   const [teamsCount, setTeamsCount] = useState(0);
   const [eventsCount, setEventsCount] = useState(0);
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
     fetchUsersCount();
+    fetchMembersCount();
     fetchTeamsCount();
     fetchEventsCount();
     fetchEvents();
@@ -46,9 +48,27 @@ function SuperAdminDashboard() {
         throw new Error(data.message || 'Failed to fetch users count');
       }
 
-      setUsersCount(data.count || data.userCount || 0);
+      setUsersCount(data.userCount ?? data.count ?? 0);
+      if (data.registeredMembersCount !== undefined || data.totalMembersCount !== undefined) {
+        setMembersCount(data.registeredMembersCount ?? data.totalMembersCount ?? 0);
+      }
     } catch (error) {
       console.error('Error fetching users count:', error);
+    }
+  };
+
+  const fetchMembersCount = async () => {
+    try {
+      const response = await fetch(
+        'http://localhost:3000/api/teams/members/count'
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setMembersCount(data.registeredMembersCount ?? data.count ?? data.totalMembersCount ?? 0);
+      }
+    } catch (error) {
+      console.error('Error fetching members count:', error);
     }
   };
 
@@ -100,7 +120,36 @@ function SuperAdminDashboard() {
         throw new Error(data.message || 'Failed to fetch events');
       }
 
-      setEvents(data.events || data || []);
+      const rawEvents = Array.isArray(data) ? data : data.events || [];
+      const enrichedEvents = await Promise.all(
+        rawEvents.map(async (event) => {
+          let teamCount = Number(event.TeamCount ?? event.teamCount ?? event.teamsCount ?? 0);
+          let memberCount = Number(event.MemberCount ?? event.UserCount ?? event.userCount ?? event.usersCount ?? 0);
+
+          if ((teamCount === 0 || memberCount === 0) && event.Id) {
+            try {
+              const summaryRes = await fetch(`http://localhost:3000/api/events/${event.Id}/dashboard-summary`);
+              if (summaryRes.ok) {
+                const summaryData = await summaryRes.json();
+                const summaryInfo = summaryData?.data;
+                if (summaryInfo) {
+                  if (!teamCount) teamCount = Number(summaryInfo.teamsCount || 0);
+                  if (!memberCount) memberCount = Number(summaryInfo.usersCount || 0);
+                }
+              }
+            } catch (_) {}
+          }
+
+          return {
+            ...event,
+            TeamCount: teamCount,
+            MemberCount: memberCount,
+            UserCount: memberCount,
+          };
+        })
+      );
+
+      setEvents(enrichedEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
@@ -109,7 +158,7 @@ function SuperAdminDashboard() {
   const fetchTeamCountByEvent = async (eventId) => {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/event_reg/event/${eventId}/count`
+        `http://localhost:3000/api/teams/event/${eventId}/count`
       );
 
       const data = await response.json();
@@ -135,9 +184,14 @@ function SuperAdminDashboard() {
 
   const stats = [
     {
-      title: 'Total Users',
-      value: usersCount,
+      title: 'Total Members',
+      value: membersCount,
       icon: Users,
+    },
+    {
+      title: 'EMS Users',
+      value: usersCount,
+      icon: UserCheck,
     },
     {
       title: 'Total Teams',
@@ -181,7 +235,7 @@ function SuperAdminDashboard() {
               },
             },
           }}
-          className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
         >
           {stats.map((stat, i) => {
             const Icon = stat.icon;
@@ -346,11 +400,11 @@ function SuperAdminDashboard() {
                     <div className="grid grid-cols-2 gap-2 text-center pt-4 border-t border-gray-200 dark:border-gray-800">
                       <div>
                         <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                          {event.UserCount || 0}
+                          {event.MemberCount ?? event.UserCount ?? 0}
                         </p>
 
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Users
+                          Members
                         </p>
                       </div>
 
@@ -431,11 +485,11 @@ function SuperAdminDashboard() {
                 </div>
 
                 <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                  {currentEvent.UserCount || 0}
+                  {currentEvent.MemberCount ?? currentEvent.UserCount ?? 0}
                 </p>
 
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Users Registered
+                  Members Registered
                 </p>
               </div>
 

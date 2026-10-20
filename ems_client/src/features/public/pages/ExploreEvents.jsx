@@ -26,6 +26,34 @@ import {
   Layers
 } from 'lucide-react';
 
+export const resolveEventMode = (ev) => {
+  const raw = String(ev?.HackathonMode || '').trim().toLowerCase();
+  const hasVirtualDates = Boolean(ev?.VirtualStartDate || ev?.VirtualRegistrationStart);
+  const hasPhysicalDatesOrVenue = Boolean(ev?.PhysicalStartDate || ev?.Location);
+
+  if (
+    raw === 'both' ||
+    raw === 'virtual and physical' ||
+    raw === 'virtual & physical' ||
+    (hasVirtualDates && hasPhysicalDatesOrVenue)
+  ) {
+    return 'both';
+  }
+  if (raw === 'hybrid') {
+    return 'hybrid';
+  }
+  if (raw === 'physical' || (!raw && hasPhysicalDatesOrVenue && !hasVirtualDates)) {
+    return 'physical';
+  }
+  if (raw === 'virtual' || (!raw && hasVirtualDates && !hasPhysicalDatesOrVenue)) {
+    return 'virtual';
+  }
+  if (ev?.Location) {
+    return 'physical';
+  }
+  return 'virtual';
+};
+
 function ExploreEvents() {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -98,13 +126,13 @@ function ExploreEvents() {
           (ev.Location && ev.Location.toLowerCase().includes(query)) ||
           (ev.EventType && ev.EventType.toLowerCase().includes(query));
 
-        const modeNormalized = (ev.HackathonMode || '').toLowerCase();
+        const mode = resolveEventMode(ev);
         const matchesMode =
           selectedMode === 'ALL' ||
-          (selectedMode === 'VIRTUAL' && modeNormalized === 'virtual') ||
-          (selectedMode === 'PHYSICAL' && modeNormalized === 'physical') ||
-          (selectedMode === 'VIRTUAL_AND_PHYSICAL' && (modeNormalized === 'virtual and physical' || modeNormalized === 'both')) ||
-          (selectedMode === 'HYBRID' && modeNormalized === 'hybrid');
+          (selectedMode === 'VIRTUAL' && (mode === 'virtual' || mode === 'both')) ||
+          (selectedMode === 'PHYSICAL' && (mode === 'physical' || mode === 'both')) ||
+          (selectedMode === 'VIRTUAL_AND_PHYSICAL' && mode === 'both') ||
+          (selectedMode === 'HYBRID' && mode === 'hybrid');
 
         const statusNormalized = (ev.EventStatus || '').toLowerCase();
         const matchesStatus =
@@ -138,13 +166,16 @@ function ExploreEvents() {
 
   const stats = useMemo(() => {
     const total = events.length;
-    const virtual = events.filter((e) => (e.HackathonMode || '').toLowerCase() === 'virtual').length;
-    const physical = events.filter((e) => (e.HackathonMode || '').toLowerCase() === 'physical').length;
-    const virtualAndPhysical = events.filter((e) => {
-      const m = (e.HackathonMode || '').toLowerCase();
-      return m === 'virtual and physical' || m === 'both';
+    const virtual = events.filter((e) => {
+      const m = resolveEventMode(e);
+      return m === 'virtual' || m === 'both';
     }).length;
-    const hybrid = events.filter((e) => (e.HackathonMode || '').toLowerCase() === 'hybrid').length;
+    const physical = events.filter((e) => {
+      const m = resolveEventMode(e);
+      return m === 'physical' || m === 'both';
+    }).length;
+    const virtualAndPhysical = events.filter((e) => resolveEventMode(e) === 'both').length;
+    const hybrid = events.filter((e) => resolveEventMode(e) === 'hybrid').length;
     const ongoing = events.filter((e) => (e.EventStatus || '').toLowerCase() === 'ongoing').length;
 
     return { total, virtual, physical, virtualAndPhysical, hybrid, ongoing };
@@ -456,7 +487,7 @@ function ExploreEvents() {
 
               const isOngoing = (event.EventStatus || '').toLowerCase() === 'ongoing';
               const isCompleted = (event.EventStatus || '').toLowerCase() === 'completed';
-              const mode = (event.HackathonMode || 'Virtual');
+              const mode = resolveEventMode(event);
 
               return (
                 <motion.div
@@ -508,8 +539,7 @@ function ExploreEvents() {
 
                     <div className="flex items-center justify-between gap-2 transform -translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ease-out">
                       {(() => {
-                        const m = (mode || '').toLowerCase();
-                        if (m === 'virtual and physical' || m === 'both') {
+                        if (mode === 'both') {
                           return (
                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-zinc-800 text-emerald-700 dark:text-emerald-300">
                               <Layers className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
@@ -517,7 +547,7 @@ function ExploreEvents() {
                             </div>
                           );
                         }
-                        if (m === 'hybrid') {
+                        if (mode === 'hybrid') {
                           return (
                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-teal-50 dark:bg-zinc-900 border border-teal-200 dark:border-zinc-800 text-teal-700 dark:text-teal-300">
                               <Radio className="h-3 w-3 text-teal-600 dark:text-teal-400" />
@@ -525,7 +555,7 @@ function ExploreEvents() {
                             </div>
                           );
                         }
-                        if (m === 'physical') {
+                        if (mode === 'physical') {
                           return (
                             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-zinc-800 text-emerald-700 dark:text-emerald-300">
                               <Building2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
@@ -601,7 +631,7 @@ function ExploreEvents() {
                           </div>
                         )}
 
-                        {(event.HackathonMode === 'Both' || event.HackathonMode === 'Virtual and Physical') && (event.VirtualPrizeMoney || event.PhysicalPrizeMoney) ? (
+                        {(mode === 'both') && (event.VirtualPrizeMoney || event.PhysicalPrizeMoney) ? (
                           <div className="flex flex-col gap-1 py-1 text-xs">
                             <div className="flex items-center justify-between text-[11px] font-bold text-amber-600 dark:text-amber-400">
                               <span className="flex items-center gap-1.5">

@@ -93,6 +93,7 @@ function AdminDashboard() {
 
     const [declaredPrizes, setDeclaredPrizes] = useState(cachedData?.declaredPrizes || []);
     const [activePrizeTab, setActivePrizeTab] = useState("Physical");
+    const [modalPrizeTab, setModalPrizeTab] = useState("Physical");
 
     const [isGuidelinesModalOpen, setIsGuidelinesModalOpen] = useState(false);
     const [guidelinesLoading, setGuidelinesLoading] = useState(false);
@@ -256,7 +257,10 @@ function AdminDashboard() {
     };
 
     const openPrizeModal = () => {
-        const isDual = event?.HackathonMode === 'Both' || event?.HackathonMode === 'Virtual and Physical';
+        const isDual = event?.HackathonMode === 'Both' || 
+                       event?.HackathonMode === 'Virtual and Physical' ||
+                       (declaredPrizes && declaredPrizes.some(p => (p.Track || '').toLowerCase() === 'virtual'));
+        setModalPrizeTab(activePrizeTab || (isDual ? 'Physical' : 'Overall'));
         if (declaredPrizes && declaredPrizes.length > 0) {
             setPrizes(
                 declaredPrizes.map((p, idx) => ({
@@ -266,13 +270,16 @@ function AdminDashboard() {
                 }))
             );
         } else {
-            setPrizes([
-                {
-                    name: "1st Prize",
-                    amount: "",
-                    track: isDual ? 'Physical' : 'Overall'
-                }
-            ]);
+            if (isDual) {
+                setPrizes([
+                    { name: "1st Prize", amount: "", track: 'Physical' },
+                    { name: "1st Prize", amount: "", track: 'Virtual' }
+                ]);
+            } else {
+                setPrizes([
+                    { name: "1st Prize", amount: "", track: 'Overall' }
+                ]);
+            }
         }
         setIsPrizeModalOpen(true);
     };
@@ -290,14 +297,18 @@ function AdminDashboard() {
         );
     };
 
-    const addPrize = () => {
-        const isDual = event?.HackathonMode === 'Both' || event?.HackathonMode === 'Virtual and Physical';
+    const addPrize = (targetTrack) => {
+        const isDual = event?.HackathonMode === 'Both' || 
+                       event?.HackathonMode === 'Virtual and Physical' ||
+                       (declaredPrizes && declaredPrizes.some(p => (p.Track || '').toLowerCase() === 'virtual'));
+        const trackToUse = targetTrack || modalPrizeTab || (isDual ? 'Physical' : 'Overall');
+        const trackCount = prizes.filter((p) => (p.track || '').toLowerCase() === trackToUse.toLowerCase()).length;
         setPrizes((currentPrizes) => [
             ...currentPrizes,
             {
-                name: "",
+                name: `Prize ${trackCount + 1}`,
                 amount: "",
-                track: isDual ? 'Physical' : 'Overall'
+                track: trackToUse
             }
         ]);
     };
@@ -326,7 +337,7 @@ function AdminDashboard() {
             );
 
             if (validPrizes.length === 0) {
-                alert("Please add at least one prize.");
+                alert("Please add at least one prize with a name and amount.");
                 return;
             }
 
@@ -368,7 +379,6 @@ function AdminDashboard() {
 
             if (prizeResponse.ok) {
                 const prizeData = await prizeResponse.json();
-
                 setDeclaredPrizes(
                     prizeData.prizes ||
                     prizeData.eventPrizes ||
@@ -376,15 +386,15 @@ function AdminDashboard() {
                 );
             }
 
-            setPrizes([
-                {
-                    name: "",
-                    amount: ""
-                }
-            ]);
+            // Also reload event data to update track pools on the dashboard immediately
+            const evRes = await fetch(`http://localhost:3000/api/events/${eventId}`);
+            if (evRes.ok) {
+                const evData = await evRes.json();
+                const refreshed = evData.event || evData;
+                setEvent(refreshed);
+            }
 
             setIsPrizeModalOpen(false);
-
             alert("Prizes declared successfully.");
 
         } catch (error) {
@@ -926,13 +936,10 @@ function AdminDashboard() {
                                             <PrizePodiumStage
                                                 firstAmount={firstPrizeAmount}
                                                 firstDesc={firstPrizeDesc}
-                                                firstTrack={firstPrizeTrack}
                                                 secondAmount={secondPrizeAmount}
                                                 secondDesc={secondPrizeDesc}
-                                                secondTrack={secondPrizeTrack}
                                                 thirdAmount={thirdPrizeAmount}
                                                 thirdDesc={thirdPrizeDesc}
-                                                thirdTrack={thirdPrizeTrack}
                                             />
                                         </div>
 
@@ -1292,172 +1299,250 @@ function AdminDashboard() {
             </div>
 
             {isPrizeModalOpen && (
-
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-
-                    <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-emerald-700/20 bg-white dark:bg-black shadow-xl">
-
-                        <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 px-5 py-4">
-
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="max-h-[92vh] w-full max-w-xl overflow-hidden rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-2xl flex flex-col">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 px-6 py-4 bg-white dark:bg-black shrink-0">
                             <div>
-                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                                     {declaredPrizes.length > 0 ? "Edit Prize Money" : "Add Prize Money"}
                                 </h2>
-
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    {declaredPrizes.length > 0 ? "Update configured prizes" : "Add prizes"} for {event?.EventName}
+                                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                                    Configure prizes separately for Virtual and Physical tracks for {event?.EventName}
                                 </p>
                             </div>
-
                             <button
                                 type="button"
                                 onClick={() => setIsPrizeModalOpen(false)}
-                                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-900"
+                                className="rounded-xl p-2 text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-900 transition cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>
-
                         </div>
 
-                        <form
-                            onSubmit={handleDeclarePrizes}
-                            className="space-y-4 p-5"
-                        >
+                        {/* Track Tabs & Content */}
+                        {(() => {
+                            const isDual = event?.HackathonMode === 'Both' || 
+                                           event?.HackathonMode === 'Virtual and Physical' || 
+                                           prizes.some(p => (p.track || '').toLowerCase() === 'virtual' || (p.track || '').toLowerCase() === 'physical');
 
-                            {prizes.map((prize, index) => (
+                            const physicalPrizes = prizes
+                                .map((prize, originalIndex) => ({ ...prize, originalIndex }))
+                                .filter(p => (p.track || '').toLowerCase() === 'physical');
 
-                                <div
-                                    key={index}
-                                    className="rounded-xl border border-gray-200 dark:border-gray-800 p-4"
-                                >
+                            const virtualPrizes = prizes
+                                .map((prize, originalIndex) => ({ ...prize, originalIndex }))
+                                .filter(p => (p.track || '').toLowerCase() === 'virtual');
 
-                                    <div className="flex items-center justify-between mb-3">
+                            const physicalTotal = physicalPrizes.reduce((sum, p) => sum + (parseFloat(String(p.amount).replace(/[^0-9.]/g, '')) || 0), 0);
+                            const virtualTotal = virtualPrizes.reduce((sum, p) => sum + (parseFloat(String(p.amount).replace(/[^0-9.]/g, '')) || 0), 0);
 
-                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                                            Prize {index + 1}
-                                        </p>
+                            const currentTrackPrizes = isDual
+                                ? (modalPrizeTab.toLowerCase() === 'virtual' ? virtualPrizes : physicalPrizes)
+                                : prizes.map((prize, originalIndex) => ({ ...prize, originalIndex }));
 
-                                        {prizes.length > 1 && (
-                                            <button
-                                                type="button"
-                                                onClick={() => removePrize(index)}
-                                                className="p-1.5 text-gray-400 hover:text-red-500"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        )}
+                            const currentTrackTotal = modalPrizeTab.toLowerCase() === 'virtual' ? virtualTotal : physicalTotal;
 
-                                    </div>
-
-                                    <div className={`grid gap-4 ${(event?.HackathonMode === 'Both' || event?.HackathonMode === 'Virtual and Physical') ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
-
-                                        <div>
-
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                                Prize Name
-                                            </label>
-
-                                            <input
-                                                value={prize.name}
-                                                onChange={(e) =>
-                                                    handlePrizeChange(
-                                                        index,
-                                                        "name",
-                                                        e.target.value
-                                                    )
-                                                }
-                                                placeholder="First Prize"
-                                                required
-                                                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-600"
-                                            />
-
+                            return (
+                                <>
+                                    {isDual && (
+                                        <div className="px-6 pt-3 border-b border-gray-200 dark:border-zinc-800 bg-gray-50/60 dark:bg-zinc-950/60 shrink-0">
+                                            <div className="flex items-center gap-2">
+                                                {[
+                                                    { id: 'Physical', label: 'Physical Track', icon: MapPin, count: physicalPrizes.length, total: physicalTotal },
+                                                    { id: 'Virtual', label: 'Virtual Track', icon: Globe, count: virtualPrizes.length, total: virtualTotal }
+                                                ].map((tab) => {
+                                                    const isActive = modalPrizeTab.toLowerCase() === tab.id.toLowerCase();
+                                                    const TabIcon = tab.icon;
+                                                    return (
+                                                        <button
+                                                            key={tab.id}
+                                                            type="button"
+                                                            onClick={() => setModalPrizeTab(tab.id)}
+                                                            className={`relative pb-3 px-4 font-bold text-xs sm:text-sm flex items-center gap-2 transition cursor-pointer border-b-2 outline-none ${
+                                                                isActive
+                                                                    ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400'
+                                                                    : 'border-transparent text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'
+                                                            }`}
+                                                        >
+                                                            <TabIcon className="w-4 h-4" />
+                                                            <span>{tab.label}</span>
+                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                                                                isActive
+                                                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                                                                    : 'bg-gray-200 dark:bg-zinc-800 text-gray-600 dark:text-zinc-400'
+                                                            }`}>
+                                                                {tab.count}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
+                                    )}
 
-                                        {(event?.HackathonMode === 'Both' || event?.HackathonMode === 'Virtual and Physical') && (
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                                    Track / Mode
-                                                </label>
-                                                <select
-                                                    value={prize.track || 'Physical'}
-                                                    onChange={(e) =>
-                                                        handlePrizeChange(
-                                                            index,
-                                                            "track",
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-600"
-                                                >
-                                                    <option value="Physical">Physical Track</option>
-                                                    <option value="Virtual">Virtual Track</option>
-                                                    <option value="Overall">Overall</option>
-                                                </select>
+                                    {/* Modal Body / Scrollable Content */}
+                                    <form
+                                        onSubmit={handleDeclarePrizes}
+                                        className="flex-1 overflow-y-auto p-6 space-y-4"
+                                    >
+                                        {/* Active Track Header Banner */}
+                                        {isDual && (
+                                            <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 flex items-center justify-between gap-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                                        {modalPrizeTab.toLowerCase() === 'virtual' ? <Globe className="w-4 h-4" /> : <MapPin className="w-4 h-4" />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-gray-900 dark:text-white">
+                                                            {modalPrizeTab} Track Prizes Setup
+                                                        </p>
+                                                        <p className="text-[11px] text-gray-500 dark:text-zinc-400">
+                                                            Configure ranked awards exclusively for {modalPrizeTab} participants
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="text-right">
+                                                    <span className="text-[10px] font-semibold text-gray-400 block uppercase tracking-wider">
+                                                        Track Total
+                                                    </span>
+                                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                                        ₹{currentTrackTotal.toLocaleString('en-IN')}
+                                                    </span>
+                                                </div>
                                             </div>
                                         )}
 
-                                        <div>
+                                        {/* List of Prizes for Current Track */}
+                                        <div className="space-y-3">
+                                            {currentTrackPrizes.length === 0 ? (
+                                                <div className="p-8 text-center rounded-2xl border border-dashed border-gray-200 dark:border-zinc-800">
+                                                    <Trophy className="w-8 h-8 text-gray-300 dark:text-zinc-700 mx-auto mb-2" />
+                                                    <p className="text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                                        No prizes configured for {modalPrizeTab} Track yet.
+                                                    </p>
+                                                    <p className="text-[11px] text-gray-400 mt-1">
+                                                        Click "+ Add {modalPrizeTab} Prize" below to create one.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                currentTrackPrizes.map((item, cardIdx) => (
+                                                    <div
+                                                        key={item.originalIndex}
+                                                        className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black p-4 space-y-3 shadow-xs"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-black flex items-center justify-center">
+                                                                    #{cardIdx + 1}
+                                                                </span>
+                                                                <span className="text-xs font-bold text-gray-900 dark:text-white">
+                                                                    {isDual ? `${modalPrizeTab} Track` : ''} Prize {cardIdx + 1}
+                                                                </span>
+                                                            </div>
 
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                                                Prize Money
-                                            </label>
+                                                            {prizes.length > 1 && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removePrize(item.originalIndex)}
+                                                                    className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-lg transition cursor-pointer"
+                                                                    title="Remove prize"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            )}
+                                                        </div>
 
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={prize.amount}
-                                                onChange={(e) =>
-                                                    handlePrizeChange(
-                                                        index,
-                                                        "amount",
-                                                        e.target.value
-                                                    )
-                                                }
-                                                placeholder="25000"
-                                                required
-                                                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black px-3 py-2.5 text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-600"
-                                            />
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            <div className="space-y-1">
+                                                                <label className="block text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                                                    Prize Title
+                                                                </label>
+                                                                <input
+                                                                    value={item.name}
+                                                                    onChange={(e) =>
+                                                                        handlePrizeChange(
+                                                                            item.originalIndex,
+                                                                            "name",
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                    placeholder={cardIdx === 0 ? "1st Prize / Champion" : cardIdx === 1 ? "2nd Prize / Runner Up" : "3rd Prize"}
+                                                                    required
+                                                                    className="w-full rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-black px-3.5 py-2.5 text-xs font-semibold text-gray-900 dark:text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                                                                />
+                                                            </div>
 
+                                                            <div className="space-y-1">
+                                                                <label className="block text-xs font-bold text-gray-700 dark:text-zinc-300">
+                                                                    Prize Money (₹)
+                                                                </label>
+                                                                <input
+                                                                    type="number"
+                                                                    min="0"
+                                                                    value={item.amount}
+                                                                    onChange={(e) =>
+                                                                        handlePrizeChange(
+                                                                            item.originalIndex,
+                                                                            "amount",
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                    placeholder="e.g. 50000"
+                                                                    required
+                                                                    className="w-full rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-black px-3.5 py-2.5 text-xs font-semibold text-gray-900 dark:text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
                                         </div>
 
-                                    </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => addPrize(modalPrizeTab)}
+                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 transition cursor-pointer"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" />
+                                            <span>Add {isDual ? `${modalPrizeTab} Prize` : 'Another Prize'}</span>
+                                        </button>
 
-                                </div>
+                                        {/* Footer Summary & Action Buttons */}
+                                        <div className="pt-4 border-t border-gray-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            {isDual ? (
+                                                <div className="text-[11px] text-gray-500 dark:text-zinc-400">
+                                                    <span>Physical: <strong className="text-gray-700 dark:text-zinc-200">₹{physicalTotal.toLocaleString('en-IN')}</strong></span>
+                                                    <span className="mx-2">•</span>
+                                                    <span>Virtual: <strong className="text-gray-700 dark:text-zinc-200">₹{virtualTotal.toLocaleString('en-IN')}</strong></span>
+                                                    <span className="mx-2">•</span>
+                                                    <span>Total: <strong className="text-emerald-600 dark:text-emerald-400">₹{(physicalTotal + virtualTotal).toLocaleString('en-IN')}</strong></span>
+                                                </div>
+                                            ) : <div />}
 
-                            ))}
+                                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsPrizeModalOpen(false)}
+                                                    className="rounded-xl border border-gray-200 dark:border-zinc-800 px-4 py-2.5 text-xs font-bold text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-900 transition cursor-pointer"
+                                                >
+                                                    Cancel
+                                                </button>
 
-                            <button
-                                type="button"
-                                onClick={addPrize}
-                                className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-500"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Add Another Prize
-                            </button>
-
-                            <div className="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-800 pt-4">
-
-                                <button
-                                    type="button"
-                                    onClick={() => setIsPrizeModalOpen(false)}
-                                    className="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300"
-                                >
-                                    Cancel
-                                </button>
-
-                                <button
-                                    type="submit"
-                                    className="rounded-lg bg-emerald-700 dark:bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white dark:text-black hover:bg-emerald-800 dark:hover:bg-emerald-600 transition shadow-sm"
-                                >
-                                    {declaredPrizes.length > 0 ? "Update Prizes" : "Declare Prizes"}
-                                </button>
-
-                            </div>
-
-                        </form>
-
+                                                <button
+                                                    type="submit"
+                                                    className="rounded-xl bg-emerald-700 dark:bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-800 dark:hover:bg-emerald-500 transition shadow-sm cursor-pointer"
+                                                >
+                                                    {declaredPrizes.length > 0 ? "Update Prizes" : "Declare Prizes"}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </>
+                            );
+                        })()}
                     </div>
-
                 </div>
             )}
 

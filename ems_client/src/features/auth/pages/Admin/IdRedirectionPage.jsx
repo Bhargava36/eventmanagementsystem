@@ -316,18 +316,18 @@ function IdRedirectionPage() {
     "#102B59";
 
   return (
-    <div className="min-h-screen w-full bg-[#F4F6FA] p-4 font-sans text-slate-900 sm:p-6 lg:p-8">
+    <div className="min-h-screen w-full bg-[#F4F6FA] dark:bg-black p-4 font-sans text-slate-900 dark:text-white sm:p-6 lg:p-8 transition-colors">
       <div className="mx-auto max-w-[1600px] space-y-6">
         <button
           type="button"
           onClick={() => navigate("/admin/physical-event")}
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-slate-600 transition hover:text-blue-900"
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-slate-600 dark:text-zinc-400 transition hover:text-blue-900 dark:hover:text-blue-400"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Physical Event
         </button>
 
-        <section className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 lg:flex-row lg:items-center">
+        <section className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-6 shadow-sm sm:p-8 lg:flex-row lg:items-center">
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-4">
               <div
@@ -338,22 +338,22 @@ function IdRedirectionPage() {
               </div>
 
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
                   Event Management
                 </p>
-                <h1 className="text-2xl font-extrabold sm:text-4xl">
+                <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white sm:text-4xl">
                   ID Card Generation
                 </h1>
               </div>
             </div>
 
-            <p className="max-w-2xl text-sm leading-6 text-slate-500">
+            <p className="max-w-2xl text-sm leading-6 text-slate-500 dark:text-zinc-400">
               Generate, preview, and download individual participant ID
               cards with event branding and QR-based verification.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-              <strong className="text-slate-900">{eventName}</strong>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 dark:text-zinc-400">
+              <strong className="text-slate-900 dark:text-white">{eventName}</strong>
 
               <span className="flex items-center gap-1.5">
                 <CalendarDays className="h-4 w-4" />
@@ -395,7 +395,7 @@ function IdRedirectionPage() {
         {error && (
           <div
             role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 p-4 text-sm text-red-700 dark:text-red-400"
           >
             {error}
           </div>
@@ -404,14 +404,14 @@ function IdRedirectionPage() {
         {message && (
           <div
             role="status"
-            className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"
+            className="rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/20 p-4 text-sm text-emerald-800 dark:text-emerald-400"
           >
             {message}
           </div>
         )}
 
         {!loading && event && !isFeatureEnabled && (
-          <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <div role="status" className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 p-4 text-sm text-amber-800 dark:text-amber-400">
             ID card generation is currently disabled by the event admin.
           </div>
         )}
@@ -441,7 +441,7 @@ function IdRedirectionPage() {
           ].map(({ label, value, Icon }) => (
             <div
               key={label}
-              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+              className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-6 shadow-sm"
             >
               <div
                 className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl"
@@ -453,19 +453,19 @@ function IdRedirectionPage() {
                 })}
               </div>
 
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                 {label}
               </p>
 
-              <p className="mt-1 text-3xl font-extrabold">
+              <p className="mt-1 text-3xl font-extrabold text-slate-900 dark:text-white">
                 {loading ? "—" : value}
               </p>
             </div>
           ))}
         </section>
 
-        <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-100 p-6 lg:flex-row lg:items-center lg:justify-between">
+        <section className="overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-zinc-800 p-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap gap-2">
               {[
                 ["all", `All Participants (${stats.total})`],
@@ -479,7 +479,7 @@ function IdRedirectionPage() {
                   className={`rounded-full px-4 py-2.5 text-sm font-bold transition ${
                     filter === value
                       ? "text-white"
-                      : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                      : "border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-900"
                   }`}
                   style={
                     filter === value
@@ -493,29 +493,29 @@ function IdRedirectionPage() {
             </div>
 
             <div className="relative w-full lg:w-96">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
 
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search participant, team or college..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-slate-500"
+                className="w-full rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/70 py-3 pl-11 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 outline-none focus:border-slate-500 dark:focus:border-zinc-500 transition"
               />
             </div>
           </div>
 
-          <div className="border-b border-slate-100 p-6">
-            <h2 className="text-lg font-bold">
+          <div className="border-b border-slate-100 dark:border-zinc-800 p-6">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               Physical Event Participants
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-zinc-400">
               Each registered participant receives an individual ID card.
             </p>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1000px] text-left text-sm">
-              <thead className="bg-slate-50">
+              <thead className="bg-slate-50 dark:bg-zinc-900/50">
                 <tr>
                   {[
                     "Participant",
@@ -527,7 +527,7 @@ function IdRedirectionPage() {
                   ].map((heading) => (
                     <th
                       key={heading}
-                      className="px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-400"
+                      className="px-6 py-4 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-zinc-500"
                     >
                       {heading}
                     </th>
@@ -535,12 +535,12 @@ function IdRedirectionPage() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                 {loading && (
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-6 py-12 text-center text-slate-500"
+                      className="px-6 py-12 text-center text-slate-500 dark:text-zinc-400"
                     >
                       Loading event and participants...
                     </td>
@@ -551,22 +551,22 @@ function IdRedirectionPage() {
                   filteredParticipants.map((participant, index) => (
                     <tr
                       key={getUserId(participant) ?? index}
-                      className="transition hover:bg-slate-50"
+                      className="transition hover:bg-slate-50/80 dark:hover:bg-zinc-900/40"
                     >
                       <td className="px-6 py-4">
-                        <p className="font-bold">
+                        <p className="font-bold text-slate-900 dark:text-white">
                           {getName(participant)}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 dark:text-zinc-400">
                           {getValue(participant, "Email", "email")}
                         </p>
                       </td>
 
-                      <td className="px-6 py-4 font-mono text-xs">
+                      <td className="px-6 py-4 font-mono text-xs text-slate-800 dark:text-zinc-200">
                         {getCardId(participant) || "Pending"}
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-slate-800 dark:text-zinc-200">
                         {getValue(
                           participant,
                           "TeamName",
@@ -574,7 +574,7 @@ function IdRedirectionPage() {
                         ) || "Individual"}
                       </td>
 
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-slate-600 dark:text-zinc-400">
                         {getValue(participant, "College", "college") || "—"}
                       </td>
 
@@ -582,8 +582,8 @@ function IdRedirectionPage() {
                         <span
                           className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold ${
                             isGenerated(participant)
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-orange-50 text-orange-700"
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+                              : "bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400"
                           }`}
                         >
                           {isGenerated(participant) ? (
@@ -604,7 +604,7 @@ function IdRedirectionPage() {
                           disabled={!isGenerated(participant)}
                           onClick={() => setSelected(participant)}
                           title="View ID card"
-                          className="rounded-lg border border-slate-200 p-2 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="rounded-lg border border-slate-200 dark:border-zinc-800 p-2 hover:bg-slate-100 dark:hover:bg-zinc-900 transition disabled:cursor-not-allowed disabled:opacity-40"
                           style={{ color: themeColor }}
                         >
                           <Eye className="h-4 w-4" />
@@ -617,7 +617,7 @@ function IdRedirectionPage() {
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-6 py-12 text-center text-slate-500"
+                      className="px-6 py-12 text-center text-slate-500 dark:text-zinc-400"
                     >
                       No participants found for this filter.
                     </td>
@@ -630,19 +630,19 @@ function IdRedirectionPage() {
 
         {selected && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/75 p-3 sm:p-5"
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 backdrop-blur-xs p-3 sm:p-5"
             onClick={() => setSelected(null)}
           >
             <div
-              className="my-auto w-full max-w-lg rounded-3xl bg-white p-4 text-slate-900 shadow-2xl sm:p-5"
+              className="my-auto w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 p-4 text-slate-900 dark:text-white shadow-2xl sm:p-5"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
                     Preview
                   </p>
-                  <h2 className="text-lg font-extrabold">
+                  <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
                     Participant ID Card
                   </h2>
                 </div>
@@ -650,7 +650,7 @@ function IdRedirectionPage() {
                 <button
                   type="button"
                   onClick={() => setSelected(null)}
-                  className="rounded-lg p-2 transition hover:bg-slate-100"
+                  className="rounded-lg p-2 transition text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-900"
                   aria-label="Close preview"
                 >
                   <X className="h-5 w-5" />
@@ -670,7 +670,7 @@ function IdRedirectionPage() {
                 <button
                   type="button"
                   onClick={() => setSelected(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold transition hover:bg-slate-50"
+                  className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 px-4 py-2 text-sm font-semibold transition hover:bg-slate-100 dark:hover:bg-zinc-800"
                 >
                   Close
                 </button>
