@@ -43,6 +43,7 @@ import FoodRedirectionPage from '../features/auth/pages/Admin/FoodRedirectionPag
 import IdRedirectionPage from '../features/auth/pages/Admin/IdRedirectionPage';
 import VerifyIdPage from '../features/public/pages/VerifyIdPage';
 import ThreePreloader from '../components/ui/ThreePreloader';
+import Evaluators from '../features/auth/pages/Admin/Evaluators';
 
 function App() {
   const [isReady, setIsReady] = useState(false);
@@ -103,6 +104,7 @@ function App() {
             <Route path="accomodation" element={<AccomodationRedirectPage />} />
             <Route path="food" element={<FoodRedirectionPage />} />
             <Route path="id-card" element={<IdRedirectionPage />} />
+            <Route path="evaluators" element={<Evaluators />} />
           </Route>
         </Route>
 
