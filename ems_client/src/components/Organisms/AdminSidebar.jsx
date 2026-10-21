@@ -68,24 +68,100 @@ const SidebarContent = ({
       return {};
     }
   })();
+
   const adminDisplayName = storedAdmin?.AdminName || user?.AdminName || 'Admin';
+  const hackathonMode = storedAdmin?.HackathonMode || user?.HackathonMode || 'Both';
+  const normalizedMode = String(hackathonMode).trim().toLowerCase();
+  const showVirtual =
+    normalizedMode === 'virtual' ||
+    normalizedMode === 'both' ||
+    normalizedMode === 'hybrid' ||
+    normalizedMode === 'virtual and physical' ||
+    normalizedMode === 'virtual & physical';
+  const showPhysical =
+    normalizedMode === 'physical' ||
+    normalizedMode === 'both' ||
+    normalizedMode === 'hybrid' ||
+    normalizedMode === 'virtual and physical' ||
+    normalizedMode === 'virtual & physical';
+
+
 
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', badge: null, end: true },
-    { name: 'Virtual Event', icon: Radio, path: '/admin/virtual-event', badge: null, end: false },
-    { name: 'Physical Event', icon: Atom, path: '/admin/physical-event', badge: null, end: false },
-    { name: 'Evaluators', icon: UserPen, path: '/admin/evaluators', badge: null, end: false },
-    { name: 'Event Settings', icon: Sliders, path: '/admin/settings', badge: null, end: false },
-    { name: 'Core Team', icon: UsersRound, path: '/admin/core-team', badge: null, end: false },
-    { name: 'Registered Teams', icon: Users, path: '/admin/teams', badge: null, end: false },
-    { name: 'Profile', icon: CircleUserRound, path: '/admin/profile', badge: null, end: false },
+    {
+      name: 'Dashboard',
+      icon: LayoutDashboard,
+      path: '/admin/dashboard',
+      badge: null,
+      end: true,
+    },
+
+    ...(showVirtual
+      ? [
+        {
+          name: 'Virtual Event',
+          icon: Radio,
+          path: '/admin/virtual-event',
+          badge: null,
+          end: false,
+        },
+      ]
+      : []),
+
+    ...(showPhysical
+      ? [
+        {
+          name: 'Physical Event',
+          icon: Atom,
+          path: '/admin/physical-event',
+          badge: null,
+          end: false,
+        },
+      ]
+      : []),
+
+    {
+      name: 'Evaluators',
+      icon: UserPen,
+      path: '/admin/evaluators',
+      badge: null,
+      end: false,
+    },
+    {
+      name: 'Event Settings',
+      icon: Sliders,
+      path: '/admin/settings',
+      badge: null,
+      end: false,
+    },
+    {
+      name: 'Core Team',
+      icon: UsersRound,
+      path: '/admin/core-team',
+      badge: null,
+      end: false,
+    },
+    {
+      name: 'Registered Teams',
+      icon: Users,
+      path: '/admin/teams',
+      badge: null,
+      end: false,
+    },
+    {
+      name: 'Profile',
+      icon: CircleUserRound,
+      path: '/admin/profile',
+      badge: null,
+      end: false,
+    },
   ];
+
 
   return (
     <aside
-      className={`relative ${
-        isMobile ? 'w-[280px]' : collapsed ? 'w-[80px]' : 'w-[280px]'
-      } h-screen relative z-10 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
+      className={`relative ${isMobile ? 'w-[280px]' : collapsed ? 'w-[80px]' : 'w-[280px]'
+        } h-screen relative z-10 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
     >
       {!isMobile && (
         <button
@@ -106,15 +182,13 @@ const SidebarContent = ({
       )}
 
       <div
-        className={`flex items-center gap-3 mb-8 mt-2 ${
-          !isMobile && collapsed ? 'justify-center' : ''
-        }`}
+        className={`flex items-center gap-3 mb-8 mt-2 ${!isMobile && collapsed ? 'justify-center' : ''
+          }`}
       >
         <div className="relative shrink-0">
           <div
-            className={`${
-              !isMobile && collapsed ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg'
-            } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300`}
+            className={`${!isMobile && collapsed ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg'
+              } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300`}
           >
             {adminDisplayName.charAt(0).toUpperCase()}
           </div>
@@ -133,7 +207,7 @@ const SidebarContent = ({
             </p>
           </motion.div>
         )}
-       
+
       </div>
 
       <div className="border-t border-gray-200 dark:border-[#1A2440] mb-4"></div>
@@ -149,21 +223,18 @@ const SidebarContent = ({
               title={!isMobile && collapsed ? item.name : ''}
               onClick={() => isMobile && setMobileOpen(false)}
               className={({ isActive }) =>
-                `w-full flex items-center ${
-                  !isMobile && collapsed ? 'justify-center' : 'justify-between'
-                } px-4 py-3 rounded-full transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? 'bg-emerald-700 dark:bg-emerald-500 text-white shadow-md'
-                    : 'hover:bg-emerald-50 dark:hover:bg-emerald-800'
+                `w-full flex items-center ${!isMobile && collapsed ? 'justify-center' : 'justify-between'
+                } px-4 py-3 rounded-full transition-all duration-200 cursor-pointer ${isActive
+                  ? 'bg-emerald-700 dark:bg-emerald-500 text-white shadow-md'
+                  : 'hover:bg-emerald-50 dark:hover:bg-emerald-800'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
                   <div
-                    className={`flex items-center ${
-                      !isMobile && collapsed ? '' : 'gap-3'
-                    }`}
+                    className={`flex items-center ${!isMobile && collapsed ? '' : 'gap-3'
+                      }`}
                   >
                     <div className="relative shrink-0">
                       <Icon className="w-5 h-5" />
@@ -187,14 +258,13 @@ const SidebarContent = ({
       </nav>
 
       <div className="mt-auto">
-<ThemeToggle variant="sidebar" canShowText={canShowText} />
+        <ThemeToggle variant="sidebar" canShowText={canShowText} />
         <div className="border-t border-gray-200 dark:border-[#1A2440] my-4"></div>
         <button
           onClick={handleLogout}
           title={!isMobile && collapsed ? 'Logout' : ''}
-          className={`w-full flex items-center ${
-            !isMobile && collapsed ? 'justify-center' : 'gap-3'
-          } px-4 py-3 rounded-full transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer`}
+          className={`w-full flex items-center ${!isMobile && collapsed ? 'justify-center' : 'gap-3'
+            } px-4 py-3 rounded-full transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer`}
         >
           <LogOut className="w-5 h-5 shrink-0" />
           {canShowText && (
@@ -236,9 +306,8 @@ const Sidebar = () => {
       )}
 
       <div
-        className={`fixed top-0 left-0 z-50 h-full lg:hidden transition-transform duration-300 ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 left-0 z-50 h-full lg:hidden transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <SidebarContent
           isMobile={true}

@@ -47,6 +47,13 @@ function formatTime(date) {
     });
 }
 
+function normalizeHackathonMode(mode) {
+    return String(mode || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+}
+
 function AdminDashboard() {
     const admin = JSON.parse(localStorage.getItem("admin") || "null");
     const eventId = admin?.EventId;
@@ -61,6 +68,20 @@ function AdminDashboard() {
     })();
 
     const [event, setEvent] = useState(cachedData?.event || null);
+
+    const currentMode = normalizeHackathonMode(
+        event?.HackathonMode || admin?.HackathonMode
+    );
+    const isVirtualMode = currentMode === "virtual";
+    const isPhysicalMode = currentMode === "physical";
+    const isBothMode =
+        currentMode === "both" ||
+        currentMode === "hybrid" ||
+        currentMode === "virtual and physical" ||
+        currentMode === "virtual & physical";
+
+    const showVirtual = isVirtualMode || isBothMode;
+    const showPhysical = isPhysicalMode || isBothMode;
 
     const [usersCount, setUsersCount] = useState(cachedData?.usersCount ?? 0);
     const [teamsCount, setTeamsCount] = useState(cachedData?.teamsCount ?? 0);
@@ -107,6 +128,22 @@ function AdminDashboard() {
         Facilities: "",
         Requirements: ""
     });
+
+    useEffect(() => {
+        if (isVirtualMode) {
+            setActivePrizeTab("Virtual");
+            setModalPrizeTab("Virtual");
+            setGuidelinesActiveTab("virtual");
+        } else if (isPhysicalMode) {
+            setActivePrizeTab("Physical");
+            setModalPrizeTab("Physical");
+            setGuidelinesActiveTab("physical");
+        } else if (isBothMode) {
+            setActivePrizeTab("Virtual");
+            setModalPrizeTab("Virtual");
+            setGuidelinesActiveTab("virtual");
+        }
+    }, [event?.HackathonMode, isVirtualMode, isPhysicalMode, isBothMode]);
 
     const openGuidelinesModal = () => {
         if (event) {
@@ -257,27 +294,28 @@ function AdminDashboard() {
     };
 
     const openPrizeModal = () => {
-        const isDual = event?.HackathonMode === 'Both' || 
-                       event?.HackathonMode === 'Virtual and Physical' ||
-                       (declaredPrizes && declaredPrizes.some(p => (p.Track || '').toLowerCase() === 'virtual'));
-        setModalPrizeTab(activePrizeTab || (isDual ? 'Physical' : 'Overall'));
+        const isDual = isBothMode;
+        const singleTrack = isVirtualMode ? "Virtual" : isPhysicalMode ? "Physical" : "Overall";
+        setModalPrizeTab(isDual ? (activePrizeTab || "Virtual") : singleTrack);
         if (declaredPrizes && declaredPrizes.length > 0) {
             setPrizes(
                 declaredPrizes.map((p, idx) => ({
                     name: p.Name || p.name || `Prize ${p.PrizeRank || idx + 1}`,
                     amount: String(p.Prize || p.prize || p.amount || ""),
-                    track: p.Track || p.track || (isDual ? 'Physical' : 'Overall')
+                    track: isDual
+                        ? (p.Track || p.track || "Virtual")
+                        : singleTrack
                 }))
             );
         } else {
             if (isDual) {
                 setPrizes([
-                    { name: "1st Prize", amount: "", track: 'Physical' },
-                    { name: "1st Prize", amount: "", track: 'Virtual' }
+                    { name: "1st Prize", amount: "", track: 'Virtual' },
+                    { name: "1st Prize", amount: "", track: 'Physical' }
                 ]);
             } else {
                 setPrizes([
-                    { name: "1st Prize", amount: "", track: 'Overall' }
+                    { name: "1st Prize", amount: "", track: singleTrack }
                 ]);
             }
         }
@@ -298,10 +336,11 @@ function AdminDashboard() {
     };
 
     const addPrize = (targetTrack) => {
-        const isDual = event?.HackathonMode === 'Both' || 
-                       event?.HackathonMode === 'Virtual and Physical' ||
-                       (declaredPrizes && declaredPrizes.some(p => (p.Track || '').toLowerCase() === 'virtual'));
-        const trackToUse = targetTrack || modalPrizeTab || (isDual ? 'Physical' : 'Overall');
+        const isDual = isBothMode;
+        const singleTrack = isVirtualMode ? "Virtual" : isPhysicalMode ? "Physical" : "Overall";
+        const trackToUse = isDual
+            ? (targetTrack || modalPrizeTab || "Virtual")
+            : singleTrack;
         const trackCount = prizes.filter((p) => (p.track || '').toLowerCase() === trackToUse.toLowerCase()).length;
         setPrizes((currentPrizes) => [
             ...currentPrizes,
@@ -727,7 +766,7 @@ function AdminDashboard() {
                                 </button>
                             </div>
 
-                            {event?.HackathonMode === 'Both' ? (
+                            {isBothMode ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-4 rounded-xl border border-emerald-100 dark:border-zinc-800 bg-emerald-50/30 dark:bg-black space-y-3">
                                         <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider">
@@ -772,13 +811,17 @@ function AdminDashboard() {
                                     <div className="p-4 rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-black">
                                         <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Facilities Provided:</p>
                                         <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line">
-                                            {event?.Facilities || event?.VirtualFacilities || event?.PhysicalFacilities || "No facilities added yet."}
+                                            {isVirtualMode
+                                                ? (event?.VirtualFacilities || event?.Facilities || "No virtual facilities added yet.")
+                                                : (event?.PhysicalFacilities || event?.Facilities || "No physical facilities added yet.")}
                                         </p>
                                     </div>
                                     <div className="p-4 rounded-xl border border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-black">
                                         <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Requirements:</p>
                                         <p className="text-xs text-gray-800 dark:text-gray-200 mt-1 whitespace-pre-line">
-                                            {event?.Requirements || event?.VirtualRequirements || event?.PhysicalRequirements || "No requirements added yet."}
+                                            {isVirtualMode
+                                                ? (event?.VirtualRequirements || event?.Requirements || "No virtual requirements added yet.")
+                                                : (event?.PhysicalRequirements || event?.Requirements || "No physical requirements added yet.")}
                                         </p>
                                     </div>
                                 </div>
@@ -821,10 +864,7 @@ function AdminDashboard() {
                         const virtualPrizesList = declaredPrizes.filter((p) => (p.Track || '').toLowerCase() === 'virtual');
                         const overallPrizesList = declaredPrizes.filter((p) => (p.Track || '').toLowerCase() === 'overall' || !p.Track);
 
-                        const hasSeparateTrackPrizes = physicalPrizesList.length > 0 || virtualPrizesList.length > 0;
-                        const isDualTrackEvent = (event?.HackathonMode || '').toLowerCase().includes('both') ||
-                                                 (event?.HackathonMode || '').toLowerCase().includes('virtual and physical') ||
-                                                 hasSeparateTrackPrizes;
+                        const isDualTrackEvent = isBothMode;
 
                         const currentTrackPrizes = isDualTrackEvent
                             ? (activePrizeTab === 'Virtual'
@@ -848,21 +888,29 @@ function AdminDashboard() {
 
                         const activeTrackPool = isDualTrackEvent
                             ? (activePrizeTab === 'Virtual' ? (event?.VirtualPrizeMoney || event?.PrizeMoney) : (event?.PhysicalPrizeMoney || event?.PrizeMoney))
-                            : event?.PrizeMoney;
+                            : isVirtualMode
+                                ? (event?.VirtualPrizeMoney || event?.PrizeMoney)
+                                : isPhysicalMode
+                                    ? (event?.PhysicalPrizeMoney || event?.PrizeMoney)
+                                    : event?.PrizeMoney;
 
                         const firstPrizeAmount = formatPrizeText(firstPrizeObj?.Prize || (currentTrackPrizes.length === 0 ? activeTrackPool : null), activePrizeTab === 'Virtual' ? 'Virtual Champion' : 'Grand Champion');
                         const secondPrizeAmount = formatPrizeText(secondPrizeObj?.Prize, 'Runner Up');
                         const thirdPrizeAmount = formatPrizeText(thirdPrizeObj?.Prize, 'Second Runner Up');
 
-                        const firstPrizeDesc = isDualTrackEvent && activePrizeTab === 'Virtual'
+                        const isVirtualPrizeTrack = isDualTrackEvent
+                            ? activePrizeTab === 'Virtual'
+                            : isVirtualMode;
+
+                        const firstPrizeDesc = isVirtualPrizeTrack
                             ? 'Virtual Grand Champion • Gold Trophy & Direct Incubation'
                             : 'On-Campus Grand Champion • Gold Trophy & Incubation';
 
-                        const secondPrizeDesc = isDualTrackEvent && activePrizeTab === 'Virtual'
+                        const secondPrizeDesc = isVirtualPrizeTrack
                             ? 'Virtual First Runner Up • Silver Trophy & Cloud Credits'
                             : 'On-Campus First Runner Up • Silver Trophy & Mentorship';
 
-                        const thirdPrizeDesc = isDualTrackEvent && activePrizeTab === 'Virtual'
+                        const thirdPrizeDesc = isVirtualPrizeTrack
                             ? 'Virtual Second Runner Up • Bronze Shield & Certificates'
                             : 'On-Campus Second Runner Up • Bronze Shield & Swag';
 
@@ -875,7 +923,7 @@ function AdminDashboard() {
                         return (
                             <div className="space-y-0">
                                 {/* Track Tabs for Dual Track Hackathons matching Event Details Page */}
-                                {isDualTrackEvent && (
+                                {isBothMode && (
                                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 relative z-10 -mb-px">
                                         <div className="flex items-end gap-2 overflow-x-auto">
                                             {[
@@ -1322,9 +1370,7 @@ function AdminDashboard() {
 
                         {/* Track Tabs & Content */}
                         {(() => {
-                            const isDual = event?.HackathonMode === 'Both' || 
-                                           event?.HackathonMode === 'Virtual and Physical' || 
-                                           prizes.some(p => (p.track || '').toLowerCase() === 'virtual' || (p.track || '').toLowerCase() === 'physical');
+                            const isDual = isBothMode;
 
                             const physicalPrizes = prizes
                                 .map((prize, originalIndex) => ({ ...prize, originalIndex }))
@@ -1341,7 +1387,9 @@ function AdminDashboard() {
                                 ? (modalPrizeTab.toLowerCase() === 'virtual' ? virtualPrizes : physicalPrizes)
                                 : prizes.map((prize, originalIndex) => ({ ...prize, originalIndex }));
 
-                            const currentTrackTotal = modalPrizeTab.toLowerCase() === 'virtual' ? virtualTotal : physicalTotal;
+                            const currentTrackTotal = modalPrizeTab.toLowerCase() === 'virtual'
+                                ? virtualTotal
+                                : physicalTotal;
 
                             return (
                                 <>
@@ -1589,7 +1637,7 @@ function AdminDashboard() {
                                 </p>
                             </div>
 
-                            {event?.HackathonMode === 'Both' ? (
+                            {isBothMode ? (
                                 <div className="space-y-4">
                                     <div className="flex items-end gap-2 overflow-x-auto border-b border-gray-200 dark:border-zinc-800 -mb-[1px]">
                                         {[
@@ -1693,18 +1741,18 @@ function AdminDashboard() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
-                                            {event?.HackathonMode === 'Virtual' ? 'Virtual Facilities (One per line)' : 'Facilities Provided (One per line)'}
+                                            {isVirtualMode ? 'Virtual Facilities (One per line)' : 'Facilities Provided (One per line)'}
                                         </label>
                                         <textarea
                                             rows="5"
-                                            value={event?.HackathonMode === 'Virtual' ? (guidelinesData.VirtualFacilities || guidelinesData.Facilities) : guidelinesData.Facilities}
+                                            value={isVirtualMode ? (guidelinesData.VirtualFacilities || guidelinesData.Facilities) : guidelinesData.Facilities}
                                             onChange={(e) => {
                                                 const val = e.target.value;
                                                 setGuidelinesData((prev) => ({
                                                     ...prev,
                                                     Facilities: val,
-                                                    VirtualFacilities: event?.HackathonMode === 'Virtual' ? val : prev.VirtualFacilities,
-                                                    PhysicalFacilities: event?.HackathonMode === 'Physical' ? val : prev.PhysicalFacilities
+                                                    VirtualFacilities: isVirtualMode ? val : prev.VirtualFacilities,
+                                                    PhysicalFacilities: isPhysicalMode ? val : prev.PhysicalFacilities
                                                 }));
                                             }}
                                             placeholder="High speed Wi-Fi&#10;Refreshments&#10;Mentorship"
@@ -1713,18 +1761,18 @@ function AdminDashboard() {
                                     </div>
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
-                                            {event?.HackathonMode === 'Virtual' ? 'Virtual Requirements (One per line)' : 'Participant Requirements (One per line)'}
+                                            {isVirtualMode ? 'Virtual Requirements (One per line)' : 'Participant Requirements (One per line)'}
                                         </label>
                                         <textarea
                                             rows="5"
-                                            value={event?.HackathonMode === 'Virtual' ? (guidelinesData.VirtualRequirements || guidelinesData.Requirements) : guidelinesData.Requirements}
+                                            value={isVirtualMode ? (guidelinesData.VirtualRequirements || guidelinesData.Requirements) : guidelinesData.Requirements}
                                             onChange={(e) => {
                                                 const val = e.target.value;
                                                 setGuidelinesData((prev) => ({
                                                     ...prev,
                                                     Requirements: val,
-                                                    VirtualRequirements: event?.HackathonMode === 'Virtual' ? val : prev.VirtualRequirements,
-                                                    PhysicalRequirements: event?.HackathonMode === 'Physical' ? val : prev.PhysicalRequirements
+                                                    VirtualRequirements: isVirtualMode ? val : prev.VirtualRequirements,
+                                                    PhysicalRequirements: isPhysicalMode ? val : prev.PhysicalRequirements
                                                 }));
                                             }}
                                             placeholder="Bring personal laptop&#10;College ID card&#10;GitHub account"

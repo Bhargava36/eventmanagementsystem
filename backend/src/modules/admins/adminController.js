@@ -3,15 +3,15 @@ const adminService = require("../admins/adminServices");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-const registerAdmin = (req,res) => {
-    const {AdminName, Email, Password, Mobile, EventId} = req.body;
+const registerAdmin = (req, res) => {
+    const { AdminName, Email, Password, Mobile, EventId } = req.body;
 
-    if(!AdminName || !Email || !Password || !Mobile || !EventId){
-        return res.status(400).json({message: "All fields are required"});
+    if (!AdminName || !Email || !Password || !Mobile || !EventId) {
+        return res.status(400).json({ message: "All fields are required" });
     }
 
     adminService.createAdmin(AdminName, Email, Password, Mobile, EventId, (err, result) => {
-        if(err){
+        if (err) {
             const statusCode = err.statusCode || 400;
             return res.status(statusCode).json({
                 message: err.message || "Registration failed",
@@ -76,6 +76,7 @@ const loginAdminController = (req, res) => {
                 UserName: admin.UserName,
                 EventId: admin.EventId,
                 EventName: admin.EventName,
+                HackathonMode: admin.HackathonMode,
                 role: "admin"
             },
             process.env.JWT_SECRECT || "secret",
@@ -83,6 +84,7 @@ const loginAdminController = (req, res) => {
                 expiresIn: process.env.JWT_EXPIRES_IN || "7d"
             }
         );
+
 
         return res.status(200).json({
             message: "Login Successful",
@@ -95,6 +97,7 @@ const loginAdminController = (req, res) => {
                 Mobile: admin.Mobile,
                 EventId: admin.EventId,
                 EventName: admin.EventName,
+                HackathonMode: admin.HackathonMode,
                 role: "admin"
             }
         });
@@ -122,14 +125,14 @@ const getAllAdmin = (req, res) => {
 const getAdminById = (req, res) => {
     const id = req.params.id;
     adminService.getAdminById(id, (err, result) => {
-        if(err) {
+        if (err) {
             return res.status(500).json({
                 message: "Failed to get admins by id",
                 error: err
             });
         }
 
-        if(result.length === 0) {
+        if (result.length === 0) {
             return res.status(404).json({
                 message: "Admin not found"
             });
@@ -148,7 +151,7 @@ const getAdminByEventId = (req, res) => {
 
     adminService.getAdminByEventId(EventId, (err, result) => {
 
-        if(err) {
+        if (err) {
             return res.status(500).json({
                 message: "Failed to get admins by event",
                 error: err

@@ -45,6 +45,53 @@ import VerifyIdPage from '../features/public/pages/VerifyIdPage';
 import ThreePreloader from '../components/ui/ThreePreloader';
 import Evaluators from '../features/auth/pages/Admin/Evaluators';
 
+const normalizeHackathonMode = (mode) => {
+  const normalized = String(mode || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ');
+
+  if (
+    normalized === 'both' ||
+    normalized === 'hybrid' ||
+    normalized === 'virtual and physical' ||
+    normalized === 'physical and virtual' ||
+    normalized === 'virtual & physical' ||
+    normalized === 'physical & virtual'
+  ) {
+    return 'both';
+  }
+
+  if (normalized === 'virtual') {
+    return 'virtual';
+  }
+
+  if (normalized === 'physical') {
+    return 'physical';
+  }
+
+  return '';
+};
+
+function AdminModeRoute({ allowedModes, children }) {
+  let admin = {};
+
+  try {
+    admin = JSON.parse(localStorage.getItem('admin') || '{}');
+  } catch {
+    admin = {};
+  }
+
+  const mode = normalizeHackathonMode(admin?.HackathonMode);
+
+  if (!mode || !allowedModes.includes(mode)) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  return children;
+}
+
 function App() {
   const [isReady, setIsReady] = useState(false);
 
@@ -93,8 +140,8 @@ function App() {
           <Route path="/admin" element={<AdminSidebar />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="virtual-event" element={<AdminVirtualEvent />} />
-            <Route path="physical-event" element={<AdminPhysicalEvent />} />
+            <Route path="virtual-event" element={<AdminModeRoute allowedModes={['virtual', 'both']}> <AdminVirtualEvent /> </AdminModeRoute>} />
+            <Route path="physical-event" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AdminPhysicalEvent /> </AdminModeRoute>} />
             <Route path="core-team" element={<CoreTeam />} />
             <Route path="teams" element={<TeamsDashboard />} />
             <Route path="teams/:id" element={<TeamDetails />} />

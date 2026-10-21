@@ -46,7 +46,7 @@ const createAdmin = async (AdminName, Email, Password, Mobile, EventId, callback
 
 const loginAdmin = (Email, EventName, callback) => {
     const query = `
-        SELECT u.Id, u.UserName AS AdminName, u.UserName, u.Email, u.Mobile, u.Password, u.EventId, events.EventName, r.RoleName 
+        SELECT u.Id, u.UserName AS AdminName, u.UserName, u.Email, u.Mobile, u.Password, u.EventId, events.EventName, events.HackathonMode, r.RoleName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         JOIN events ON u.EventId = events.Id 

@@ -75,6 +75,24 @@ export default function AdminEventSettings() {
     IDCardEnabled: 0
   });
 
+  // Track visibility is controlled by the event's configured HackathonMode.
+  const normalizeMode = (mode) =>
+    String(mode || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
+
+  const currentMode = normalizeMode(eventData?.HackathonMode || settingsForm.HackathonMode);
+  const isVirtualMode = currentMode === 'virtual';
+  const isPhysicalMode = currentMode === 'physical';
+  const isBothMode =
+    currentMode === 'both' ||
+    currentMode === 'hybrid' ||
+    currentMode === 'virtual and physical' ||
+    currentMode === 'virtual & physical';
+  const showVirtual = isVirtualMode || isBothMode;
+  const showPhysical = isPhysicalMode || isBothMode;
+
   // Track Timelines State
   const [timelines, setTimelines] = useState([]);
   const [loadingTimelines, setLoadingTimelines] = useState(false);
@@ -90,6 +108,14 @@ export default function AdminEventSettings() {
     Description: '',
     OrderIndex: 1
   });
+
+  useEffect(() => {
+    if (isPhysicalMode) {
+      setActiveTab('physical');
+    } else if (isVirtualMode || isBothMode) {
+      setActiveTab('virtual');
+    }
+  }, [isVirtualMode, isPhysicalMode, isBothMode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -657,7 +683,7 @@ export default function AdminEventSettings() {
                 {eventData.EventName}
               </h2>
               <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Mode: <strong className="text-slate-700 dark:text-zinc-300">{eventData.HackathonMode || 'Virtual and Physical'}</strong> • Status: <strong className="text-slate-700 dark:text-zinc-300">{eventData.EventStatus || 'Active'}</strong>
+                Mode: <strong className="text-slate-700 dark:text-zinc-300">{eventData.HackathonMode || settingsForm.HackathonMode || 'Not specified'}</strong> • Status: <strong className="text-slate-700 dark:text-zinc-300">{eventData.EventStatus || 'Active'}</strong>
               </p>
             </div>
 
@@ -715,7 +741,11 @@ export default function AdminEventSettings() {
                   icon: Camera,
                   status: null,
                 },
-              ].map((tab) => {
+              ].filter((tab) => {
+                if (tab.id === 'virtual') return showVirtual;
+                if (tab.id === 'physical') return showPhysical;
+                return true;
+              }).map((tab) => {
                 const isActive = activeTab === tab.id;
                 const TabIcon = tab.icon;
 
