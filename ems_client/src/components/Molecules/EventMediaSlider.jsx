@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Maximize2, X, Image as ImageIcon } from 'lucide-react';
 
@@ -19,10 +20,10 @@ export default function EventMediaSlider({
   const normalizedImages = (images || []).map((img) => {
     if (!img) return null;
     if (typeof img === 'string') {
-      return img.startsWith('/uploads') ? `http://localhost:3000${img}` : img;
+      return img.startsWith('/uploads') ? `${API_BASE_URL}${img}` : img;
     }
     const url = img.url || img.ImageUrl || img.imageUrl || null;
-    return url && url.startsWith('/uploads') ? `http://localhost:3000${url}` : url;
+    return url && url.startsWith('/uploads') ? `${API_BASE_URL}${url}` : url;
   }).filter(Boolean);
 
   const [currentIndex, setCurrentIndex] = useState(0);

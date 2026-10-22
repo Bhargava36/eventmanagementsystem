@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -44,7 +45,7 @@ export default function EventSponsorsManager({ eventId }) {
     if (!eventId) return;
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:3000/api/sponsors/event/${eventId}`);
+      const res = await fetch(`${API_BASE_URL}/api/sponsors/event/${eventId}`);
       const data = await res.json();
       if (res.ok) {
         setSponsors(data.sponsors || []);
@@ -93,7 +94,7 @@ export default function EventSponsorsManager({ eventId }) {
       const fd = new FormData();
       fd.append('file', file);
 
-      const res = await fetch('http://localhost:3000/api/upload/single', {
+      const res = await fetch(`${API_BASE_URL}/api/upload/single`, {
         method: 'POST',
         body: fd,
       });
@@ -121,8 +122,8 @@ export default function EventSponsorsManager({ eventId }) {
 
     try {
       const url = editingSponsor
-        ? `http://localhost:3000/api/sponsors/${editingSponsor.Id}`
-        : 'http://localhost:3000/api/sponsors';
+        ? `${API_BASE_URL}/api/sponsors/${editingSponsor.Id}`
+        : `${API_BASE_URL}/api/sponsors`;
 
       const method = editingSponsor ? 'PUT' : 'POST';
 
@@ -151,7 +152,7 @@ export default function EventSponsorsManager({ eventId }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this sponsor?')) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/sponsors/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/sponsors/${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -241,7 +242,7 @@ export default function EventSponsorsManager({ eventId }) {
                     <img
                       src={
                         form.LogoUrl.startsWith('/uploads')
-                          ? `http://localhost:3000${form.LogoUrl}`
+                          ? `${API_BASE_URL}${form.LogoUrl}`
                           : form.LogoUrl
                       }
                       alt="preview"
@@ -362,7 +363,7 @@ export default function EventSponsorsManager({ eventId }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {sponsors.map((sp) => {
             const logo = sp.LogoUrl?.startsWith('/uploads')
-              ? `http://localhost:3000${sp.LogoUrl}`
+              ? `${API_BASE_URL}${sp.LogoUrl}`
               : sp.LogoUrl;
             return (
               <div

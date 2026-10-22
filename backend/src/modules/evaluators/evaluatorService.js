@@ -365,13 +365,14 @@ const evaluatorLogin = (username, password, callback) => {
         const evaluator = rows[0];
         const isMatch = await bcrypt.compare(password, evaluator.Password);
 
-        if (!isMatch && evaluator.PlainTextPassword !== password) {
+        if (!isMatch) {
             const error = new Error('Invalid evaluator credentials');
             error.status = 401;
             return callback(error, null);
         }
 
         delete evaluator.Password;
+        delete evaluator.PlainTextPassword;
         callback(null, evaluator);
     });
 };

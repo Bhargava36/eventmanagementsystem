@@ -1,8 +1,21 @@
 const db = require('../../config/db');
 
-const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, ParticipationModeOrCallback, callbackArg) => {
-    const ParticipationMode = typeof ParticipationModeOrCallback === 'string' ? ParticipationModeOrCallback : null;
-    const callback = typeof ParticipationModeOrCallback === 'function' ? ParticipationModeOrCallback : callbackArg;
+const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, ParticipationModeOrCallback, leadPhotoOrCallback, callbackArg) => {
+    let ParticipationMode = null;
+    let leadPhoto = null;
+    let callback = null;
+
+    if (typeof ParticipationModeOrCallback === 'function') {
+        callback = ParticipationModeOrCallback;
+    } else {
+        ParticipationMode = typeof ParticipationModeOrCallback === 'string' ? ParticipationModeOrCallback : null;
+        if (typeof leadPhotoOrCallback === 'function') {
+            callback = leadPhotoOrCallback;
+        } else {
+            leadPhoto = typeof leadPhotoOrCallback === 'string' ? leadPhotoOrCallback : null;
+            callback = callbackArg;
+        }
+    }
 
     if (!TeamName || !TeamLeadEmail || !TeamSize || !EventId) {
         const err = new Error('TeamName, TeamLeadEmail, TeamSize, and EventId are required');
@@ -15,7 +28,7 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
     const memberDetails = rawMembers.map((m) => {
         if (typeof m === 'string') {
             const email = m.trim().toLowerCase();
-            return email ? { Name: '', Email: email, College: '', State: '', Gender: 'Male' } : null;
+            return email ? { Name: '', Email: email, College: '', State: '', Gender: 'Male', Photo: null } : null;
         } else if (m && typeof m === 'object') {
             const email = (m.Email || m.email || '').trim().toLowerCase();
             return email ? {
@@ -23,7 +36,8 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
                 Email: email,
                 College: (m.College || m.college || '').trim(),
                 State: (m.State || m.state || '').trim(),
-                Gender: (m.Gender || m.gender || 'Male')
+                Gender: (m.Gender || m.gender || 'Male'),
+                Photo: (m.Photo || m.photo || '').trim() || null
             } : null;
         }
         return null;
@@ -124,7 +138,7 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
         }
 
         // 2. Fetch Team Lead User
-        const leadQuery = `SELECT Id, UserName, Email, College, State, Gender FROM users WHERE LOWER(Email) = ? LIMIT 1`;
+        const leadQuery = `SELECT Id, UserName, Email, College, State, Gender, Photo FROM users WHERE LOWER(Email) = ? LIMIT 1`;
         db.query(leadQuery, [leadEmailClean], (err, leadRows) => {
             if (err) return callback(err, null);
             if (!leadRows || leadRows.length === 0) {
@@ -172,7 +186,8 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
                             Email: m.Email,
                             College: u ? (u.College || m.College) : m.College,
                             State: u ? (u.State || m.State) : m.State,
-                            Gender: u ? (u.Gender || m.Gender || 'Male') : (m.Gender || 'Male')
+                            Gender: u ? (u.Gender || m.Gender || 'Male') : (m.Gender || 'Male'),
+                            Photo: m.Photo || (u ? u.Photo : null) || null
                         };
                     });
 
@@ -241,9 +256,10 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
                         if (err) return callback(err, null);
                         const newTeamId = teamResult.insertId;
 
+                        const finalLeadPhoto = leadPhoto || leader.Photo || null;
                         // Insert Team Lead into registered_team_members
                         const memberInserts = [
-                            [leader.Id, newTeamId, 'TeamLead', leader.Gender || 'Male', leader.UserName || '', leader.Email, leader.College || '', leader.State || '']
+                            [leader.Id, newTeamId, 'TeamLead', leader.Gender || 'Male', leader.UserName || '', leader.Email, leader.College || '', leader.State || '', finalLeadPhoto]
                         ];
 
                         // Insert other members into registered_team_members (whether they have a UserId or are external)
@@ -256,12 +272,13 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
                                 m.Name || '',
                                 m.Email,
                                 m.College || '',
-                                m.State || ''
+                                m.State || '',
+                                m.Photo || null
                             ]);
                         }
 
                         const insertMembersSql = `
-                            INSERT INTO registered_team_members (UserId, TeamId, Role, Gender, MemberName, MemberEmail, MemberCollege, MemberState)
+                            INSERT INTO registered_team_members (UserId, TeamId, Role, Gender, MemberName, MemberEmail, MemberCollege, MemberState, Photo)
                             VALUES ?
                         `;
                         db.query(insertMembersSql, [memberInserts], (err) => {
@@ -272,7 +289,7 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
                 };
 
                 if (memberEmailsClean.length > 0) {
-                    const membersQuery = `SELECT Id, UserName, Email, College, State, Gender FROM users WHERE LOWER(Email) IN (?)`;
+                    const membersQuery = `SELECT Id, UserName, Email, College, State, Gender, Photo FROM users WHERE LOWER(Email) IN (?)`;
                     db.query(membersQuery, [memberEmailsClean], (err, memberRows) => {
                         if (err) return callback(err, null);
                         const foundUsersMap = new Map();
@@ -308,6 +325,7 @@ const getTeamById = (id, callback) => {
             e.Posters, e.PrimaryColor, e.SecondaryColor, e.TertiaryColor, e.PrimaryTextColor, e.SecondaryTextColor, e.TertiaryTextColor,
             e.HackathonMode, e.Facilities, e.Requirements, e.TeamSize AS EventTeamSize,
             e.PhysicalResultsPublished, e.VirtualResultsPublished,
+            e.IdCardBackground, e.TeamCardBackground,
             er.ParticipationMode, er.Status AS RegistrationStatus 
         FROM registered_teams t 
         LEFT JOIN events e ON t.EventId = e.Id 
@@ -325,29 +343,70 @@ const getTeamById = (id, callback) => {
 
         const teamRaw = result[0];
         const memberQuery = `
-            SELECT tm.UserId, tm.Role, tm.Gender, tm.CreatedAt, 
-                   COALESCE(u.UserName, tm.MemberName, 'Member') AS UserName, 
-                   COALESCE(u.Email, tm.MemberEmail, '') AS Email, 
-                   COALESCE(u.College, tm.MemberCollege, '') AS College, 
-                   COALESCE(u.State, tm.MemberState, '') AS State 
+            SELECT 
+                tm.Id AS TeamMemberId,
+                tm.UserId, 
+                tm.Role, 
+                COALESCE(NULLIF(tm.Gender, ''), u.Gender, 'Male') AS Gender, 
+                tm.CreatedAt, 
+                COALESCE(tm.Photo, u.Photo, '') AS Photo, 
+                COALESCE(NULLIF(tm.MemberName, ''), u.UserName, 'Member') AS UserName, 
+                COALESCE(NULLIF(tm.MemberEmail, ''), u.Email, '') AS Email, 
+                COALESCE(NULLIF(tm.MemberCollege, ''), u.College, '') AS College, 
+                COALESCE(NULLIF(tm.MemberState, ''), u.State, '') AS State,
+                alloc.RoomId,
+                acc.room_num AS RoomNumber,
+                block.BlockName,
+                block.Gender AS BlockGender,
+                (alloc.RoomId IS NOT NULL) AS IsAllocated,
+                idCard.IdCardNumber
             FROM registered_team_members tm 
             LEFT JOIN users u ON tm.UserId = u.Id 
+            LEFT JOIN accommodation_allocations alloc ON alloc.EventId = ? AND alloc.UserId = tm.UserId
+            LEFT JOIN Accommodation acc ON acc.Id = alloc.RoomId
+            LEFT JOIN accommodation_blocks block ON block.Id = acc.BlockId
+            LEFT JOIN participant_id_cards idCard ON idCard.EventId = ? AND idCard.UserId = tm.UserId
             WHERE tm.TeamId = ? 
             ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, UserName
         `;
-        db.query(memberQuery, [id], (mErr, memberResult) => {
+        db.query(memberQuery, [teamRaw.EventId, teamRaw.EventId, id], (mErr, memberResult) => {
             const members = mErr ? [] : (memberResult || []);
 
-            // Count total registrations for this event
-            const countSql = `SELECT COUNT(*) AS totalRegistrations FROM registered_teams WHERE EventId = ?`;
-            db.query(countSql, [teamRaw.EventId], (cErr, countRows) => {
-                const totalRegistrations = countRows?.[0]?.totalRegistrations || 0;
-                const teamData = { 
-                    ...teamRaw, 
-                    members,
-                    totalEventRegistrations: totalRegistrations
-                };
-                return callback(null, [teamData]);
+            const prefSql = `SELECT AccommodationRequested, FoodAccepted, BookingStatus, TotalAmount, PaymentRefId FROM physical_team_preferences WHERE TeamId = ? AND EventId = ? LIMIT 1`;
+            db.query(prefSql, [id, teamRaw.EventId], (pErr, prefRows) => {
+                const pref = prefRows?.[0] || null;
+                const allocatedMembers = members.filter((m) => m.IsAllocated);
+
+                let accommodationStatus = 'Not configured';
+                if (allocatedMembers.length > 0) {
+                    const distinctRooms = [...new Set(allocatedMembers.map((m) => m.RoomNumber).filter(Boolean))];
+                    accommodationStatus = `Allocated: Room ${distinctRooms.join(', ')} (${allocatedMembers.length}/${members.length} members)`;
+                } else if (pref?.AccommodationRequested) {
+                    accommodationStatus = pref.BookingStatus === 'Approved' ? 'Approved (Awaiting Room Assignment)' : `${pref.BookingStatus} Approval`;
+                } else {
+                    accommodationStatus = 'Not Requested';
+                }
+
+                let foodStatus = 'Not configured';
+                if (pref?.FoodAccepted) {
+                    foodStatus = pref.BookingStatus === 'Approved' ? 'Approved (Dining Pass Active)' : `${pref.BookingStatus} Approval`;
+                } else {
+                    foodStatus = 'Not Requested';
+                }
+
+                // Count total registrations for this event
+                const countSql = `SELECT COUNT(*) AS totalRegistrations FROM registered_teams WHERE EventId = ?`;
+                db.query(countSql, [teamRaw.EventId], (cErr, countRows) => {
+                    const totalRegistrations = countRows?.[0]?.totalRegistrations || 0;
+                    const teamData = { 
+                        ...teamRaw, 
+                        members,
+                        AccommodationStatus: accommodationStatus,
+                        FoodStatus: foodStatus,
+                        totalEventRegistrations: totalRegistrations
+                    };
+                    return callback(null, [teamData]);
+                });
             });
         });
     });
@@ -468,7 +527,11 @@ const getMyTeams = (userId, callback) => {
                     registered_team_members.Role, 
                     event_registrations.Id AS RegistrationId, 
                     event_registrations.Status AS RegistrationStatus, 
-                    event_registrations.ParticipationMode 
+                    event_registrations.ParticipationMode,
+                    events.VirtualStatus,
+                    events.VirtualMeetUrl,
+                    events.VirtualStartDate,
+                    events.VirtualEndDate 
                 FROM registered_team_members 
                 INNER JOIN registered_teams ON registered_team_members.TeamId = registered_teams.Id 
                 INNER JOIN events ON registered_teams.EventId = events.Id 
@@ -518,6 +581,7 @@ const getTeamInfo = (teamId, userId, callback) => {
                     e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus, e.TeamSize AS EventTeamSize,
                     e.PrimaryColor, e.SecondaryColor, e.TertiaryColor, e.HackathonMode,
                     e.PhysicalResultsPublished, e.VirtualResultsPublished,
+                    e.VirtualStatus, e.VirtualMeetUrl, e.VirtualStartDate, e.VirtualEndDate,
                     er.ParticipationMode, er.Status AS RegistrationStatus 
                 FROM registered_teams t 
                 INNER JOIN events e ON t.EventId = e.Id 
@@ -544,19 +608,67 @@ const getTeamInfo = (teamId, userId, callback) => {
                 } else if (!Array.isArray(team.Posters)) {
                     team.Posters = [];
                 }
-                const memberQuery = `SELECT tm.UserId, tm.Role, tm.Gender, tm.CreatedAt, COALESCE(u.UserName, tm.MemberName, 'Member') AS UserName, COALESCE(u.Email, tm.MemberEmail, '') AS Email, COALESCE(u.College, tm.MemberCollege, '') AS College, COALESCE(u.State, tm.MemberState, '') AS State FROM registered_team_members tm LEFT JOIN users u ON tm.UserId = u.Id WHERE tm.TeamId = ? ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, UserName`;
-                db.query(memberQuery, [teamId], (err, memberResult) => {
+                const memberQuery = `
+                    SELECT 
+                        tm.Id AS TeamMemberId,
+                        tm.UserId, 
+                        tm.Role, 
+                        COALESCE(NULLIF(tm.Gender, ''), u.Gender, 'Male') AS Gender, 
+                        tm.CreatedAt, 
+                        COALESCE(tm.Photo, u.Photo, '') AS Photo, 
+                        COALESCE(NULLIF(tm.MemberName, ''), u.UserName, 'Member') AS UserName, 
+                        COALESCE(NULLIF(tm.MemberEmail, ''), u.Email, '') AS Email, 
+                        COALESCE(NULLIF(tm.MemberCollege, ''), u.College, '') AS College, 
+                        COALESCE(NULLIF(tm.MemberState, ''), u.State, '') AS State,
+                        alloc.RoomId,
+                        acc.room_num AS RoomNumber,
+                        block.BlockName,
+                        block.Gender AS BlockGender,
+                        (alloc.RoomId IS NOT NULL) AS IsAllocated,
+                        idCard.IdCardNumber
+                    FROM registered_team_members tm 
+                    LEFT JOIN users u ON tm.UserId = u.Id 
+                    LEFT JOIN accommodation_allocations alloc ON alloc.EventId = ? AND alloc.UserId = tm.UserId
+                    LEFT JOIN Accommodation acc ON acc.Id = alloc.RoomId
+                    LEFT JOIN accommodation_blocks block ON block.Id = acc.BlockId
+                    LEFT JOIN participant_id_cards idCard ON idCard.EventId = ? AND idCard.UserId = tm.UserId
+                    WHERE tm.TeamId = ? 
+                    ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, UserName
+                `;
+                db.query(memberQuery, [team.EventId, team.EventId, teamId], (err, memberResult) => {
                     if (err) {
                         return callback(err, null);
                     }
 
-                    // Count total registrations for this event
-                    const countSql = `SELECT COUNT(*) AS totalRegistrations FROM registered_teams WHERE EventId = ?`;
-                    db.query(countSql, [team.EventId], (cErr, countRows) => {
-                        team.totalEventRegistrations = countRows?.[0]?.totalRegistrations || 0;
-                        return callback(null, {
-                            team: team,
-                            members: memberResult || []
+                    // Fetch physical team preference (Accommodation & Food booking)
+                    const prefSql = `SELECT AccommodationRequested, FoodAccepted, BookingStatus, TotalAmount, PaymentRefId FROM physical_team_preferences WHERE TeamId = ? AND EventId = ? LIMIT 1`;
+                    db.query(prefSql, [teamId, team.EventId], (pErr, prefRows) => {
+                        const pref = prefRows?.[0] || null;
+                        const allocatedMembers = (memberResult || []).filter((m) => m.IsAllocated);
+
+                        if (allocatedMembers.length > 0) {
+                            const distinctRooms = [...new Set(allocatedMembers.map((m) => m.RoomNumber).filter(Boolean))];
+                            team.AccommodationStatus = `Allocated (${distinctRooms.join(', ')}) [${allocatedMembers.length}/${memberResult.length}]`;
+                        } else if (pref?.AccommodationRequested) {
+                            team.AccommodationStatus = pref.BookingStatus === 'Approved' ? 'Approved (Awaiting Room Allocation)' : `${pref.BookingStatus} Approval`;
+                        } else {
+                            team.AccommodationStatus = 'Not Requested';
+                        }
+
+                        if (pref?.FoodAccepted) {
+                            team.FoodStatus = pref.BookingStatus === 'Approved' ? 'Approved (Active Dining Pass)' : `${pref.BookingStatus} Approval`;
+                        } else {
+                            team.FoodStatus = 'Not Requested';
+                        }
+
+                        // Count total registrations for this event
+                        const countSql = `SELECT COUNT(*) AS totalRegistrations FROM registered_teams WHERE EventId = ?`;
+                        db.query(countSql, [team.EventId], (cErr, countRows) => {
+                            team.totalEventRegistrations = countRows?.[0]?.totalRegistrations || 0;
+                            return callback(null, {
+                                team: team,
+                                members: memberResult || []
+                            });
                         });
                     });
                 });

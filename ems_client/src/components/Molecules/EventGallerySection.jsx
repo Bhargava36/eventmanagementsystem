@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -20,7 +21,7 @@ export default function EventGallerySection({
       .map((item, idx) => {
         let url = typeof item === 'string' ? item : item.ImageUrl || item.imageUrl || '';
         if (url && url.startsWith('/uploads')) {
-          url = `http://localhost:3000${url}`;
+          url = `${API_BASE_URL}${url}`;
         }
         return {
           id: item.Id || item.id || `gallery-${idx}`,

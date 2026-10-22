@@ -28,8 +28,18 @@ import {
     Check,
     Download,
     Maximize2,
-    X
+    X,
+    CreditCard,
+    IndianRupee,
+    Upload,
+    AlertCircle,
+    Eye,
+    FileCheck,
+    Radio,
+    Video,
+    ArrowRight
 } from "lucide-react";
+import { API_BASE_URL } from '@/lib/api';
 import { QRCodeSVG } from "qrcode.react";
 
 import { useNavigate, useParams } from "react-router-dom";
@@ -67,15 +77,44 @@ function TeamInfo() {
     const [error, setError] = useState("");
     const [currentUserId, setCurrentUserId] = useState(null);
 
-    // Physical services state
+    // Physical services & facilities booking state
     const [serviceAvailability, setServiceAvailability] = useState({
         accommodationEnabled: false,
-        foodEnabled: false
+        foodEnabled: false,
+        accommodationFee: 0,
+        foodFee: 0,
+        facilitiesPackageFee: 0,
+        adminUpiId: '',
+        adminPaymentQr: '',
+        adminPaymentInstructions: ''
     });
     const [servicePreferences, setServicePreferences] = useState({
-        accommodationRequested: false,
-        foodAccepted: false
+        accommodationRequested: true,
+        foodAccepted: true
     });
+    const [bookingDetails, setBookingDetails] = useState({
+        submitted: false,
+        totalAmount: 0,
+        paymentRefId: '',
+        paymentReceiptUrl: '',
+        paymentNotes: '',
+        bookingStatus: 'Pending',
+        adminRemarks: '',
+        bookingCreatedAt: null
+    });
+    const [bookingForm, setBookingForm] = useState({
+        accommodationRequested: true,
+        foodAccepted: true,
+        paymentRefId: '',
+        paymentReceiptUrl: '',
+        paymentNotes: ''
+    });
+    const [isResubmitting, setIsResubmitting] = useState(false);
+    const [uploadingReceipt, setUploadingReceipt] = useState(false);
+    const [receiptUploadError, setReceiptUploadError] = useState('');
+    const [receiptModalUrl, setReceiptModalUrl] = useState(null);
+    const [copiedUpi, setCopiedUpi] = useState(false);
+    const [facilityModalOpen, setFacilityModalOpen] = useState(false);
     const [servicePreferencesSubmitted, setServicePreferencesSubmitted] = useState(false);
     const [serviceLoading, setServiceLoading] = useState(false);
     const [serviceSaving, setServiceSaving] = useState(false);
@@ -144,7 +183,7 @@ function TeamInfo() {
             if (!userId) throw new Error("User ID is missing");
 
             const response = await fetch(
-                `http://localhost:3000/api/teams/info/${teamId}/${userId}`
+                `${API_BASE_URL}/api/teams/info/${teamId}/${userId}`
             );
             const data = await response.json();
 
@@ -176,19 +215,45 @@ function TeamInfo() {
                 setServiceLoading(true);
                 try {
                     const servicesRes = await fetch(
-                        `http://localhost:3000/api/physical-services/teams/${teamId}/preferences?userId=${userId}`
+                        `${API_BASE_URL}/api/physical-services/teams/${teamId}/preferences?userId=${userId}`
                     );
                     const servicesData = await servicesRes.json();
                     if (servicesRes.ok && servicesData.preference) {
+                        const pref = servicesData.preference;
+                        const ev = servicesData.event || {};
                         setServiceAvailability({
-                            accommodationEnabled: Boolean(servicesData.event?.accommodationEnabled),
-                            foodEnabled: Boolean(servicesData.event?.foodEnabled)
+                            accommodationEnabled: Boolean(ev.accommodationEnabled),
+                            foodEnabled: Boolean(ev.foodEnabled),
+                            accommodationFee: Number(ev.accommodationFee || 0),
+                            foodFee: Number(ev.foodFee || 0),
+                            facilitiesPackageFee: Number(ev.facilitiesPackageFee || 0),
+                            adminUpiId: ev.adminUpiId || '',
+                            adminPaymentQr: ev.adminPaymentQr || '',
+                            adminPaymentInstructions: ev.adminPaymentInstructions || ''
                         });
                         setServicePreferences({
-                            accommodationRequested: Boolean(servicesData.preference?.accommodationRequested),
-                            foodAccepted: Boolean(servicesData.preference?.foodAccepted)
+                            accommodationRequested: Boolean(pref.accommodationRequested),
+                            foodAccepted: Boolean(pref.foodAccepted)
                         });
-                        setServicePreferencesSubmitted(Boolean(servicesData.preference?.submitted));
+                        const hasSubmittedBooking = Boolean(pref.submitted && (pref.paymentRefId || pref.paymentReceiptUrl));
+                        setServicePreferencesSubmitted(hasSubmittedBooking);
+                        setBookingDetails({
+                            submitted: hasSubmittedBooking,
+                            totalAmount: Number(pref.totalAmount || 0),
+                            paymentRefId: pref.paymentRefId || '',
+                            paymentReceiptUrl: pref.paymentReceiptUrl || '',
+                            paymentNotes: pref.paymentNotes || '',
+                            bookingStatus: pref.bookingStatus || 'Pending',
+                            adminRemarks: pref.adminRemarks || '',
+                            bookingCreatedAt: pref.bookingCreatedAt || null
+                        });
+                        setBookingForm({
+                            accommodationRequested: pref.accommodationRequested != null ? Boolean(pref.accommodationRequested) : true,
+                            foodAccepted: pref.foodAccepted != null ? Boolean(pref.foodAccepted) : true,
+                            paymentRefId: pref.paymentRefId || '',
+                            paymentReceiptUrl: pref.paymentReceiptUrl || '',
+                            paymentNotes: pref.paymentNotes || ''
+                        });
                     }
                 } catch (serviceErr) {
                     console.error("Failed to load services:", serviceErr);
@@ -200,7 +265,7 @@ function TeamInfo() {
             // Fetch Published Evaluation Results & Scorecard for this team
             try {
                 setLoadingResults(true);
-                const res = await fetch(`http://localhost:3000/api/evaluators/teams/${teamId}/published-results`);
+                const res = await fetch(`${API_BASE_URL}/api/evaluators/teams/${teamId}/published-results`);
                 if (res.ok) {
                     const json = await res.json();
                     if (json.success && json.data) {
@@ -228,29 +293,140 @@ function TeamInfo() {
         fetchTeamInfo();
     }, [fetchTeamInfo]);
 
-    const saveServicePreferences = async () => {
+    // Real-time updates via WebSocket for virtual status changes
+    useEffect(() => {
+        const eventId = teamData?.team?.EventId;
+        if (!eventId) return;
+
+        let socket = null;
+        let reconnectTimer = null;
+        let isMounted = true;
+
+        const connectWS = () => {
+            try {
+                const wsBase = (API_BASE_URL || 'http://localhost:3000').replace(/^http/, 'ws');
+                socket = new WebSocket(wsBase);
+
+                socket.onopen = () => {
+                    socket.send(JSON.stringify({ type: 'JOIN_EVENT', eventId }));
+                };
+
+                socket.onmessage = (msgEvent) => {
+                    try {
+                        const data = JSON.parse(msgEvent.data);
+                        if (!data.eventId || String(data.eventId) === String(eventId)) {
+                            fetchTeamInfo();
+                        }
+                    } catch (e) {
+                        // Ignore parse error
+                    }
+                };
+
+                socket.onclose = () => {
+                    if (isMounted) {
+                        reconnectTimer = setTimeout(connectWS, 3000);
+                    }
+                };
+
+                socket.onerror = () => {
+                    socket.close();
+                };
+            } catch (e) {
+                console.warn('WebSocket connection failed:', e);
+            }
+        };
+
+        connectWS();
+
+        return () => {
+            isMounted = false;
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            if (socket) {
+                socket.onclose = null;
+                socket.close();
+            }
+        };
+    }, [teamData?.team?.EventId, fetchTeamInfo]);
+
+    const handleReceiptUpload = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        setUploadingReceipt(true);
+        setReceiptUploadError('');
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch(`${API_BASE_URL}/api/upload/single`, {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to upload receipt');
+            const url = data.fileUrl || data.url || (data.relativePath ? `${API_BASE_URL}${data.relativePath}` : '');
+            setBookingForm((prev) => ({ ...prev, paymentReceiptUrl: url }));
+        } catch (err) {
+            setReceiptUploadError(err.message || 'Upload failed');
+        } finally {
+            setUploadingReceipt(false);
+        }
+    };
+
+    const handleCopyUpi = () => {
+        if (serviceAvailability.adminUpiId && navigator.clipboard) {
+            navigator.clipboard.writeText(serviceAvailability.adminUpiId);
+            setCopiedUpi(true);
+            setTimeout(() => setCopiedUpi(false), 2000);
+        }
+    };
+
+    const handleFacilityBookingSubmit = async (e, customTotal) => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (!bookingForm.paymentRefId.trim()) {
+            setServiceError("Please enter your Payment Reference / UTR Number.");
+            return;
+        }
+        if (!bookingForm.paymentReceiptUrl.trim()) {
+            setServiceError("Please upload your payment screenshot/receipt.");
+            return;
+        }
         try {
             setServiceSaving(true);
             setServiceError("");
             setServiceMessage("");
             const response = await fetch(
-                `http://localhost:3000/api/physical-services/teams/${teamId}/preferences`,
+                `${API_BASE_URL}/api/physical-services/teams/${teamId}/preferences`,
                 {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         userId: currentUserId,
-                        accommodationRequested: servicePreferences.accommodationRequested,
-                        foodAccepted: servicePreferences.foodAccepted
+                        accommodationRequested: true,
+                        foodAccepted: true,
+                        totalAmount: customTotal,
+                        paymentRefId: bookingForm.paymentRefId.trim(),
+                        paymentReceiptUrl: bookingForm.paymentReceiptUrl.trim(),
+                        paymentNotes: bookingForm.paymentNotes.trim()
                     })
                 }
             );
             const data = await response.json();
-            if (!response.ok) throw new Error(data.message || "Failed to save choices.");
-            setServiceMessage("Preferences saved successfully!");
+            if (!response.ok) throw new Error(data.message || "Failed to submit booking.");
+            setServiceMessage("Facility booking and payment references submitted successfully!");
             setServicePreferencesSubmitted(true);
+            setBookingDetails({
+                submitted: true,
+                totalAmount: customTotal,
+                paymentRefId: bookingForm.paymentRefId.trim(),
+                paymentReceiptUrl: bookingForm.paymentReceiptUrl.trim(),
+                paymentNotes: bookingForm.paymentNotes.trim(),
+                bookingStatus: 'Pending',
+                adminRemarks: '',
+                bookingCreatedAt: new Date().toISOString()
+            });
+            setIsResubmitting(false);
+            setFacilityModalOpen(false);
         } catch (err) {
-            setServiceError(err.message);
+            setServiceError(err.message || "Failed to submit booking.");
         } finally {
             setServiceSaving(false);
         }
@@ -325,6 +501,9 @@ function TeamInfo() {
     const hasPublishedRounds = publishedRounds.length > 0;
     const isOverallPublished = resultsData?.isOverallPublished && resultsData?.overallRank;
 
+    const isVirtualEventLive = String(team?.VirtualStatus || '').toUpperCase() === 'LIVE';
+    const isVirtualTrack = String(team?.ParticipationMode || '').toLowerCase() === 'virtual' || String(team?.HackathonMode || '').toLowerCase() === 'virtual';
+
     return (
         <div className="min-h-screen w-full bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6 font-sans transition-colors duration-300">
             {/* ── TOP NAV BAR ── */}
@@ -351,24 +530,86 @@ function TeamInfo() {
                     </div>
                 </div>
 
-                {/* Event Action Button */}
-                {team.EventId && (
+                {/* Event Action Buttons */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Go to Virtual Event Page Button */}
+                    {team.EventId && (isVirtualEventLive || isVirtualTrack) && (
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
+                            className={`self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shadow-md ${
+                                isVirtualEventLive
+                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-emerald-500/25 ring-2 ring-emerald-400/50 animate-pulse'
+                                    : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                            }`}
+                        >
+                            {isVirtualEventLive ? (
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                                </span>
+                            ) : (
+                                <Radio className="w-3.5 h-3.5" />
+                            )}
+                            <span>{isVirtualEventLive ? 'Go to Virtual Event Page' : 'Virtual Event Hub'}</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+
+                    {/* View Event Details Button */}
+                    {team.EventId && (
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/user/events/${team.EventId}`)}
+                            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-sm"
+                            style={{
+                                backgroundColor: theme.buttonBg,
+                                borderColor: theme.border,
+                                color: theme.buttonText,
+                                boxShadow: `0 4px 15px -3px ${theme.glow}`
+                            }}
+                        >
+                            <span>View Event Details</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Live Virtual Event Alert Banner */}
+            {isVirtualEventLive && team.EventId && (
+                <div className="rounded-3xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/80 via-zinc-950 to-slate-950 p-5 sm:p-6 shadow-xl shadow-emerald-950/30 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                        <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
+                            <Radio className="w-6 h-6 animate-pulse" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
+                                    VIRTUAL EVENT IS LIVE NOW
+                                </span>
+                                <span className="text-xs text-slate-400 font-medium">{team.EventName}</span>
+                            </div>
+                            <h3 className="text-base sm:text-lg font-black text-white mt-1">
+                                Virtual Hackathon Room is Active!
+                            </h3>
+                            <p className="text-xs text-slate-300 leading-relaxed mt-0.5 max-w-2xl">
+                                Join the live Google Meet session, select your problem statement, view innovation themes, and track hackathon sprint milestones.
+                            </p>
+                        </div>
+                    </div>
+
                     <button
                         type="button"
-                        onClick={() => navigate(`/user/events/${team.EventId}`)}
-                        className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-sm"
-                        style={{
-                            backgroundColor: theme.buttonBg,
-                            borderColor: theme.border,
-                            color: theme.buttonText,
-                            boxShadow: `0 4px 15px -3px ${theme.glow}`
-                        }}
+                        onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
+                        className="shrink-0 inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs sm:text-sm tracking-wide shadow-lg shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
                     >
-                        <span>View Event Details</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <Video className="w-4 h-4" />
+                        <span>Go to Virtual Event Page</span>
+                        <ArrowRight className="w-4 h-4" />
                     </button>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 1: TOP TEAM OR INDIVIDUAL DETAILS (HERO CARD) ── */}
@@ -384,17 +625,35 @@ function TeamInfo() {
                     {/* Left: Avatar, Name, Email, College, Tags */}
                     <div className="flex items-start gap-4 sm:gap-5 min-w-0">
                         {/* Avatar */}
-                        <div
-                            className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl flex items-center justify-center font-black text-2xl sm:text-3xl shrink-0 border shadow-md"
-                            style={{
-                                backgroundColor: theme.primary,
-                                borderColor: theme.border,
-                                color: '#ffffff',
-                                boxShadow: `0 6px 25px -4px ${theme.glow}`
-                            }}
-                        >
-                            {getInitial(displayName)}
-                        </div>
+                        {(() => {
+                            const leadPhoto = primaryMember?.Photo || (members.find(m => isTeamLead(m.Role))?.Photo) || team?.TeamLeadPhoto;
+                            return (
+                                <div
+                                    className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl overflow-hidden flex items-center justify-center font-black text-2xl sm:text-3xl shrink-0 border shadow-md relative"
+                                    style={{
+                                        backgroundColor: theme.primary,
+                                        borderColor: theme.border,
+                                        color: '#ffffff',
+                                        boxShadow: `0 6px 25px -4px ${theme.glow}`
+                                    }}
+                                >
+                                    {leadPhoto ? (
+                                        <img
+                                            src={leadPhoto}
+                                            alt={displayName}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
+                                            }}
+                                        />
+                                    ) : null}
+                                    <span className={leadPhoto ? "hidden" : "flex items-center justify-center"}>
+                                        {getInitial(displayName)}
+                                    </span>
+                                </div>
+                            );
+                        })()}
 
                         {/* Text info */}
                         <div className="min-w-0 space-y-1.5">
@@ -858,14 +1117,27 @@ function TeamInfo() {
                                     className="p-4 rounded-xl border border-slate-200/80 dark:border-zinc-800/80 bg-slate-50 dark:bg-zinc-900/60 flex items-start gap-3.5 hover:border-slate-300 dark:hover:border-zinc-700 transition-colors shadow-xs"
                                 >
                                     <div
-                                        className="h-10 w-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 border"
+                                        className="h-10 w-10 rounded-xl overflow-hidden flex items-center justify-center font-bold text-sm shrink-0 border relative"
                                         style={{
                                             backgroundColor: theme.badgeBg,
                                             borderColor: theme.badgeBorder,
                                             color: theme.badgeText
                                         }}
                                     >
-                                        {getInitial(member.UserName)}
+                                        {member.Photo ? (
+                                            <img
+                                                src={member.Photo}
+                                                alt={member.UserName}
+                                                className="h-full w-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.style.display = 'none';
+                                                    if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
+                                                }}
+                                            />
+                                        ) : null}
+                                        <span className={member.Photo ? "hidden" : "flex items-center justify-center"}>
+                                            {getInitial(member.UserName)}
+                                        </span>
                                     </div>
 
                                     <div className="min-w-0 flex-1">
@@ -963,79 +1235,373 @@ function TeamInfo() {
                         </div>
                     </div>
 
-                    {/* Physical Event Choices (Accommodation & Food) */}
+                    {/* Physical Event Choices (Accommodation & Food Booking) */}
                     {canAccessServices && isApprovedPhysical &&
-                        (serviceAvailability.accommodationEnabled || serviceAvailability.foodEnabled) && (
-                        <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 space-y-4 shadow-sm dark:shadow-xl">
-                            <div>
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white">
-                                    Campus Facilities (Accommodation &amp; Meals)
-                                </h3>
-                                <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-                                    {isIndividual
-                                        ? "Choose your accommodation and food preferences for this event. Once submitted, your selection is final."
-                                        : `Choose for your full team (${members.length} registered member${members.length === 1 ? "" : "s"}). Once submitted, your selection is final.`
-                                    }
-                                </p>
-                            </div>
+                        (serviceAvailability.accommodationEnabled || serviceAvailability.foodEnabled) && (() => {
+                            const memberCount = Math.max(1, members.length || 1);
+                            const pkgFee = Number(serviceAvailability.facilitiesPackageFee || 0);
+                            const accFee = Number(serviceAvailability.accommodationFee || 0);
+                            const fdFee = Number(serviceAvailability.foodFee || 0);
+                            const perPerson = pkgFee > 0 ? pkgFee : (accFee + fdFee);
+                            const dynamicTotal = perPerson * memberCount;
 
-                            {serviceLoading ? (
-                                <p className="text-xs text-slate-400">Loading options...</p>
-                            ) : (
-                                <div className="space-y-3">
-                                    <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 dark:border-zinc-800 p-4 bg-slate-50 dark:bg-zinc-900/40 hover:border-slate-300 dark:hover:border-zinc-700 transition">
-                                        <input
-                                            type="checkbox"
-                                            checked={Boolean(servicePreferences.accommodationRequested || servicePreferences.foodAccepted)}
-                                            disabled={serviceSaving || servicePreferencesSubmitted}
-                                            onChange={(event) => setServicePreferences((previous) => ({
-                                                ...previous,
-                                                accommodationRequested: event.target.checked,
-                                                foodAccepted: event.target.checked
-                                            }))}
-                                            className="mt-1 accent-emerald-500 h-4 w-4 cursor-pointer"
-                                        />
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2">
-                                                <BedDouble className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
-                                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">&amp;</span>
-                                                <Utensils className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
-                                                <span className="text-sm font-bold text-slate-900 dark:text-white">
-                                                    Request Campus Accommodation &amp; Meal Tokens
-                                                </span>
+                            return (
+                                <>
+                                    {/* On-Page Facilities Card */}
+                                    <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 space-y-5 shadow-sm dark:shadow-xl">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-zinc-800/80 pb-4">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <BedDouble className="w-5 h-5 text-emerald-500" />
+                                                    <Utensils className="w-5 h-5 text-emerald-500" />
+                                                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                                        Campus Facilities (Accommodation &amp; Meals)
+                                                    </h3>
+                                                </div>
+                                                <p className="text-xs text-slate-500 dark:text-gray-400 mt-1">
+                                                    {isIndividual
+                                                        ? "Hostel room accommodation and dining tokens for this event."
+                                                        : `Hostel room accommodation and dining tokens for all ${memberCount} team members.`}
+                                                </p>
                                             </div>
-                                            <p className="text-xs text-slate-500 dark:text-gray-400 leading-relaxed">
-                                                {isIndividual
-                                                    ? "Yes — request both campus hostel accommodation and daily food tokens for yourself."
-                                                    : `Yes — request both campus accommodation (Boys/Girls blocks) and daily meal tokens for all ${members.length} registered member${members.length === 1 ? "" : "s"}.`
-                                                }
-                                            </p>
+
+                                            {bookingDetails.submitted && (
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider self-start sm:self-auto border ${
+                                                    bookingDetails.bookingStatus === 'Approved'
+                                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                                        : bookingDetails.bookingStatus === 'Rejected'
+                                                        ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                                }`}>
+                                                    <span className={`w-2 h-2 rounded-full ${
+                                                        bookingDetails.bookingStatus === 'Approved'
+                                                            ? 'bg-emerald-500'
+                                                            : bookingDetails.bookingStatus === 'Rejected'
+                                                            ? 'bg-rose-500'
+                                                            : 'bg-amber-500 animate-pulse'
+                                                    }`} />
+                                                    {bookingDetails.bookingStatus}
+                                                </span>
+                                            )}
                                         </div>
-                                    </label>
 
-                                    {serviceError && <p className="text-xs text-rose-500">{serviceError}</p>}
-                                    {serviceMessage && <p className="text-xs text-emerald-600 dark:text-emerald-400">{serviceMessage}</p>}
+                                        {serviceLoading ? (
+                                            <div className="py-4 text-xs text-slate-400">Loading facility details...</div>
+                                        ) : bookingDetails.submitted ? (
+                                            /* Submitted Status Card */
+                                            <div className="space-y-4">
+                                                <div className={`p-4 rounded-2xl border text-xs leading-relaxed flex items-start gap-3 ${
+                                                    bookingDetails.bookingStatus === 'Approved'
+                                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-300'
+                                                        : bookingDetails.bookingStatus === 'Rejected'
+                                                        ? 'bg-rose-500/10 border-rose-500/20 text-rose-800 dark:text-rose-300'
+                                                        : 'bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300'
+                                                }`}>
+                                                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                                    <div>
+                                                        <h5 className="font-bold text-sm mb-0.5">
+                                                            {bookingDetails.bookingStatus === 'Approved'
+                                                                ? 'Booking Approved & Confirmed!'
+                                                                : bookingDetails.bookingStatus === 'Rejected'
+                                                                ? 'Payment Verification Rejected'
+                                                                : 'Payment Verification in Progress'}
+                         </h5>
+                                                        <p>
+                                                            {bookingDetails.bookingStatus === 'Approved'
+                                                                ? 'Your payment has been accepted by the admin. Your team is officially eligible for hostel room allocation and meal coupon tokens.'
+                                                                : bookingDetails.bookingStatus === 'Rejected'
+                                                                ? `Admin remarks: ${bookingDetails.adminRemarks || 'Payment reference could not be verified. Please check details and re-submit.'}`
+                                                                : 'Your payment reference and proof have been submitted. Once the organizers verify and accept your payment, your squad will become eligible for room allocation and food tokens.'}
+                                                        </p>
+                                                    </div>
+                                                </div>
 
-                                    {servicePreferencesSubmitted ? (
-                                        <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                                            <CheckCircle2 className="w-3.5 h-3.5" />
-                                            Your choices have been submitted to organizers.
-                                        </p>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            onClick={saveServicePreferences}
-                                            disabled={serviceSaving || serviceLoading}
-                                            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-50 cursor-pointer shadow-sm"
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                                                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
+                                                        <span className="text-[10px] uppercase font-bold text-slate-400">Total Transferred</span>
+                                                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                                            ₹{bookingDetails.totalAmount}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
+                                                        <span className="text-[10px] uppercase font-bold text-slate-400">Payment Ref / UTR</span>
+                                                        <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5 font-mono truncate" title={bookingDetails.paymentRefId}>
+                                                            {bookingDetails.paymentRefId || 'N/A'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex items-center justify-between">
+                                                        <div>
+                                                            <span className="text-[10px] uppercase font-bold text-slate-400">Receipt Proof</span>
+                                                            <p className="text-xs font-semibold text-slate-700 dark:text-zinc-300 mt-0.5">Uploaded</p>
+                                                        </div>
+                                                        {bookingDetails.paymentReceiptUrl && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setReceiptModalUrl(bookingDetails.paymentReceiptUrl)}
+                                                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 text-slate-800 dark:text-gray-200 flex items-center gap-1 cursor-pointer border border-slate-200 dark:border-zinc-700 shadow-2xs"
+                                                            >
+                                                                <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                                                                <span>View</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {bookingDetails.bookingStatus !== 'Approved' && (
+                                                    <div className="pt-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFacilityModalOpen(true)}
+                                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 cursor-pointer"
+                                                        >
+                                                            <span>Update or re-upload payment proof</span>
+                                                            <span>&rarr;</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            /* Not Submitted: Clean Action Card with Rates & Book Button */
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                    {serviceAvailability.accommodationEnabled && (
+                                                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
+                                                            <span className="text-[10px] uppercase font-bold text-slate-400">Hostel Fee</span>
+                                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                                                                ₹{accFee} <span className="text-[10px] font-normal text-slate-400">/ person / night</span>
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    {serviceAvailability.foodEnabled && (
+                                                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
+                                                            <span className="text-[10px] uppercase font-bold text-slate-400">Food Pass</span>
+                                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                                                                ₹{fdFee} <span className="text-[10px] font-normal text-slate-400">/ person</span>
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 col-span-2 sm:col-span-1">
+                                                        <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Total ({memberCount} Squad)</span>
+                                                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                                            ₹{dynamicTotal}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-1 flex-wrap gap-3">
+                                                    <p className="text-xs text-slate-500 dark:text-gray-400">
+                                                        Click below to view payment channels, scan Admin QR, and submit reference.
+                                                    </p>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFacilityModalOpen(true)}
+                                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                                                    >
+                                                        <BedDouble className="w-4 h-4" />
+                                                        <span>Book Facilities (Pay ₹{dynamicTotal})</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* MODAL: CAMPUS FACILITIES BOOKING */}
+                                    {facilityModalOpen && (
+                                        <div
+                                            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                                            onClick={() => setFacilityModalOpen(false)}
                                         >
-                                            <Save className="h-3.5 w-3.5" />
-                                            {serviceSaving ? "Saving..." : "Save Final Choices"}
-                                        </button>
+                                            <div
+                                                className="relative w-full max-w-xl bg-white dark:bg-zinc-950 rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 dark:border-zinc-800 space-y-5 max-h-[92vh] overflow-y-auto"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {/* Modal Header */}
+                                                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                                            <BedDouble className="w-5 h-5" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                                                Book Campus Facilities (Hostel &amp; Meals)
+                                                            </h3>
+                                                            <p className="text-xs text-slate-500 dark:text-gray-400">
+                                                                {isIndividual ? "Individual participant booking" : `Squad booking for all ${memberCount} members`}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFacilityModalOpen(false)}
+                                                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                                                    >
+                                                        <X className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+
+                                                {/* Pricing Summary */}
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                                    {serviceAvailability.accommodationEnabled && (
+                                                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
+                                                            <span className="text-[10px] uppercase font-bold text-slate-400">Hostel Fee</span>
+                                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                                                                ₹{accFee} <span className="text-[10px] font-normal text-slate-400">/ night</span>
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    {serviceAvailability.foodEnabled && (
+                                                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
+                                                            <span className="text-[10px] uppercase font-bold text-slate-400">Food Pass</span>
+                                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                                                                ₹{fdFee} <span className="text-[10px] font-normal text-slate-400">/ person</span>
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 col-span-2 sm:col-span-1">
+                                                        <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Total Payable</span>
+                                                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                                            ₹{dynamicTotal}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Admin Payment Details */}
+                                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 space-y-3">
+                                                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                                                        <CreditCard className="w-4 h-4 text-emerald-500" />
+                                                        Admin Payment Details
+                                                    </span>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                                                        <div className="space-y-2">
+                                                            {serviceAvailability.adminUpiId ? (
+                                                                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+                                                                    <div>
+                                                                        <span className="text-[10px] uppercase font-bold text-slate-400">UPI ID</span>
+                                                                        <p className="text-xs font-black text-slate-900 dark:text-white font-mono">
+                                                                            {serviceAvailability.adminUpiId}
+                                                                        </p>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={handleCopyUpi}
+                                                                        className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-gray-200 transition flex items-center gap-1 cursor-pointer"
+                                                                    >
+                                                                        {copiedUpi ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                                                        <span>{copiedUpi ? "Copied" : "Copy"}</span>
+                                                                    </button>
+                                                                </div>
+                                                            ) : null}
+
+                                                            {serviceAvailability.adminPaymentInstructions && (
+                                                                <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed bg-white/60 dark:bg-zinc-900/60 p-2.5 rounded-xl border border-slate-200/60 dark:border-zinc-800/60">
+                                                                    <span className="font-bold text-slate-800 dark:text-zinc-200">Note: </span>
+                                                                    {serviceAvailability.adminPaymentInstructions}
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        {serviceAvailability.adminPaymentQr && (
+                                                            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+                                                                <span className="text-[10px] font-bold text-slate-400 mb-1">Scan &amp; Pay</span>
+                                                                <img
+                                                                    src={serviceAvailability.adminPaymentQr}
+                                                                    alt="Admin Payment QR"
+                                                                    className="max-h-28 object-contain rounded-lg border border-slate-200 dark:border-zinc-800 cursor-pointer"
+                                                                    onClick={() => setReceiptModalUrl(serviceAvailability.adminPaymentQr)}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Form (NO CHECKBOXES) */}
+                                                <form onSubmit={(e) => handleFacilityBookingSubmit(e, dynamicTotal)} className="space-y-4">
+                                                    <div>
+                                                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-1">
+                                                            Payment UTR / Transaction Reference ID *
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            required
+                                                            placeholder="e.g. 428910294821 or UPI Ref ID"
+                                                            value={bookingForm.paymentRefId}
+                                                            onChange={(e) => setBookingForm(prev => ({ ...prev, paymentRefId: e.target.value }))}
+                                                            className="w-full h-10 px-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-1">
+                                                            Payment Screenshot / Receipt *
+                                                        </label>
+                                                        <div className="flex items-center gap-2">
+                                                            <label className="flex-1 h-10 px-3.5 rounded-xl border border-dashed border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-emerald-500 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 dark:text-zinc-400 cursor-pointer transition">
+                                                                <Upload className="w-3.5 h-3.5 text-emerald-500" />
+                                                                <span>{uploadingReceipt ? "Uploading..." : bookingForm.paymentReceiptUrl ? "Replace File" : "Choose Image/PDF"}</span>
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*,application/pdf"
+                                                                    className="hidden"
+                                                                    onChange={handleReceiptUpload}
+                                                                    disabled={uploadingReceipt}
+                                                                />
+                                                            </label>
+                                                            {bookingForm.paymentReceiptUrl && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setReceiptModalUrl(bookingForm.paymentReceiptUrl)}
+                                                                    className="h-10 px-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                                                                >
+                                                                    <Eye className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        {receiptUploadError && <p className="text-xs text-rose-500 mt-1">{receiptUploadError}</p>}
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-1">
+                                                            Special Notes (Optional)
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Any special requests or dietary constraints"
+                                                            value={bookingForm.paymentNotes}
+                                                            onChange={(e) => setBookingForm(prev => ({ ...prev, paymentNotes: e.target.value }))}
+                                                            className="w-full h-10 px-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                                                        />
+                                                    </div>
+
+                                                    {serviceError && <p className="text-xs text-rose-500">{serviceError}</p>}
+                                                    {serviceMessage && <p className="text-xs text-emerald-600 dark:text-emerald-400">{serviceMessage}</p>}
+
+                                                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFacilityModalOpen(false)}
+                                                            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 cursor-pointer"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                        <button
+                                                            type="submit"
+                                                            disabled={serviceSaving || uploadingReceipt}
+                                                            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50"
+                                                        >
+                                                            <Save className="w-3.5 h-3.5" />
+                                                            <span>{serviceSaving ? "Submitting..." : `Submit Booking (Pay ₹${dynamicTotal})`}</span>
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
                                     )}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                </>
+                            );
+                        })()}
                 </div>
 
                 {/* Right: Event Poster Card */}
@@ -1150,6 +1716,56 @@ function TeamInfo() {
                                 {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                                 <span>{copiedLink ? "Copied!" : "Copy URL"}</span>
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Receipt / QR Preview Modal */}
+            {receiptModalUrl && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                    onClick={() => setReceiptModalUrl(null)}
+                >
+                    <div
+                        className="relative max-w-2xl max-h-[90vh] bg-white dark:bg-zinc-900 rounded-3xl p-4 shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden flex flex-col items-center"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setReceiptModalUrl(null)}
+                            className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-200 transition cursor-pointer z-10"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        <div className="w-full text-center pb-3 border-b border-slate-100 dark:border-zinc-800 mb-3">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Document Preview</h4>
+                        </div>
+                        <div className="overflow-auto max-h-[75vh] w-full flex items-center justify-center p-2">
+                            {receiptModalUrl.toLowerCase().endsWith('.pdf') ? (
+                                <iframe
+                                    src={receiptModalUrl}
+                                    className="w-full h-[65vh] rounded-xl"
+                                    title="Receipt PDF"
+                                />
+                            ) : (
+                                <img
+                                    src={receiptModalUrl}
+                                    alt="Payment Receipt"
+                                    className="max-w-full max-h-[70vh] object-contain rounded-xl"
+                                />
+                            )}
+                        </div>
+                        <div className="pt-3">
+                            <a
+                                href={receiptModalUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                            >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                <span>Open Full Document in New Tab</span>
+                            </a>
                         </div>
                     </div>
                 </div>

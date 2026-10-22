@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -25,8 +26,15 @@ import {
   Utensils,
   ShieldAlert,
   UserMinus,
-  Check,
   RefreshCw,
+  CreditCard,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  IndianRupee,
+  ExternalLink,
+  Check,
 } from 'lucide-react';
 
 function AccomodationRedirectPage() {
@@ -104,6 +112,14 @@ function AccomodationRedirectPage() {
   const [requestStatusFilter, setRequestStatusFilter] = useState('all'); // 'all' | 'awaiting' | 'allocated'
   const [requestGenderFilter, setRequestGenderFilter] = useState('all'); // 'all' | 'male' | 'female'
 
+  // Facility Bookings & Payments State
+  const [facilityBookings, setFacilityBookings] = useState([]);
+  const [bookingSearch, setBookingSearch] = useState('');
+  const [bookingStatusFilter, setBookingStatusFilter] = useState('all'); // 'all' | 'Pending' | 'Approved' | 'Rejected'
+  const [actionModalBooking, setActionModalBooking] = useState(null); // { booking, newStatus, remarks }
+  const [updatingBookingStatus, setUpdatingBookingStatus] = useState(false);
+  const [adminProofModalUrl, setAdminProofModalUrl] = useState(null);
+
   // Helper Getters
   const getRoomId = (room) => room.Id ?? room.id;
   const getRoomNumber = (room) => room.room_num ?? 'N/A';
@@ -158,11 +174,12 @@ function AccomodationRedirectPage() {
       setLoading(true);
       setError('');
 
-      const [blocksRes, roomsRes, eventRes, requestsRes] = await Promise.all([
-        fetch(`http://localhost:3000/api/accommodation/blocks${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`),
-        fetch(`http://localhost:3000/api/accommodation`),
-        eventId ? fetch(`http://localhost:3000/api/events/${encodeURIComponent(eventId)}`) : Promise.resolve(null),
-        eventId ? fetch(`http://localhost:3000/api/physical-services/events/${encodeURIComponent(eventId)}/accommodation-participants`) : Promise.resolve(null),
+      const [blocksRes, roomsRes, eventRes, requestsRes, bookingsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/accommodation/blocks${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`),
+        fetch(`${API_BASE_URL}/api/accommodation`),
+        eventId ? fetch(`${API_BASE_URL}/api/events/${encodeURIComponent(eventId)}`) : Promise.resolve(null),
+        eventId ? fetch(`${API_BASE_URL}/api/physical-services/events/${encodeURIComponent(eventId)}/accommodation-participants`) : Promise.resolve(null),
+        eventId ? fetch(`${API_BASE_URL}/api/physical-services/events/${encodeURIComponent(eventId)}/facility-bookings`) : Promise.resolve(null),
       ]);
 
       const [blocksData, roomsData] = await Promise.all([
@@ -186,6 +203,11 @@ function AccomodationRedirectPage() {
         const reqData = await requestsRes.json().catch(() => ({}));
         setRequestedStudents(Array.isArray(reqData.participants) ? reqData.participants : []);
       }
+
+      if (bookingsRes && bookingsRes.ok) {
+        const bData = await bookingsRes.json().catch(() => ({}));
+        setFacilityBookings(Array.isArray(bData.bookings) ? bData.bookings : []);
+      }
     } catch (err) {
       console.error('Fetch accommodation error:', err);
       setError(err.message || 'Failed to load accommodation data.');
@@ -193,6 +215,28 @@ function AccomodationRedirectPage() {
       setLoading(false);
     }
   }, [eventId]);
+
+  const handleUpdateBookingStatus = async (teamId, status, remarks = '') => {
+    if (!eventId || !teamId) return;
+    setUpdatingBookingStatus(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/physical-services/events/${encodeURIComponent(eventId)}/teams/${encodeURIComponent(teamId)}/booking-status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingStatus: status, adminRemarks: remarks })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to update booking status');
+      setSuccessMessage(`Booking for Team #${teamId} marked as ${status}!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+      fetchData();
+      setActionModalBooking(null);
+    } catch (err) {
+      setError(err.message || 'Failed to update booking status');
+    } finally {
+      setUpdatingBookingStatus(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -231,8 +275,8 @@ function AccomodationRedirectPage() {
     setBlockError('');
     try {
       const url = editingBlockId
-        ? `http://localhost:3000/api/accommodation/blocks/${editingBlockId}`
-        : `http://localhost:3000/api/accommodation/blocks`;
+        ? `${API_BASE_URL}/api/accommodation/blocks/${editingBlockId}`
+        : `${API_BASE_URL}/api/accommodation/blocks`;
       const method = editingBlockId ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -266,7 +310,7 @@ function AccomodationRedirectPage() {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:3000/api/accommodation/blocks/${block.Id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/accommodation/blocks/${block.Id}`, {
         method: 'DELETE',
       });
       const data = await res.json().catch(() => ({}));
@@ -346,8 +390,8 @@ function AccomodationRedirectPage() {
     setRoomError('');
     try {
       const url = editingRoomId
-        ? `http://localhost:3000/api/accommodation/${editingRoomId}`
-        : `http://localhost:3000/api/accommodation`;
+        ? `${API_BASE_URL}/api/accommodation/${editingRoomId}`
+        : `${API_BASE_URL}/api/accommodation`;
       const method = editingRoomId ? 'PUT' : 'POST';
 
       const existingRoom = editingRoomId ? rooms.find((r) => r.Id === editingRoomId) : null;
@@ -390,7 +434,7 @@ function AccomodationRedirectPage() {
     if (!window.confirm(`Delete room "${room.room_num}"?`)) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/accommodation/${room.Id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/accommodation/${room.Id}`, {
         method: 'DELETE',
       });
       const data = await res.json().catch(() => ({}));
@@ -416,7 +460,7 @@ function AccomodationRedirectPage() {
 
     try {
       setDeallocatingUserId(userId);
-      const res = await fetch(`http://localhost:3000/api/accommodation/${roomId}/allocate/${userId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/accommodation/${roomId}/allocate/${userId}`, {
         method: 'DELETE',
       });
       const data = await res.json().catch(() => ({}));
@@ -428,7 +472,7 @@ function AccomodationRedirectPage() {
       await fetchData();
 
       // Refresh inspected room
-      const refreshedRooms = await fetch(`http://localhost:3000/api/accommodation`).then((r) => r.json());
+      const refreshedRooms = await fetch(`${API_BASE_URL}/api/accommodation`).then((r) => r.json());
       if (Array.isArray(refreshedRooms.data)) {
         const updated = refreshedRooms.data.find((r) => r.Id === roomId);
         if (updated) setInspectingRoom(updated);
@@ -499,7 +543,7 @@ function AccomodationRedirectPage() {
     setAllocating(true);
     setAllocationError('');
     try {
-      const res = await fetch(`http://localhost:3000/api/accommodation/${allocatingRoom.Id}/allocate`, {
+      const res = await fetch(`${API_BASE_URL}/api/accommodation/${allocatingRoom.Id}/allocate`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -519,7 +563,7 @@ function AccomodationRedirectPage() {
 
       // If we were inspecting, refresh inspected room
       if (inspectingRoom?.Id === allocatingRoom.Id) {
-        const refreshedRooms = await fetch(`http://localhost:3000/api/accommodation`).then((r) => r.json());
+        const refreshedRooms = await fetch(`${API_BASE_URL}/api/accommodation`).then((r) => r.json());
         if (Array.isArray(refreshedRooms.data)) {
           const updated = refreshedRooms.data.find((r) => r.Id === allocatingRoom.Id);
           if (updated) setInspectingRoom(updated);
@@ -552,12 +596,12 @@ function AccomodationRedirectPage() {
     try {
       // If student is already allocated to another room and is switching, deallocate first
       if (assigningStudent.AccommodationId && String(assigningStudent.AccommodationId) !== String(targetRoomId)) {
-        await fetch(`http://localhost:3000/api/accommodation/${assigningStudent.AccommodationId}/allocate/${assigningStudent.UserId}`, {
+        await fetch(`${API_BASE_URL}/api/accommodation/${assigningStudent.AccommodationId}/allocate/${assigningStudent.UserId}`, {
           method: 'DELETE',
         });
       }
 
-      const res = await fetch(`http://localhost:3000/api/accommodation/${targetRoomId}/allocate`, {
+      const res = await fetch(`${API_BASE_URL}/api/accommodation/${targetRoomId}/allocate`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -784,6 +828,13 @@ function AccomodationRedirectPage() {
                 count: requestedStudents.length,
                 pendingCount: requestedStudents.filter((s) => !s.AccommodationAllocated).length,
                 icon: Utensils,
+              },
+              {
+                id: 'bookings',
+                label: 'Facility Bookings & Payments',
+                count: facilityBookings.length,
+                pendingCount: facilityBookings.filter((b) => b.BookingStatus === 'Pending').length,
+                icon: CreditCard,
               },
             ].map((tab) => {
               const isActive = activeTab === tab.id;
@@ -1488,6 +1539,232 @@ function AccomodationRedirectPage() {
                               </tr>
                             );
                           })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* TAB 4: FACILITY BOOKINGS & PAYMENT VERIFICATION */}
+            {activeTab === 'bookings' && (
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-emerald-500" />
+                      <span>Facility Bookings &amp; Payment Verifications</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                      Verify team payments for campus accommodation and meals. Inspect payment reference UTRs and receipt proofs to approve or reject requests.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
+                      {facilityBookings.length} Total Bookings
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      {facilityBookings.filter((b) => b.BookingStatus === 'Pending').length} Pending
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      {facilityBookings.filter((b) => b.BookingStatus === 'Approved').length} Approved
+                    </span>
+                  </div>
+                </div>
+
+                {/* Search & Filter Bar */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50 dark:bg-zinc-900/40 p-3 rounded-2xl border border-slate-200 dark:border-zinc-800">
+                  <div className="relative flex-1 min-w-[220px]">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Search team, lead name, or UTR / reference..."
+                      value={bookingSearch}
+                      onChange={(e) => setBookingSearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-black rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                    {['all', 'Pending', 'Approved', 'Rejected'].map((statusKey) => (
+                      <button
+                        key={statusKey}
+                        type="button"
+                        onClick={() => setBookingStatusFilter(statusKey)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition capitalize shrink-0 cursor-pointer ${
+                          bookingStatusFilter === statusKey
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-800 hover:border-slate-300'
+                        }`}
+                      >
+                        {statusKey}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Table or Cards */}
+                {(() => {
+                  const filtered = facilityBookings.filter((b) => {
+                    if (bookingStatusFilter !== 'all' && b.BookingStatus !== bookingStatusFilter) {
+                      return false;
+                    }
+                    if (bookingSearch.trim()) {
+                      const q = bookingSearch.toLowerCase();
+                      const matchName = String(b.TeamName || '').toLowerCase().includes(q);
+                      const matchLead = String(b.TeamLeadName || '').toLowerCase().includes(q);
+                      const matchRef = String(b.PaymentRefId || '').toLowerCase().includes(q);
+                      if (!matchName && !matchLead && !matchRef) return false;
+                    }
+                    return true;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="py-16 text-center rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/20">
+                        <CreditCard className="w-10 h-10 text-slate-300 dark:text-zinc-700 mx-auto mb-3" />
+                        <h4 className="text-sm font-bold text-slate-700 dark:text-zinc-300">No Facility Bookings Found</h4>
+                        <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                          {bookingSearch || bookingStatusFilter !== 'all'
+                            ? 'No bookings match your current filter criteria.'
+                            : 'Teams who request accommodation and upload payment proofs will appear here.'}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 dark:bg-zinc-900/80 border-b border-slate-200 dark:border-zinc-800 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                          <tr>
+                            <th className="py-3 px-4">Team &amp; Leader</th>
+                            <th className="py-3 px-4">Requested</th>
+                            <th className="py-3 px-4">Total Fee</th>
+                            <th className="py-3 px-4">Payment UTR &amp; Notes</th>
+                            <th className="py-3 px-4">Receipt Proof</th>
+                            <th className="py-3 px-4">Status</th>
+                            <th className="py-3 px-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60 font-medium">
+                          {filtered.map((b) => (
+                            <tr key={b.TeamId} className="hover:bg-slate-50/70 dark:hover:bg-zinc-900/40 transition">
+                              <td className="py-3.5 px-4">
+                                <div className="font-extrabold text-sm text-slate-900 dark:text-white">
+                                  {b.TeamName}
+                                </div>
+                                <div className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                                  Lead: {b.TeamLeadName || 'N/A'} ({b.TeamLeadEmail || ''})
+                                </div>
+                                <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300">
+                                  {b.MemberCount} Member{b.MemberCount === 1 ? '' : 's'}
+                                </span>
+                              </td>
+
+                              <td className="py-3.5 px-4 space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                  <BedDouble className="w-3.5 h-3.5 text-emerald-500" />
+                                  <span className="text-slate-700 dark:text-zinc-300">
+                                    Hostel: {b.AccommodationRequested ? 'Yes' : 'No'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <Utensils className="w-3.5 h-3.5 text-emerald-500" />
+                                  <span className="text-slate-700 dark:text-zinc-300">
+                                    Meals: {b.FoodAccepted ? 'Yes' : 'No'}
+                                  </span>
+                                </div>
+                              </td>
+
+                              <td className="py-3.5 px-4">
+                                <span className="font-black text-sm text-emerald-600 dark:text-emerald-400">
+                                  ₹{Number(b.TotalAmount || 0)}
+                                </span>
+                              </td>
+
+                              <td className="py-3.5 px-4">
+                                <div className="font-mono text-xs font-bold text-slate-800 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-900 px-2 py-1 rounded-md inline-block">
+                                  {b.PaymentRefId || 'No UTR ID'}
+                                </div>
+                                {b.PaymentNotes && (
+                                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 italic mt-1 line-clamp-2">
+                                    "{b.PaymentNotes}"
+                                  </p>
+                                )}
+                              </td>
+
+                              <td className="py-3.5 px-4">
+                                {b.PaymentReceiptUrl ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setAdminProofModalUrl(b.PaymentReceiptUrl)}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500 text-slate-800 dark:text-zinc-200 transition cursor-pointer text-xs font-bold shadow-2xs"
+                                  >
+                                    <Eye className="w-3.5 h-3.5 text-emerald-500" />
+                                    <span>View Proof</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-slate-400 italic">No receipt</span>
+                                )}
+                              </td>
+
+                              <td className="py-3.5 px-4">
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider border ${
+                                  b.BookingStatus === 'Approved'
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                    : b.BookingStatus === 'Rejected'
+                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${
+                                    b.BookingStatus === 'Approved'
+                                      ? 'bg-emerald-500'
+                                      : b.BookingStatus === 'Rejected'
+                                      ? 'bg-rose-500'
+                                      : 'bg-amber-500 animate-pulse'
+                                  }`} />
+                                  {b.BookingStatus}
+                                </span>
+                                {b.AdminRemarks && (
+                                  <p className="text-[10px] text-rose-500 mt-1">
+                                    Remarks: {b.AdminRemarks}
+                                  </p>
+                                )}
+                              </td>
+
+                              <td className="py-3.5 px-4 text-right">
+                                <div className="inline-flex items-center gap-1.5">
+                                  {b.BookingStatus !== 'Approved' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateBookingStatus(b.TeamId, 'Approved')}
+                                      disabled={updatingBookingStatus}
+                                      className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition cursor-pointer disabled:opacity-50"
+                                      title="Approve Booking"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      <span>Approve</span>
+                                    </button>
+                                  )}
+                                  {b.BookingStatus !== 'Rejected' && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setActionModalBooking({ booking: b, newStatus: 'Rejected', remarks: '' })}
+                                      disabled={updatingBookingStatus}
+                                      className="px-2.5 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 font-bold text-xs flex items-center gap-1 transition cursor-pointer disabled:opacity-50"
+                                      title="Reject Booking"
+                                    >
+                                      <XCircle className="w-3.5 h-3.5" />
+                                      <span>Reject</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
                         </tbody>
                       </table>
                     </div>
@@ -2325,6 +2602,127 @@ function AccomodationRedirectPage() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 5: BOOKING ACTION / REJECTION REMARKS */}
+      <AnimatePresence>
+        {actionModalBooking && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 space-y-4"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
+                    <XCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Reject Facility Booking</h4>
+                    <p className="text-xs text-slate-400">Team: {actionModalBooking.booking?.TeamName}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActionModalBooking(null)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-1.5">
+                  Reason for Rejection *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="e.g. UTR reference not matching bank account, payment screenshot blurry, or amount underpaid."
+                  value={actionModalBooking.remarks}
+                  onChange={(e) => setActionModalBooking((prev) => ({ ...prev, remarks: e.target.value }))}
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setActionModalBooking(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleUpdateBookingStatus(actionModalBooking.booking.TeamId, 'Rejected', actionModalBooking.remarks)}
+                  disabled={updatingBookingStatus}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer disabled:opacity-50"
+                >
+                  {updatingBookingStatus ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                  <span>Confirm Rejection</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL 6: ADMIN RECEIPT ZOOM PREVIEW */}
+      <AnimatePresence>
+        {adminProofModalUrl && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setAdminProofModalUrl(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative max-w-2xl max-h-[90vh] bg-white dark:bg-zinc-900 rounded-3xl p-4 shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden flex flex-col items-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setAdminProofModalUrl(null)}
+                className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-200 transition cursor-pointer z-10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-full text-center pb-3 border-b border-slate-100 dark:border-zinc-800 mb-3">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Payment Receipt Proof</h4>
+              </div>
+              <div className="overflow-auto max-h-[75vh] w-full flex items-center justify-center p-2">
+                {adminProofModalUrl.toLowerCase().endsWith('.pdf') ? (
+                  <iframe
+                    src={adminProofModalUrl}
+                    className="w-full h-[65vh] rounded-xl"
+                    title="Payment PDF"
+                  />
+                ) : (
+                  <img
+                    src={adminProofModalUrl}
+                    alt="Payment Proof"
+                    className="max-w-full max-h-[70vh] object-contain rounded-xl"
+                  />
+                )}
+              </div>
+              <div className="pt-3">
+                <a
+                  href={adminProofModalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open Full Document</span>
+                </a>
+              </div>
             </motion.div>
           </div>
         )}

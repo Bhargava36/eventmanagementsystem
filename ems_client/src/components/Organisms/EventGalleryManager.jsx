@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -28,7 +29,7 @@ export default function EventGalleryManager({ eventId }) {
     if (!eventId) return;
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:3000/api/gallery/event/${eventId}`);
+      const res = await fetch(`${API_BASE_URL}/api/gallery/event/${eventId}`);
       const data = await res.json();
       if (res.ok) {
         setGallery(data.gallery || []);
@@ -61,7 +62,7 @@ export default function EventGalleryManager({ eventId }) {
       const fd = new FormData();
       files.forEach((f) => fd.append('files', f));
 
-      const res = await fetch('http://localhost:3000/api/upload/multiple', {
+      const res = await fetch(`${API_BASE_URL}/api/upload/multiple`, {
         method: 'POST',
         body: fd,
       });
@@ -105,7 +106,7 @@ export default function EventGalleryManager({ eventId }) {
         DisplayOrder: idx,
       }));
 
-      const res = await fetch('http://localhost:3000/api/gallery/bulk', {
+      const res = await fetch(`${API_BASE_URL}/api/gallery/bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -130,7 +131,7 @@ export default function EventGalleryManager({ eventId }) {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this photo from gallery?')) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/gallery/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/gallery/${id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
@@ -221,7 +222,7 @@ export default function EventGalleryManager({ eventId }) {
                       className="relative rounded-lg overflow-hidden border border-slate-200 dark:border-zinc-800 aspect-square group"
                     >
                       <img
-                        src={img.startsWith('/uploads') ? `http://localhost:3000${img}` : img}
+                        src={img.startsWith('/uploads') ? `${API_BASE_URL}${img}` : img}
                         alt="preview"
                         className="w-full h-full object-cover"
                       />
@@ -321,7 +322,7 @@ export default function EventGalleryManager({ eventId }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {gallery.map((item) => {
             const url = item.ImageUrl?.startsWith('/uploads')
-              ? `http://localhost:3000${item.ImageUrl}`
+              ? `${API_BASE_URL}${item.ImageUrl}`
               : item.ImageUrl;
             return (
               <div

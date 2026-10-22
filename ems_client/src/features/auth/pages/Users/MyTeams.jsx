@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ByteEmptyState from '../../../../components/Molecules/ByteEmptyState';
@@ -74,7 +75,7 @@ export default function MyTeams() {
       }
 
       const response = await fetch(
-        `http://localhost:3000/api/teams/my-teams/${userId}`
+        `${API_BASE_URL}/api/teams/my-teams/${userId}`
       );
 
       const data = await response.json();

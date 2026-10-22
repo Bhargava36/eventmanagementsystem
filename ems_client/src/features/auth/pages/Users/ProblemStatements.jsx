@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { 
   Code, 
@@ -34,7 +35,7 @@ export default function ProblemStatementsPage() {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:3000/api/events');
+      const res = await fetch(`${API_BASE_URL}/api/events`);
       if (res.ok) {
         const data = await res.json();
         const evList = data.events || [];

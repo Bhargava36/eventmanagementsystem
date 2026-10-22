@@ -328,6 +328,7 @@ const allocateStudents = async (roomId, eventId, studentIds) => {
             INNER JOIN users user ON user.Id = member.UserId
             WHERE preference.EventId = ?
                 AND preference.AccommodationRequested = 1
+                AND preference.BookingStatus = 'Approved'
                 AND member.UserId IN (${placeholders})`,
             [eventId, ...studentIds]
         );

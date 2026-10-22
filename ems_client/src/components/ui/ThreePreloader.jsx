@@ -334,15 +334,15 @@ export default function ThreePreloader({ onComplete }) {
           className="flex items-center space-x-3 pt-1 opacity-0"
           style={{ transform: 'translateY(8px)' }}
         >
-          <span className="h-[1px] w-6 sm:w-8 bg-emerald-500/50" />
-          <span
+          <span className="h-[2px] w-22 sm:w-40 bg-gradient-to-r from-transparent to-emerald-500/50" />
+          {/* <span
             className={`text-[10px] sm:text-xs font-semibold tracking-[0.35em] uppercase ${
               isDark ? 'text-zinc-400' : 'text-zinc-600'
             }`}
           >
             Operating System
-          </span>
-          <span className="h-[1px] w-6 sm:w-8 bg-emerald-500/50" />
+          </span> */}
+          <span className="h-[2px] w-22 sm:w-40 bg-gradient-to-l from-transparent to-emerald-500/50" />
         </div>
       </div>
     </div>

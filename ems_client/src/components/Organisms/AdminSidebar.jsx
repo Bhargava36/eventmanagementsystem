@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useNavigate, NavLink, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ThemeToggle from './ThemeToggler';
@@ -75,7 +76,7 @@ const SidebarContent = ({
 
     const targetEventId = adminData?.EventId || user?.EventId;
     if (targetEventId) {
-      fetch(`http://localhost:3000/api/events/${targetEventId}`)
+      fetch(`${API_BASE_URL}/api/events/${targetEventId}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (!data) return;

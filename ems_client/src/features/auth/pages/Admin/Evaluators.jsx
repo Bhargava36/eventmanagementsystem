@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
@@ -140,7 +141,7 @@ function Evaluators() {
     if (!eventId) return;
     try {
       setLoadingEvaluators(true);
-      const res = await fetch(`http://localhost:3000/api/evaluators/event/${eventId}?track=${currentTrack}`);
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}?track=${currentTrack}`);
       const data = await res.json();
       if (res.ok) {
         setEvaluators(data.data?.evaluators || []);
@@ -160,7 +161,7 @@ function Evaluators() {
     if (!eventId) return;
     try {
       setLoadingRounds(true);
-      const res = await fetch(`http://localhost:3000/api/evaluators/event/${eventId}/rounds?track=${currentTrack}`);
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/rounds?track=${currentTrack}`);
       const data = await res.json();
       if (res.ok) {
         setRounds(data.rounds || []);
@@ -241,7 +242,7 @@ function Evaluators() {
           payload.Password = evaluatorForm.password;
         }
 
-        const res = await fetch(`http://localhost:3000/api/evaluators/${editingEvaluator.Id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/evaluators/${editingEvaluator.Id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -264,7 +265,7 @@ function Evaluators() {
           Role: evaluatorForm.role
         };
 
-        const res = await fetch('http://localhost:3000/api/evaluators', {
+        const res = await fetch(`${API_BASE_URL}/api/evaluators`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -295,7 +296,7 @@ function Evaluators() {
     if (!window.confirm(`Are you sure you want to remove evaluator "${name}"?`)) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/evaluators/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -340,7 +341,7 @@ function Evaluators() {
     try {
       setRoundSubmitting(true);
       if (editingRound) {
-        const res = await fetch(`http://localhost:3000/api/evaluators/rounds/${editingRound.Id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/evaluators/rounds/${editingRound.Id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -352,7 +353,7 @@ function Evaluators() {
         });
         if (!res.ok) throw new Error('Failed to update round');
       } else {
-        const res = await fetch('http://localhost:3000/api/evaluators/rounds', {
+        const res = await fetch(`${API_BASE_URL}/api/evaluators/rounds`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -378,7 +379,7 @@ function Evaluators() {
     if (!window.confirm(`Are you sure you want to delete "${roundName}" and all its questions?`)) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/evaluators/rounds/${roundId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/rounds/${roundId}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -424,7 +425,7 @@ function Evaluators() {
     try {
       setQuestionSubmitting(true);
       if (editingQuestion) {
-        const res = await fetch(`http://localhost:3000/api/evaluators/questions/${editingQuestion.Id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/evaluators/questions/${editingQuestion.Id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -436,7 +437,7 @@ function Evaluators() {
         });
         if (!res.ok) throw new Error('Failed to update question');
       } else {
-        const res = await fetch(`http://localhost:3000/api/evaluators/rounds/${activeRoundForQuestion.Id}/questions`, {
+        const res = await fetch(`${API_BASE_URL}/api/evaluators/rounds/${activeRoundForQuestion.Id}/questions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -461,7 +462,7 @@ function Evaluators() {
     if (!window.confirm('Are you sure you want to delete this evaluation question?')) return;
 
     try {
-      const res = await fetch(`http://localhost:3000/api/evaluators/questions/${questionId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/questions/${questionId}`, {
         method: 'DELETE'
       });
       if (res.ok) {

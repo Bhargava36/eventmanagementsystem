@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -72,19 +73,19 @@ function EvaluateTeamPage() {
       setLoading(true);
 
       // 1. Fetch Event Info for Color Theme & Details
-      const eventPromise = fetch(`http://localhost:3000/api/events/${eventId}`)
+      const eventPromise = fetch(`${API_BASE_URL}/api/events/${eventId}`)
         .then((r) => r.json())
         .then((d) => (d.event || d.data || d))
         .catch(() => null);
 
       // 2. Fetch Rounds and Questions for this Track
-      const roundsPromise = fetch(`http://localhost:3000/api/evaluators/event/${eventId}/rounds?track=${track}`)
+      const roundsPromise = fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/rounds?track=${track}`)
         .then((r) => r.json())
         .then((d) => (Array.isArray(d) ? d : d.data || []))
         .catch(() => []);
 
       // 3. Fetch Team Details
-      const teamPromise = fetch(`http://localhost:3000/api/evaluators/event/${eventId}/teams?track=${track}`)
+      const teamPromise = fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/teams?track=${track}`)
         .then((r) => r.json())
         .then((d) => {
           const list = Array.isArray(d) ? d : d.data || [];
@@ -93,7 +94,7 @@ function EvaluateTeamPage() {
         .catch(() => null);
 
       // 4. Fetch Any Existing Score for this Evaluator + Round
-      const scorePromise = fetch(`http://localhost:3000/api/evaluators/rounds/${roundId}/scores?evaluatorId=${evaluator?.Id}`)
+      const scorePromise = fetch(`${API_BASE_URL}/api/evaluators/rounds/${roundId}/scores?evaluatorId=${evaluator?.Id}`)
         .then((r) => r.json())
         .then((d) => {
           const list = Array.isArray(d) ? d : d.data || [];
@@ -212,7 +213,7 @@ function EvaluateTeamPage() {
         feedback: feedback.trim()
       };
 
-      const res = await fetch('http://localhost:3000/api/evaluators/scores', {
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/scores`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

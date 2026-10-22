@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from '@/lib/api';
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   ChartNoAxesCombined,
@@ -39,7 +40,7 @@ const ROLE_CONFIGS = {
     role: "super_admin",
     roleName: "Super Admin",
     loginPath: "/login",
-    apiEndpoint: "http://localhost:3000/api/super_admin/login",
+    apiEndpoint: `${API_BASE_URL}/api/super_admin/login`,
     defaultRedirect: "/sidebar",
     badge: "ONE PLATFORM. ALL EVENTS.",
     titleFirst: "Super Admin Control",
@@ -92,7 +93,7 @@ const ROLE_CONFIGS = {
     role: "admin",
     roleName: "Organizer",
     loginPath: "/admin/login",
-    apiEndpoint: "http://localhost:3000/api/admin/login",
+    apiEndpoint: `${API_BASE_URL}/api/admin/login`,
     defaultRedirect: "/admin",
     badge: "COORDINATE. MANAGE. DELIVER.",
     titleFirst: "Event Organizer",
@@ -148,7 +149,7 @@ const ROLE_CONFIGS = {
     role: "user",
     roleName: "Participant",
     loginPath: "/user/login",
-    apiEndpoint: "http://localhost:3000/api/users/login",
+    apiEndpoint: `${API_BASE_URL}/api/users/login`,
     defaultRedirect: "/user/dashboard",
     badge: "CONNECT. BUILD. INNOVATE.",
     titleFirst: "Participant",
@@ -208,7 +209,7 @@ const ROLE_CONFIGS = {
     role: "evaluator",
     roleName: "Evaluator",
     loginPath: "/evaluator/login",
-    apiEndpoint: "http://localhost:3000/api/evaluators/login",
+    apiEndpoint: `${API_BASE_URL}/api/evaluators/login`,
     defaultRedirect: "/evaluator/dashboard",
     badge: "EVALUATE. SCORE. DECIDE.",
     titleFirst: "Evaluator Jury",
@@ -328,7 +329,7 @@ function UnifiedLogin({ role: propRole }) {
   const loadEvents = async () => {
     try {
       setLoadingEvents(true);
-      const res = await fetch("http://localhost:3000/api/events");
+      const res = await fetch(`${API_BASE_URL}/api/events`);
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.events || []);

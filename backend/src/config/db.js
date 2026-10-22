@@ -227,6 +227,21 @@ const migrationQueries = [
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualRegistrationOpen TINYINT(1) DEFAULT 1`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalRegistrationOpen TINYINT(1) DEFAULT 1`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS RegistrationOpen TINYINT(1) DEFAULT 1`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS AccommodationFee DECIMAL(10,2) NOT NULL DEFAULT 0.00`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS FoodFee DECIMAL(10,2) NOT NULL DEFAULT 0.00`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS FacilitiesPackageFee DECIMAL(10,2) NOT NULL DEFAULT 0.00`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS AdminUpiId VARCHAR(150) NULL`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS AdminPaymentQr LONGTEXT NULL`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS AdminPaymentInstructions TEXT NULL`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS IdCardBackground VARCHAR(500) DEFAULT NULL`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS TeamCardBackground VARCHAR(500) DEFAULT NULL`,
+    `ALTER TABLE physical_team_preferences ADD COLUMN IF NOT EXISTS TotalAmount DECIMAL(10,2) NOT NULL DEFAULT 0.00`,
+    `ALTER TABLE physical_team_preferences ADD COLUMN IF NOT EXISTS PaymentRefId VARCHAR(150) NULL`,
+    `ALTER TABLE physical_team_preferences ADD COLUMN IF NOT EXISTS PaymentReceiptUrl LONGTEXT NULL`,
+    `ALTER TABLE physical_team_preferences ADD COLUMN IF NOT EXISTS PaymentNotes TEXT NULL`,
+    `ALTER TABLE physical_team_preferences ADD COLUMN IF NOT EXISTS BookingStatus ENUM('Pending', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending'`,
+    `ALTER TABLE physical_team_preferences ADD COLUMN IF NOT EXISTS AdminRemarks TEXT NULL`,
+    `ALTER TABLE physical_team_preferences ADD COLUMN IF NOT EXISTS BookingCreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
 
     `CREATE TABLE IF NOT EXISTS event_timelines (
         Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -409,7 +424,57 @@ const migrationQueries = [
     FOREIGN KEY (RoundId) REFERENCES evaluation_rounds(Id) ON DELETE CASCADE,
     FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
     FOREIGN KEY (EvaluatorId) REFERENCES evaluators(Id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    // Problem Statement Management for Virtual Events
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS ThemePublished TINYINT(1) NOT NULL DEFAULT 0`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS ProblemStatementsPublished TINYINT(1) NOT NULL DEFAULT 0`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PSSelectionDeadline DATETIME DEFAULT NULL`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PSMaxTeamsPerStatement INT NOT NULL DEFAULT 5`,
+
+    `CREATE TABLE IF NOT EXISTS event_problem_statements (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        ProblemCode VARCHAR(100) NOT NULL,
+        Title VARCHAR(500) NOT NULL,
+        Description TEXT,
+        Category VARCHAR(150) DEFAULT NULL,
+        MaxTeams INT NOT NULL DEFAULT 5,
+        DisplayOrder INT DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_eps_event (EventId),
+        UNIQUE KEY unique_event_problem_code (EventId, ProblemCode),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS problem_statement_selections (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TeamId INT NOT NULL,
+        ProblemStatementId INT NOT NULL,
+        SelectionType ENUM('manual', 'auto') NOT NULL DEFAULT 'manual',
+        SelectedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_event_team_ps (EventId, TeamId),
+        INDEX idx_pss_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
+        FOREIGN KEY (ProblemStatementId) REFERENCES event_problem_statements(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE event_problem_statements ADD COLUMN IF NOT EXISTS Theme VARCHAR(255) DEFAULT NULL`,
+
+    `CREATE TABLE IF NOT EXISTS event_themes (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        ThemeName VARCHAR(255) NOT NULL,
+        Description TEXT,
+        DisplayOrder INT DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_et_event (EventId),
+        UNIQUE KEY unique_event_theme (EventId, ThemeName),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 
 let isMigrating = false;
@@ -422,6 +487,20 @@ const migrate = () => {
             if (index >= migrationQueries.length) {
                 isMigrating = false;
                 console.log('Database tables migrated successfully');
+                // Auto-sync missing UserIds and Genders for team members
+                db.query(`
+                    UPDATE registered_team_members tm
+                    INNER JOIN users u ON LOWER(u.Email) = LOWER(tm.MemberEmail)
+                    SET tm.UserId = u.Id
+                    WHERE tm.UserId IS NULL
+                `, () => {});
+                db.query(`
+                    UPDATE users u
+                    INNER JOIN registered_team_members tm ON tm.UserId = u.Id
+                    SET u.Gender = COALESCE(NULLIF(u.Gender, ''), tm.Gender),
+                        u.College = COALESCE(NULLIF(u.College, ''), tm.MemberCollege)
+                    WHERE u.Gender IS NULL OR u.Gender = '' OR u.College IS NULL OR u.College = ''
+                `, () => {});
                 return resolve();
             }
             db.query(migrationQueries[index], (err) => {

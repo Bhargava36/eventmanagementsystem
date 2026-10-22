@@ -1,5 +1,6 @@
 const eventsService = require('./eventsService');
 const { saveBase64File } = require('../../middleware/multer');
+const { broadcastEvent } = require('../../config/websocket');
 
 const processPosters = (posters) => {
     if (!posters) return [];
@@ -469,6 +470,11 @@ const updateVirtualStatus = (req, res) => {
                 error: err.message
             });
         }
+        broadcastEvent(id, {
+            type: 'VIRTUAL_STATUS_UPDATED',
+            eventId: id,
+            status: VirtualStatus
+        });
         return res.status(200).json({
             message: 'Virtual event status updated successfully',
             event: updated
@@ -487,6 +493,11 @@ const updateVirtualMeetUrl = (req, res) => {
                 error: err.message
             });
         }
+        broadcastEvent(id, {
+            type: 'VIRTUAL_MEET_UPDATED',
+            eventId: id,
+            url: VirtualMeetUrl || ''
+        });
         return res.status(200).json({
             message: 'Virtual meet url updated successfully',
             event: updated

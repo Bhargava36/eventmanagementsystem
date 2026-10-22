@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -170,7 +171,7 @@ function AdminPhysicalEvent() {
         setEventError('');
 
         const response = await fetch(
-          `http://localhost:3000/api/events/${eventId}`
+          `${API_BASE_URL}/api/events/${eventId}`
         );
 
         if (!response.ok) {
@@ -267,7 +268,7 @@ function AdminPhysicalEvent() {
       setError('');
 
       const response = await fetch(
-        `http://localhost:3000/api/teams/event/${eventId}`
+        `${API_BASE_URL}/api/teams/event/${eventId}`
       );
 
       if (!response.ok) {
@@ -326,7 +327,7 @@ function AdminPhysicalEvent() {
         setRoomCountsLoading(true);
 
         const response = await fetch(
-          `http://localhost:3000/api/accommodation`
+          `${API_BASE_URL}/api/accommodation`
         );
 
         if (!response.ok) {
@@ -397,7 +398,7 @@ function AdminPhysicalEvent() {
       const requests = [];
 
       requests.push(
-        fetch(`http://localhost:3000/api/physical-services/events/${eventId}/team-preferences`)
+        fetch(`${API_BASE_URL}/api/physical-services/events/${eventId}/team-preferences`)
           .then(async (response) => {
             const data = await readApiResponse(response, 'Failed to fetch team service choices');
             const preferences = Array.isArray(data.preferences) ? data.preferences : [];
@@ -423,7 +424,7 @@ function AdminPhysicalEvent() {
       if (eventDetails) {
         if (isEnabled(foodEnabled)) {
           requests.push(
-            fetch(`http://localhost:3000/api/physical-services/events/${eventId}/food-participants`)
+            fetch(`${API_BASE_URL}/api/physical-services/events/${eventId}/food-participants`)
               .then(async (response) => {
                 const data = await readApiResponse(response, 'Failed to fetch food opt-ins');
                 const participants = Array.isArray(data.participants) ? data.participants : [];
@@ -447,7 +448,7 @@ function AdminPhysicalEvent() {
 
       if (isEnabled(idCardEnabled)) {
         requests.push(
-          fetch(`http://localhost:3000/api/id-cards/events/${eventId}/participants`)
+          fetch(`${API_BASE_URL}/api/id-cards/events/${eventId}/participants`)
             .then(async (response) => {
               const data = await response.json();
               if (!response.ok) {

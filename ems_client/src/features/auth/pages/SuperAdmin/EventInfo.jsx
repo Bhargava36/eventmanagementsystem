@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '../../../../components/Organisms/Footer';
 import EventSponsorsManager from '../../../../components/Organisms/EventSponsorsManager';
@@ -135,7 +136,7 @@ function EventInfo() {
             setError('');
 
             const res = await fetch(
-                `http://localhost:3000/api/events/${id}`
+                `${API_BASE_URL}/api/events/${id}`
             );
 
             const data = await res.json();
@@ -200,7 +201,7 @@ function EventInfo() {
             setAdminLoading(true);
 
             const res = await fetch(
-                `http://localhost:3000/api/admin/event/${id}`
+                `${API_BASE_URL}/api/admin/event/${id}`
             );
 
             const data = await res.json();
@@ -232,7 +233,7 @@ function EventInfo() {
             setAdminSaving(true);
 
             const res = await fetch(
-                'http://localhost:3000/api/admin/register',
+                `${API_BASE_URL}/api/admin/register`,
                 {
                     method: 'POST',
                     headers: {
@@ -330,7 +331,7 @@ function EventInfo() {
     const resolvePosterUrl = (url) => {
         if (!url) return '';
         if (typeof url !== 'string') return url?.url || '';
-        if (url.startsWith('/uploads')) return `http://localhost:3000${url}`;
+        if (url.startsWith('/uploads')) return `${API_BASE_URL}${url}`;
         return url;
     };
 
@@ -347,7 +348,7 @@ function EventInfo() {
                 const uploadData = new FormData();
                 uploadData.append('file', file);
 
-                const uploadRes = await fetch('http://localhost:3000/api/upload', {
+                const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
                     method: 'POST',
                     body: uploadData
                 });
@@ -526,7 +527,7 @@ function EventInfo() {
             }
 
             const res = await fetch(
-                `http://localhost:3000/api/events/${id}`,
+                `${API_BASE_URL}/api/events/${id}`,
                 {
                     method: 'PUT',
                     headers: {
@@ -576,7 +577,7 @@ function EventInfo() {
             setDeleting(true);
 
             const res = await fetch(
-                `http://localhost:3000/api/events/${id}`,
+                `${API_BASE_URL}/api/events/${id}`,
                 {
                     method: 'DELETE',
                 }

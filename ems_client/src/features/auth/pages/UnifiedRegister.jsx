@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { API_BASE_URL } from '@/lib/api';
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   ShieldCheck,
@@ -74,7 +75,7 @@ const REGISTER_CONFIGS = {
     loginPath: "/superadmin/login",
     loginPrompt: "Already a Super Admin? Sign in",
     securityNotice: "Authorized institutional heads only",
-    apiEndpoint: "http://localhost:3000/api/super_admin/register",
+    apiEndpoint: `${API_BASE_URL}/api/super_admin/register`,
     successMsg: "Super Admin account created successfully!",
     redirectPath: "/superadmin/login",
   },
@@ -115,7 +116,7 @@ const REGISTER_CONFIGS = {
     loginPath: "/admin/login",
     loginPrompt: "Already an organizer? Sign in",
     securityNotice: "Official event coordinators only",
-    apiEndpoint: "http://localhost:3000/api/admin/create",
+    apiEndpoint: `${API_BASE_URL}/api/admin/create`,
     successMsg: "Organizer account created successfully!",
     redirectPath: "/admin/login",
   },
@@ -156,7 +157,7 @@ const REGISTER_CONFIGS = {
     loginPath: "/user/login",
     loginPrompt: "Already have an account? Sign in",
     securityNotice: "Student & Developer Participant Registration",
-    apiEndpoint: "http://localhost:3000/api/users/create",
+    apiEndpoint: `${API_BASE_URL}/api/users/create`,
     successMsg: "User account created successfully!",
     redirectPath: "/user/login",
   },

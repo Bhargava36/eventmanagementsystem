@@ -24,15 +24,22 @@ const sponsorRoutes = require("./src/modules/sponsors/sponsorRoutes");
 const galleryRoutes = require("./src/modules/gallery/galleryRoutes");
 const devRoute = require("./src/modules/dev/devRoute");
 const evaluatorRoutes = require("./src/modules/evaluators/evaluatorRoutes");
+const psRoutes = require("./src/modules/problem_statements/psRoutes");
 
 const app = express();
 
-// Serve uploaded files statically (e.g. http://localhost:3000/uploads/images/...)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
+app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(cors());
+
+// Serve uploaded files statically with explicit CORS (e.g. http://localhost:3000/uploads/images/...)
+app.use('/uploads', (req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    if (req.method === 'OPTIONS') return res.sendStatus(200);
+    next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/upload', uploadRoute);
 app.use('/api/super_admin', superAdminRoute);
@@ -53,8 +60,16 @@ app.use("/api/sponsors", sponsorRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/dev", devRoute);
 app.use("/api/evaluators", evaluatorRoutes);
+app.use("/api/problem-statements", psRoutes);
 
 
-app.listen(3000, () => {
-    console.log("Server is running on port 3000");
+const http = require('http');
+const { initWebSocket } = require('./src/config/websocket');
+
+const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+initWebSocket(server);
+
+server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });

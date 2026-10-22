@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_BASE_URL } from '@/lib/api';
 import { motion } from "framer-motion";
 import {
     Users,
@@ -157,7 +158,7 @@ function AdminDashboard() {
         try {
             setGuidelinesLoading(true);
             const response = await fetch(
-                `http://localhost:3000/api/events/${eventId}/guidelines`,
+                `${API_BASE_URL}/api/events/${eventId}/guidelines`,
                 {
                     method: "PUT",
                     headers: {
@@ -221,7 +222,7 @@ function AdminDashboard() {
 
             // Fast path: Fetch single consolidated summary endpoint (~190ms)
             try {
-                const summaryRes = await fetch(`http://localhost:3000/api/events/${eventId}/dashboard-summary`);
+                const summaryRes = await fetch(`${API_BASE_URL}/api/events/${eventId}/dashboard-summary`);
                 if (summaryRes.ok) {
                     const result = await summaryRes.json();
                     const data = result?.data;
@@ -264,13 +265,13 @@ function AdminDashboard() {
 
             // Fallback: parallel fetch all individual endpoints
             const [eventRes, prizesRes, regRes, actRes, countRes, teamsRes, pendingRes] = await Promise.allSettled([
-                fetch(`http://localhost:3000/api/events/${eventId}`).then(r => r.ok ? r.json() : null),
-                fetch(`http://localhost:3000/api/event_prizes/event/${eventId}`).then(r => r.ok ? r.json() : null),
-                fetch(`http://localhost:3000/api/event_reg/recent`).then(r => r.ok ? r.json() : null),
-                fetch(`http://localhost:3000/api/event_reg/activities`).then(r => r.ok ? r.json() : null),
-                fetch(`http://localhost:3000/api/event_reg/event/${eventId}/count`).then(r => r.ok ? r.json() : null),
-                fetch(`http://localhost:3000/api/teams/event/${eventId}/count`).then(r => r.ok ? r.json() : null),
-                fetch(`http://localhost:3000/api/event_reg/event/${eventId}/pending-count`).then(r => r.ok ? r.json() : null)
+                fetch(`${API_BASE_URL}/api/events/${eventId}`).then(r => r.ok ? r.json() : null),
+                fetch(`${API_BASE_URL}/api/event_prizes/event/${eventId}`).then(r => r.ok ? r.json() : null),
+                fetch(`${API_BASE_URL}/api/event_reg/recent`).then(r => r.ok ? r.json() : null),
+                fetch(`${API_BASE_URL}/api/event_reg/activities`).then(r => r.ok ? r.json() : null),
+                fetch(`${API_BASE_URL}/api/event_reg/event/${eventId}/count`).then(r => r.ok ? r.json() : null),
+                fetch(`${API_BASE_URL}/api/teams/event/${eventId}/count`).then(r => r.ok ? r.json() : null),
+                fetch(`${API_BASE_URL}/api/event_reg/event/${eventId}/pending-count`).then(r => r.ok ? r.json() : null)
             ]);
 
             if (eventRes.status === "fulfilled" && eventRes.value) {
@@ -411,7 +412,7 @@ function AdminDashboard() {
             };
 
             const response = await fetch(
-                `http://localhost:3000/api/event_prizes/event/${eventId}`,
+                `${API_BASE_URL}/api/event_prizes/event/${eventId}`,
                 {
                     method: "POST",
                     headers: {
@@ -430,7 +431,7 @@ function AdminDashboard() {
             }
 
             const prizeResponse = await fetch(
-                `http://localhost:3000/api/event_prizes/event/${eventId}`
+                `${API_BASE_URL}/api/event_prizes/event/${eventId}`
             );
 
             if (prizeResponse.ok) {
@@ -443,7 +444,7 @@ function AdminDashboard() {
             }
 
             // Also reload event data to update track pools on the dashboard immediately
-            const evRes = await fetch(`http://localhost:3000/api/events/${eventId}`);
+            const evRes = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
             if (evRes.ok) {
                 const evData = await evRes.json();
                 const refreshed = evData.event || evData;

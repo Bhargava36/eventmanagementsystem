@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import {useNavigate} from 'react-router-dom';
 import { NavLink, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -48,7 +49,7 @@ const SidebarContent = ({
 
   const fetchEventCount = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/events/");
+      const response = await fetch(`${API_BASE_URL}/api/events/`);
       const data = await response.json();
       setCount(data.events);
     } catch (error) {

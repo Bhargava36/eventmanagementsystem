@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
@@ -74,7 +75,7 @@ export default function PublicTeamInfo() {
         setError(null);
 
         // 1. Fetch public team info
-        const res = await fetch(`http://localhost:3000/api/teams/public/${teamId}`);
+        const res = await fetch(`${API_BASE_URL}/api/teams/public/${teamId}`);
         const data = await res.json();
 
         if (!res.ok || !data.team) {
@@ -86,7 +87,7 @@ export default function PublicTeamInfo() {
 
         // 2. Fetch published evaluation results (if published by organizer)
         try {
-          const evalRes = await fetch(`http://localhost:3000/api/evaluators/teams/${teamId}/published-results`);
+          const evalRes = await fetch(`${API_BASE_URL}/api/evaluators/teams/${teamId}/published-results`);
           if (evalRes.ok) {
             const evalJson = await evalRes.json();
             if (evalJson.success && evalJson.data) {

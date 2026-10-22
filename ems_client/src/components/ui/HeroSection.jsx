@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Calendar, Trophy, Users } from "lucide-react";
@@ -343,7 +344,7 @@ const HeroSection = ({ className }) => {
   });
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/events/public-stats')
+    fetch(`${API_BASE_URL}/api/events/public-stats`)
       .then((res) => res.json())
       .then((data) => {
         if (data?.stats) {

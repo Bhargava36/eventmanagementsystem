@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import WaveDots from '../../../components/Atoms/WaveDots';
@@ -76,7 +77,7 @@ function ExploreEvents() {
     try {
       setLoading(true);
       setFetchError(null);
-      const res = await fetch('http://localhost:3000/api/events');
+      const res = await fetch(`${API_BASE_URL}/api/events`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -214,7 +215,7 @@ function ExploreEvents() {
       }
     }
     if (url && typeof url === 'string' && url.startsWith('/uploads')) {
-      return `http://localhost:3000${url}`;
+      return `${API_BASE_URL}${url}`;
     }
     return url;
   };

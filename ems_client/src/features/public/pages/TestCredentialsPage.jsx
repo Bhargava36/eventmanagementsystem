@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Shield,
@@ -51,7 +52,7 @@ export default function TestCredentialsPage() {
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:3000/api/dev/accounts');
+      const res = await fetch(`${API_BASE_URL}/api/dev/accounts`);
       const data = await res.json();
       if (res.ok && data.accounts) {
         setAccounts(data.accounts);
@@ -88,7 +89,7 @@ export default function TestCredentialsPage() {
   const handleQuickLogin = async (acc) => {
     try {
       setLoggingInId(acc.Id);
-      const res = await fetch('http://localhost:3000/api/dev/quick-login', {
+      const res = await fetch(`${API_BASE_URL}/api/dev/quick-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: acc.Id, email: acc.Email, role: acc.RoleName, evaluatorId: acc.evaluatorId }),
@@ -128,7 +129,7 @@ export default function TestCredentialsPage() {
   const handleResetPassword = async (acc) => {
     try {
       setResettingId(acc.Id);
-      const res = await fetch('http://localhost:3000/api/dev/reset-password', {
+      const res = await fetch(`${API_BASE_URL}/api/dev/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: acc.Id, newPassword: 'password123', isEvaluator: acc.isEvaluator }),

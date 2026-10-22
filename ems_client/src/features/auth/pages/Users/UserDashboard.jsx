@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useAuth from '../../../../Hooks/useAuth';
@@ -68,8 +69,8 @@ export default function UserDashboard() {
     try {
       setLoading(true);
       const userId   = user?.Id;
-      const promises = [fetch('http://localhost:3000/api/events')];
-      if (userId) promises.push(fetch(`http://localhost:3000/api/teams/my-teams/${userId}`));
+      const promises = [fetch(`${API_BASE_URL}/api/events`)];
+      if (userId) promises.push(fetch(`${API_BASE_URL}/api/teams/my-teams/${userId}`));
       const results  = await Promise.allSettled(promises);
       if (results[0]?.status === 'fulfilled' && results[0].value.ok) {
         const d = await results[0].value.json();

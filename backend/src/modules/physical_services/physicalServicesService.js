@@ -2,11 +2,47 @@ const { randomBytes } = require("crypto");
 const db = require("../../config/db");
 
 const getTeamPreference = async (teamId, userId) => {
-    const [rows] = await db.promise().query(`SELECT t.Id AS TeamId, t.TeamLeadUserId, t.EventId, t.TeamName, er.ParticipationMode, er.Status AS RegistrationStatus, e.EventName, e.AccommodationEnabled, e.FoodEnabled, COALESCE(p.AccommodationRequested, 0) AS AccommodationRequested, COALESCE(p.FoodAccepted, 0) AS FoodAccepted, (p.TeamId IS NOT NULL) AS PreferencesSubmitted FROM registered_teams t INNER JOIN events e ON e.Id = t.EventId INNER JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId LEFT JOIN physical_team_preferences p ON p.EventId = t.EventId AND p.TeamId = t.Id INNER JOIN registered_team_members member ON member.TeamId = t.Id AND member.UserId = ? WHERE t.Id = ? LIMIT 1`, [userId, teamId]);
+    const [rows] = await db.promise().query(
+        `SELECT 
+            t.Id AS TeamId, 
+            t.TeamLeadUserId, 
+            t.EventId, 
+            t.TeamName, 
+            er.ParticipationMode, 
+            er.Status AS RegistrationStatus, 
+            e.EventName, 
+            e.AccommodationEnabled, 
+            e.FoodEnabled,
+            e.AccommodationFee,
+            e.FoodFee,
+            e.FacilitiesPackageFee,
+            e.AdminUpiId,
+            e.AdminPaymentQr,
+            e.AdminPaymentInstructions,
+            (SELECT COUNT(*) FROM registered_team_members tm WHERE tm.TeamId = t.Id) AS MemberCount,
+            COALESCE(p.AccommodationRequested, 0) AS AccommodationRequested, 
+            COALESCE(p.FoodAccepted, 0) AS FoodAccepted, 
+            (p.TeamId IS NOT NULL) AS PreferencesSubmitted,
+            p.TotalAmount,
+            p.PaymentRefId,
+            p.PaymentReceiptUrl,
+            p.PaymentNotes,
+            COALESCE(p.BookingStatus, 'Pending') AS BookingStatus,
+            p.AdminRemarks,
+            p.BookingCreatedAt
+        FROM registered_teams t 
+        INNER JOIN events e ON e.Id = t.EventId 
+        INNER JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId 
+        LEFT JOIN physical_team_preferences p ON p.EventId = t.EventId AND p.TeamId = t.Id 
+        INNER JOIN registered_team_members member ON member.TeamId = t.Id AND member.UserId = ? 
+        WHERE t.Id = ? 
+        LIMIT 1`, 
+        [userId, teamId]
+    );
     return rows[0] || null;
 };
 
-const saveTeamPreference = async ( teamId, userId, accommodationRequested, foodAccepted) => {
+const saveTeamPreference = async (teamId, userId, accommodationRequested, foodAccepted, bookingDetails = {}) => {
     const [teams] = await db.promise().query(
         `SELECT
             t.EventId,
@@ -54,38 +90,36 @@ const saveTeamPreference = async ( teamId, userId, accommodationRequested, foodA
         throw error;
     }
 
-    const [existingPreferences] = await db.promise().query(
-        `SELECT TeamId
-        FROM physical_team_preferences
-        WHERE EventId = ? AND TeamId = ?
-        LIMIT 1`,
-        [team.EventId, teamId]
+    const {
+        totalAmount = 0,
+        paymentRefId = '',
+        paymentReceiptUrl = '',
+        paymentNotes = ''
+    } = bookingDetails;
+
+    await db.promise().query(
+        `INSERT INTO physical_team_preferences
+            (EventId, TeamId, AccommodationRequested, FoodAccepted, TotalAmount, PaymentRefId, PaymentReceiptUrl, PaymentNotes, BookingStatus)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+        ON DUPLICATE KEY UPDATE
+            AccommodationRequested = VALUES(AccommodationRequested),
+            FoodAccepted = VALUES(FoodAccepted),
+            TotalAmount = VALUES(TotalAmount),
+            PaymentRefId = VALUES(PaymentRefId),
+            PaymentReceiptUrl = VALUES(PaymentReceiptUrl),
+            PaymentNotes = VALUES(PaymentNotes),
+            BookingStatus = 'Pending'`,
+        [
+            team.EventId,
+            teamId,
+            unifiedRequest ? 1 : 0,
+            unifiedRequest ? 1 : 0,
+            Number(totalAmount) || 0,
+            paymentRefId ? String(paymentRefId).trim() : null,
+            paymentReceiptUrl ? String(paymentReceiptUrl).trim() : null,
+            paymentNotes ? String(paymentNotes).trim() : null
+        ]
     );
-    if (existingPreferences.length > 0) {
-        const error = new Error("These team choices have already been submitted and cannot be changed.");
-        error.status = 409;
-        throw error;
-    }
-    try {
-        await db.promise().query(
-            `INSERT INTO physical_team_preferences
-                (EventId, TeamId, AccommodationRequested, FoodAccepted)
-            VALUES (?, ?, ?, ?)`,
-            [
-                team.EventId,
-                teamId,
-                unifiedRequest ? 1 : 0,
-                unifiedRequest ? 1 : 0
-            ]
-        );
-    } catch (insertError) {
-        if (insertError.code === "ER_DUP_ENTRY") {
-            const error = new Error("These team choices have already been submitted and cannot be changed.");
-            error.status = 409;
-            throw error;
-        }
-        throw insertError;
-    }
 
     return getTeamPreference(teamId, userId);
 };
@@ -115,10 +149,11 @@ const getFoodParticipants = async (eventId) => {
             lead.UserName AS TeamLeadName,
             lead.Email AS TeamLeadEmail,
             member.UserId,
-            participant.UserName AS ParticipantName,
-            participant.Email,
-            participant.College AS ParticipantCollege,
-            participant.Gender,
+            member.Id AS TeamMemberId,
+            COALESCE(NULLIF(member.MemberName, ''), participant.UserName, 'Member') AS ParticipantName,
+            COALESCE(NULLIF(member.MemberEmail, ''), participant.Email, '') AS Email,
+            COALESCE(NULLIF(member.MemberCollege, ''), participant.College, t.College, '') AS ParticipantCollege,
+            COALESCE(NULLIF(member.Gender, ''), participant.Gender, 'Male') AS Gender,
             tiffin.Token AS TiffinToken,
             lunch.Token AS LunchToken,
             dinner.Token AS DinnerToken
@@ -130,7 +165,7 @@ const getFoodParticipants = async (eventId) => {
             AND registration.ParticipationMode = 'Physical'
             AND registration.Status = 'approved'
         INNER JOIN registered_team_members member ON member.TeamId = t.Id
-        INNER JOIN users participant ON participant.Id = member.UserId
+        LEFT JOIN users participant ON participant.Id = member.UserId
         INNER JOIN users lead ON lead.Id = t.TeamLeadUserId
         LEFT JOIN physical_food_tokens tiffin
             ON tiffin.EventId = preference.EventId
@@ -144,8 +179,8 @@ const getFoodParticipants = async (eventId) => {
             ON dinner.EventId = preference.EventId
             AND dinner.UserId = member.UserId
             AND dinner.MealType = 'dinner'
-        WHERE preference.EventId = ? AND (preference.FoodAccepted = 1 OR preference.AccommodationRequested = 1)
-        ORDER BY t.TeamName, participant.UserName`,
+        WHERE preference.EventId = ? AND (preference.FoodAccepted = 1 OR preference.AccommodationRequested = 1) AND preference.BookingStatus = 'Approved'
+        ORDER BY t.TeamName, ParticipantName`,
         [eventId]
     );
 
@@ -176,11 +211,12 @@ const getAccommodationParticipants = async (eventId) => {
             lead.UserName AS TeamLeadName,
             lead.Email AS TeamLeadEmail,
             member.UserId,
-            participant.UserName AS ParticipantName,
-            participant.Email,
-            participant.Gender,
-            participant.College,
-            participant.Mobile,
+            member.Id AS TeamMemberId,
+            COALESCE(NULLIF(member.MemberName, ''), participant.UserName, 'Member') AS ParticipantName,
+            COALESCE(NULLIF(member.MemberEmail, ''), participant.Email, '') AS Email,
+            COALESCE(NULLIF(member.Gender, ''), participant.Gender, 'Male') AS Gender,
+            COALESCE(NULLIF(member.MemberCollege, ''), participant.College, t.College, '') AS College,
+            COALESCE(participant.Mobile, '') AS Mobile,
             allocation.RoomId AS AccommodationId,
             allocation.CreatedAt AS AllocatedAt,
             acc.room_num AS RoomNumber,
@@ -196,7 +232,7 @@ const getAccommodationParticipants = async (eventId) => {
             AND registration.ParticipationMode = 'Physical'
             AND registration.Status = 'approved'
         INNER JOIN registered_team_members member ON member.TeamId = t.Id
-        INNER JOIN users participant ON participant.Id = member.UserId
+        LEFT JOIN users participant ON participant.Id = member.UserId
         INNER JOIN users lead ON lead.Id = t.TeamLeadUserId
         LEFT JOIN accommodation_allocations allocation
             ON allocation.EventId = preference.EventId
@@ -205,8 +241,8 @@ const getAccommodationParticipants = async (eventId) => {
             ON acc.Id = allocation.RoomId
         LEFT JOIN accommodation_blocks block
             ON block.Id = acc.BlockId
-        WHERE preference.EventId = ? AND (preference.AccommodationRequested = 1 OR preference.FoodAccepted = 1)
-        ORDER BY t.TeamName, participant.UserName`,
+        WHERE preference.EventId = ? AND (preference.AccommodationRequested = 1 OR preference.FoodAccepted = 1) AND preference.BookingStatus = 'Approved'
+        ORDER BY t.TeamName, ParticipantName`,
         [eventId]
     );
 
@@ -270,6 +306,7 @@ const generateFoodTokens = async (eventId, mealType) => {
             AND token.MealType = ?
         WHERE preference.EventId = ?
             AND preference.FoodAccepted = 1
+            AND preference.BookingStatus = 'Approved'
             AND token.Id IS NULL`,
         [mealType, eventId]
     );
@@ -295,11 +332,57 @@ const generateFoodTokens = async (eventId, mealType) => {
     return { generated: result.affectedRows };
 };
 
+const getFacilityBookings = async (eventId) => {
+    const [rows] = await db.promise().query(
+        `SELECT 
+            p.EventId,
+            p.TeamId,
+            t.TeamName,
+            t.TeamLeadUserId,
+            u.UserName AS TeamLeadName,
+            u.Email AS TeamLeadEmail,
+            (SELECT COUNT(*) FROM registered_team_members tm WHERE tm.TeamId = t.Id) AS MemberCount,
+            p.AccommodationRequested,
+            p.FoodAccepted,
+            p.TotalAmount,
+            p.PaymentRefId,
+            p.PaymentReceiptUrl,
+            p.PaymentNotes,
+            COALESCE(p.BookingStatus, 'Pending') AS BookingStatus,
+            p.AdminRemarks,
+            p.BookingCreatedAt,
+            p.UpdatedAt
+        FROM physical_team_preferences p
+        INNER JOIN registered_teams t ON t.Id = p.TeamId
+        LEFT JOIN users u ON u.Id = t.TeamLeadUserId
+        WHERE p.EventId = ?
+        ORDER BY p.UpdatedAt DESC`,
+        [eventId]
+    );
+    return rows;
+};
+
+const updateBookingStatus = async (eventId, teamId, bookingStatus, adminRemarks = '') => {
+    const validStatuses = ['Pending', 'Approved', 'Rejected'];
+    const status = validStatuses.includes(bookingStatus) ? bookingStatus : 'Pending';
+
+    await db.promise().query(
+        `UPDATE physical_team_preferences 
+         SET BookingStatus = ?, AdminRemarks = ?
+         WHERE EventId = ? AND TeamId = ?`,
+        [status, adminRemarks || null, eventId, teamId]
+    );
+
+    return { success: true, bookingStatus: status, adminRemarks };
+};
+
 module.exports = {
     getTeamPreference,
     saveTeamPreference,
     getAccommodationParticipants,
     getFoodParticipants,
     getEventTeamPreferences,
-    generateFoodTokens
+    generateFoodTokens,
+    getFacilityBookings,
+    updateBookingStatus
 };

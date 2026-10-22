@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import {
   Pencil,
   Crown,
@@ -78,7 +79,7 @@ function AdminProfile() {
         return;
       }
 
-      const res = await fetch(`http://localhost:3000/api/admin/${targetId}`);
+      const res = await fetch(`${API_BASE_URL}/api/admin/${targetId}`);
       if (!res.ok) {
         throw new Error('Failed to fetch admin profile');
       }
@@ -98,7 +99,7 @@ function AdminProfile() {
         const eventId = adminData.EventId;
         if (eventId) {
           try {
-            const eventRes = await fetch(`http://localhost:3000/api/events/${eventId}`);
+            const eventRes = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
             if (eventRes.ok) {
               const eData = await eventRes.json();
               setEventDetails(eData.event || null);
@@ -109,8 +110,8 @@ function AdminProfile() {
 
           try {
             const [teamsRes, usersRes] = await Promise.all([
-              fetch(`http://localhost:3000/api/teams/event/${eventId}/count`),
-              fetch(`http://localhost:3000/api/event_reg/event/${eventId}/count`)
+              fetch(`${API_BASE_URL}/api/teams/event/${eventId}/count`),
+              fetch(`${API_BASE_URL}/api/event_reg/event/${eventId}/count`)
             ]);
 
             if (teamsRes.ok) {
@@ -159,7 +160,7 @@ function AdminProfile() {
       const decoded = parseJwt(token);
       const targetId = decoded?.Id || decoded?.id || profile?.Id;
 
-      const res = await fetch(`http://localhost:3000/api/admin/${targetId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/${targetId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

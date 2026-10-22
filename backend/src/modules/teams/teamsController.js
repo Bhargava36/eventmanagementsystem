@@ -2,10 +2,11 @@ const teamsService = require('./teamsService');
 const db = require('../../config/db');
 
 const createTeam = (req, res) => {
-    const { TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Members, ParticipationMode } = req.body;
+    const { TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Members, ParticipationMode, TeamLeadPhoto, teamLeadPhoto } = req.body;
     const membersData = Members || MemberEmails;
+    const leadPhoto = TeamLeadPhoto || teamLeadPhoto || null;
 
-    teamsService.createTeam( TeamName, TeamLeadEmail, TeamSize, EventId, membersData, ParticipationMode, (err, result) => {
+    teamsService.createTeam( TeamName, TeamLeadEmail, TeamSize, EventId, membersData, ParticipationMode, leadPhoto, (err, result) => {
             if (err) {
                 return res.status(err.status || 500).json({
                     message: err.message

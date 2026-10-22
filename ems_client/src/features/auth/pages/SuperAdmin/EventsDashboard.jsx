@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_BASE_URL } from '@/lib/api';
 import {
   Calendar,
   CheckCircle2,
@@ -166,7 +167,7 @@ function EventsDashboard() {
       setLoading(true);
 
       const res = await fetch(
-        'http://localhost:3000/api/events/'
+        `${API_BASE_URL}/api/events/`
       );
 
       const data = await res.json();
@@ -231,7 +232,7 @@ function EventsDashboard() {
   const resolvePosterUrl = (url) => {
     if (!url) return '';
     if (typeof url !== 'string') return url?.url || '';
-    if (url.startsWith('/uploads')) return `http://localhost:3000${url}`;
+    if (url.startsWith('/uploads')) return `${API_BASE_URL}${url}`;
     return url;
   };
 
@@ -248,7 +249,7 @@ function EventsDashboard() {
         const uploadData = new FormData();
         uploadData.append('file', file);
 
-        const uploadRes = await fetch('http://localhost:3000/api/upload', {
+        const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
           method: 'POST',
           body: uploadData
         });
@@ -508,7 +509,7 @@ function EventsDashboard() {
       }
 
       const res = await fetch(
-        'http://localhost:3000/api/events/create',
+        `${API_BASE_URL}/api/events/create`,
         {
           method: 'POST',
           headers: {

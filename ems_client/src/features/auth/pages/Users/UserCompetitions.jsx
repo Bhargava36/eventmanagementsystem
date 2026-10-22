@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import WaveDots from '../../../../components/Atoms/WaveDots';
@@ -47,7 +48,7 @@ export default function UserCompetitions() {
     try {
       setLoading(true);
       setFetchError(null);
-      const res  = await fetch('http://localhost:3000/api/events');
+      const res  = await fetch(`${API_BASE_URL}/api/events`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to fetch events');
       setEvents(data.events || []);
@@ -149,7 +150,7 @@ export default function UserCompetitions() {
       } catch { url = posters; }
     }
     if (url && typeof url === 'string' && url.startsWith('/uploads'))
-      return `http://localhost:3000${url}`;
+      return `${API_BASE_URL}${url}`;
     return url;
   };
 

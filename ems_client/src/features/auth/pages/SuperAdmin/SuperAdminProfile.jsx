@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail,
@@ -88,7 +89,7 @@ function SuperAdminProfile() {
         return;
       }
 
-      const response = await fetch(`http://localhost:3000/api/super_admin/profile/${targetId}`);
+      const response = await fetch(`${API_BASE_URL}/api/super_admin/profile/${targetId}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -121,10 +122,10 @@ function SuperAdminProfile() {
   const fetchSystemStats = useCallback(async () => {
     try {
       const [eventsRes, adminsRes, teamsRes, usersRes] = await Promise.allSettled([
-        fetch('http://localhost:3000/api/events/'),
-        fetch('http://localhost:3000/api/admin/'),
-        fetch('http://localhost:3000/api/teams/count'),
-        fetch('http://localhost:3000/api/users/count')
+        fetch(`${API_BASE_URL}/api/events/`),
+        fetch(`${API_BASE_URL}/api/admin/`),
+        fetch(`${API_BASE_URL}/api/teams/count`),
+        fetch(`${API_BASE_URL}/api/users/count`)
       ]);
 
       let eventsCount = 0;
@@ -191,7 +192,7 @@ function SuperAdminProfile() {
       const decoded = parseJwt(token);
       const targetId = id || decoded?.Id || decoded?.id || profile?.Id;
 
-      const response = await fetch(`http://localhost:3000/api/super_admin/profile/${targetId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/super_admin/profile/${targetId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

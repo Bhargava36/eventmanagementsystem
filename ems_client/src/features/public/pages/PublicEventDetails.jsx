@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useTheme from '../../../Hooks/useTheme';
@@ -395,12 +396,12 @@ function PublicEventDetails() {
       setError(null);
 
       const [eventRes, prizesRes, teamRes, timelineRes, sponsorsRes, galleryRes] = await Promise.allSettled([
-        fetch(`http://localhost:3000/api/events/${id}`),
-        fetch(`http://localhost:3000/api/event_prizes/event/${id}`),
-        fetch(`http://localhost:3000/api/core_team/event/${id}`),
-        fetch(`http://localhost:3000/api/event_timelines/event/${id}`),
-        fetch(`http://localhost:3000/api/sponsors/event/${id}`),
-        fetch(`http://localhost:3000/api/gallery/event/${id}`)
+        fetch(`${API_BASE_URL}/api/events/${id}`),
+        fetch(`${API_BASE_URL}/api/event_prizes/event/${id}`),
+        fetch(`${API_BASE_URL}/api/core_team/event/${id}`),
+        fetch(`${API_BASE_URL}/api/event_timelines/event/${id}`),
+        fetch(`${API_BASE_URL}/api/sponsors/event/${id}`),
+        fetch(`${API_BASE_URL}/api/gallery/event/${id}`)
       ]);
 
       if (eventRes.status === 'fulfilled' && eventRes.value.ok) {
@@ -538,7 +539,7 @@ function PublicEventDetails() {
       }
     }
     if (url && typeof url === 'string' && url.startsWith('/uploads')) {
-      return `http://localhost:3000${url}`;
+      return `${API_BASE_URL}${url}`;
     }
     return url;
   };

@@ -349,7 +349,19 @@ const updateEventSettings = (id, settings, callback) => {
         'HackathonMode',
         'AccommodationEnabled',
         'FoodEnabled',
-        'IDCardEnabled'
+        'IDCardEnabled',
+        'AccommodationFee',
+        'FoodFee',
+        'FacilitiesPackageFee',
+        'AdminUpiId',
+        'AdminPaymentQr',
+        'AdminPaymentInstructions',
+        'IdCardBackground',
+        'TeamCardBackground',
+        'ThemePublished',
+        'ProblemStatementsPublished',
+        'PSSelectionDeadline',
+        'PSMaxTeamsPerStatement'
     ];
 
     // Auto-sync generic RegistrationStart/RegistrationEnd if track-specific ones were supplied

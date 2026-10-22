@@ -32,7 +32,14 @@ const getTeamPreference = async (req, res) => {
                     Number(preference.AccommodationRequested)
                 ),
                 foodAccepted: Boolean(Number(preference.FoodAccepted)),
-                submitted: Boolean(Number(preference.PreferencesSubmitted))
+                submitted: Boolean(Number(preference.PreferencesSubmitted)),
+                totalAmount: Number(preference.TotalAmount || 0),
+                paymentRefId: preference.PaymentRefId || '',
+                paymentReceiptUrl: preference.PaymentReceiptUrl || '',
+                paymentNotes: preference.PaymentNotes || '',
+                bookingStatus: preference.BookingStatus || 'Pending',
+                adminRemarks: preference.AdminRemarks || '',
+                bookingCreatedAt: preference.BookingCreatedAt || null
             },
             event: {
                 id: preference.EventId,
@@ -40,14 +47,21 @@ const getTeamPreference = async (req, res) => {
                 accommodationEnabled: Boolean(
                     Number(preference.AccommodationEnabled)
                 ),
-                foodEnabled: Boolean(Number(preference.FoodEnabled))
+                foodEnabled: Boolean(Number(preference.FoodEnabled)),
+                accommodationFee: Number(preference.AccommodationFee || 0),
+                foodFee: Number(preference.FoodFee || 0),
+                facilitiesPackageFee: Number(preference.FacilitiesPackageFee || 0),
+                adminUpiId: preference.AdminUpiId || '',
+                adminPaymentQr: preference.AdminPaymentQr || '',
+                adminPaymentInstructions: preference.AdminPaymentInstructions || ''
             },
             team: {
                 id: preference.TeamId,
                 name: preference.TeamName,
                 teamLeadUserId: preference.TeamLeadUserId,
                 participationMode: preference.ParticipationMode,
-                registrationStatus: preference.RegistrationStatus
+                registrationStatus: preference.RegistrationStatus,
+                memberCount: Number(preference.MemberCount || 1)
             }
         });
     } catch (error) {
@@ -61,7 +75,14 @@ const getTeamPreference = async (req, res) => {
 const saveTeamPreference = async (req, res) => {
     const teamId = parsePositiveId(req.params.teamId);
     const userId = parsePositiveId(req.body.userId);
-    const { accommodationRequested, foodAccepted } = req.body;
+    const { 
+        accommodationRequested, 
+        foodAccepted,
+        totalAmount,
+        paymentRefId,
+        paymentReceiptUrl,
+        paymentNotes
+    } = req.body;
 
     if (
         !teamId ||
@@ -79,16 +100,26 @@ const saveTeamPreference = async (req, res) => {
             teamId,
             userId,
             accommodationRequested,
-            foodAccepted
+            foodAccepted,
+            {
+                totalAmount,
+                paymentRefId,
+                paymentReceiptUrl,
+                paymentNotes
+            }
         );
         return res.status(200).json({
-            message: "Physical event preferences saved.",
+            message: "Campus facility booking and payment references submitted successfully.",
             preference: {
                 accommodationRequested: Boolean(
                     Number(preference.AccommodationRequested)
                 ),
                 foodAccepted: Boolean(Number(preference.FoodAccepted)),
-                submitted: true
+                submitted: true,
+                totalAmount: Number(preference.TotalAmount || 0),
+                paymentRefId: preference.PaymentRefId || '',
+                paymentReceiptUrl: preference.PaymentReceiptUrl || '',
+                bookingStatus: preference.BookingStatus || 'Pending'
             }
         });
     } catch (error) {
@@ -192,11 +223,64 @@ const generateFoodTokens = async (req, res) => {
     }
 };
 
+const getFacilityBookings = async (req, res) => {
+    const eventId = parsePositiveId(req.params.eventId);
+    if (!eventId) {
+        return res.status(400).json({ message: "Valid event ID is required." });
+    }
+
+    try {
+        const bookings = await physicalServicesService.getFacilityBookings(eventId);
+        return res.status(200).json({
+            success: true,
+            bookings: bookings || []
+        });
+    } catch (error) {
+        console.error("Get facility bookings error:", error);
+        return res.status(500).json({
+            message: "Failed to fetch facility bookings."
+        });
+    }
+};
+
+const updateBookingStatus = async (req, res) => {
+    const eventId = parsePositiveId(req.params.eventId);
+    const teamId = parsePositiveId(req.params.teamId);
+    const { bookingStatus, adminRemarks } = req.body;
+
+    if (!eventId || !teamId || !bookingStatus) {
+        return res.status(400).json({
+            message: "Event ID, Team ID, and bookingStatus are required."
+        });
+    }
+
+    try {
+        const result = await physicalServicesService.updateBookingStatus(
+            eventId,
+            teamId,
+            bookingStatus,
+            adminRemarks
+        );
+        return res.status(200).json({
+            success: true,
+            message: `Booking status updated to ${bookingStatus}.`,
+            ...result
+        });
+    } catch (error) {
+        console.error("Update booking status error:", error);
+        return res.status(500).json({
+            message: "Failed to update booking status."
+        });
+    }
+};
+
 module.exports = {
     getTeamPreference,
     saveTeamPreference,
     getAccommodationParticipants,
     getFoodParticipants,
     getEventTeamPreferences,
-    generateFoodTokens
+    generateFoodTokens,
+    getFacilityBookings,
+    updateBookingStatus
 };

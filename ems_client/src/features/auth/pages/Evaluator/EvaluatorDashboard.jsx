@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { motion } from 'framer-motion';
 import {
   Award,
@@ -68,7 +69,7 @@ function EvaluatorDashboard() {
   // Fetch Event Data for Branding & Theme
   useEffect(() => {
     if (!eventId) return;
-    fetch(`http://localhost:3000/api/events/${eventId}`)
+    fetch(`${API_BASE_URL}/api/events/${eventId}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.event) setEventData(d.event);
@@ -81,7 +82,7 @@ function EvaluatorDashboard() {
     if (!eventId) return;
     try {
       setLoadingRounds(true);
-      const res = await fetch(`http://localhost:3000/api/evaluators/event/${eventId}/rounds?track=${track}`);
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/rounds?track=${track}`);
       if (res.ok) {
         const json = await res.json();
         const roundList = Array.isArray(json) ? json : (json.data || json.rounds || []);
@@ -103,7 +104,7 @@ function EvaluatorDashboard() {
     if (!eventId) return;
     try {
       setLoadingTeams(true);
-      const res = await fetch(`http://localhost:3000/api/evaluators/event/${eventId}/teams?track=${track}`);
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/teams?track=${track}`);
       if (res.ok) {
         const json = await res.json();
         const teamList = Array.isArray(json) ? json : (json.data || json.teams || []);
@@ -121,7 +122,7 @@ function EvaluatorDashboard() {
   const fetchRoundScores = useCallback(async (roundId) => {
     if (!roundId || !evaluator?.Id) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/evaluators/rounds/${roundId}/scores?evaluatorId=${evaluator.Id}`);
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/rounds/${roundId}/scores?evaluatorId=${evaluator.Id}`);
       if (res.ok) {
         const json = await res.json();
         const scoreList = Array.isArray(json) ? json : (json.data || []);

@@ -1,26 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { API_BASE_URL } from '@/lib/api';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
     ArrowLeft,
-    Code,
     Copy,
     Calendar,
     Users,
     Lightbulb,
     Building,
     Mail,
-    Phone,
-    Link as LinkIcon,
-    FileText,
     UserCheck,
     Layers,
-    Globe,
-    MapPin,
     Check,
     BedDouble,
-    Utensils
+    Utensils,
+    Download,
+    Printer,
+    Sparkles,
+    IdCard,
+    X,
+    Eye,
+    ExternalLink
 } from 'lucide-react';
+import TeamCardCanvas from './TeamCardCanvas';
+import ParticipantIdCanvas from './ParticipantIdCanvas';
 
 function TeamDetails() {
     const navigate = useNavigate();
@@ -29,6 +33,10 @@ function TeamDetails() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(false);
+
+    // Modals
+    const [showTeamCardModal, setShowTeamCardModal] = useState(false);
+    const [selectedMemberForId, setSelectedMemberForId] = useState(null);
 
     useEffect(() => {
         if (!id) {
@@ -42,9 +50,7 @@ function TeamDetails() {
                 setLoading(true);
                 setError('');
 
-                const res = await fetch(
-                    `http://localhost:3000/api/teams/${id}`
-                );
+                const res = await fetch(`${API_BASE_URL}/api/teams/${id}`);
 
                 if (!res.ok) {
                     throw new Error('Failed to fetch team details');
@@ -166,10 +172,6 @@ function TeamDetails() {
             <div className="bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden mb-6">
                 <div className="p-4 sm:p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                     <div className="flex items-start gap-4">
-                        {/* <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-lg">
-                            <Code className="w-6 h-6 sm:w-8 sm:h-8" />
-                        </div> */}
-
                         <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
                                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-words">
@@ -191,7 +193,7 @@ function TeamDetails() {
                                 <button
                                     onClick={handleCopy}
                                     title="Copy Team ID"
-                                    className="text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-500 transition-colors"
+                                    className="text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-500 transition-colors cursor-pointer"
                                 >
                                     {copied
                                         ? <Check className="w-3.5 h-3.5 text-emerald-600" />
@@ -201,40 +203,58 @@ function TeamDetails() {
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-4 sm:gap-6 xl:gap-8 border-t xl:border-t-0 border-gray-200 dark:border-zinc-800 pt-4 xl:pt-0">
-                        <div className="flex flex-col items-center xl:items-start gap-1">
-                            <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                <span className="text-[10px] sm:text-xs">
-                                    Registered On
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 border-t xl:border-t-0 border-gray-200 dark:border-zinc-800 pt-4 xl:pt-0">
+                        {/* Quick Stats */}
+                        <div className="flex items-center gap-3 pr-2 sm:pr-4 border-r border-gray-200 dark:border-zinc-800">
+                            <div className="flex flex-col items-start gap-0.5">
+                                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    <span className="text-[10px]">Registered</span>
+                                </div>
+                                <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                                    {registeredDate}
                                 </span>
                             </div>
 
-                            <span className="text-sm sm:base font-semibold text-gray-900 dark:text-white">
-                                {registeredDate}
-                            </span>
-                        </div>
+                            <div className="w-px h-6 bg-gray-200 dark:bg-zinc-800 mx-1" />
 
-                        <div className="hidden sm:block w-px h-8 bg-gray-200 dark:border-zinc-800" />
-
-                        <div className="flex flex-col items-center xl:items-start gap-1">
-                            <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                <span className="text-[10px] sm:text-xs">
-                                    Members
+                            <div className="flex flex-col items-start gap-0.5">
+                                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                                    <Users className="w-3.5 h-3.5" />
+                                    <span className="text-[10px]">Members</span>
+                                </div>
+                                <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                                    {members.length || team.TeamSize || 0}
                                 </span>
                             </div>
-
-                            <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                                {members.length || team.TeamSize || 0}
-                            </span>
                         </div>
+
+                        {/* Action 1: Download Team Card (Landscape Cyber Format) */}
+                        <button
+                            type="button"
+                            onClick={() => setShowTeamCardModal(true)}
+                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-cyan-600/25 transition cursor-pointer"
+                            title="Generate and download official landscape Team Display Card"
+                        >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Download Team Card</span>
+                        </button>
+
+                        {/* Action 2: Download Member ID Passes (A6 Format) */}
+                        <button
+                            type="button"
+                            onClick={() => setSelectedMemberForId(teamLead || members[0])}
+                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/25 transition cursor-pointer"
+                            title="Download standard A6 Member ID Passes"
+                        >
+                            <IdCard className="w-3.5 h-3.5" />
+                            <span>Download ID Cards</span>
+                        </button>
                     </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-
                 {/* Team Information Card */}
                 <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
                     <div className="flex items-center justify-between mb-4 sm:mb-5">
@@ -244,7 +264,6 @@ function TeamDetails() {
                     </div>
 
                     <div className="space-y-4">
-
                         <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                             <UserCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
                             <span className="text-gray-500 dark:text-gray-400">Team Leader</span>
@@ -287,7 +306,7 @@ function TeamDetails() {
                                         Accommodation
                                     </span>
 
-                                    <span className="font-medium text-gray-900 dark:text-white break-words">
+                                    <span className="font-medium text-emerald-600 dark:text-emerald-400 break-words">
                                         {accommodationStatus || 'Not configured'}
                                     </span>
                                 </div>
@@ -299,7 +318,7 @@ function TeamDetails() {
                                         Food
                                     </span>
 
-                                    <span className="font-medium text-gray-900 dark:text-white break-words">
+                                    <span className="font-medium text-emerald-600 dark:text-emerald-400 break-words">
                                         {foodStatus || 'Not configured'}
                                     </span>
                                 </div>
@@ -366,13 +385,21 @@ function TeamDetails() {
                     {teamLead ? (
                         <>
                             <div className="flex items-start gap-3 sm:gap-4 mb-5">
-                                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-700 dark:bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-md">
-                                    {getInitial(teamLead.UserName)}
-                                </div>
+                                {teamLead.Photo ? (
+                                    <img
+                                        src={teamLead.Photo}
+                                        alt={teamLead.UserName}
+                                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover shrink-0 border-2 border-emerald-500 shadow-md"
+                                    />
+                                ) : (
+                                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-700 dark:bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-md">
+                                        {getInitial(teamLead.UserName)}
+                                    </div>
+                                )}
 
                                 <div className="min-w-0">
-                                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                                        <h3 className="font-bold text-gray-900 dark:text-white text-sm sm:text-base truncate">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate">
                                             {teamLead.UserName}
                                         </h3>
 
@@ -403,10 +430,10 @@ function TeamDetails() {
 
                                 <div>
                                     <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                        State
+                                        Assigned Room
                                     </p>
-                                    <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                        {teamLead.State || 'N/A'}
+                                    <p className="text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                        {teamLead.RoomNumber ? `Room ${teamLead.RoomNumber}` : 'Not Allocated'}
                                     </p>
                                 </div>
                             </div>
@@ -418,30 +445,37 @@ function TeamDetails() {
                     )}
                 </div>
 
-                {/* Team Members Table */}
+                {/* Team Members Table with Assigned Rooms & ID Pass buttons */}
                 <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1 lg:col-span-2 xl:col-span-3">
-                    <div className="flex items-center justify-between mb-4 sm:mb-5">
-                        <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
-                            Team Members ({members.length})
-                        </h2>
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4 sm:mb-5">
+                        <div>
+                            <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                                Team Members ({members.length})
+                            </h2>
+                            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                                Member profiles, hostel room allocations, and individual ID passes.
+                            </p>
+                        </div>
                     </div>
 
                     <div className="overflow-x-auto">
-                        <table className="w-full text-xs sm:text-sm min-w-[600px]">
+                        <table className="w-full text-xs sm:text-sm min-w-[700px]">
                             <thead>
                                 <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
                                     <th className="pb-3 font-medium">Member</th>
                                     <th className="pb-3 font-medium">Role</th>
+                                    <th className="pb-3 font-medium">Gender</th>
+                                    <th className="pb-3 font-medium">Assigned Room</th>
                                     <th className="pb-3 font-medium">College</th>
                                     <th className="pb-3 font-medium">Email</th>
-                                    <th className="pb-3 font-medium">State</th>
+                                    <th className="pb-3 font-medium text-right">Actions</th>
                                 </tr>
                             </thead>
 
                             <tbody>
                                 {members.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="py-6 text-center text-xs text-gray-400">
+                                        <td colSpan={7} className="py-6 text-center text-xs text-gray-400">
                                             No members found
                                         </td>
                                     </tr>
@@ -453,18 +487,26 @@ function TeamDetails() {
 
                                         return (
                                             <tr
-                                                key={member.UserId || i}
+                                                key={member.UserId || member.TeamMemberId || i}
                                                 className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors"
                                             >
                                                 <td className="py-3 sm:py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                                                            isLead
-                                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
-                                                                : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300'
-                                                        }`}>
-                                                            {getInitial(member.UserName)}
-                                                        </div>
+                                                        {member.Photo ? (
+                                                            <img
+                                                                src={member.Photo}
+                                                                alt={member.UserName}
+                                                                className="w-8 h-8 rounded-full object-cover shrink-0 border border-emerald-500/40"
+                                                            />
+                                                        ) : (
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                                                                isLead
+                                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
+                                                                    : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300'
+                                                            }`}>
+                                                                {getInitial(member.UserName)}
+                                                            </div>
+                                                        )}
 
                                                         <span className="font-semibold text-gray-900 dark:text-white">
                                                             {member.UserName}
@@ -482,6 +524,28 @@ function TeamDetails() {
                                                     </span>
                                                 </td>
 
+                                                <td className="py-3 sm:py-4 text-gray-600 dark:text-gray-300">
+                                                    {member.Gender || 'Male'}
+                                                </td>
+
+                                                {/* Assigned Room Details */}
+                                                <td className="py-3 sm:py-4">
+                                                    {member.RoomNumber ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
+                                                            <BedDouble className="w-3.5 h-3.5" />
+                                                            <span>Room {member.RoomNumber}</span>
+                                                            {member.BlockName && (
+                                                                <span className="text-[10px] opacity-75">({member.BlockName})</span>
+                                                            )}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                                            <span>Awaiting Room</span>
+                                                        </span>
+                                                    )}
+                                                </td>
+
                                                 <td className="py-3 sm:py-4 text-gray-600 dark:text-gray-300 font-medium">
                                                     {member.College || 'N/A'}
                                                 </td>
@@ -490,8 +554,17 @@ function TeamDetails() {
                                                     {member.Email || 'N/A'}
                                                 </td>
 
-                                                <td className="py-3 sm:py-4 text-gray-600 dark:text-gray-300">
-                                                    {member.State || 'N/A'}
+                                                {/* Actions: View / Download Member ID Pass */}
+                                                <td className="py-3 sm:py-4 text-right">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedMemberForId(member)}
+                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition cursor-pointer"
+                                                        title="Preview & download A6 ID card"
+                                                    >
+                                                        <IdCard className="w-3.5 h-3.5" />
+                                                        <span>ID Pass</span>
+                                                    </button>
                                                 </td>
                                             </tr>
                                         );
@@ -502,6 +575,125 @@ function TeamDetails() {
                     </div>
                 </div>
             </div>
+
+            {/* MODAL 1: TEAM CARD DOWNLOAD & PREVIEW (LANDSCAPE CYBER FORMAT) */}
+            <AnimatePresence>
+                {showTeamCardModal && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 backdrop-blur-sm p-3 sm:p-5"
+                        onClick={() => setShowTeamCardModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="my-auto w-full max-w-2xl rounded-3xl bg-slate-950 border border-cyan-500/30 p-5 text-white shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="mb-4 flex items-center justify-between border-b border-cyan-500/20 pb-3">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-cyan-400" />
+                                        <h2 className="text-base sm:text-lg font-extrabold text-cyan-400">
+                                            Official Team Display Card
+                                        </h2>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-0.5">
+                                        High-resolution desk tent card for hackathon table placement & evaluations.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowTeamCardModal(false)}
+                                    className="rounded-lg p-2 text-slate-400 hover:text-white hover:bg-slate-900 transition cursor-pointer"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <TeamCardCanvas team={team} event={team} />
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* MODAL 2: MEMBER ID CARD PREVIEW & DOWNLOAD (STANDARD A6 SIZE) */}
+            <AnimatePresence>
+                {selectedMemberForId && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/85 backdrop-blur-md p-3 sm:p-5"
+                        onClick={() => setSelectedMemberForId(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="my-auto w-full max-w-lg rounded-3xl bg-slate-950 border border-zinc-800 p-5 text-white shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="mb-4 flex items-center justify-between border-b border-zinc-800/80 pb-3">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <IdCard className="w-4 h-4" style={{ color: team.PrimaryColor || '#10B981' }} />
+                                        <h2 className="text-base sm:text-lg font-extrabold text-white">
+                                            Participant ID Pass
+                                        </h2>
+                                    </div>
+                                    <p className="text-xs text-zinc-400 mt-0.5">
+                                        Standard ISO 216 A6 Sheet (105 × 148 mm @ 300 DPI)
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedMemberForId(null)}
+                                    className="rounded-lg p-2 text-zinc-400 hover:text-white hover:bg-zinc-900 transition cursor-pointer"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            {/* Member Switcher Tabs */}
+                            {members.length > 1 && (
+                                <div className="mb-3 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                                    {members.map((m) => {
+                                        const isCurrent = (m.UserId && m.UserId === selectedMemberForId.UserId) || m.UserName === selectedMemberForId.UserName;
+                                        return (
+                                            <button
+                                                key={m.UserId || m.UserName}
+                                                type="button"
+                                                onClick={() => setSelectedMemberForId(m)}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                                                    isCurrent
+                                                        ? 'text-white shadow-md'
+                                                        : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800'
+                                                }`}
+                                                style={isCurrent ? { backgroundColor: team.PrimaryColor || '#10B981' } : {}}
+                                            >
+                                                {m.UserName}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            <div className="mx-auto w-full max-w-[340px]">
+                                <ParticipantIdCanvas
+                                    participant={{
+                                        ...selectedMemberForId,
+                                        TeamName: team.TeamName,
+                                        College: selectedMemberForId.College || team.College,
+                                    }}
+                                    event={team}
+                                    eventId={team.EventId}
+                                    cardNumber={selectedMemberForId.IdCardNumber || `EV${team.EventId}-U${selectedMemberForId.UserId || '1'}`}
+                                />
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 }

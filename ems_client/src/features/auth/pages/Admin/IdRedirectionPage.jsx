@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { API_BASE_URL } from '@/lib/api';
 import ParticipantIdCanvas from "./ParticipantIdCanvas";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -139,7 +140,7 @@ function IdRedirectionPage() {
 
     try {
       const eventResponse = await fetch(
-        `http://localhost:3000/api/events/${encodeURIComponent(eventId)}`
+        `${API_BASE_URL}/api/events/${encodeURIComponent(eventId)}`
       );
 
       const eventJson = await eventResponse.json().catch(() => ({}));
@@ -159,7 +160,7 @@ function IdRedirectionPage() {
       setEvent(eventData);
 
       const participantResponse = await fetch(
-        `http://localhost:3000/api/id-cards/events/${encodeURIComponent(eventId)}/participants`
+        `${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/participants`
       );
 
       const participantJson = await participantResponse
@@ -261,7 +262,7 @@ function IdRedirectionPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/id-cards/events/${encodeURIComponent(eventId)}/generate`,
+        `${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/generate`,
         {
           method: "POST",
           headers: {
@@ -312,8 +313,8 @@ function IdRedirectionPage() {
     "Venue not available";
 
   const themeColor =
-    getValue(event, "ThemeColor", "themeColor", "PrimaryColor") ||
-    "#102B59";
+    getValue(event, "PrimaryColor", "ThemeColor", "themeColor") ||
+    "#10B981";
 
   return (
     <div className="min-h-screen w-full bg-[#F4F6FA] dark:bg-black p-4 font-sans text-slate-900 dark:text-white sm:p-6 lg:p-8 transition-colors">

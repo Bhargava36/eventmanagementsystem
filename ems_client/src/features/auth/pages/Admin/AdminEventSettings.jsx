@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sliders,
@@ -27,7 +28,14 @@ import {
   FileText,
   Award,
   Camera,
-  User
+  User,
+  QrCode,
+  CreditCard,
+  IndianRupee,
+  Upload,
+  Loader2,
+  BedDouble,
+  Utensils
 } from 'lucide-react';
 import useToast from '../../../../Hooks/useToast';
 import useAuth from '../../../../Hooks/useAuth';
@@ -54,6 +62,9 @@ export default function AdminEventSettings() {
   const [eventData, setEventData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAdminQr, setUploadingAdminQr] = useState(false);
+  const [uploadingIdBg, setUploadingIdBg] = useState(false);
+  const [uploadingTeamBg, setUploadingTeamBg] = useState(false);
   const [activeTab, setActiveTab] = useState('physical'); // 'virtual' | 'physical' | 'general'
 
   // Editable settings form state
@@ -76,7 +87,15 @@ export default function AdminEventSettings() {
     HackathonMode: 'Physical',
     AccommodationEnabled: 0,
     FoodEnabled: 0,
-    IDCardEnabled: 0
+    IDCardEnabled: 0,
+    AccommodationFee: 0,
+    FoodFee: 0,
+    FacilitiesPackageFee: 0,
+    AdminUpiId: '',
+    AdminPaymentQr: '',
+    AdminPaymentInstructions: '',
+    IdCardBackground: '',
+    TeamCardBackground: ''
   });
 
   // Track visibility is controlled strictly by the event's configured HackathonMode.
@@ -126,14 +145,14 @@ export default function AdminEventSettings() {
           const evId = Number(adminEventId);
           setSelectedEventId(evId);
           await loadEventSettings(evId);
-          const res = await fetch(`http://localhost:3000/api/events/${evId}`);
+          const res = await fetch(`${API_BASE_URL}/api/events/${evId}`);
           if (res.ok && isMounted) {
             const data = await res.json();
             const target = data.event || data;
             setEventsList([target]);
           }
         } else {
-          const res = await fetch('http://localhost:3000/api/events');
+          const res = await fetch(`${API_BASE_URL}/api/events`);
           if (res.ok && isMounted) {
             const data = await res.json();
             const list = Array.isArray(data) ? data : (data.events || []);
@@ -167,7 +186,7 @@ export default function AdminEventSettings() {
     if (!targetId) return;
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:3000/api/events/${targetId}`);
+      const res = await fetch(`${API_BASE_URL}/api/events/${targetId}`);
       if (!res.ok) throw new Error('Failed to load event details');
       const data = await res.json();
       const ev = Array.isArray(data) ? data[0] : (data.event || data);
@@ -203,7 +222,15 @@ export default function AdminEventSettings() {
         HackathonMode: ev.HackathonMode || 'Physical',
         AccommodationEnabled: ev.AccommodationEnabled === true || Number(ev.AccommodationEnabled) === 1 ? 1 : 0,
         FoodEnabled: ev.FoodEnabled === true || Number(ev.FoodEnabled) === 1 ? 1 : 0,
-        IDCardEnabled: ev.IDCardEnabled === true || Number(ev.IDCardEnabled) === 1 ? 1 : 0
+        IDCardEnabled: ev.IDCardEnabled === true || Number(ev.IDCardEnabled) === 1 ? 1 : 0,
+        AccommodationFee: ev.AccommodationFee !== undefined ? ev.AccommodationFee : 0,
+        FoodFee: ev.FoodFee !== undefined ? ev.FoodFee : 0,
+        FacilitiesPackageFee: ev.FacilitiesPackageFee !== undefined ? ev.FacilitiesPackageFee : 0,
+        AdminUpiId: ev.AdminUpiId || '',
+        AdminPaymentQr: ev.AdminPaymentQr || '',
+        AdminPaymentInstructions: ev.AdminPaymentInstructions || '',
+        IdCardBackground: ev.IdCardBackground || '',
+        TeamCardBackground: ev.TeamCardBackground || ''
       });
     } catch (err) {
       console.error(err);
@@ -213,11 +240,80 @@ export default function AdminEventSettings() {
     }
   };
 
+  const handleUploadAdminQr = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingAdminQr(true);
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE_URL}/api/upload/single`, {
+        method: 'POST',
+        body: form
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Payment QR upload failed');
+      const qrUrl = data.fileUrl || data.url;
+      setSettingsForm((prev) => ({ ...prev, AdminPaymentQr: qrUrl }));
+      toast.success('Payment QR code uploaded successfully!');
+    } catch (err) {
+      toast.error(err.message || 'Failed to upload QR code');
+    } finally {
+      setUploadingAdminQr(false);
+    }
+  };
+
+  const handleUploadIdBg = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingIdBg(true);
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE_URL}/api/upload/single`, {
+        method: 'POST',
+        body: form
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'ID card background upload failed');
+      const url = data.fileUrl || data.url;
+      setSettingsForm((prev) => ({ ...prev, IdCardBackground: url }));
+      toast.success('ID Card background uploaded successfully!');
+    } catch (err) {
+      toast.error(err.message || 'Failed to upload ID card background');
+    } finally {
+      setUploadingIdBg(false);
+    }
+  };
+
+  const handleUploadTeamBg = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingTeamBg(true);
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE_URL}/api/upload/single`, {
+        method: 'POST',
+        body: form
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Team card background upload failed');
+      const url = data.fileUrl || data.url;
+      setSettingsForm((prev) => ({ ...prev, TeamCardBackground: url }));
+      toast.success('Team Card background uploaded successfully!');
+    } catch (err) {
+      toast.error(err.message || 'Failed to upload Team card background');
+    } finally {
+      setUploadingTeamBg(false);
+    }
+  };
+
   const loadTimelines = async (eventId) => {
     if (!eventId) return;
     try {
       setLoadingTimelines(true);
-      const res = await fetch(`http://localhost:3000/api/event_timelines/event/${eventId}`);
+      const res = await fetch(`${API_BASE_URL}/api/event_timelines/event/${eventId}`);
       if (res.ok) {
         const data = await res.json();
         setTimelines(Array.isArray(data) ? data : (data.timelines || []));
@@ -276,7 +372,7 @@ export default function AdminEventSettings() {
     try {
       setSavingTimeline(true);
       if (editingTimelineId) {
-        const res = await fetch(`http://localhost:3000/api/event_timelines/${editingTimelineId}`, {
+        const res = await fetch(`${API_BASE_URL}/api/event_timelines/${editingTimelineId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(timelineForm)
@@ -284,7 +380,7 @@ export default function AdminEventSettings() {
         if (!res.ok) throw new Error('Failed to update timeline milestone');
         toast.success('Milestone updated successfully!');
       } else {
-        const res = await fetch(`http://localhost:3000/api/event_timelines`, {
+        const res = await fetch(`${API_BASE_URL}/api/event_timelines`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -311,7 +407,7 @@ export default function AdminEventSettings() {
     if (!window.confirm('Are you sure you want to delete this timeline milestone?')) return;
     const targetEventId = adminEventId ? Number(adminEventId) : selectedEventId;
     try {
-      const res = await fetch(`http://localhost:3000/api/event_timelines/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/event_timelines/${id}`, {
         method: 'DELETE'
       });
       if (!res.ok) throw new Error('Failed to delete milestone');
@@ -339,7 +435,7 @@ export default function AdminEventSettings() {
     }));
 
     try {
-      const res = await fetch(`http://localhost:3000/api/events/${targetEventId}/settings`, {
+      const res = await fetch(`${API_BASE_URL}/api/events/${targetEventId}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: newVal })
@@ -421,7 +517,7 @@ export default function AdminEventSettings() {
 
     try {
       setSaving(true);
-      const res = await fetch(`http://localhost:3000/api/events/${targetEventId}/settings`, {
+      const res = await fetch(`${API_BASE_URL}/api/events/${targetEventId}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settingsForm)
@@ -458,6 +554,170 @@ export default function AdminEventSettings() {
       setSaving(false);
     }
   };
+
+  const renderCardBackgroundsSection = () => (
+    <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold">
+          <Layers className="w-5 h-5" />
+        </div>
+        <div>
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">
+            ID Card &amp; Team Card Custom Backgrounds
+          </h3>
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+            Upload custom background designs for participant A6 ID cards and official desk team display cards.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 pt-2">
+        {/* ID Card Background (A6 Portrait) */}
+        <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                Participant ID Card Background
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Standard ISO 216 A6 Portrait (105 × 148 mm or 1240 × 1748 px)
+              </p>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500">
+              A6 Portrait
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="w-24 h-32 rounded-xl border-2 border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 flex items-center justify-center overflow-hidden shrink-0">
+              {settingsForm.IdCardBackground ? (
+                <img
+                  src={settingsForm.IdCardBackground}
+                  alt="ID Card Background"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center p-2 text-slate-400">
+                  <Camera className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                  <span className="text-[9px] block leading-tight">Default Cyber Theme</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 space-y-2">
+              <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition shadow-sm">
+                {uploadingIdBg ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {uploadingIdBg
+                    ? 'Uploading...'
+                    : settingsForm.IdCardBackground
+                    ? 'Change Background'
+                    : 'Upload Background'}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadIdBg}
+                  disabled={uploadingIdBg}
+                  className="hidden"
+                />
+              </label>
+
+              {settingsForm.IdCardBackground && (
+                <button
+                  type="button"
+                  onClick={() => setSettingsForm((prev) => ({ ...prev, IdCardBackground: '' }))}
+                  className="block text-xs text-rose-500 hover:underline cursor-pointer"
+                >
+                  Reset to Default Theme
+                </button>
+              )}
+
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Replaces the ID pass background with your custom branding or institution artwork.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Team Card Background (Desk Landscape) */}
+        <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                Team Display Card Background
+              </p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Landscape Desk Display (~1200 × 750 px or 2400 × 1500 px)
+              </p>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500">
+              Landscape
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="w-36 h-24 rounded-xl border-2 border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 flex items-center justify-center overflow-hidden shrink-0">
+              {settingsForm.TeamCardBackground ? (
+                <img
+                  src={settingsForm.TeamCardBackground}
+                  alt="Team Card Background"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center p-2 text-slate-400">
+                  <Camera className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                  <span className="text-[9px] block leading-tight">Default Cyber Grid</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 space-y-2">
+              <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition shadow-sm">
+                {uploadingTeamBg ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {uploadingTeamBg
+                    ? 'Uploading...'
+                    : settingsForm.TeamCardBackground
+                    ? 'Change Background'
+                    : 'Upload Background'}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleUploadTeamBg}
+                  disabled={uploadingTeamBg}
+                  className="hidden"
+                />
+              </label>
+
+              {settingsForm.TeamCardBackground && (
+                <button
+                  type="button"
+                  onClick={() => setSettingsForm((prev) => ({ ...prev, TeamCardBackground: '' }))}
+                  className="block text-xs text-rose-500 hover:underline cursor-pointer"
+                >
+                  Reset to Default Theme
+                </button>
+              )}
+
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Custom graphic template for desk team cards during presentations and table placement.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderTimelineSection = (trackName) => {
     const trackTimelines = timelines
@@ -1183,7 +1443,187 @@ export default function AdminEventSettings() {
                         );
                       })}
                     </div>
+
+                    {/* Facility Pricing & Payment Configuration (Shown when Food or Accommodation is enabled) */}
+                    {(settingsForm.AccommodationEnabled === 1 || settingsForm.FoodEnabled === 1) && (
+                      <div className="mt-4 pt-5 border-t border-slate-200/80 dark:border-zinc-800 space-y-5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+                              <IndianRupee className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                Food &amp; Accommodation Pricing &amp; Admin Payment Setup
+                              </h4>
+                              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                                Configure rates per person (per night / food included) and your payment collection details.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Pricing Inputs */}
+                        <div className="grid gap-4 sm:grid-cols-3">
+                          {settingsForm.AccommodationEnabled === 1 && (
+                            <div className="space-y-1.5 p-3.5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800">
+                              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300">
+                                Accommodation Fee (₹ / person / night)
+                              </label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₹</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  name="AccommodationFee"
+                                  value={settingsForm.AccommodationFee}
+                                  onChange={handleInputChange}
+                                  placeholder="0.00"
+                                  className="w-full pl-7 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                              <p className="text-[10px] text-slate-400">Hostel room fee per night per attendee</p>
+                            </div>
+                          )}
+
+                          {settingsForm.FoodEnabled === 1 && (
+                            <div className="space-y-1.5 p-3.5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800">
+                              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300">
+                                Food &amp; Meals Fee (₹ / person / day)
+                              </label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₹</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  name="FoodFee"
+                                  value={settingsForm.FoodFee}
+                                  onChange={handleInputChange}
+                                  placeholder="0.00"
+                                  className="w-full pl-7 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                              <p className="text-[10px] text-slate-400">Daily food tokens package fee</p>
+                            </div>
+                          )}
+
+                          <div className="space-y-1.5 p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/20">
+                            <label className="block text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                              Total Package Fee (₹ / person)
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-600 dark:text-emerald-400">₹</span>
+                              <input
+                                type="number"
+                                min="0"
+                                name="FacilitiesPackageFee"
+                                value={
+                                  settingsForm.FacilitiesPackageFee !== undefined && settingsForm.FacilitiesPackageFee !== null && settingsForm.FacilitiesPackageFee !== 0
+                                    ? settingsForm.FacilitiesPackageFee
+                                    : ((Number(settingsForm.AccommodationFee) || 0) + (Number(settingsForm.FoodFee) || 0))
+                                }
+                                onChange={handleInputChange}
+                                placeholder="0.00"
+                                className="w-full pl-7 pr-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-500/30 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500"
+                              />
+                            </div>
+                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Total payable per member for full stay &amp; food</p>
+                          </div>
+                        </div>
+
+                        {/* Admin Payment Collection Info */}
+                        <div className="grid gap-4 md:grid-cols-2 pt-1">
+                          <div className="space-y-3 p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="w-4 h-4 text-emerald-500" />
+                              <span className="text-xs font-bold text-slate-900 dark:text-white">Admin UPI / Payment ID</span>
+                            </div>
+                            <input
+                              type="text"
+                              name="AdminUpiId"
+                              value={settingsForm.AdminUpiId}
+                              onChange={handleInputChange}
+                              placeholder="e.g. organizer@upi or 9876543210@paytm"
+                              className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 font-mono"
+                            />
+                            <p className="text-[10px] text-slate-400">Teams will see this UPI ID to transfer payment directly</p>
+
+                            <div className="pt-2">
+                              <label className="block text-xs font-bold text-slate-900 dark:text-white mb-1.5">
+                                Payment Instructions &amp; Bank Details
+                              </label>
+                              <textarea
+                                name="AdminPaymentInstructions"
+                                value={settingsForm.AdminPaymentInstructions}
+                                onChange={handleInputChange}
+                                rows={3}
+                                placeholder="e.g. Bank: SBI, A/C: 123456789, IFSC: SBIN0001234. Please mention Team Name in remarks and upload transaction receipt."
+                                className="w-full p-3 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 resize-none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Admin Payment QR Code */}
+                          <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-3">
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <QrCode className="w-4 h-4 text-emerald-500" />
+                                <span className="text-xs font-bold text-slate-900 dark:text-white">Admin Payment QR Code</span>
+                              </div>
+                              <p className="text-[11px] text-slate-400">
+                                Upload your UPI or bank QR code screenshot so teams can scan and pay seamlessly.
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="relative w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden shrink-0">
+                                {settingsForm.AdminPaymentQr ? (
+                                  <img
+                                    src={settingsForm.AdminPaymentQr}
+                                    alt="Payment QR"
+                                    className="w-full h-full object-contain p-1"
+                                  />
+                                ) : (
+                                  <QrCode className="w-8 h-8 text-slate-400 dark:text-zinc-600" />
+                                )}
+                                {uploadingAdminQr && (
+                                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white">
+                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="space-y-2 flex-1">
+                                <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-sm transition">
+                                  <Upload className="w-3.5 h-3.5" />
+                                  <span>{uploadingAdminQr ? 'Uploading...' : settingsForm.AdminPaymentQr ? 'Replace QR Code' : 'Upload QR Code'}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleUploadAdminQr}
+                                    disabled={uploadingAdminQr}
+                                    className="hidden"
+                                  />
+                                </label>
+                                {settingsForm.AdminPaymentQr && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSettingsForm((prev) => ({ ...prev, AdminPaymentQr: '' }))}
+                                    className="block text-[11px] text-rose-500 hover:underline"
+                                  >
+                                    Remove QR Code
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
+
+                  {/* ID Card & Team Card Custom Backgrounds */}
+                  {renderCardBackgroundsSection()}
 
                   {/* Physical Track Timelines Section */}
                   {renderTimelineSection('Physical')}
@@ -1409,6 +1849,9 @@ export default function AdminEventSettings() {
                       )}
                     </div>
                   </div>
+
+                  {/* ID Card & Team Card Custom Backgrounds */}
+                  {renderCardBackgroundsSection()}
                 </div>
               )}
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { Link, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { animate } from 'animejs';
@@ -26,7 +27,7 @@ export default function FeaturedHackathonsSection() {
   const fetchFeaturedEvents = async () => {
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:3000/api/events');
+      const res = await fetch(`${API_BASE_URL}/api/events`);
       const data = await res.json();
       if (res.ok) {
         setEvents((data.events || []).slice(0, 3));
@@ -56,7 +57,7 @@ export default function FeaturedHackathonsSection() {
       }
     }
     if (url && typeof url === 'string' && url.startsWith('/uploads')) {
-      return `http://localhost:3000${url}`;
+      return `${API_BASE_URL}${url}`;
     }
     return url;
   };

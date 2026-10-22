@@ -1,7 +1,24 @@
 const db = require("../../config/db");
 
 const getParticipantsByEvent = (EventId, callback) => {
-    const query = ` SELECT u.Id AS UserId, u.UserName AS ParticipantName, u.Email, t.Id AS TeamId, t.TeamName, t.College, c.IdCardNumber, CASE WHEN c.Id IS NULL THEN 0 ELSE 1 END AS IdCardGenerated FROM event_registrations er INNER JOIN registered_teams t ON t.Id = er.TeamId INNER JOIN registered_team_members tm ON tm.TeamId = t.Id INNER JOIN users u ON u.Id = tm.UserId LEFT JOIN participant_id_cards c ON c.EventId = er.EventId AND c.UserId = u.Id WHERE er.EventId = ? AND er.ParticipationMode = 'Physical' AND er.Status = 'approved' ORDER BY t.TeamName, u.UserName`;
+    const query = ` SELECT 
+        u.Id AS UserId, 
+        COALESCE(NULLIF(tm.MemberName, ''), u.UserName, 'Member') AS ParticipantName, 
+        COALESCE(NULLIF(tm.MemberEmail, ''), u.Email, '') AS Email, 
+        t.Id AS TeamId, 
+        t.TeamName, 
+        COALESCE(NULLIF(tm.MemberCollege, ''), u.College, t.College, '') AS College, 
+        COALESCE(NULLIF(tm.Gender, ''), u.Gender, 'Male') AS Gender,
+        COALESCE(tm.Photo, u.Photo) AS Photo,
+        c.IdCardNumber, 
+        CASE WHEN c.Id IS NULL THEN 0 ELSE 1 END AS IdCardGenerated 
+    FROM event_registrations er 
+    INNER JOIN registered_teams t ON t.Id = er.TeamId 
+    INNER JOIN registered_team_members tm ON tm.TeamId = t.Id 
+    INNER JOIN users u ON u.Id = tm.UserId 
+    LEFT JOIN participant_id_cards c ON c.EventId = er.EventId AND c.UserId = u.Id 
+    WHERE er.EventId = ? AND er.ParticipationMode = 'Physical' AND er.Status = 'approved' 
+    ORDER BY t.TeamName, ParticipantName`;
     db.query(query, [EventId], (err, result) => {
         if (err) {
             console.error("Get participants error:", err);

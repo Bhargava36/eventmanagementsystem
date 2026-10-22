@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useTheme from '../../../../Hooks/useTheme';
@@ -41,6 +42,10 @@ import {
   Lightbulb,
   CalendarCheck,
   ClipboardCheck,
+  Camera,
+  Upload,
+  User,
+  Loader2,
 } from 'lucide-react';
 
 /* ─────────────────────────────────────────────
@@ -195,13 +200,14 @@ function EventDetails() {
     email: loggedUser?.Email || loggedUser?.email || '',
     college: loggedUser?.College || loggedUser?.college || '',
     state: loggedUser?.State || loggedUser?.state || loggedUser?.Location || loggedUser?.location || '',
+    photo: loggedUser?.Photo || '',
   }));
 
   // Fetch complete profile details if user id exists
   useEffect(() => {
     const userId = loggedUser?.Id || loggedUser?.id;
     if (userId) {
-      fetch(`http://localhost:3000/api/users/${userId}`)
+      fetch(`${API_BASE_URL}/api/users/${userId}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (data?.user) {
@@ -211,6 +217,7 @@ function EventDetails() {
               email: u.Email || u.email || '',
               college: u.College || u.college || '',
               state: u.State || u.state || u.Location || '',
+              photo: u.Photo || '',
             });
           }
         })
@@ -223,6 +230,7 @@ function EventDetails() {
     TeamLeadEmail: leadProfile.email || loggedUser?.Email || loggedUser?.email || '',
     TeamLeadCollege: leadProfile.college || loggedUser?.College || loggedUser?.college || '',
     TeamLeadState: leadProfile.state || loggedUser?.State || loggedUser?.state || '',
+    TeamLeadPhoto: leadProfile.photo || loggedUser?.Photo || '',
   });
 
   /* ── event data ── */
@@ -273,10 +281,13 @@ function EventDetails() {
       TeamLeadEmail: loggedUser?.Email || loggedUser?.email || '',
       TeamLeadCollege: loggedUser?.College || loggedUser?.college || '',
       TeamLeadState: loggedUser?.State || loggedUser?.state || '',
+      TeamLeadPhoto: loggedUser?.Photo || '',
     };
     return { TeamName: '', ...lead };
   });
   const [members,  setMembers]  = useState([]);
+  const [uploadingLeadPhoto, setUploadingLeadPhoto] = useState(false);
+  const [uploadingMemberIndex, setUploadingMemberIndex] = useState(null);
 
   // Check if current user is already registered for this event
   useEffect(() => {
@@ -286,7 +297,7 @@ function EventDetails() {
       return;
     }
 
-    fetch(`http://localhost:3000/api/teams/my-teams/${userId}`)
+    fetch(`${API_BASE_URL}/api/teams/my-teams/${userId}`)
       .then((res) => (res.ok ? res.json() : { teams: [] }))
       .then((data) => {
         const teams = data.teams || [];
@@ -330,6 +341,7 @@ function EventDetails() {
       TeamLeadEmail: prev.TeamLeadEmail || lead.TeamLeadEmail,
       TeamLeadCollege: prev.TeamLeadCollege || lead.TeamLeadCollege,
       TeamLeadState: prev.TeamLeadState || lead.TeamLeadState,
+      TeamLeadPhoto: prev.TeamLeadPhoto || lead.TeamLeadPhoto || '',
     }));
   }, [leadProfile]);
 
@@ -339,12 +351,12 @@ function EventDetails() {
     try {
       setLoading(true); setError(null);
       const [eventRes, prizesRes, teamRes, timelineRes, sponsorsRes, galleryRes] = await Promise.allSettled([
-        fetch(`http://localhost:3000/api/events/${id}`),
-        fetch(`http://localhost:3000/api/event_prizes/event/${id}`),
-        fetch(`http://localhost:3000/api/core_team/event/${id}`),
-        fetch(`http://localhost:3000/api/event_timelines/event/${id}`),
-        fetch(`http://localhost:3000/api/sponsors/event/${id}`),
-        fetch(`http://localhost:3000/api/gallery/event/${id}`)
+        fetch(`${API_BASE_URL}/api/events/${id}`),
+        fetch(`${API_BASE_URL}/api/event_prizes/event/${id}`),
+        fetch(`${API_BASE_URL}/api/core_team/event/${id}`),
+        fetch(`${API_BASE_URL}/api/event_timelines/event/${id}`),
+        fetch(`${API_BASE_URL}/api/sponsors/event/${id}`),
+        fetch(`${API_BASE_URL}/api/gallery/event/${id}`)
       ]);
 
       if (eventRes.status === 'fulfilled' && eventRes.value.ok) {
@@ -428,13 +440,14 @@ function EventDetails() {
     setShowRegistration(true);
     const initialSize = isSolo ? 1 : (opts.length === 1 ? opts[0] : (opts[0] || 2));
     setTeamSize(initialSize);
-    setMembers(Array.from({ length: initialSize > 1 ? initialSize - 1 : 0 }, () => ({ Name: '', Email: '', College: '', State: '' })));
+    setMembers(Array.from({ length: initialSize > 1 ? initialSize - 1 : 0 }, () => ({ Name: '', Email: '', College: '', State: '', Photo: '' })));
     setFormData((prev) => ({
       TeamName: isSolo ? `${lead.TeamLeadName || prev.TeamLeadName || 'Solo'} (Individual)` : '',
       TeamLeadName: lead.TeamLeadName || prev.TeamLeadName || '',
       TeamLeadEmail: lead.TeamLeadEmail || prev.TeamLeadEmail || '',
       TeamLeadCollege: lead.TeamLeadCollege || prev.TeamLeadCollege || '',
       TeamLeadState: lead.TeamLeadState || prev.TeamLeadState || '',
+      TeamLeadPhoto: lead.TeamLeadPhoto || prev.TeamLeadPhoto || '',
     }));
   };
 
@@ -451,6 +464,7 @@ function EventDetails() {
       TeamLeadEmail: lead.TeamLeadEmail || '',
       TeamLeadCollege: lead.TeamLeadCollege || '',
       TeamLeadState: lead.TeamLeadState || '',
+      TeamLeadPhoto: lead.TeamLeadPhoto || '',
     });
   };
 
@@ -459,10 +473,54 @@ function EventDetails() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleUploadLeadPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingLeadPhoto(true);
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE_URL}/api/upload/single`, {
+        method: 'POST',
+        body: form
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Photo upload failed');
+      const photoUrl = data.fileUrl || data.url;
+      setFormData((prev) => ({ ...prev, TeamLeadPhoto: photoUrl }));
+    } catch (err) {
+      alert(err.message || 'Failed to upload photo');
+    } finally {
+      setUploadingLeadPhoto(false);
+    }
+  };
+
+  const handleUploadMemberPhoto = async (index, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingMemberIndex(index);
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_BASE_URL}/api/upload/single`, {
+        method: 'POST',
+        body: form
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Member photo upload failed');
+      const photoUrl = data.fileUrl || data.url;
+      setMembers((prev) => prev.map((item, mi) => mi === index ? { ...item, Photo: photoUrl } : item));
+    } catch (err) {
+      alert(err.message || 'Failed to upload member photo');
+    } finally {
+      setUploadingMemberIndex(null);
+    }
+  };
+
   const handleTeamSizeChange = (e) => {
     const size = Number(e.target.value);
     setTeamSize(size);
-    setMembers(Array.from({ length: size > 1 ? size - 1 : 0 }, () => ({ Name: '', Email: '', College: '', State: '' })));
+    setMembers(Array.from({ length: size > 1 ? size - 1 : 0 }, () => ({ Name: '', Email: '', College: '', State: '', Photo: '' })));
     const lead = getLeadDefaults();
     setFormData((prev) => {
       let updatedTeamName = prev.TeamName;
@@ -476,6 +534,7 @@ function EventDetails() {
         TeamLeadEmail: prev.TeamLeadEmail || lead.TeamLeadEmail,
         TeamLeadCollege: prev.TeamLeadCollege || lead.TeamLeadCollege,
         TeamLeadState: prev.TeamLeadState || lead.TeamLeadState,
+        TeamLeadPhoto: prev.TeamLeadPhoto || lead.TeamLeadPhoto || '',
       };
     });
   };
@@ -522,6 +581,7 @@ function EventDetails() {
       const teamPayload = {
         TeamName: effectiveTeamName,
         TeamLeadEmail: formData.TeamLeadEmail.trim(),
+        TeamLeadPhoto: formData.TeamLeadPhoto || leadProfile.photo || null,
         TeamSize: Number(teamSize),
         ProblemStatementId: null,
         Tech_Stack: null,
@@ -532,10 +592,11 @@ function EventDetails() {
           Email: m.Email ? m.Email.trim() : '',
           College: m.College ? m.College.trim() : '',
           State: m.State ? m.State.trim() : '',
+          Photo: m.Photo ? m.Photo.trim() : null
         })),
         ParticipationMode: registrationMode,
       };
-      const teamResponse = await fetch('http://localhost:3000/api/teams/create', {
+      const teamResponse = await fetch(`${API_BASE_URL}/api/teams/create`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(teamPayload),
       });
       const teamData = await teamResponse.json();
@@ -549,7 +610,7 @@ function EventDetails() {
         Status: 'approved',
         ProblemStatementId: null,
       };
-      const registrationResponse = await fetch('http://localhost:3000/api/event_reg/register', {
+      const registrationResponse = await fetch(`${API_BASE_URL}/api/event_reg/register`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(registrationPayload),
       });
       const registrationData = await registrationResponse.json();
@@ -604,7 +665,7 @@ function EventDetails() {
         else url = parsed;
       } catch { url = event.Posters; }
     }
-    if (url && typeof url === 'string' && url.startsWith('/uploads')) return `http://localhost:3000${url}`;
+    if (url && typeof url === 'string' && url.startsWith('/uploads')) return `${API_BASE_URL}${url}`;
     return url;
   };
 
@@ -1824,6 +1885,71 @@ function EventDetails() {
                         </span>
                       </div>
                       <div className="grid gap-5 sm:grid-cols-2">
+                        {/* Profile Photo fetch & upload for Solo */}
+                        <div className="sm:col-span-2 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950/70 flex flex-col sm:flex-row items-center gap-4">
+                          <div className="relative">
+                            {formData.TeamLeadPhoto ? (
+                              <img
+                                src={formData.TeamLeadPhoto}
+                                alt="Profile"
+                                className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-500 shadow-md"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 rounded-2xl bg-slate-200 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500">
+                                <User className="w-8 h-8" />
+                              </div>
+                            )}
+                            {uploadingLeadPhoto && (
+                              <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center text-white">
+                                <Loader2 className="w-6 h-6 animate-spin" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 text-center sm:text-left space-y-1">
+                            <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                              <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                Participant Photo
+                              </span>
+                              {formData.TeamLeadPhoto ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                  {leadProfile.photo && formData.TeamLeadPhoto === leadProfile.photo ? 'Profile Photo Fetched' : 'Photo Attached'}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                  Upload Recommended
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-zinc-400">
+                              {leadProfile.photo && formData.TeamLeadPhoto === leadProfile.photo
+                                ? 'Auto-fetched from your registered account. You can keep it or upload a custom photo.'
+                                : 'Uploaded photo will appear on your ID badge and evaluation records.'}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 cursor-pointer shadow-sm transition">
+                              <Camera className="w-3.5 h-3.5 text-emerald-500" />
+                              <span>{uploadingLeadPhoto ? 'Uploading...' : formData.TeamLeadPhoto ? 'Change Photo' : 'Upload Photo'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleUploadLeadPhoto}
+                                disabled={uploadingLeadPhoto}
+                                className="hidden"
+                              />
+                            </label>
+                            {formData.TeamLeadPhoto && formData.TeamLeadPhoto !== leadProfile.photo && (
+                              <button
+                                type="button"
+                                onClick={() => setFormData((prev) => ({ ...prev, TeamLeadPhoto: leadProfile.photo || '' }))}
+                                className="text-[11px] text-slate-400 hover:text-rose-500 underline"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
                         <div>
                           <label className="mb-2 block text-sm font-medium">Participant Name</label>
                           <input type="text" name="TeamLeadName" value={formData.TeamLeadName} onChange={handleChange} placeholder="Enter your full name" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
@@ -1900,6 +2026,71 @@ function EventDetails() {
                           </span>
                         </div>
                         <div className="grid gap-5 sm:grid-cols-2">
+                          {/* Profile Photo fetch & upload for Team Lead */}
+                          <div className="sm:col-span-2 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950/70 flex flex-col sm:flex-row items-center gap-4">
+                            <div className="relative">
+                              {formData.TeamLeadPhoto ? (
+                                <img
+                                  src={formData.TeamLeadPhoto}
+                                  alt="Team Lead"
+                                  className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-500 shadow-md"
+                                />
+                              ) : (
+                                <div className="w-16 h-16 rounded-2xl bg-slate-200 dark:bg-zinc-800 flex items-center justify-center text-slate-400 dark:text-zinc-500">
+                                  <User className="w-8 h-8" />
+                                </div>
+                              )}
+                              {uploadingLeadPhoto && (
+                                <div className="absolute inset-0 bg-black/60 rounded-2xl flex items-center justify-center text-white">
+                                  <Loader2 className="w-6 h-6 animate-spin" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 text-center sm:text-left space-y-1">
+                              <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                                <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                  Team Leader Photo
+                                </span>
+                                {formData.TeamLeadPhoto ? (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    {leadProfile.photo && formData.TeamLeadPhoto === leadProfile.photo ? 'Profile Photo Fetched' : 'Photo Attached'}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                    Upload Recommended
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500 dark:text-zinc-400">
+                                {leadProfile.photo && formData.TeamLeadPhoto === leadProfile.photo
+                                  ? 'Automatically fetched from your profile. You can keep this or upload a different photo.'
+                                  : 'Upload leader photograph for ID cards and team directory.'}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 cursor-pointer shadow-sm transition">
+                                <Camera className="w-3.5 h-3.5 text-emerald-500" />
+                                <span>{uploadingLeadPhoto ? 'Uploading...' : formData.TeamLeadPhoto ? 'Change Photo' : 'Upload Photo'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleUploadLeadPhoto}
+                                  disabled={uploadingLeadPhoto}
+                                  className="hidden"
+                                />
+                              </label>
+                              {formData.TeamLeadPhoto && formData.TeamLeadPhoto !== leadProfile.photo && (
+                                <button
+                                  type="button"
+                                  onClick={() => setFormData((prev) => ({ ...prev, TeamLeadPhoto: leadProfile.photo || '' }))}
+                                  className="text-[11px] text-slate-400 hover:text-rose-500 underline"
+                                >
+                                  Reset
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
                           <div>
                             <label className="mb-2 block text-sm font-medium">Team Lead Name</label>
                             <input type="text" name="TeamLeadName" value={formData.TeamLeadName} onChange={handleChange} placeholder="Enter lead name" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
@@ -1960,6 +2151,63 @@ function EventDetails() {
                             <input type="email" value={member.Email} onChange={(e) => handleMemberChange(index, e)} placeholder="Enter email" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
                             <input type="text" value={member.College} onChange={(e) => setMembers((prev) => prev.map((item, mi) => mi === index ? { ...item, College: e.target.value } : item))} placeholder="College" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
                             <input type="text" value={member.State} onChange={(e) => setMembers((prev) => prev.map((item, mi) => mi === index ? { ...item, State: e.target.value } : item))} placeholder="State" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                          </div>
+
+                          {/* Member Photo Upload */}
+                          <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="relative">
+                                {member.Photo ? (
+                                  <img
+                                    src={member.Photo}
+                                    alt={`Member ${index + 2}`}
+                                    className="w-12 h-12 rounded-xl object-cover border border-emerald-500/40 shadow-xs"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-xl bg-slate-200 dark:bg-zinc-900 flex items-center justify-center text-slate-400 dark:text-zinc-600">
+                                    <User className="w-6 h-6" />
+                                  </div>
+                                )}
+                                {uploadingMemberIndex === index && (
+                                  <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center text-white">
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                  <span>Member Photo</span>
+                                  {member.Photo ? (
+                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">&bull; Photo Attached</span>
+                                  ) : (
+                                    <span className="text-[10px] text-amber-500 font-medium">&bull; Optional</span>
+                                  )}
+                                </p>
+                                <p className="text-[11px] text-slate-500 dark:text-zinc-400">Used for ID Card badge &amp; team profile</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 border border-slate-200 dark:border-zinc-700 cursor-pointer shadow-sm transition shrink-0">
+                                <Upload className="w-3.5 h-3.5 text-emerald-500" />
+                                <span>{uploadingMemberIndex === index ? 'Uploading...' : member.Photo ? 'Change Photo' : 'Upload Photo'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleUploadMemberPhoto(index, e)}
+                                  disabled={uploadingMemberIndex === index}
+                                  className="hidden"
+                                />
+                              </label>
+                              {member.Photo && (
+                                <button
+                                  type="button"
+                                  onClick={() => setMembers((prev) => prev.map((item, mi) => mi === index ? { ...item, Photo: '' } : item))}
+                                  className="text-[11px] text-slate-400 hover:text-rose-500 underline"
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}

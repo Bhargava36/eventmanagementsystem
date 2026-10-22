@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import {
   Mail,
   Phone,
@@ -90,7 +91,7 @@ function UserProfile() {
 
       if (!targetId) throw new Error("User ID not found in session token");
 
-      const res = await fetch(`http://localhost:3000/api/users/${targetId}`);
+      const res = await fetch(`${API_BASE_URL}/api/users/${targetId}`);
       const data = await res.json();
 
       if (!res.ok) {
@@ -112,7 +113,7 @@ function UserProfile() {
       });
 
       try {
-        const teamsRes = await fetch(`http://localhost:3000/api/teams/my-teams/${targetId}`);
+        const teamsRes = await fetch(`${API_BASE_URL}/api/teams/my-teams/${targetId}`);
         const teamsData = await teamsRes.json();
         if (teamsRes.ok && teamsData.teams) {
           setTeamsCount(teamsData.teams.length);
@@ -141,7 +142,7 @@ function UserProfile() {
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
       const targetId = id || storedUser.Id;
 
-      const res = await fetch(`http://localhost:3000/api/users/${targetId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/users/${targetId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'

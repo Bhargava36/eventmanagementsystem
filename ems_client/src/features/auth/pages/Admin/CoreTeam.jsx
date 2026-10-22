@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2,
@@ -51,7 +52,7 @@ function CoreTeam() {
       setError("");
 
       const response = await fetch(
-        `http://localhost:3000/api/core_team/event/${eventId}`
+        `${API_BASE_URL}/api/core_team/event/${eventId}`
       );
 
       if (!response.ok) {
@@ -138,7 +139,7 @@ function CoreTeam() {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/core_team/${memberId}`,
+        `${API_BASE_URL}/api/core_team/${memberId}`,
         {
           method: "DELETE"
         }
@@ -166,7 +167,7 @@ function CoreTeam() {
 
       if (editingMemberId) {
         const response = await fetch(
-          `http://localhost:3000/api/core_team/${editingMemberId}`,
+          `${API_BASE_URL}/api/core_team/${editingMemberId}`,
           {
             method: "PUT",
             headers: {
@@ -191,7 +192,7 @@ function CoreTeam() {
         }
       } else {
         const response = await fetch(
-          "http://localhost:3000/api/core_team",
+          `${API_BASE_URL}/api/core_team`,
           {
             method: "POST",
             headers: {

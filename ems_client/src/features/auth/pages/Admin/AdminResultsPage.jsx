@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy,
@@ -91,7 +92,7 @@ function AdminResultsPage({ track = 'Physical' }) {
   // Fetch Event Branding Data
   useEffect(() => {
     if (!eventId) return;
-    fetch(`http://localhost:3000/api/events/${eventId}`)
+    fetch(`${API_BASE_URL}/api/events/${eventId}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.event) setEventData(d.event);
@@ -104,7 +105,7 @@ function AdminResultsPage({ track = 'Physical' }) {
     if (!eventId) return;
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:3000/api/evaluators/event/${eventId}/results?track=${track}`);
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/results?track=${track}`);
       const json = await res.json();
       if (res.ok && (json.success || json.data)) {
         const resultData = json.data || json.results;
@@ -265,7 +266,7 @@ function AdminResultsPage({ track = 'Physical' }) {
     try {
       setPublishing(true);
       const nextState = !round.IsPublished;
-      const res = await fetch(`http://localhost:3000/api/evaluators/rounds/${round.Id}/publish`, {
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/rounds/${round.Id}/publish`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isPublished: nextState })
@@ -287,7 +288,7 @@ function AdminResultsPage({ track = 'Physical' }) {
     const nextOpen = !isCurrentlyOpen;
     try {
       setUpdatingRound(true);
-      const res = await fetch(`http://localhost:3000/api/evaluators/rounds/${round.Id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/rounds/${round.Id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ IsOpen: nextOpen ? 1 : 0 })
@@ -309,7 +310,7 @@ function AdminResultsPage({ track = 'Physical' }) {
     const nextAllowed = !isCurrentlyAllowed;
     try {
       setUpdatingRound(true);
-      const res = await fetch(`http://localhost:3000/api/evaluators/rounds/${round.Id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/rounds/${round.Id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ AllowScoreEdit: nextAllowed ? 1 : 0 })
@@ -330,7 +331,7 @@ function AdminResultsPage({ track = 'Physical' }) {
     try {
       setPublishing(true);
       const nextState = !resultsData?.overallResultsPublished;
-      const res = await fetch(`http://localhost:3000/api/evaluators/event/${eventId}/publish-overall`, {
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/publish-overall`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ track, isPublished: nextState })

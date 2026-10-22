@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 
 import {
   Users,
@@ -94,7 +95,7 @@ function SuperAdminDashboard() {
   const fetchUsersCount = async () => {
     try {
       const response = await fetch(
-        'http://localhost:3000/api/users/count'
+        `${API_BASE_URL}/api/users/count`
       );
 
       const data = await response.json();
@@ -115,7 +116,7 @@ function SuperAdminDashboard() {
   const fetchMembersCount = async () => {
     try {
       const response = await fetch(
-        'http://localhost:3000/api/teams/members/count'
+        `${API_BASE_URL}/api/teams/members/count`
       );
 
       if (response.ok) {
@@ -130,7 +131,7 @@ function SuperAdminDashboard() {
   const fetchTeamsCount = async () => {
     try {
       const response = await fetch(
-        'http://localhost:3000/api/teams/count'
+        `${API_BASE_URL}/api/teams/count`
       );
 
       const data = await response.json();
@@ -148,7 +149,7 @@ function SuperAdminDashboard() {
   const fetchEventsCount = async () => {
     try {
       const response = await fetch(
-        'http://localhost:3000/api/events/count'
+        `${API_BASE_URL}/api/events/count`
       );
 
       const data = await response.json();
@@ -166,7 +167,7 @@ function SuperAdminDashboard() {
   const fetchEvents = async () => {
     try {
       const response = await fetch(
-        'http://localhost:3000/api/events/'
+        `${API_BASE_URL}/api/events/`
       );
 
       const data = await response.json();
@@ -183,7 +184,7 @@ function SuperAdminDashboard() {
 
           if ((teamCount === 0 || memberCount === 0) && event.Id) {
             try {
-              const summaryRes = await fetch(`http://localhost:3000/api/events/${event.Id}/dashboard-summary`);
+              const summaryRes = await fetch(`${API_BASE_URL}/api/events/${event.Id}/dashboard-summary`);
               if (summaryRes.ok) {
                 const summaryData = await summaryRes.json();
                 const summaryInfo = summaryData?.data;
@@ -213,7 +214,7 @@ function SuperAdminDashboard() {
   const fetchTeamCountByEvent = async (eventId) => {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/teams/event/${eventId}/count`
+        `${API_BASE_URL}/api/teams/event/${eventId}/count`
       );
 
       const data = await response.json();

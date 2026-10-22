@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 import { Award } from 'lucide-react';
 
 /**
@@ -16,7 +17,7 @@ export default function EventSponsorsSection({
       .map((sp) => {
         let logo = sp.LogoUrl || sp.logoUrl || sp.Logo || '';
         if (logo && logo.startsWith('/uploads')) {
-          logo = `http://localhost:3000${logo}`;
+          logo = `${API_BASE_URL}${logo}`;
         }
         return {
           id: sp.Id || sp.id || Math.random(),
