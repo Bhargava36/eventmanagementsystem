@@ -60,9 +60,8 @@ export default function TestCredentialsPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error('Could not connect to database. Displaying cached test accounts.');
-      // Fallback static accounts if backend fails
-      setAccounts(FALLBACK_ACCOUNTS);
+      toast.error(err.message || 'Could not load test accounts from server');
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -642,97 +641,3 @@ export default function TestCredentialsPage() {
 }
 
 // Fallback accounts in case database is briefly unreachable
-const FALLBACK_ACCOUNTS = [
-  {
-    Id: 3,
-    UserName: 'naga',
-    Email: 'naga@gmail.com',
-    testPassword: 'naga123',
-    RoleId: 1,
-    RoleName: 'super_admin',
-    portalPath: '/superadmin/login',
-    dashboardPath: '/sidebar',
-  },
-  {
-    Id: 7,
-    UserName: 'Siddu',
-    Email: 'siddu@gmail.com',
-    testPassword: 'siddu123',
-    RoleId: 1,
-    RoleName: 'super_admin',
-    portalPath: '/superadmin/login',
-    dashboardPath: '/sidebar',
-  },
-  {
-    Id: 1,
-    UserName: 'Swathi',
-    Email: 'swathi@gmail.com',
-    testPassword: 'swathi123',
-    RoleId: 2,
-    RoleName: 'admin',
-    EventId: 22,
-    EventName: 'Avishkaar 4',
-    EventLocation: 'AITAM College, Tekkali',
-    portalPath: '/admin/login',
-    dashboardPath: '/admin/dashboard',
-  },
-  {
-    Id: 12,
-    UserName: 'Saketh',
-    Email: 'saketh@example.com',
-    testPassword: 'saketh123',
-    RoleId: 2,
-    RoleName: 'admin',
-    EventId: 24,
-    EventName: 'Hacksprint',
-    EventLocation: 'AITAM College, Tekkali',
-    portalPath: '/admin/login',
-    dashboardPath: '/admin/dashboard',
-  },
-  {
-    Id: 18,
-    UserName: 'Saketh',
-    Email: 'saketh@gmail.com',
-    testPassword: 'saketh123',
-    RoleId: 2,
-    RoleName: 'admin',
-    EventId: 25,
-    EventName: 'Webathon',
-    EventLocation: 'AITAM College, Tekkali',
-    portalPath: '/admin/login',
-    dashboardPath: '/admin/dashboard',
-  },
-  {
-    Id: 2,
-    UserName: 'Lakshmi Sai Saketh Bikkina',
-    Email: 'saisakethbikkina@gmail.com',
-    testPassword: 'saketh123',
-    RoleId: 3,
-    RoleName: 'user',
-    College: 'Aitam',
-    portalPath: '/user/login',
-    dashboardPath: '/user/dashboard',
-  },
-  {
-    Id: 4,
-    UserName: 'Papa',
-    Email: 'papa@gmail.com',
-    testPassword: 'papa123',
-    RoleId: 3,
-    RoleName: 'user',
-    College: 'Aitam',
-    portalPath: '/user/login',
-    dashboardPath: '/user/dashboard',
-  },
-  {
-    Id: 5,
-    UserName: 'Test User',
-    Email: 'testuser@gmail.com',
-    testPassword: 'password123',
-    RoleId: 3,
-    RoleName: 'user',
-    College: 'AITAM',
-    portalPath: '/user/login',
-    dashboardPath: '/user/dashboard',
-  },
-];
