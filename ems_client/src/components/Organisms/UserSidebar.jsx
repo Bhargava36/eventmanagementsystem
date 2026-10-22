@@ -62,7 +62,7 @@ const UserSidebarContent = ({
     { name: 'Dashboard',          icon: LayoutDashboard, path: '/user/dashboard',      badge: null, end: true  },
     { name: 'Competitions',       icon: Trophy,          path: '/user/competitions',   badge: null, end: false },
     { name: 'My Teams',           icon: Users,           path: '/user/teams',          badge: null, end: false },
-    { name: 'Problem Statements', icon: ScrollText,      path: '/user/problem-statements', badge: null, end: false },
+    { name: 'Challenges & Agendas', icon: ScrollText,    path: '/user/problem-statements', badge: null, end: false },
     { name: 'Profile',            icon: CircleUserRound, path: '/user/profile',        badge: null, end: false },
   ];
 

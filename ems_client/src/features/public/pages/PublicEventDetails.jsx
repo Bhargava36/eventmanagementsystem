@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useTheme from '../../../Hooks/useTheme';
-import { getEventTheme } from '../../../lib/utils';
+import { getEventTheme, getEventTypeInfo, isSoloTeamSize } from '../../../lib/utils';
 import FlipCountdown from '../../../components/Molecules/FlipCountdown';
 import TrackTimelineSection from '../../../components/Molecules/TrackTimelineSection';
 import EventMediaSlider from '../../../components/Molecules/EventMediaSlider';
@@ -673,6 +673,7 @@ function PublicEventDetails() {
 
   const isDark = theme === 'dark';
   const eventTheme = getEventTheme(event, isDark);
+  const eventTypeInfo = getEventTypeInfo(event?.EventType);
   const posterImg = getPoster();
   const primaryBg = event.PrimaryColor || '#059669';
   const hasBothTracks =
@@ -833,7 +834,7 @@ function PublicEventDetails() {
 
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-black text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
                     <Tag className="h-3 w-3" style={{ color: eventTheme.accent }} />
-                    {event.EventType || 'Hackathon'}
+                    {eventTypeInfo.label}
                   </span>
 
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-black text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
@@ -1209,7 +1210,7 @@ function PublicEventDetails() {
                           className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl font-bold text-sm tracking-wide shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer"
                         >
                           <Globe className="h-4 w-4" />
-                          <span>Register for {singleMode} Hackathon</span>
+                          <span>Register for {singleMode} {eventTypeInfo.label}</span>
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       );
@@ -1375,7 +1376,7 @@ function PublicEventDetails() {
                       </div>
 
                       {/* Track-Specific Timeline & Roadmap */}
-                      <TrackTimelineSection trackType="virtual" timelines={timelines} eventTheme={eventTheme} />
+                      <TrackTimelineSection trackType="virtual" timelines={timelines} eventTheme={eventTheme} eventType={event?.EventType} />
 
                       {showPrizesSection && (
                         <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
@@ -1478,7 +1479,7 @@ function PublicEventDetails() {
                           </div>
                           <div className="space-y-1">
                             <span className="text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[10px] block">
-                              In-Person Hackathon Window
+                              In-Person {eventTypeInfo.label} Window
                             </span>
                             <span className="font-bold text-slate-900 dark:text-white block">
                               {formatDate(event.PhysicalStartDate)} – {formatDate(event.PhysicalEndDate)}
@@ -1532,7 +1533,7 @@ function PublicEventDetails() {
                       </div>
 
                       {/* Track-Specific Timeline & Roadmap */}
-                      <TrackTimelineSection trackType="physical" timelines={timelines} eventTheme={eventTheme} />
+                      <TrackTimelineSection trackType="physical" timelines={timelines} eventTheme={eventTheme} eventType={event?.EventType} />
 
                       {showPrizesSection && (
                         <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
@@ -1725,7 +1726,7 @@ function PublicEventDetails() {
                 )}
 
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                  <span className="text-slate-500 dark:text-zinc-400">Hackathon Dates</span>
+                  <span className="text-slate-500 dark:text-zinc-400">{eventTypeInfo.label} Dates</span>
                   <span className="font-bold text-slate-900 dark:text-white">{formatDate(event.StartDate)}</span>
                 </div>
 
@@ -1760,7 +1761,7 @@ function PublicEventDetails() {
                             style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                           >
                             <Globe className="h-4 w-4" />
-                            <span>Register for Virtual Hackathon</span>
+                            <span>Register for Virtual {eventTypeInfo.label}</span>
                           </button>
                         )}
 
@@ -1776,7 +1777,7 @@ function PublicEventDetails() {
                             style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                           >
                             <MapPin className="h-4 w-4" />
-                            <span>Register for Physical Hackathon</span>
+                            <span>Register for Physical {eventTypeInfo.label}</span>
                           </button>
                         )}
                       </div>
@@ -1792,7 +1793,7 @@ function PublicEventDetails() {
                       style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                     >
                       {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-                      <span>Register for {singleMode} Hackathon</span>
+                      <span>Register for {singleMode} {eventTypeInfo.label}</span>
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   );

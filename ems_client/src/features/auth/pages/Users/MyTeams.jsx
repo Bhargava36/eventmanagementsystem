@@ -5,6 +5,8 @@ import ByteEmptyState from '../../../../components/Molecules/ByteEmptyState';
 import {
   Calendar,
   Users,
+  User,
+  UserCheck,
   Crown,
   ArrowRight,
   ExternalLink,
@@ -12,6 +14,7 @@ import {
   RefreshCw,
   Sparkles,
 } from 'lucide-react';
+import { isSoloTeamSize } from '../../../../lib/utils';
 
 /* ── dot-pulse keyframes ── */
 const DotStyle = () => (
@@ -112,19 +115,19 @@ export default function MyTeams() {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-slate-200 dark:border-zinc-800">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">
-              Team Workspace
+              Workspaces &amp; Registrations
             </p>
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white leading-tight">
-              My Teams
+              My Teams &amp; Registrations
             </h1>
             <p className="text-sm text-slate-500 dark:text-zinc-400 mt-1">
-              Events where you are registered as a team lead or team member
+              Events where you are registered as an individual participant, team lead, or team member
             </p>
           </div>
           {teams.length > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-slate-500 dark:text-zinc-400">
-                {teams.length} {teams.length === 1 ? 'Team' : 'Teams'} Active
+                {teams.length} {teams.length === 1 ? 'Entry' : 'Entries'} Active
               </span>
             </div>
           )}
@@ -166,7 +169,13 @@ export default function MyTeams() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {teams.map((team, idx) => {
-              const isLead = (team.Role || '').toLowerCase().includes('lead');
+              const isIndividual = Boolean(
+                isSoloTeamSize(team.TeamSize) ||
+                isSoloTeamSize(team.EventTeamSize) ||
+                String(team.TeamName || '').toLowerCase().includes('(individual)') ||
+                Number(team.TeamSize) === 1
+              );
+              const isLead = !isIndividual && (team.Role || '').toLowerCase().includes('lead');
 
               return (
                 <motion.div
@@ -181,12 +190,20 @@ export default function MyTeams() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${
-                        isLead
-                          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
-                          : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                        isIndividual
+                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                          : isLead
+                            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                            : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                       }`}>
-                        {isLead ? <Crown className="h-3 w-3" /> : <Users className="h-3 w-3" />}
-                        {isLead ? 'Team Lead' : 'Team Member'}
+                        {isIndividual ? (
+                          <UserCheck className="h-3 w-3" />
+                        ) : isLead ? (
+                          <Crown className="h-3 w-3" />
+                        ) : (
+                          <Users className="h-3 w-3" />
+                        )}
+                        {isIndividual ? 'Individual Attendee' : isLead ? 'Team Lead' : 'Team Member'}
                       </span>
                       {team.RegistrationStatus && (
                         <StatusBadge status={team.RegistrationStatus} />
@@ -208,13 +225,21 @@ export default function MyTeams() {
                   {/* Details strip */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300">
-                      <Users className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      {isIndividual ? (
+                        <User className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      ) : (
+                        <Users className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      )}
                       <span className="font-semibold truncate">{team.TeamName}</span>
                     </div>
 
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500">Size:</span>
-                      <span className="font-semibold">{team.TeamSize || 1} Members</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500">
+                        {isIndividual ? 'Type:' : 'Size:'}
+                      </span>
+                      <span className="font-semibold truncate">
+                        {isIndividual ? 'Individual' : `${team.TeamSize || 1} Members`}
+                      </span>
                     </div>
 
                     {(team.StartDate || team.EndDate) && (
@@ -233,7 +258,7 @@ export default function MyTeams() {
                       onClick={() => navigate(`/user/teamInfo/${team.TeamId}`)}
                       className="flex-1 py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
                     >
-                      Workspace <ArrowRight className="h-3.5 w-3.5" />
+                      Team Dashboard <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                     {team.EventId && (
                       <button

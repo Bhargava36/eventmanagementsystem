@@ -71,28 +71,42 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
 
         // Validate Team Size against Admin Event Requirement
         let minSize = 1;
-        let maxSize = 10;
-        if (ev.TeamSize) {
-            const str = String(ev.TeamSize).trim();
-            if (str.includes('-')) {
-                const parts = str.split('-').map(Number);
-                if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-                    minSize = parts[0];
-                    maxSize = parts[1];
+        let maxSize = 1;
+        const rawTs = String(ev.TeamSize || '').trim().toLowerCase();
+        
+        if (rawTs === '1' || rawTs === 'solo' || rawTs === 'individual' || rawTs === '1-1' || rawTs.startsWith('1 member')) {
+            minSize = 1;
+            maxSize = 1;
+        } else {
+            const rangeMatch = rawTs.match(/(\d+)\s*(?:-|to)\s*(\d+)/);
+            if (rangeMatch) {
+                const p1 = parseInt(rangeMatch[1], 10);
+                const p2 = parseInt(rangeMatch[2], 10);
+                if (!isNaN(p1) && !isNaN(p2) && p1 > 0 && p2 >= p1) {
+                    minSize = p1;
+                    maxSize = p2;
                 }
             } else {
-                const num = Number(str);
-                if (!isNaN(num) && num > 0) {
-                    minSize = num;
-                    maxSize = num;
+                const singleMatch = rawTs.match(/\b(\d+)\b/);
+                if (singleMatch) {
+                    const num = parseInt(singleMatch[1], 10);
+                    if (!isNaN(num) && num > 0) {
+                        minSize = num;
+                        maxSize = num;
+                    }
+                } else {
+                    minSize = 2;
+                    maxSize = 4;
                 }
             }
         }
 
         const requestedSize = Number(TeamSize);
         if (isNaN(requestedSize) || requestedSize < minSize || requestedSize > maxSize) {
-            const sizeDesc = minSize === maxSize ? `${minSize}` : `${minSize}-${maxSize}`;
-            const errSize = new Error(`Invalid team size. Event "${ev.EventName}" strictly requires a team size of ${sizeDesc} members.`);
+            const sizeDesc = minSize === maxSize 
+                ? (minSize === 1 ? '1 member (Individual / Solo)' : `${minSize} members`) 
+                : `${minSize}-${maxSize} members`;
+            const errSize = new Error(`Invalid team size. Event "${ev.EventName}" strictly requires ${sizeDesc}.`);
             errSize.status = 400;
             return callback(errSize, null);
         }
@@ -287,7 +301,20 @@ const getAllTeams = (callback) => {
 };
 
 const getTeamById = (id, callback) => {
-    const query = `SELECT t.Id, t.TeamName, t.TeamLeadUserId, t.TeamSize, t.College, t.State, t.EventId, t.CreatedAt, e.EventName, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus, er.ParticipationMode, er.Status AS RegistrationStatus FROM registered_teams t LEFT JOIN events e ON t.EventId = e.Id LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId WHERE t.Id = ? LIMIT 1`;
+    const query = `
+        SELECT 
+            t.Id, t.TeamName, t.TeamLeadUserId, t.TeamSize, t.College, t.State, t.EventId, t.CreatedAt, 
+            e.EventName, e.Description, e.Highlights, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus, 
+            e.Posters, e.PrimaryColor, e.SecondaryColor, e.TertiaryColor, e.PrimaryTextColor, e.SecondaryTextColor, e.TertiaryTextColor,
+            e.HackathonMode, e.Facilities, e.Requirements, e.TeamSize AS EventTeamSize,
+            e.PhysicalResultsPublished, e.VirtualResultsPublished,
+            er.ParticipationMode, er.Status AS RegistrationStatus 
+        FROM registered_teams t 
+        LEFT JOIN events e ON t.EventId = e.Id 
+        LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId 
+        WHERE t.Id = ? 
+        LIMIT 1
+    `;
     db.query(query, [id], (err, result) => {
         if (err) {
             return callback(err, null);
@@ -296,13 +323,32 @@ const getTeamById = (id, callback) => {
             return callback(null, []);
         }
 
-        const memberQuery = `SELECT tm.UserId, tm.Role, tm.Gender, tm.CreatedAt, COALESCE(u.UserName, tm.MemberName, 'Member') AS UserName, COALESCE(u.Email, tm.MemberEmail, '') AS Email, COALESCE(u.College, tm.MemberCollege, '') AS College, COALESCE(u.State, tm.MemberState, '') AS State FROM registered_team_members tm LEFT JOIN users u ON tm.UserId = u.Id WHERE tm.TeamId = ? ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, UserName`;
+        const teamRaw = result[0];
+        const memberQuery = `
+            SELECT tm.UserId, tm.Role, tm.Gender, tm.CreatedAt, 
+                   COALESCE(u.UserName, tm.MemberName, 'Member') AS UserName, 
+                   COALESCE(u.Email, tm.MemberEmail, '') AS Email, 
+                   COALESCE(u.College, tm.MemberCollege, '') AS College, 
+                   COALESCE(u.State, tm.MemberState, '') AS State 
+            FROM registered_team_members tm 
+            LEFT JOIN users u ON tm.UserId = u.Id 
+            WHERE tm.TeamId = ? 
+            ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, UserName
+        `;
         db.query(memberQuery, [id], (mErr, memberResult) => {
-            if (mErr) {
-                return callback(null, result);
-            }
-            const teamData = { ...result[0], members: memberResult };
-            return callback(null, [teamData]);
+            const members = mErr ? [] : (memberResult || []);
+
+            // Count total registrations for this event
+            const countSql = `SELECT COUNT(*) AS totalRegistrations FROM registered_teams WHERE EventId = ?`;
+            db.query(countSql, [teamRaw.EventId], (cErr, countRows) => {
+                const totalRegistrations = countRows?.[0]?.totalRegistrations || 0;
+                const teamData = { 
+                    ...teamRaw, 
+                    members,
+                    totalEventRegistrations: totalRegistrations
+                };
+                return callback(null, [teamData]);
+            });
         });
     });
 };
@@ -418,6 +464,7 @@ const getMyTeams = (userId, callback) => {
                     events.EventName, 
                     events.StartDate, 
                     events.EndDate, 
+                    events.TeamSize AS EventTeamSize,
                     registered_team_members.Role, 
                     event_registrations.Id AS RegistrationId, 
                     event_registrations.Status AS RegistrationStatus, 
@@ -464,7 +511,20 @@ const getTeamInfo = (teamId, userId, callback) => {
                 return callback(null, null);
             }
 
-            const teamQuery = `SELECT t.Id AS TeamId, t.TeamName, t.TeamSize, t.College, t.State, t.TeamLeadUserId, e.Id AS EventId, e.EventName, e.Posters, e.Description AS EventDescription, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus, er.ParticipationMode, er.Status AS RegistrationStatus FROM registered_teams t INNER JOIN events e ON t.EventId = e.Id LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId WHERE t.Id = ? LIMIT 1`;
+            const teamQuery = `
+                SELECT 
+                    t.Id AS TeamId, t.TeamName, t.TeamSize, t.College, t.State, t.TeamLeadUserId, 
+                    e.Id AS EventId, e.EventName, e.Posters, e.Description AS EventDescription, 
+                    e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus, e.TeamSize AS EventTeamSize,
+                    e.PrimaryColor, e.SecondaryColor, e.TertiaryColor, e.HackathonMode,
+                    e.PhysicalResultsPublished, e.VirtualResultsPublished,
+                    er.ParticipationMode, er.Status AS RegistrationStatus 
+                FROM registered_teams t 
+                INNER JOIN events e ON t.EventId = e.Id 
+                LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId 
+                WHERE t.Id = ? 
+                LIMIT 1
+            `;
             db.query(teamQuery, [teamId], (err, result) => {
                 if (err) {
                     return callback(err, null);
@@ -489,9 +549,15 @@ const getTeamInfo = (teamId, userId, callback) => {
                     if (err) {
                         return callback(err, null);
                     }
-                    return callback(null, {
-                        team: team,
-                        members: memberResult
+
+                    // Count total registrations for this event
+                    const countSql = `SELECT COUNT(*) AS totalRegistrations FROM registered_teams WHERE EventId = ?`;
+                    db.query(countSql, [team.EventId], (cErr, countRows) => {
+                        team.totalEventRegistrations = countRows?.[0]?.totalRegistrations || 0;
+                        return callback(null, {
+                            team: team,
+                            members: memberResult || []
+                        });
                     });
                 });
             });
@@ -539,6 +605,83 @@ const updateTeamById = (
     });
 };
 
+const getPublicTeamInfo = (teamId, callback) => {
+    const teamQuery = `
+        SELECT 
+            t.Id AS TeamId, t.TeamName, t.TeamSize, t.College, t.State, t.TeamLeadUserId, t.Tech_Stack, t.CreatedAt AS RegistrationDate,
+            e.Id AS EventId, e.EventName, e.Posters, e.Description AS EventDescription, 
+            e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus, e.TeamSize AS EventTeamSize,
+            e.PrimaryColor, e.SecondaryColor, e.TertiaryColor, e.HackathonMode,
+            e.PhysicalResultsPublished, e.VirtualResultsPublished,
+            COALESCE(er.ParticipationMode, 'Physical') AS ParticipationMode, 
+            COALESCE(er.Status, 'approved') AS RegistrationStatus,
+            ps.Id AS ProblemStatementId,
+            ps.ProblemCode,
+            ps.ProblemStatement
+        FROM registered_teams t 
+        INNER JOIN events e ON t.EventId = e.Id 
+        LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId 
+        LEFT JOIN problem_statements ps ON COALESCE(er.ProblemStatementId, t.ProblemStatementId) = ps.Id
+        WHERE t.Id = ? 
+        LIMIT 1
+    `;
+
+    db.query(teamQuery, [teamId], (err, teamRows) => {
+        if (err) return callback(err, null);
+        if (!teamRows || teamRows.length === 0) {
+            const notFound = new Error('Team not found');
+            notFound.status = 404;
+            return callback(notFound, null);
+        }
+
+        const team = teamRows[0];
+        if (typeof team.Posters === "string") {
+            try {
+                const parsedPosters = JSON.parse(team.Posters);
+                team.Posters = Array.isArray(parsedPosters) ? parsedPosters : [parsedPosters];
+            } catch (error) {
+                team.Posters = team.Posters ? [team.Posters] : [];
+            }
+        } else if (!Array.isArray(team.Posters)) {
+            team.Posters = [];
+        }
+
+        const memberQuery = `
+            SELECT 
+                tm.Id,
+                tm.UserId, 
+                tm.Role, 
+                tm.Gender, 
+                tm.CreatedAt, 
+                COALESCE(u.UserName, tm.MemberName, 'Member') AS UserName, 
+                COALESCE(u.Email, tm.MemberEmail, '') AS Email, 
+                COALESCE(u.College, tm.MemberCollege, '') AS College, 
+                COALESCE(u.State, tm.MemberState, '') AS State,
+                COALESCE(tm.Photo, u.Photo, '') AS Photo,
+                u.Mobile,
+                u.Location
+            FROM registered_team_members tm 
+            LEFT JOIN users u ON tm.UserId = u.Id 
+            WHERE tm.TeamId = ? 
+            ORDER BY CASE WHEN LOWER(tm.Role) = 'teamlead' THEN 1 ELSE 2 END, UserName
+        `;
+
+        db.query(memberQuery, [teamId], (mErr, memberRows) => {
+            if (mErr) return callback(mErr, null);
+
+            const countSql = `SELECT COUNT(*) AS totalRegistrations FROM registered_teams WHERE EventId = ?`;
+            db.query(countSql, [team.EventId], (cErr, countRows) => {
+                team.totalEventRegistrations = countRows?.[0]?.totalRegistrations || 0;
+
+                callback(null, {
+                    team,
+                    members: memberRows || []
+                });
+            });
+        });
+    });
+};
+
 module.exports = {
     createTeam,
     getAllTeams,
@@ -551,6 +694,7 @@ module.exports = {
     getMembersCount,
     getMyTeams,
     getTeamInfo,
+    getPublicTeamInfo,
     getTeamCountByEvent,
     getTeamsByEvent,
     updateTeamById

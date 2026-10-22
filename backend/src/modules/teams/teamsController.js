@@ -299,6 +299,42 @@ const getTeamsByEvent = (req, res) => {
     });
 };
 
+const getPublicTeamInfo = (req, res) => {
+    const { teamId } = req.params;
+
+    if (!teamId) {
+        return res.status(400).json({
+            success: false,
+            message: 'Team ID is required'
+        });
+    }
+
+    teamsService.getPublicTeamInfo(teamId, (err, result) => {
+        if (err) {
+            console.error('Get public team info error:', err);
+            const status = err.status || 500;
+            return res.status(status).json({
+                success: false,
+                message: err.message || 'Failed to fetch public team information'
+            });
+        }
+
+        if (!result || !result.team) {
+            return res.status(404).json({
+                success: false,
+                message: 'Team not found'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Public team information fetched successfully',
+            team: result.team,
+            members: result.members
+        });
+    });
+};
+
 module.exports = {
     createTeam,
     getAllTeams,
@@ -311,6 +347,7 @@ module.exports = {
     getMembersCount,
     getMyTeams,
     getTeamInfo,
+    getPublicTeamInfo,
     getTeamCountByEvent,
     updateTeams,
     getTeamsByEvent

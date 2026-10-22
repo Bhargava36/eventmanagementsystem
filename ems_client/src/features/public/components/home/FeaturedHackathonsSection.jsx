@@ -9,7 +9,9 @@ import {
   Trophy,
   ArrowRight,
   Sparkles,
+  Tag
 } from 'lucide-react';
+import { getEventTypeInfo } from '../../../../lib/utils';
 
 export default function FeaturedHackathonsSection() {
   const navigate = useNavigate();
@@ -164,10 +166,10 @@ export default function FeaturedHackathonsSection() {
       >
         <div className="space-y-3 max-w-2xl">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
-            Live & Upcoming Hackathons
+            Live &amp; Upcoming Events &amp; Competitions
           </h2>
           <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 font-normal leading-relaxed">
-            Discover active competitions, form a squad with fellow builders, and compete for verified bounties.
+            Discover hackathons, hands-on workshops, coding challenges, and college tech fests. Join solo or with a team.
           </p>
         </div>
 
@@ -175,7 +177,7 @@ export default function FeaturedHackathonsSection() {
           to="/events"
           className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors self-start md:self-auto group"
         >
-          <span>View all hackathons</span>
+          <span>View all events &amp; challenges</span>
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
@@ -193,7 +195,7 @@ export default function FeaturedHackathonsSection() {
       ) : events.length === 0 ? (
         <div className="py-16 text-center rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950/60 p-8 space-y-2">
           <Trophy className="w-10 h-10 text-slate-400 dark:text-zinc-600 mx-auto" />
-          <h3 className="text-base font-semibold text-slate-800 dark:text-zinc-200">No hackathons available right now</h3>
+          <h3 className="text-base font-semibold text-slate-800 dark:text-zinc-200">No events scheduled right now</h3>
           <p className="text-xs text-slate-500 dark:text-zinc-500">New events will be announced shortly.</p>
         </div>
       ) : (
@@ -201,7 +203,12 @@ export default function FeaturedHackathonsSection() {
           {events.map((event, idx) => {
             const posterUrl = getEventPosterUrl(event.Posters);
             const mode = String(event.HackathonMode || 'Virtual');
-            const prize = event.PrizeMoney || event.PhysicalPrizeMoney || 'TBD';
+            const typeInfo = getEventTypeInfo(event.EventType);
+            const prize = event.PrizeMoney || event.PhysicalPrizeMoney 
+              ? `₹${Number(event.PrizeMoney || event.PhysicalPrizeMoney).toLocaleString('en-IN')}` 
+              : typeInfo.isWorkshop 
+              ? 'Certificates & Swag' 
+              : 'TBD';
 
             return (
               <div
@@ -223,6 +230,14 @@ export default function FeaturedHackathonsSection() {
                       <Trophy className="w-12 h-12" />
                     </div>
                   )}
+
+                  {/* EventType Tag */}
+                  <div className="absolute top-3 right-3">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border backdrop-blur-md bg-black/70 text-white border-white/20 shadow-sm">
+                      <Tag className="w-3 h-3 text-emerald-400" />
+                      {event.EventType || 'Event'}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Content */}
@@ -232,7 +247,7 @@ export default function FeaturedHackathonsSection() {
                       {event.EventName}
                     </h3>
                     <p className="text-xs text-slate-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
-                      {event.Description || 'Join teams to build real-world software, AI prototypes, and hardware solutions.'}
+                      {event.Description || (typeInfo.isWorkshop ? 'Join hands-on practical sessions guided by technical mentors.' : 'Collaborate with creators to build impactful tech solutions.')}
                     </p>
                   </div>
 
@@ -250,7 +265,7 @@ export default function FeaturedHackathonsSection() {
                     </div>
 
                     <div className="flex items-center justify-between text-slate-500 dark:text-zinc-500 text-[11px] pt-1">
-                      <span>{mode} Track</span>
+                      <span>{mode} Mode</span>
                       <span className="font-semibold text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors inline-flex items-center gap-1">
                         <span>View Details</span>
                         <ArrowRight className="view-arrow w-3 h-3 transition-transform" />

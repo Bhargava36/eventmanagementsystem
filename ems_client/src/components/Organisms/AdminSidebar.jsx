@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import ThemeToggle from './ThemeToggler';
 import useAuth from '../../Hooks/useAuth';
 import useToast from '../../Hooks/useToast';
+import { getTrackVisibility, isSoloTeamSize } from '../../lib/utils';
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +19,7 @@ import {
   Sliders,
   Atom,
   UserPen,
+  Trophy,
 } from 'lucide-react';
 
 const logoElement = (
@@ -42,6 +44,14 @@ const SidebarContent = ({
   const toast = useToast();
   const { user, logout } = useAuth();
 
+  const [adminData, setAdminData] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('admin') || '{}');
+    } catch {
+      return {};
+    }
+  });
+
   useEffect(() => {
     if (collapsed) {
       setShowText(false);
@@ -53,6 +63,50 @@ const SidebarContent = ({
     }
   }, [collapsed]);
 
+  useEffect(() => {
+    const syncAdminData = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('admin') || '{}');
+        setAdminData(stored);
+      } catch {
+        // ignore
+      }
+    };
+
+    const targetEventId = adminData?.EventId || user?.EventId;
+    if (targetEventId) {
+      fetch(`http://localhost:3000/api/events/${targetEventId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data) return;
+          const ev = data.event || data;
+          if (ev) {
+            setAdminData((prev) => {
+              const updated = {
+                ...prev,
+                HackathonMode: ev.HackathonMode || prev?.HackathonMode,
+                EventName: ev.EventName || prev?.EventName,
+                Location: ev.Location || prev?.Location,
+                TeamSize: ev.TeamSize || prev?.TeamSize,
+              };
+              try {
+                localStorage.setItem('admin', JSON.stringify(updated));
+              } catch (e) {}
+              return updated;
+            });
+          }
+        })
+        .catch(() => {});
+    }
+
+    window.addEventListener('storage', syncAdminData);
+    window.addEventListener('admin-event-updated', syncAdminData);
+    return () => {
+      window.removeEventListener('storage', syncAdminData);
+      window.removeEventListener('admin-event-updated', syncAdminData);
+    };
+  }, [adminData?.EventId, user?.EventId]);
+
   const canShowText = isMobile || showText;
 
   function handleLogout() {
@@ -61,31 +115,10 @@ const SidebarContent = ({
     navigate('/admin/login');
   }
 
-  const storedAdmin = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('admin') || '{}');
-    } catch {
-      return {};
-    }
-  })();
-
-  const adminDisplayName = storedAdmin?.AdminName || user?.AdminName || 'Admin';
-  const hackathonMode = storedAdmin?.HackathonMode || user?.HackathonMode || 'Both';
-  const normalizedMode = String(hackathonMode).trim().toLowerCase();
-  const showVirtual =
-    normalizedMode === 'virtual' ||
-    normalizedMode === 'both' ||
-    normalizedMode === 'hybrid' ||
-    normalizedMode === 'virtual and physical' ||
-    normalizedMode === 'virtual & physical';
-  const showPhysical =
-    normalizedMode === 'physical' ||
-    normalizedMode === 'both' ||
-    normalizedMode === 'hybrid' ||
-    normalizedMode === 'virtual and physical' ||
-    normalizedMode === 'virtual & physical';
-
-
+  const adminDisplayName = adminData?.AdminName || user?.AdminName || 'Admin';
+  const rawMode = adminData?.HackathonMode || user?.HackathonMode;
+  const { showVirtual, showPhysical, isBoth } = getTrackVisibility(rawMode, adminData?.Location);
+  const isIndividual = isSoloTeamSize(adminData?.TeamSize || user?.TeamSize);
 
   const menuItems = [
     {
@@ -99,9 +132,16 @@ const SidebarContent = ({
     ...(showVirtual
       ? [
         {
-          name: 'Virtual Event',
+          name: isBoth ? 'Virtual Event' : 'Event Operations',
           icon: Radio,
           path: '/admin/virtual-event',
+          badge: null,
+          end: false,
+        },
+        {
+          name: isBoth ? 'Virtual Results' : 'Results',
+          icon: Trophy,
+          path: '/admin/virtual-results',
           badge: null,
           end: false,
         },
@@ -111,9 +151,16 @@ const SidebarContent = ({
     ...(showPhysical
       ? [
         {
-          name: 'Physical Event',
+          name: isBoth ? 'Physical Event' : 'Event Operations',
           icon: Atom,
           path: '/admin/physical-event',
+          badge: null,
+          end: false,
+        },
+        {
+          name: isBoth ? 'Physical Results' : 'Results',
+          icon: Trophy,
+          path: '/admin/physical-results',
           badge: null,
           end: false,
         },
@@ -142,7 +189,7 @@ const SidebarContent = ({
       end: false,
     },
     {
-      name: 'Registered Teams',
+      name: isIndividual ? 'Registered Participants' : 'Registered Teams',
       icon: Users,
       path: '/admin/teams',
       badge: null,

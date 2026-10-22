@@ -203,6 +203,66 @@ const ROLE_CONFIGS = {
       login(token, userObj, "user");
     },
   },
+
+  evaluator: {
+    role: "evaluator",
+    roleName: "Evaluator",
+    loginPath: "/evaluator/login",
+    apiEndpoint: "http://localhost:3000/api/evaluators/login",
+    defaultRedirect: "/evaluator/dashboard",
+    badge: "EVALUATE. SCORE. DECIDE.",
+    titleFirst: "Evaluator Jury",
+    titleHighlight: "Portal",
+    description:
+      "Review submitted innovations, score teams according to round rubrics, and deliver fair evaluations for your assigned event.",
+    features: [
+      {
+        icon: Award,
+        title: "Rubric Scoring",
+        desc: "Evaluate teams criterion by criterion with transparent max marks.",
+      },
+      {
+        icon: Trophy,
+        title: "Round-wise Evaluation",
+        desc: "Step through each sequential round and track team performance.",
+      },
+      {
+        icon: ShieldCheck,
+        title: "Track Scoped",
+        desc: "Strictly scoped to your assigned Physical or Virtual competition track.",
+      },
+      {
+        icon: Users,
+        title: "Team Roster & Feedback",
+        desc: "Access team project info, members, and submit personalized feedback.",
+      },
+    ],
+    formHeading: "Evaluator",
+    formHeadingHighlight: "Portal.",
+    formSubtitle: "Sign in with your evaluator username or email and password",
+    showEventName: false,
+    showRegisterLink: false,
+    securityNotice: "Authorized Event Evaluators & Jury Members only",
+    alternateLink: {
+      text: "Organizer portal? Admin Login →",
+      path: "/admin/login",
+    },
+    buildPayload: ({ email, password }) => ({
+      username: email,
+      password: password,
+    }),
+    onSuccess: (data, { login }) => {
+      const evalObj = data.evaluator || data.user || {};
+      const token = data.token;
+      localStorage.setItem("evaluator", JSON.stringify(evalObj));
+      localStorage.setItem("user", JSON.stringify(evalObj));
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+      localStorage.setItem("role", "evaluator");
+      login(token, evalObj, "evaluator");
+    },
+  },
 };
 
 function getActiveRole(pathname, propRole) {
@@ -214,6 +274,9 @@ function getActiveRole(pathname, propRole) {
   }
   if (pathname.includes("/admin")) {
     return "admin";
+  }
+  if (pathname.includes("/evaluator")) {
+    return "evaluator";
   }
   if (pathname.includes("/user")) {
     return "user";
@@ -282,8 +345,14 @@ function UnifiedLogin({ role: propRole }) {
 
   const getEmailError = () => {
     const val = email.trim();
-    if (!val) return "Email address is required";
-    if (!emailRegex.test(val)) return "Please enter a valid email address";
+    if (!val) {
+      return activeRole === "evaluator"
+        ? "Username or Email is required"
+        : "Email address is required";
+    }
+    if (activeRole !== "evaluator" && !emailRegex.test(val)) {
+      return "Please enter a valid email address";
+    }
     return "";
   };
 
@@ -483,6 +552,8 @@ function UnifiedLogin({ role: propRole }) {
               aria-hidden="true"
             />
 
+            
+
             <div className="mb-6 sm:mb-8 text-center">
               <div className="border-2 border-emerald-500 w-12 h-12 p-2 mb-3 rounded-full mx-auto flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm">
                 {logoElement}
@@ -639,7 +710,7 @@ function UnifiedLogin({ role: propRole }) {
                     : "top-2 text-sm text-gray-500 dark:text-gray-400"
                 }`}
               >
-                Email Address
+                {activeRole === "evaluator" ? "Username or Email" : "Email Address"}
               </label>
 
               {isEmailValid && (

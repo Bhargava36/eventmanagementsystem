@@ -17,7 +17,7 @@ const createRegistration = (req, res) => {
         });
     }
 
-    const registrationStatus = Status || "pending";
+    const registrationStatus = Status || "approved";
 
     if ( registrationStatus !== "pending" && registrationStatus !== "approved" && registrationStatus !== "rejected" && registrationStatus !== "cancelled") {
         return res.status(400).json({

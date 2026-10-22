@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';
+import { validateEventDates } from '../../../../lib/utils';
 
 function EventInfo() {
     const navigate = useNavigate();
@@ -440,32 +441,87 @@ function EventInfo() {
         try {
             setSaving(true);
 
+            // Chronological date sequence validation
+            if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') {
+                const vErr = validateEventDates({
+                    registrationStart: formData.VirtualRegistrationStart,
+                    registrationEnd: formData.VirtualRegistrationEnd,
+                    eventStart: formData.VirtualStartDate,
+                    eventEnd: formData.VirtualEndDate,
+                    trackName: 'Virtual Phase'
+                });
+                if (vErr) {
+                    toast.error(vErr);
+                    setSaving(false);
+                    return;
+                }
+                const pErr = validateEventDates({
+                    registrationStart: formData.PhysicalRegistrationStart,
+                    registrationEnd: formData.PhysicalRegistrationEnd,
+                    eventStart: formData.PhysicalStartDate,
+                    eventEnd: formData.PhysicalEndDate,
+                    trackName: 'Physical Phase'
+                });
+                if (pErr) {
+                    toast.error(pErr);
+                    setSaving(false);
+                    return;
+                }
+            } else {
+                const regStart = formData.RegistrationStart || formData.PhysicalRegistrationStart || formData.VirtualRegistrationStart;
+                const regEnd = formData.RegistrationEnd || formData.PhysicalRegistrationEnd || formData.VirtualRegistrationEnd;
+                const start = formData.StartDate || formData.PhysicalStartDate || formData.VirtualStartDate;
+                const end = formData.EndDate || formData.PhysicalEndDate || formData.VirtualEndDate;
+                const err = validateEventDates({
+                    registrationStart: regStart,
+                    registrationEnd: regEnd,
+                    eventStart: start,
+                    eventEnd: end
+                });
+                if (err) {
+                    toast.error(err);
+                    setSaving(false);
+                    return;
+                }
+            }
+
             const payload = { ...formData };
             if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') {
                 payload.StartDate = formData.VirtualStartDate || formData.StartDate;
                 payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
                 payload.RegistrationStart = formData.VirtualRegistrationStart || formData.RegistrationStart;
                 payload.RegistrationEnd = formData.PhysicalRegistrationEnd || formData.RegistrationEnd;
+                payload.VirtualStartDate = formData.VirtualStartDate || payload.StartDate;
+                payload.VirtualEndDate = formData.VirtualEndDate || payload.StartDate;
+                payload.VirtualRegistrationStart = formData.VirtualRegistrationStart || payload.RegistrationStart;
+                payload.VirtualRegistrationEnd = formData.VirtualRegistrationEnd || payload.RegistrationEnd;
+                payload.PhysicalStartDate = formData.PhysicalStartDate || payload.EndDate;
+                payload.PhysicalEndDate = formData.PhysicalEndDate || payload.EndDate;
+                payload.PhysicalRegistrationStart = formData.PhysicalRegistrationStart || payload.RegistrationStart;
+                payload.PhysicalRegistrationEnd = formData.PhysicalRegistrationEnd || payload.RegistrationEnd;
                 payload.VirtualPrizeMoney = formData.VirtualPrizeMoney;
                 payload.PhysicalPrizeMoney = formData.PhysicalPrizeMoney;
-            } else if (formData.HackathonMode === 'Hybrid') {
-                payload.StartDate = formData.StartDate || formData.VirtualStartDate || formData.PhysicalStartDate;
-                payload.EndDate = formData.EndDate || formData.PhysicalEndDate || formData.VirtualEndDate;
-                payload.RegistrationStart = formData.RegistrationStart || formData.VirtualRegistrationStart || formData.PhysicalRegistrationStart;
-                payload.RegistrationEnd = formData.RegistrationEnd || formData.PhysicalRegistrationEnd || formData.VirtualRegistrationEnd;
-                payload.PrizeMoney = formData.PrizeMoney || formData.PhysicalPrizeMoney || formData.VirtualPrizeMoney;
             } else if (formData.HackathonMode === 'Virtual') {
-                payload.StartDate = formData.VirtualStartDate || formData.StartDate;
-                payload.EndDate = formData.VirtualEndDate || formData.EndDate;
-                payload.RegistrationStart = formData.VirtualRegistrationStart || formData.RegistrationStart;
-                payload.RegistrationEnd = formData.VirtualRegistrationEnd || formData.RegistrationEnd;
+                payload.StartDate = formData.StartDate || formData.VirtualStartDate;
+                payload.EndDate = formData.EndDate || formData.VirtualEndDate;
+                payload.RegistrationStart = formData.RegistrationStart || formData.VirtualRegistrationStart;
+                payload.RegistrationEnd = formData.RegistrationEnd || formData.VirtualRegistrationEnd;
+                payload.VirtualStartDate = payload.StartDate;
+                payload.VirtualEndDate = payload.EndDate;
+                payload.VirtualRegistrationStart = payload.RegistrationStart;
+                payload.VirtualRegistrationEnd = payload.RegistrationEnd;
                 payload.VirtualPrizeMoney = formData.VirtualPrizeMoney || formData.PrizeMoney;
                 if (!payload.Location) payload.Location = 'Virtual / Online';
-            } else if (formData.HackathonMode === 'Physical') {
-                payload.StartDate = formData.PhysicalStartDate || formData.StartDate;
-                payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
-                payload.RegistrationStart = formData.PhysicalRegistrationStart || formData.RegistrationStart;
-                payload.RegistrationEnd = formData.PhysicalRegistrationEnd || formData.RegistrationEnd;
+            } else {
+                // Physical or Generic Event
+                payload.StartDate = formData.StartDate || formData.PhysicalStartDate;
+                payload.EndDate = formData.EndDate || formData.PhysicalEndDate;
+                payload.RegistrationStart = formData.RegistrationStart || formData.PhysicalRegistrationStart;
+                payload.RegistrationEnd = formData.RegistrationEnd || formData.PhysicalRegistrationEnd;
+                payload.PhysicalStartDate = payload.StartDate;
+                payload.PhysicalEndDate = payload.EndDate;
+                payload.PhysicalRegistrationStart = payload.RegistrationStart;
+                payload.PhysicalRegistrationEnd = payload.RegistrationEnd;
                 payload.PhysicalPrizeMoney = formData.PhysicalPrizeMoney || formData.PrizeMoney;
             }
 
@@ -489,6 +545,12 @@ function EventInfo() {
             }
 
             toast.success('Event updated successfully');
+
+            // Clear admin caches and notify admin dashboard / sidebars
+            try {
+                localStorage.removeItem(`admin_dashboard_cache_${id}`);
+            } catch (e) {}
+            window.dispatchEvent(new Event('admin-event-updated'));
 
             setIsEditing(false);
 
@@ -1130,79 +1192,105 @@ function EventInfo() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        {formData.HackathonMode === 'Virtual' ? 'Virtual Start Date' : 'Event Start Date'}
-                                                    </label>
-                                                    <input
-                                                        type="date"
-                                                        name="StartDate"
-                                                        value={formatDateForInput(formData.StartDate)}
-                                                        onChange={(e) => {
-                                                            handleInputChange(e);
-                                                            if (formData.HackathonMode === 'Virtual') {
-                                                                setFormData((prev) => ({ ...prev, StartDate: e.target.value, VirtualStartDate: e.target.value }));
-                                                            } else {
-                                                                setFormData((prev) => ({ ...prev, StartDate: e.target.value, PhysicalStartDate: e.target.value }));
-                                                            }
-                                                        }}
-                                                        required
-                                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-                                                    />
+                                        <div className="space-y-4">
+                                            {/* 1. Registration Window (From & To) First */}
+                                            <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-950/20 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+                                                        <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                                        Registration Window (From &amp; To)
+                                                    </span>
+                                                    <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-md">
+                                                        Closes before Event Starts
+                                                    </span>
                                                 </div>
 
-                                                <div>
-                                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        {formData.HackathonMode === 'Virtual' ? 'Virtual End Date' : 'Event End Date'}
-                                                    </label>
-                                                    <input
-                                                        type="date"
-                                                        name="EndDate"
-                                                        value={formatDateForInput(formData.EndDate)}
-                                                        onChange={(e) => {
-                                                            handleInputChange(e);
-                                                            if (formData.HackathonMode === 'Virtual') {
-                                                                setFormData((prev) => ({ ...prev, EndDate: e.target.value, VirtualEndDate: e.target.value }));
-                                                            } else {
-                                                                setFormData((prev) => ({ ...prev, EndDate: e.target.value, PhysicalEndDate: e.target.value }));
-                                                            }
-                                                        }}
-                                                        required
-                                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-                                                    />
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                                            From: Registration Start Date
+                                                        </label>
+                                                        <input
+                                                            type="date"
+                                                            name="RegistrationStart"
+                                                            value={formatDateForInput(formData.RegistrationStart)}
+                                                            onChange={handleInputChange}
+                                                            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm font-medium"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                                            To: Registration Closing Date
+                                                        </label>
+                                                        <input
+                                                            type="date"
+                                                            name="RegistrationEnd"
+                                                            value={formatDateForInput(formData.RegistrationEnd)}
+                                                            onChange={handleInputChange}
+                                                            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm font-medium"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        Registration Start Date
-                                                    </label>
-                                                    <input
-                                                        type="date"
-                                                        name="RegistrationStart"
-                                                        value={formatDateForInput(formData.RegistrationStart)}
-                                                        onChange={handleInputChange}
-                                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-                                                    />
+                                            {/* 2. Event Schedule (From & To) Second */}
+                                            <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                                                        <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                        {formData.HackathonMode === 'Virtual' ? 'Virtual Event Dates (From & To)' : 'Event Dates (From & To)'}
+                                                    </span>
+                                                    <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-md">
+                                                        Official Duration
+                                                    </span>
                                                 </div>
 
-                                                <div>
-                                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        Registration End Date
-                                                    </label>
-                                                    <input
-                                                        type="date"
-                                                        name="RegistrationEnd"
-                                                        value={formatDateForInput(formData.RegistrationEnd)}
-                                                        onChange={handleInputChange}
-                                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-                                                    />
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                                            From: Event Start Date
+                                                        </label>
+                                                        <input
+                                                            type="date"
+                                                            name="StartDate"
+                                                            value={formatDateForInput(formData.StartDate)}
+                                                            onChange={(e) => {
+                                                                handleInputChange(e);
+                                                                if (formData.HackathonMode === 'Virtual') {
+                                                                    setFormData((prev) => ({ ...prev, StartDate: e.target.value, VirtualStartDate: e.target.value }));
+                                                                } else {
+                                                                    setFormData((prev) => ({ ...prev, StartDate: e.target.value, PhysicalStartDate: e.target.value }));
+                                                                }
+                                                            }}
+                                                            required
+                                                            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-xs sm:text-sm font-medium"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                                            To: Event End Date
+                                                        </label>
+                                                        <input
+                                                            type="date"
+                                                            name="EndDate"
+                                                            value={formatDateForInput(formData.EndDate)}
+                                                            onChange={(e) => {
+                                                                handleInputChange(e);
+                                                                if (formData.HackathonMode === 'Virtual') {
+                                                                    setFormData((prev) => ({ ...prev, EndDate: e.target.value, VirtualEndDate: e.target.value }));
+                                                                } else {
+                                                                    setFormData((prev) => ({ ...prev, EndDate: e.target.value, PhysicalEndDate: e.target.value }));
+                                                                }
+                                                            }}
+                                                            required
+                                                            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-xs sm:text-sm font-medium"
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </>
+                                        </div>
                                     )}
 
                                     <div>

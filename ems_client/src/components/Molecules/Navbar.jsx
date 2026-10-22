@@ -65,6 +65,8 @@ export function Navbar() {
     { label: 'Home', href: '/' },
     { label: 'Explore Events', href: '/events' },
     { label: 'Organizers', href: '/admin/login' },
+    { label: 'Jury Portal', href: '/evaluator/login' },
+    { label: '🧪 Test Accounts', href: '/test-credentials' },
   ];
 
   const loginButtonElement = (

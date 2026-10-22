@@ -166,9 +166,9 @@ function TeamDetails() {
             <div className="bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden mb-6">
                 <div className="p-4 sm:p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-lg">
+                        {/* <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white shrink-0 shadow-lg">
                             <Code className="w-6 h-6 sm:w-8 sm:h-8" />
-                        </div>
+                        </div> */}
 
                         <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -244,13 +244,6 @@ function TeamDetails() {
                     </div>
 
                     <div className="space-y-4">
-                        <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
-                            <Users className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
-                            <span className="text-gray-500 dark:text-gray-400">Team Name</span>
-                            <span className="font-medium text-gray-900 dark:text-white break-words">
-                                {team.TeamName}
-                            </span>
-                        </div>
 
                         <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                             <UserCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />

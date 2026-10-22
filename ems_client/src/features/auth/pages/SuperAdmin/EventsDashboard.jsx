@@ -15,6 +15,7 @@ import {
   MapPin,
   Layers,
   Users,
+  User,
   Trophy,
   Palette,
   Sparkles,
@@ -23,6 +24,7 @@ import {
 import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import useToast from '../../../../Hooks/useToast';
+import { validateEventDates } from '../../../../lib/utils';
 
 const getStatusStyles = (status) => {
   switch (status?.toLowerCase()) {
@@ -322,6 +324,28 @@ function EventsDashboard() {
           toast.error('Please complete all Physical Phase schedule dates.');
           return false;
         }
+        const vErr = validateEventDates({
+          registrationStart: formData.VirtualRegistrationStart,
+          registrationEnd: formData.VirtualRegistrationEnd,
+          eventStart: formData.VirtualStartDate,
+          eventEnd: formData.VirtualEndDate,
+          trackName: 'Virtual Phase'
+        });
+        if (vErr) {
+          toast.error(vErr);
+          return false;
+        }
+        const pErr = validateEventDates({
+          registrationStart: formData.PhysicalRegistrationStart,
+          registrationEnd: formData.PhysicalRegistrationEnd,
+          eventStart: formData.PhysicalStartDate,
+          eventEnd: formData.PhysicalEndDate,
+          trackName: 'Physical Phase'
+        });
+        if (pErr) {
+          toast.error(pErr);
+          return false;
+        }
       } else if (mode === 'Virtual') {
         const vRegStart = formData.VirtualRegistrationStart || formData.RegistrationStart;
         const vRegEnd = formData.VirtualRegistrationEnd || formData.RegistrationEnd;
@@ -331,6 +355,16 @@ function EventsDashboard() {
           toast.error('Please complete all registration and event dates.');
           return false;
         }
+        const err = validateEventDates({
+          registrationStart: vRegStart,
+          registrationEnd: vRegEnd,
+          eventStart: vStart,
+          eventEnd: vEnd
+        });
+        if (err) {
+          toast.error(err);
+          return false;
+        }
       } else {
         const regStart = formData.RegistrationStart || formData.PhysicalRegistrationStart;
         const regEnd = formData.RegistrationEnd || formData.PhysicalRegistrationEnd;
@@ -338,6 +372,16 @@ function EventsDashboard() {
         const end = formData.EndDate || formData.PhysicalEndDate;
         if (!regStart || !regEnd || !start || !end) {
           toast.error('Please complete all registration and event dates.');
+          return false;
+        }
+        const err = validateEventDates({
+          registrationStart: regStart,
+          registrationEnd: regEnd,
+          eventStart: start,
+          eventEnd: end
+        });
+        if (err) {
+          toast.error(err);
           return false;
         }
       }
@@ -417,32 +461,45 @@ function EventsDashboard() {
       if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') {
         payload.StartDate = formData.VirtualStartDate || formData.StartDate;
         payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
+        payload.RegistrationStart = formData.VirtualRegistrationStart || formData.RegistrationStart;
+        payload.RegistrationEnd = formData.PhysicalRegistrationEnd || formData.RegistrationEnd;
+        payload.VirtualStartDate = formData.VirtualStartDate || payload.StartDate;
+        payload.VirtualEndDate = formData.VirtualEndDate || payload.StartDate;
+        payload.VirtualRegistrationStart = formData.VirtualRegistrationStart || payload.RegistrationStart;
+        payload.VirtualRegistrationEnd = formData.VirtualRegistrationEnd || payload.RegistrationEnd;
+        payload.PhysicalStartDate = formData.PhysicalStartDate || payload.EndDate;
+        payload.PhysicalEndDate = formData.PhysicalEndDate || payload.EndDate;
+        payload.PhysicalRegistrationStart = formData.PhysicalRegistrationStart || payload.RegistrationStart;
+        payload.PhysicalRegistrationEnd = formData.PhysicalRegistrationEnd || payload.RegistrationEnd;
         payload.Facilities = [formData.VirtualFacilities, formData.PhysicalFacilities].filter(Boolean).join('\n\n') || formData.Facilities || '-';
         payload.Requirements = [formData.VirtualRequirements, formData.PhysicalRequirements].filter(Boolean).join('\n\n') || formData.Requirements || '-';
         payload.VirtualPrizeMoney = formData.VirtualPrizeMoney;
         payload.PhysicalPrizeMoney = formData.PhysicalPrizeMoney;
-      } else if (formData.HackathonMode === 'Hybrid') {
-        payload.StartDate = formData.StartDate || formData.VirtualStartDate || formData.PhysicalStartDate;
-        payload.EndDate = formData.EndDate || formData.PhysicalEndDate || formData.VirtualEndDate;
-        payload.Facilities = formData.Facilities || [formData.VirtualFacilities, formData.PhysicalFacilities].filter(Boolean).join('\n\n') || '-';
-        payload.Requirements = formData.Requirements || [formData.VirtualRequirements, formData.PhysicalRequirements].filter(Boolean).join('\n\n') || '-';
-        payload.PrizeMoney = formData.PrizeMoney || formData.PhysicalPrizeMoney || formData.VirtualPrizeMoney;
       } else if (formData.HackathonMode === 'Virtual') {
-        payload.StartDate = formData.VirtualStartDate || formData.StartDate;
-        payload.EndDate = formData.VirtualEndDate || formData.EndDate;
-        payload.RegistrationStart = formData.VirtualRegistrationStart || formData.RegistrationStart;
-        payload.RegistrationEnd = formData.VirtualRegistrationEnd || formData.RegistrationEnd;
+        payload.StartDate = formData.StartDate || formData.VirtualStartDate;
+        payload.EndDate = formData.EndDate || formData.VirtualEndDate;
+        payload.RegistrationStart = formData.RegistrationStart || formData.VirtualRegistrationStart;
+        payload.RegistrationEnd = formData.RegistrationEnd || formData.VirtualRegistrationEnd;
+        payload.VirtualStartDate = payload.StartDate;
+        payload.VirtualEndDate = payload.EndDate;
+        payload.VirtualRegistrationStart = payload.RegistrationStart;
+        payload.VirtualRegistrationEnd = payload.RegistrationEnd;
         payload.Facilities = formData.VirtualFacilities || formData.Facilities;
         payload.Requirements = formData.VirtualRequirements || formData.Requirements;
         payload.VirtualFacilities = payload.Facilities;
         payload.VirtualRequirements = payload.Requirements;
         payload.VirtualPrizeMoney = formData.VirtualPrizeMoney || formData.PrizeMoney;
         if (!payload.Location) payload.Location = 'Virtual / Online';
-      } else if (formData.HackathonMode === 'Physical') {
-        payload.StartDate = formData.PhysicalStartDate || formData.StartDate;
-        payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
-        payload.RegistrationStart = formData.PhysicalRegistrationStart || formData.RegistrationStart;
-        payload.RegistrationEnd = formData.PhysicalRegistrationEnd || formData.RegistrationEnd;
+      } else {
+        // Physical, Hybrid or generic events
+        payload.StartDate = formData.StartDate || formData.PhysicalStartDate;
+        payload.EndDate = formData.EndDate || formData.PhysicalEndDate;
+        payload.RegistrationStart = formData.RegistrationStart || formData.PhysicalRegistrationStart;
+        payload.RegistrationEnd = formData.RegistrationEnd || formData.PhysicalRegistrationEnd;
+        payload.PhysicalStartDate = payload.StartDate;
+        payload.PhysicalEndDate = payload.EndDate;
+        payload.PhysicalRegistrationStart = payload.RegistrationStart;
+        payload.PhysicalRegistrationEnd = payload.RegistrationEnd;
         payload.Facilities = formData.PhysicalFacilities || formData.Facilities;
         payload.Requirements = formData.PhysicalRequirements || formData.Requirements;
         payload.PhysicalFacilities = payload.Facilities;
@@ -470,6 +527,9 @@ function EventsDashboard() {
       }
 
       toast.success('Event created successfully with branding colors!');
+
+      // Notify other views and admin components to refresh
+      window.dispatchEvent(new Event('admin-event-updated'));
 
       setFormData(initialForm);
       setCurrentStep(1);
@@ -980,79 +1040,105 @@ function EventsDashboard() {
                           </div>
                         </div>
                       ) : (
-                        <>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {formData.HackathonMode === 'Virtual' ? 'Virtual Start Date' : 'Event Start Date'}
-                              </label>
-                              <input
-                                type="date"
-                                name="StartDate"
-                                value={formData.StartDate}
-                                onChange={(e) => {
-                                  handleChange(e);
-                                  if (formData.HackathonMode === 'Virtual') {
-                                    setFormData((prev) => ({ ...prev, StartDate: e.target.value, VirtualStartDate: e.target.value }));
-                                  } else {
-                                    setFormData((prev) => ({ ...prev, StartDate: e.target.value, PhysicalStartDate: e.target.value }));
-                                  }
-                                }}
-                                required
-                                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                              />
+                        <div className="space-y-4">
+                          {/* 1. Registration Window First */}
+                          <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-950/20 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                                Registration Window (From &amp; To)
+                              </span>
+                              <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-md">
+                                Closes before Event Starts
+                              </span>
                             </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                {formData.HackathonMode === 'Virtual' ? 'Virtual End Date' : 'Event End Date'}
-                              </label>
-                              <input
-                                type="date"
-                                name="EndDate"
-                                value={formData.EndDate}
-                                onChange={(e) => {
-                                  handleChange(e);
-                                  if (formData.HackathonMode === 'Virtual') {
-                                    setFormData((prev) => ({ ...prev, EndDate: e.target.value, VirtualEndDate: e.target.value }));
-                                  } else {
-                                    setFormData((prev) => ({ ...prev, EndDate: e.target.value, PhysicalEndDate: e.target.value }));
-                                  }
-                                }}
-                                required
-                                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                              />
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                  From: Registration Start Date
+                                </label>
+                                <input
+                                  type="date"
+                                  name="RegistrationStart"
+                                  value={formData.RegistrationStart}
+                                  onChange={handleChange}
+                                  required
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                  To: Registration Closing Date
+                                </label>
+                                <input
+                                  type="date"
+                                  name="RegistrationEnd"
+                                  value={formData.RegistrationEnd}
+                                  onChange={handleChange}
+                                  required
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
+                                />
+                              </div>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100 dark:border-gray-800">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Registration Start
-                              </label>
-                              <input
-                                type="date"
-                                name="RegistrationStart"
-                                value={formData.RegistrationStart}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                              />
+                          {/* 2. Event Schedule Second */}
+                          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                {formData.HackathonMode === 'Virtual' ? 'Virtual Event Dates (From & To)' : 'Event Dates (From & To)'}
+                              </span>
+                              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-md">
+                                Official Duration
+                              </span>
                             </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Registration End
-                              </label>
-                              <input
-                                type="date"
-                                name="RegistrationEnd"
-                                value={formData.RegistrationEnd}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-                              />
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                  From: Event Start Date
+                                </label>
+                                <input
+                                  type="date"
+                                  name="StartDate"
+                                  value={formData.StartDate}
+                                  onChange={(e) => {
+                                    handleChange(e);
+                                    if (formData.HackathonMode === 'Virtual') {
+                                      setFormData((prev) => ({ ...prev, StartDate: e.target.value, VirtualStartDate: e.target.value }));
+                                    } else {
+                                      setFormData((prev) => ({ ...prev, StartDate: e.target.value, PhysicalStartDate: e.target.value }));
+                                    }
+                                  }}
+                                  required
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                  To: Event End Date
+                                </label>
+                                <input
+                                  type="date"
+                                  name="EndDate"
+                                  value={formData.EndDate}
+                                  onChange={(e) => {
+                                    handleChange(e);
+                                    if (formData.HackathonMode === 'Virtual') {
+                                      setFormData((prev) => ({ ...prev, EndDate: e.target.value, VirtualEndDate: e.target.value }));
+                                    } else {
+                                      setFormData((prev) => ({ ...prev, EndDate: e.target.value, PhysicalEndDate: e.target.value }));
+                                    }
+                                  }}
+                                  required
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
+                                />
+                              </div>
                             </div>
                           </div>
-                        </>
+                        </div>
                       )}
                     </div>
                   )}
@@ -1092,20 +1178,132 @@ function EventsDashboard() {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Team Size
+                            Participation Format
                           </label>
 
-                          <input
-                            type="text"
-                            name="TeamSize"
-                            value={formData.TeamSize}
-                            onChange={handleChange}
-                            placeholder="Example: 2 - 4 members"
-                            required
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
-                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData((prev) => ({ ...prev, TeamSize: '1' }));
+                              }}
+                              className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                formData.TeamSize === '1' || formData.TeamSize?.toLowerCase() === 'solo' || formData.TeamSize?.toLowerCase() === 'individual'
+                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 ring-2 ring-emerald-500/20'
+                                  : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              <User className="w-3.5 h-3.5" />
+                              <span>Individual (Solo)</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (formData.TeamSize === '1' || !formData.TeamSize) {
+                                  setFormData((prev) => ({ ...prev, TeamSize: '2-4' }));
+                                }
+                              }}
+                              className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                formData.TeamSize !== '1' && formData.TeamSize && formData.TeamSize?.toLowerCase() !== 'solo' && formData.TeamSize?.toLowerCase() !== 'individual'
+                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 ring-2 ring-emerald-500/20'
+                                  : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              <Users className="w-3.5 h-3.5" />
+                              <span>Team</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Team Configuration if Team is selected */}
+                      {formData.TeamSize !== '1' && formData.TeamSize?.toLowerCase() !== 'solo' && formData.TeamSize?.toLowerCase() !== 'individual' && (
+                        <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
+                              <Users className="w-3.5 h-3.5 text-emerald-600" />
+                              Team Size Rule (Starts from 2 members)
+                            </span>
+                            <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-md">
+                              Configured: {formData.TeamSize || '2-4'} Members
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, TeamSize: '2-4' }))}
+                              className={`py-2 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                                formData.TeamSize === '2-4' || formData.TeamSize === '2 - 4'
+                                  ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
+                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                              }`}
+                            >
+                              Range: 2 - 4
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, TeamSize: '2-3' }))}
+                              className={`py-2 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                                formData.TeamSize === '2-3' || formData.TeamSize === '2 - 3'
+                                  ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
+                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                              }`}
+                            >
+                              Range: 2 - 3
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, TeamSize: '4' }))}
+                              className={`py-2 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                                formData.TeamSize === '4'
+                                  ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
+                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                              }`}
+                            >
+                              Fixed: 4 Members
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setFormData((prev) => ({ ...prev, TeamSize: '2' }))}
+                              className={`py-2 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+                                formData.TeamSize === '2'
+                                  ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
+                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                              }`}
+                            >
+                              Fixed: 2 Members
+                            </button>
+                          </div>
+
+                          <div className="pt-1">
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                              Or customize team size specification:
+                            </label>
+                            <input
+                              type="text"
+                              name="TeamSize"
+                              value={formData.TeamSize}
+                              onChange={handleChange}
+                              placeholder="e.g. 4 or 2-4"
+                              className="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-semibold"
+                            />
+                            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                              {formData.TeamSize?.includes('-')
+                                ? 'Allowed range: Students can register any number of members within this range.'
+                                : `Fixed requirement: Students must register exactly ${formData.TeamSize || 4} members (no more, no less).`}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {formData.TeamSize === '1' && (
+                        <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-950/20 text-xs font-medium text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>Individual event: Participants will be registered directly in 1 click without needing to create a team.</span>
+                        </div>
+                      )}
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

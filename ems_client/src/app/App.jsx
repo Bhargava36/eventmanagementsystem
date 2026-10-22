@@ -42,37 +42,16 @@ import AccomodationRedirectPage from '../features/auth/pages/Admin/AccomodationR
 import FoodRedirectionPage from '../features/auth/pages/Admin/FoodRedirectionPage';
 import IdRedirectionPage from '../features/auth/pages/Admin/IdRedirectionPage';
 import VerifyIdPage from '../features/public/pages/VerifyIdPage';
+import PublicTeamInfo from '../features/public/pages/PublicTeamInfo';
 import ThreePreloader from '../components/ui/ThreePreloader';
 import Evaluators from '../features/auth/pages/Admin/Evaluators';
+import TestCredentialsPage from '../features/public/pages/TestCredentialsPage';
+import EvaluatorLogin from '../features/auth/pages/Evaluator/EvaluatorLogin';
+import EvaluatorDashboard from '../features/auth/pages/Evaluator/EvaluatorDashboard';
+import EvaluateTeamPage from '../features/auth/pages/Evaluator/EvaluateTeamPage';
+import AdminResultsPage from '../features/auth/pages/Admin/AdminResultsPage';
 
-const normalizeHackathonMode = (mode) => {
-  const normalized = String(mode || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ');
-
-  if (
-    normalized === 'both' ||
-    normalized === 'hybrid' ||
-    normalized === 'virtual and physical' ||
-    normalized === 'physical and virtual' ||
-    normalized === 'virtual & physical' ||
-    normalized === 'physical & virtual'
-  ) {
-    return 'both';
-  }
-
-  if (normalized === 'virtual') {
-    return 'virtual';
-  }
-
-  if (normalized === 'physical') {
-    return 'physical';
-  }
-
-  return '';
-};
+import { normalizeHackathonMode } from '../lib/utils';
 
 function AdminModeRoute({ allowedModes, children }) {
   let admin = {};
@@ -83,7 +62,7 @@ function AdminModeRoute({ allowedModes, children }) {
     admin = {};
   }
 
-  const mode = normalizeHackathonMode(admin?.HackathonMode);
+  const mode = normalizeHackathonMode(admin?.HackathonMode, admin?.Location);
 
   if (!mode || !allowedModes.includes(mode)) {
     return <Navigate to="/admin/dashboard" replace />;
@@ -116,6 +95,12 @@ function App() {
           <Route path="/admin/register" element={<AdminRegister />} />
           <Route path="/user/login" element={<UserLogin />} />
           <Route path="/user/register" element={<UserRegister />} />
+          <Route path="/evaluator/login" element={<EvaluatorLogin />} />
+          <Route path="/test-credentials" element={<TestCredentialsPage />} />
+          <Route path="/testing" element={<TestCredentialsPage />} />
+          <Route path="/dev-users" element={<TestCredentialsPage />} />
+          <Route path="/teams/public/:teamId" element={<PublicTeamInfo />} />
+          <Route path="/public/team/:teamId" element={<PublicTeamInfo />} />
           <Route path="/404" element={<NotFound />} />
           <Route path="/not-found" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
@@ -148,10 +133,12 @@ function App() {
             <Route path="settings" element={<AdminEventSettings />} />
             <Route path="profile" element={<AdminProfile />} />
             <Route path="profile/:id" element={<AdminProfile />} />
-            <Route path="accomodation" element={<AccomodationRedirectPage />} />
-            <Route path="food" element={<FoodRedirectionPage />} />
-            <Route path="id-card" element={<IdRedirectionPage />} />
+            <Route path="accomodation" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AccomodationRedirectPage /> </AdminModeRoute>} />
+            <Route path="food" element={<AdminModeRoute allowedModes={['physical', 'both']}> <FoodRedirectionPage /> </AdminModeRoute>} />
+            <Route path="id-card" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdRedirectionPage /> </AdminModeRoute>} />
             <Route path="evaluators" element={<Evaluators />} />
+            <Route path="physical-results" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AdminResultsPage track="Physical" /> </AdminModeRoute>} />
+            <Route path="virtual-results" element={<AdminModeRoute allowedModes={['virtual', 'both']}> <AdminResultsPage track="Virtual" /> </AdminModeRoute>} />
           </Route>
         </Route>
 
@@ -161,6 +148,7 @@ function App() {
             <Route path="dashboard" element={<UserDashboard />} />
             <Route path="teams" element={<MyTeams />} />
             <Route path="teamInfo/:teamId" element={<TeamInfo />} />
+            <Route path="team-dashboard/:teamId" element={<TeamInfo />} />
             <Route path="events/:id" element={<EventRedirectPage />} />
             <Route path="events/:id/virtual" element={<ParticipantVirtualEventPage />} />
             <Route path="competitions" element={<UserCompetitions />} />
@@ -168,6 +156,11 @@ function App() {
             <Route path="profile" element={<UserProfile />} />
             <Route path="profile/:id" element={<UserProfile />} />
           </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['evaluator']} redirectPath="/evaluator/login" />}>
+          <Route path="/evaluator/dashboard" element={<EvaluatorDashboard />} />
+          <Route path="/evaluator/evaluate/:roundId/:teamId" element={<EvaluateTeamPage />} />
         </Route>
 
         <Route path="/events/:id/virtual" element={<ParticipantVirtualEventPage />} />

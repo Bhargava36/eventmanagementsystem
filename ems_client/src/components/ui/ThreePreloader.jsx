@@ -73,22 +73,6 @@ export default function ThreePreloader({ onComplete }) {
     const cornerX = visibleWidth / 2 + 0.8;
     const cornerY = visibleHeight / 2 + 0.8;
 
-    // 2. Theme-Aware Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, isDark ? 3.0 : 2.5);
-    scene.add(ambientLight);
-
-    const frontLight = new THREE.DirectionalLight(0xffffff, isDark ? 3.8 : 3.0);
-    frontLight.position.set(0, 3, 6);
-    scene.add(frontLight);
-
-    const pointLight = new THREE.PointLight(
-      isDark ? 0xffffff : 0x10b981,
-      isDark ? 2.6 : 1.8,
-      14
-    );
-    pointLight.position.set(0, 1, 4);
-    scene.add(pointLight);
-
     // Group for the 4 dots centered at Y = 0.55 (TOP placement)
     const centerY = 0.55;
     const radius = 0.38;
@@ -97,23 +81,39 @@ export default function ThreePreloader({ onComplete }) {
     dotsGroup.position.set(0, centerY, 0);
     scene.add(dotsGroup);
 
+    // 2. Theme-Aware Lighting (Balanced so colors don't wash out)
+    const ambientLight = new THREE.AmbientLight(0xffffff, isDark ? 1.4 : 1.2);
+    scene.add(ambientLight);
+
+    const frontLight = new THREE.DirectionalLight(0xffffff, isDark ? 1.8 : 1.5);
+    frontLight.position.set(0, 3, 6);
+    scene.add(frontLight);
+
+    const pointLight = new THREE.PointLight(
+      0x10b981,
+      isDark ? 1.4 : 1.0,
+      12
+    );
+    pointLight.position.set(0, centerY, 3.5);
+    scene.add(pointLight);
+
     // 3. Theme-Aware Materials
-    // Top & Bottom: Vivid Glowing Emerald Green (#10b981)
+    // Top & Bottom: Authentic Website Brand Emerald Green (#10b981 / #059669)
     const emeraldMat = new THREE.MeshStandardMaterial({
-      color: isDark ? 0x34d399 : 0x059669,
-      roughness: isDark ? 0.1 : 0.18,
-      metalness: 0.05,
-      emissive: isDark ? 0x10b981 : 0x047857,
-      emissiveIntensity: isDark ? 0.95 : 0.35,
+      color: isDark ? 0x10b981 : 0x059669,
+      roughness: 0.22,
+      metalness: 0.08,
+      emissive: isDark ? 0x059669 : 0x047857,
+      emissiveIntensity: isDark ? 0.45 : 0.3,
     });
 
     // Left & Right: Radiant Clean Pure White (Dark Mode) / Deep Slate-Black (Light Mode)
     const contrastMat = new THREE.MeshStandardMaterial({
-      color: isDark ? 0xffffff : 0x18181b,
-      roughness: isDark ? 0.08 : 0.15,
-      metalness: 0.05,
-      emissive: isDark ? 0xffffff : 0x09090b,
-      emissiveIntensity: isDark ? 0.95 : 0.2,
+      color: isDark ? 0xffffff : 0x1e293b,
+      roughness: 0.15,
+      metalness: 0.08,
+      emissive: isDark ? 0xffffff : 0x0f172a,
+      emissiveIntensity: isDark ? 0.35 : 0.15,
     });
 
     // Sleek, refined Sphere Geometry

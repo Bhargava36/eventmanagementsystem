@@ -26,12 +26,14 @@ import {
   Layers,
   FileText,
   Award,
-  Camera
+  Camera,
+  User
 } from 'lucide-react';
 import useToast from '../../../../Hooks/useToast';
 import useAuth from '../../../../Hooks/useAuth';
 import EventSponsorsManager from '../../../../components/Organisms/EventSponsorsManager';
 import EventGalleryManager from '../../../../components/Organisms/EventGalleryManager';
+import { getTrackVisibility, isSoloTeamSize, validateEventDates } from '../../../../lib/utils';
 
 export default function AdminEventSettings() {
   const toast = useToast();
@@ -52,11 +54,13 @@ export default function AdminEventSettings() {
   const [eventData, setEventData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('virtual'); // 'virtual' | 'physical' | 'general'
+  const [activeTab, setActiveTab] = useState('physical'); // 'virtual' | 'physical' | 'general'
 
   // Editable settings form state
   const [settingsForm, setSettingsForm] = useState({
     Description: '',
+    StartDate: '',
+    EndDate: '',
     VirtualRegistrationOpen: 1,
     PhysicalRegistrationOpen: 1,
     RegistrationOpen: 1,
@@ -69,29 +73,24 @@ export default function AdminEventSettings() {
     TeamSize: '4',
     VirtualStatus: 'NOT_STARTED',
     VirtualMeetUrl: '',
-    HackathonMode: 'Both',
+    HackathonMode: 'Physical',
     AccommodationEnabled: 0,
     FoodEnabled: 0,
     IDCardEnabled: 0
   });
 
-  // Track visibility is controlled by the event's configured HackathonMode.
-  const normalizeMode = (mode) =>
-    String(mode || '')
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, ' ');
-
-  const currentMode = normalizeMode(eventData?.HackathonMode || settingsForm.HackathonMode);
-  const isVirtualMode = currentMode === 'virtual';
-  const isPhysicalMode = currentMode === 'physical';
-  const isBothMode =
-    currentMode === 'both' ||
-    currentMode === 'hybrid' ||
-    currentMode === 'virtual and physical' ||
-    currentMode === 'virtual & physical';
-  const showVirtual = isVirtualMode || isBothMode;
-  const showPhysical = isPhysicalMode || isBothMode;
+  // Track visibility is controlled strictly by the event's configured HackathonMode.
+  const {
+    mode: currentMode,
+    isBoth: isBothMode,
+    isVirtual: isVirtualMode,
+    isPhysical: isPhysicalMode,
+    showVirtual,
+    showPhysical
+  } = getTrackVisibility(
+    eventData?.HackathonMode || settingsForm.HackathonMode,
+    eventData?.Location
+  );
 
   // Track Timelines State
   const [timelines, setTimelines] = useState([]);
@@ -102,7 +101,7 @@ export default function AdminEventSettings() {
   const [showTimelineForm, setShowTimelineForm] = useState(false);
 
   const [timelineForm, setTimelineForm] = useState({
-    Track: 'Virtual',
+    Track: isPhysicalMode ? 'Physical' : 'Virtual',
     TimelineDate: '',
     Heading: '',
     Description: '',
@@ -174,9 +173,21 @@ export default function AdminEventSettings() {
       const ev = Array.isArray(data) ? data[0] : (data.event || data);
 
       setEventData(ev);
+      if (ev.HackathonMode) {
+        try {
+          const curAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
+          if (curAdmin.HackathonMode !== ev.HackathonMode) {
+            curAdmin.HackathonMode = ev.HackathonMode;
+            localStorage.setItem('admin', JSON.stringify(curAdmin));
+            window.dispatchEvent(new Event('admin-event-updated'));
+          }
+        } catch (e) {}
+      }
       loadTimelines(targetId);
       setSettingsForm({
         Description: ev.Description || '',
+        StartDate: ev.StartDate ? ev.StartDate.split('T')[0] : '',
+        EndDate: ev.EndDate ? ev.EndDate.split('T')[0] : '',
         VirtualRegistrationOpen: ev.VirtualRegistrationOpen !== undefined ? (ev.VirtualRegistrationOpen ? 1 : 0) : 1,
         PhysicalRegistrationOpen: ev.PhysicalRegistrationOpen !== undefined ? (ev.PhysicalRegistrationOpen ? 1 : 0) : 1,
         RegistrationOpen: ev.RegistrationOpen !== undefined ? (ev.RegistrationOpen ? 1 : 0) : 1,
@@ -189,7 +200,7 @@ export default function AdminEventSettings() {
         TeamSize: ev.TeamSize || '4',
         VirtualStatus: ev.VirtualStatus || 'NOT_STARTED',
         VirtualMeetUrl: ev.VirtualMeetUrl || '',
-        HackathonMode: ev.HackathonMode || 'Both',
+        HackathonMode: ev.HackathonMode || 'Physical',
         AccommodationEnabled: ev.AccommodationEnabled === true || Number(ev.AccommodationEnabled) === 1 ? 1 : 0,
         FoodEnabled: ev.FoodEnabled === true || Number(ev.FoodEnabled) === 1 ? 1 : 0,
         IDCardEnabled: ev.IDCardEnabled === true || Number(ev.IDCardEnabled) === 1 ? 1 : 0
@@ -394,6 +405,20 @@ export default function AdminEventSettings() {
       return;
     }
 
+    // Validate Event and Registration dates
+    const regStart = settingsForm.PhysicalRegistrationStart || settingsForm.VirtualRegistrationStart || settingsForm.RegistrationStart;
+    const regEnd = settingsForm.PhysicalRegistrationEnd || settingsForm.VirtualRegistrationEnd || settingsForm.RegistrationEnd;
+    const dateErr = validateEventDates({
+      registrationStart: regStart,
+      registrationEnd: regEnd,
+      eventStart: settingsForm.StartDate,
+      eventEnd: settingsForm.EndDate
+    });
+    if (dateErr) {
+      toast.error(dateErr);
+      return;
+    }
+
     try {
       setSaving(true);
       const res = await fetch(`http://localhost:3000/api/events/${targetEventId}/settings`, {
@@ -410,7 +435,21 @@ export default function AdminEventSettings() {
       const resData = await res.json();
       if (resData.event) {
         setEventData(resData.event);
+        try {
+          const curAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
+          if (resData.event.HackathonMode) {
+            curAdmin.HackathonMode = resData.event.HackathonMode;
+            localStorage.setItem('admin', JSON.stringify(curAdmin));
+          }
+        } catch (e) {}
       }
+
+      // Invalidate admin dashboard cache and notify views
+      try {
+        localStorage.removeItem(`admin_dashboard_cache_${targetEventId}`);
+      } catch (e) {}
+      window.dispatchEvent(new Event('admin-event-updated'));
+
       toast.success('Event settings updated successfully!');
     } catch (err) {
       console.error(err);
@@ -859,12 +898,12 @@ export default function AdminEventSettings() {
                       </button>
                     </div>
 
-                    {/* Virtual Registration Dates */}
+                    {/* Virtual Registration and Event Dates (From & To) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Virtual Registration Start Date</span>
+                          <Clock className="w-3.5 h-3.5 text-blue-500" />
+                          <span>From: Virtual Registration Start Date</span>
                         </label>
                         <input
                           type="date"
@@ -876,13 +915,39 @@ export default function AdminEventSettings() {
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Virtual Registration Deadline</span>
+                          <Clock className="w-3.5 h-3.5 text-blue-500" />
+                          <span>To: Virtual Registration Closing Date</span>
                         </label>
                         <input
                           type="date"
                           name="VirtualRegistrationEnd"
                           value={settingsForm.VirtualRegistrationEnd ? settingsForm.VirtualRegistrationEnd.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>From: Event Start Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="StartDate"
+                          value={settingsForm.StartDate ? settingsForm.StartDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>To: Event End Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="EndDate"
+                          value={settingsForm.EndDate ? settingsForm.EndDate.split('T')[0] : ''}
                           onChange={handleInputChange}
                           className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                         />
@@ -1013,12 +1078,12 @@ export default function AdminEventSettings() {
                       </button>
                     </div>
 
-                    {/* Physical Registration Dates */}
+                    {/* Physical Registration and Event Dates (From & To) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Physical Registration Start Date</span>
+                          <Clock className="w-3.5 h-3.5 text-blue-500" />
+                          <span>From: Physical Registration Start Date</span>
                         </label>
                         <input
                           type="date"
@@ -1030,13 +1095,39 @@ export default function AdminEventSettings() {
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Physical Registration Deadline</span>
+                          <Clock className="w-3.5 h-3.5 text-blue-500" />
+                          <span>To: Physical Registration Closing Date</span>
                         </label>
                         <input
                           type="date"
                           name="PhysicalRegistrationEnd"
                           value={settingsForm.PhysicalRegistrationEnd ? settingsForm.PhysicalRegistrationEnd.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>From: Event Start Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="StartDate"
+                          value={settingsForm.StartDate ? settingsForm.StartDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>To: Event End Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="EndDate"
+                          value={settingsForm.EndDate ? settingsForm.EndDate.split('T')[0] : ''}
                           onChange={handleInputChange}
                           className="w-full px-4 py-2.5 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                         />
@@ -1177,35 +1268,145 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-1">
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                          Allowed Team Size Specification
+                    <div className="space-y-4 pt-1">
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-2">
+                          Participation Format
                         </label>
-                        <input
-                          type="text"
-                          name="TeamSize"
-                          value={settingsForm.TeamSize}
-                          onChange={handleInputChange}
-                          placeholder="e.g. 4 or 2-4"
-                          className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-                        />
-                        <p className="text-[11px] text-slate-400">
-                          Specify exact size (e.g. <strong>4</strong>) or allowed member range (e.g. <strong>2-4</strong>).
-                        </p>
+                        <div className="grid grid-cols-2 gap-3 max-w-md">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSettingsForm((prev) => ({ ...prev, TeamSize: '1' }));
+                            }}
+                            className={`py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                              isSoloTeamSize(settingsForm.TeamSize)
+                                ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 ring-2 ring-emerald-500/20'
+                                : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-900'
+                            }`}
+                          >
+                            <User className="w-4 h-4" />
+                            <span>Individual (Solo)</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isSoloTeamSize(settingsForm.TeamSize)) {
+                                setSettingsForm((prev) => ({ ...prev, TeamSize: '2-4' }));
+                              }
+                            }}
+                            className={`py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                              !isSoloTeamSize(settingsForm.TeamSize)
+                                ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 ring-2 ring-emerald-500/20'
+                                : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-900'
+                            }`}
+                          >
+                            <Users className="w-4 h-4" />
+                            <span>Team Format</span>
+                          </button>
+                        </div>
                       </div>
 
-                      <div className="md:col-span-2 p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-2">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-zinc-200">
-                          <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                          <span>Enforcement Policy Guarantees:</span>
+                      {/* Team Configuration Block */}
+                      {!isSoloTeamSize(settingsForm.TeamSize) ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 rounded-2xl bg-slate-50/50 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800">
+                          <div className="space-y-3">
+                            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block">
+                              Team Size Rule (Minimum 2 Members)
+                            </label>
+                            
+                            {/* Preset Buttons */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setSettingsForm((prev) => ({ ...prev, TeamSize: '2-4' }))}
+                                className={`py-1.5 px-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                                  settingsForm.TeamSize === '2-4' || settingsForm.TeamSize === '2 - 4'
+                                    ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
+                                    : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-300 hover:border-slate-400'
+                                }`}
+                              >
+                                Range: 2 - 4
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSettingsForm((prev) => ({ ...prev, TeamSize: '2-3' }))}
+                                className={`py-1.5 px-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                                  settingsForm.TeamSize === '2-3' || settingsForm.TeamSize === '2 - 3'
+                                    ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
+                                    : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-300 hover:border-slate-400'
+                                }`}
+                              >
+                                Range: 2 - 3
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSettingsForm((prev) => ({ ...prev, TeamSize: '4' }))}
+                                className={`py-1.5 px-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                                  settingsForm.TeamSize === '4'
+                                    ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
+                                    : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-300 hover:border-slate-400'
+                                }`}
+                              >
+                                Fixed: 4 Members
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setSettingsForm((prev) => ({ ...prev, TeamSize: '2' }))}
+                                className={`py-1.5 px-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                                  settingsForm.TeamSize === '2'
+                                    ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
+                                    : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-300 hover:border-slate-400'
+                                }`}
+                              >
+                                Fixed: 2 Members
+                              </button>
+                            </div>
+
+                            <div>
+                              <input
+                                type="text"
+                                name="TeamSize"
+                                value={settingsForm.TeamSize}
+                                onChange={handleInputChange}
+                                placeholder="e.g. 4 or 2-4"
+                                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                              />
+                              <p className="text-[11px] text-slate-400 mt-1">
+                                {String(settingsForm.TeamSize || '').includes('-')
+                                  ? 'Flexible Range: Students can form a squad with any number of members in this range.'
+                                  : `Strict Fixed Size: Every team must have exactly ${settingsForm.TeamSize || 4} members (no more, no less).`}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="md:col-span-2 p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-zinc-200">
+                              <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                              <span>Enforcement Policy Guarantees:</span>
+                            </div>
+                            <ul className="text-xs text-slate-600 dark:text-zinc-400 space-y-1 list-disc list-inside">
+                              <li>Teams must designate 1 Team Lead and satisfy the allowed member count.</li>
+                              <li>Incomplete squads with fewer members than required will be blocked at registration.</li>
+                              <li>Strict fixed rules (e.g. 4) prevent teams of 1, 2, 3, or more than 4 from registering.</li>
+                              <li>Duplicate registrations across different teams in the same track are strictly prevented.</li>
+                            </ul>
+                          </div>
                         </div>
-                        <ul className="text-xs text-slate-600 dark:text-zinc-400 space-y-1 list-disc list-inside">
-                          <li>Teams must designate 1 Team Lead and satisfy the allowed member count.</li>
-                          <li>Incomplete squads with fewer members than required will be blocked at registration.</li>
-                          <li>Duplicate registrations across different teams in the same track are strictly prevented.</li>
-                        </ul>
-                      </div>
+                      ) : (
+                        <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 flex items-start gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                              Direct 1-Click Individual Registration Enabled
+                            </p>
+                            <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                              Attendees register directly with their profile in 1 click. No team names or extra member details required.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

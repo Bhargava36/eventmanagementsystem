@@ -25,6 +25,7 @@ import {
     Medal
 } from "lucide-react";
 import PrizePodiumStage from "../../../../components/Molecules/PrizePodiumStage";
+import { getTrackVisibility } from "../../../../lib/utils";
 
 function formatDate(date) {
     if (!date) return "Not available";
@@ -47,13 +48,6 @@ function formatTime(date) {
     });
 }
 
-function normalizeHackathonMode(mode) {
-    return String(mode || "")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, " ");
-}
-
 function AdminDashboard() {
     const admin = JSON.parse(localStorage.getItem("admin") || "null");
     const eventId = admin?.EventId;
@@ -69,19 +63,17 @@ function AdminDashboard() {
 
     const [event, setEvent] = useState(cachedData?.event || null);
 
-    const currentMode = normalizeHackathonMode(
-        event?.HackathonMode || admin?.HackathonMode
+    const {
+        mode: currentMode,
+        isBoth: isBothMode,
+        isVirtual: isVirtualMode,
+        isPhysical: isPhysicalMode,
+        showVirtual,
+        showPhysical
+    } = getTrackVisibility(
+        event?.HackathonMode || admin?.HackathonMode,
+        event?.Location || admin?.Location
     );
-    const isVirtualMode = currentMode === "virtual";
-    const isPhysicalMode = currentMode === "physical";
-    const isBothMode =
-        currentMode === "both" ||
-        currentMode === "hybrid" ||
-        currentMode === "virtual and physical" ||
-        currentMode === "virtual & physical";
-
-    const showVirtual = isVirtualMode || isBothMode;
-    const showPhysical = isPhysicalMode || isBothMode;
 
     const [usersCount, setUsersCount] = useState(cachedData?.usersCount ?? 0);
     const [teamsCount, setTeamsCount] = useState(cachedData?.teamsCount ?? 0);
@@ -202,7 +194,23 @@ function AdminDashboard() {
             setLoading(false);
             setError("No event assigned to this admin.");
         }
-    }, [eventId]);
+
+        const handleEventUpdated = () => {
+            if (cacheKey) {
+                try {
+                    localStorage.removeItem(cacheKey);
+                } catch (e) {}
+            }
+            if (eventId) {
+                fetchDashboard();
+            }
+        };
+
+        window.addEventListener('admin-event-updated', handleEventUpdated);
+        return () => {
+            window.removeEventListener('admin-event-updated', handleEventUpdated);
+        };
+    }, [eventId, cacheKey]);
 
     const fetchDashboard = async () => {
         try {
@@ -219,6 +227,15 @@ function AdminDashboard() {
                     const data = result?.data;
                     if (data && data.event) {
                         setEvent(data.event);
+                        try {
+                            const curAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
+                            if (data.event.HackathonMode && curAdmin.HackathonMode !== data.event.HackathonMode) {
+                                curAdmin.HackathonMode = data.event.HackathonMode;
+                                localStorage.setItem('admin', JSON.stringify(curAdmin));
+                                window.dispatchEvent(new Event('admin-event-updated'));
+                            }
+                        } catch (e) {}
+
                         if (data.event.StartDate) {
                             const startDate = new Date(data.event.StartDate);
                             const today = new Date();

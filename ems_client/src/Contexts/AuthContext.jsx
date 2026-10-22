@@ -33,6 +33,8 @@ export function getDefaultDashboard(role) {
       return '/sidebar';
     case 'admin':
       return '/admin/dashboard';
+    case 'evaluator':
+      return '/evaluator/dashboard';
     case 'teamlead':
     case 'user':
       return '/user/dashboard';
@@ -47,6 +49,8 @@ export function getRoleLoginPath(role) {
       return '/superadmin/login';
     case 'admin':
       return '/admin/login';
+    case 'evaluator':
+      return '/evaluator/login';
     case 'teamlead':
     case 'user':
       return '/user/login';
@@ -72,6 +76,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('role');
+    localStorage.removeItem('evaluator');
     setToken(null);
     setUser(null);
     setRole(null);

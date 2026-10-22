@@ -8,7 +8,7 @@ import TrackTimelineSection from '../../../../components/Molecules/TrackTimeline
 import EventMediaSlider from '../../../../components/Molecules/EventMediaSlider';
 import EventGallerySection from '../../../../components/Molecules/EventGallerySection';
 import EventSponsorsSection from '../../../../components/Molecules/EventSponsorsSection';
-import { getEventTheme } from '../../../../lib/utils';
+import { getEventTheme, getEventTypeInfo, isSoloTeamSize, parseTeamSizeOptions } from '../../../../lib/utils';
 import {
   ArrowLeft,
   Calendar,
@@ -394,17 +394,7 @@ function EventDetails() {
   };
 
   const getTeamSizeOptions = () => {
-    if (!event?.TeamSize) return [2, 3, 4, 5];
-    const value = String(event.TeamSize).trim();
-    if (value.includes('-')) {
-      const parts = value.split('-').map(Number);
-      if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-        return Array.from({ length: parts[1] - parts[0] + 1 }, (_, i) => parts[0] + i);
-      }
-    }
-    const number = Number(value);
-    if (!isNaN(number) && number > 0) return [number];
-    return [2, 3, 4, 5];
+    return parseTeamSizeOptions(event?.TeamSize);
   };
 
   const handleRegisterClick = (mode = null) => {
@@ -432,12 +422,15 @@ function EventDetails() {
     setRegistrationMode(targetMode);
 
     const lead = getLeadDefaults();
+    const opts = parseTeamSizeOptions(event?.TeamSize);
+    const isSolo = isSoloTeamSize(event?.TeamSize) || (opts.length === 1 && opts[0] === 1);
     setCurrentStep(1);
     setShowRegistration(true);
-    setTeamSize('');
-    setMembers([]);
+    const initialSize = isSolo ? 1 : (opts.length === 1 ? opts[0] : (opts[0] || 2));
+    setTeamSize(initialSize);
+    setMembers(Array.from({ length: initialSize > 1 ? initialSize - 1 : 0 }, () => ({ Name: '', Email: '', College: '', State: '' })));
     setFormData((prev) => ({
-      TeamName: '',
+      TeamName: isSolo ? `${lead.TeamLeadName || prev.TeamLeadName || 'Solo'} (Individual)` : '',
       TeamLeadName: lead.TeamLeadName || prev.TeamLeadName || '',
       TeamLeadEmail: lead.TeamLeadEmail || prev.TeamLeadEmail || '',
       TeamLeadCollege: lead.TeamLeadCollege || prev.TeamLeadCollege || '',
@@ -471,13 +464,20 @@ function EventDetails() {
     setTeamSize(size);
     setMembers(Array.from({ length: size > 1 ? size - 1 : 0 }, () => ({ Name: '', Email: '', College: '', State: '' })));
     const lead = getLeadDefaults();
-    setFormData((prev) => ({
-      ...prev,
-      TeamLeadName: prev.TeamLeadName || lead.TeamLeadName,
-      TeamLeadEmail: prev.TeamLeadEmail || lead.TeamLeadEmail,
-      TeamLeadCollege: prev.TeamLeadCollege || lead.TeamLeadCollege,
-      TeamLeadState: prev.TeamLeadState || lead.TeamLeadState,
-    }));
+    setFormData((prev) => {
+      let updatedTeamName = prev.TeamName;
+      if (size === 1 && (!updatedTeamName || updatedTeamName.trim() === '')) {
+        updatedTeamName = `${prev.TeamLeadName || lead.TeamLeadName || 'Solo'} (Individual)`;
+      }
+      return {
+        ...prev,
+        TeamName: updatedTeamName,
+        TeamLeadName: prev.TeamLeadName || lead.TeamLeadName,
+        TeamLeadEmail: prev.TeamLeadEmail || lead.TeamLeadEmail,
+        TeamLeadCollege: prev.TeamLeadCollege || lead.TeamLeadCollege,
+        TeamLeadState: prev.TeamLeadState || lead.TeamLeadState,
+      };
+    });
   };
 
   const handleMemberChange = (index, e) => {
@@ -486,6 +486,11 @@ function EventDetails() {
   };
 
   const handleNext = () => {
+    const isSolo = Number(teamSize) === 1;
+    if (isSolo) {
+      handleSubmit();
+      return;
+    }
     if (!formData.TeamName.trim()) { alert('Please enter team name.'); return; }
     if (!teamSize) { alert('Please select team size.'); return; }
     if (!formData.TeamLeadEmail.trim()) { alert('Please enter Team Lead registered email.'); return; }
@@ -494,28 +499,35 @@ function EventDetails() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (submitting) return;
-    if (!formData.TeamName.trim()) { alert('Please enter team name.'); return; }
-    if (!teamSize) { alert('Please select team size.'); return; }
-    if (!formData.TeamLeadEmail.trim()) { alert('Please enter Team Lead registered email.'); return; }
-    if (!formData.TeamLeadEmail.includes('@')) { alert('Please enter a valid Team Lead email.'); return; }
-    for (let i = 0; i < members.length; i++) {
-      if (!members[i].Email.trim()) { alert(`Please enter email for Team Member ${i + 2}.`); return; }
-      if (!members[i].Email.includes('@')) { alert(`Please enter a valid email for Team Member ${i + 2}.`); return; }
+    const isSolo = Number(teamSize) === 1;
+    const effectiveTeamName = formData.TeamName.trim() || (isSolo ? `${formData.TeamLeadName || 'Solo'} (Individual)` : '');
+    if (!effectiveTeamName) { 
+      alert(isSolo ? 'Please enter your attendee/display name.' : 'Please enter team name.'); 
+      return; 
+    }
+    if (!teamSize) { alert('Please select registration size.'); return; }
+    if (!formData.TeamLeadEmail.trim()) { alert('Please enter registered email.'); return; }
+    if (!formData.TeamLeadEmail.includes('@')) { alert('Please enter a valid registered email.'); return; }
+    if (!isSolo) {
+      for (let i = 0; i < members.length; i++) {
+        if (!members[i].Email.trim()) { alert(`Please enter email for Team Member ${i + 2}.`); return; }
+        if (!members[i].Email.includes('@')) { alert(`Please enter a valid email for Team Member ${i + 2}.`); return; }
+      }
     }
     if (!id) { alert('Event ID is missing.'); return; }
     try {
       setSubmitting(true);
       const teamPayload = {
-        TeamName: formData.TeamName.trim(),
+        TeamName: effectiveTeamName,
         TeamLeadEmail: formData.TeamLeadEmail.trim(),
         TeamSize: Number(teamSize),
         ProblemStatementId: null,
         Tech_Stack: null,
         EventId: Number(id),
-        MemberEmails: members.map((m) => m.Email.trim()),
-        Members: members.map((m) => ({
+        MemberEmails: isSolo ? [] : members.map((m) => m.Email.trim()),
+        Members: isSolo ? [] : members.map((m) => ({
           Name: m.Name ? m.Name.trim() : '',
           Email: m.Email ? m.Email.trim() : '',
           College: m.College ? m.College.trim() : '',
@@ -527,14 +539,14 @@ function EventDetails() {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(teamPayload),
       });
       const teamData = await teamResponse.json();
-      if (!teamResponse.ok) throw new Error(teamData.message || 'Team creation failed');
-      if (!teamData.teamId) throw new Error('Team ID was not returned from server');
+      if (!teamResponse.ok) throw new Error(teamData.message || 'Registration failed');
+      if (!teamData.teamId) throw new Error('Registration ID was not returned from server');
       const teamId = Number(teamData.teamId);
       const registrationPayload = {
         EventId: Number(id),
         TeamId: teamId,
         ParticipationMode: registrationMode,
-        Status: 'pending',
+        Status: 'approved',
         ProblemStatementId: null,
       };
       const registrationResponse = await fetch('http://localhost:3000/api/event_reg/register', {
@@ -542,9 +554,11 @@ function EventDetails() {
       });
       const registrationData = await registrationResponse.json();
       if (!registrationResponse.ok) throw new Error(registrationData.message || 'Event registration failed');
-      alert(`Team registered successfully for ${registrationMode} Hackathon!\n\nTeam ID: ${teamId}`);
+      
+      const successTitle = isSolo ? 'Registration Successful' : 'Team Registered';
+      alert(`${successTitle} for ${registrationMode} ${eventTypeInfo.label}!\n\n${isSolo ? 'Registration ID' : 'Team ID'}: ${teamId}`);
       const newRegTeam = { 
-        TeamName: formData.TeamName, 
+        TeamName: effectiveTeamName, 
         TeamId: teamId, 
         EventId: Number(id),
         ParticipationMode: registrationMode 
@@ -706,6 +720,8 @@ function EventDetails() {
   /* ── derived values ── */
   const isDark      = theme === 'dark';
   const eventTheme  = getEventTheme(event, isDark);
+  const eventTypeInfo = getEventTypeInfo(event?.EventType);
+  const isSoloEvent = isSoloTeamSize(event?.TeamSize);
   const posterImg   = getPoster();
   const primaryBg   = eventTheme.primary;
   const hasBothTracks =
@@ -813,7 +829,7 @@ function EventDetails() {
                     </span>
                   )}
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-950 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
-                    <Tag className="h-3 w-3" style={{ color: eventTheme.accent }} />{event.EventType || 'Hackathon'}
+                    <Tag className="h-3 w-3" style={{ color: eventTheme.accent }} />{eventTypeInfo.label}
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-950 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
                     {(() => {
@@ -1314,7 +1330,7 @@ function EventDetails() {
                       </div>
 
                       {/* Track-Specific Timeline & Roadmap */}
-                      <TrackTimelineSection trackType="virtual" timelines={timelines} eventTheme={eventTheme} />
+                      <TrackTimelineSection trackType="virtual" timelines={timelines} eventTheme={eventTheme} eventType={event?.EventType} />
 
                       {showPrizesSection && (
                         <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
@@ -1368,7 +1384,7 @@ function EventDetails() {
                             <span className="font-bold text-slate-900 dark:text-white block">{formatDate(event.PhysicalRegistrationStart)} – {formatDate(event.PhysicalRegistrationEnd)}</span>
                           </div>
                           <div className="space-y-1">
-                            <span className="text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[10px] block">In-Person Hackathon Window</span>
+                            <span className="text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[10px] block">In-Person {eventTypeInfo.label} Window</span>
                             <span className="font-bold text-slate-900 dark:text-white block">{formatDate(event.PhysicalStartDate)} – {formatDate(event.PhysicalEndDate)}</span>
                           </div>
                         </div>
@@ -1393,7 +1409,7 @@ function EventDetails() {
                       </div>
 
                       {/* Track-Specific Timeline & Roadmap */}
-                      <TrackTimelineSection trackType="physical" timelines={timelines} eventTheme={eventTheme} />
+                      <TrackTimelineSection trackType="physical" timelines={timelines} eventTheme={eventTheme} eventType={event?.EventType} />
 
                       {showPrizesSection && (
                         <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
@@ -1509,7 +1525,7 @@ function EventDetails() {
                   <span className="font-bold text-slate-900 dark:text-white">{formatDate(event.RegistrationEnd)}</span>
                 </div>
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                  <span className="text-slate-500 dark:text-zinc-400">Hackathon Dates</span>
+                  <span className="text-slate-500 dark:text-zinc-400">{eventTypeInfo.label} Dates</span>
                   <span className="font-bold text-slate-900 dark:text-white">{formatDate(event.StartDate)}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -1600,7 +1616,7 @@ function EventDetails() {
                         style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                       >
                         <MapPin className="h-4 w-4" />
-                        <span>Register for Physical Hackathon</span>
+                        <span>Register for Physical {eventTypeInfo.label}</span>
                       </button>
                     )}
                   </>
@@ -1656,7 +1672,7 @@ function EventDetails() {
                         style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                       >
                         {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-                        <span>Register for {singleMode} Hackathon</span>
+                        <span>Register for {singleMode} {eventTypeInfo.label}</span>
                         <ChevronRight className="h-4 w-4" />
                       </button>
                     );
@@ -1697,6 +1713,7 @@ function EventDetails() {
           <div className="w-full max-w-4xl">
             <div className="max-h-[calc(100vh-3rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-2xl dark:border-zinc-800 dark:bg-black dark:text-slate-100 sm:p-6 md:p-8">
 
+              {/* Modal Header */}
               <div className="mb-8 flex items-start justify-between gap-4">
                 <div>
                   <div className="mb-2 flex items-center gap-2">
@@ -1705,14 +1722,16 @@ function EventDetails() {
                       style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
                     >
                       {registrationMode === 'Physical' ? <MapPin className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
-                      {registrationMode} Hackathon Form
+                      {registrationMode} {eventTypeInfo.label} Form
                     </span>
                   </div>
                   <h2 className="text-2xl font-bold md:text-3xl text-slate-900 dark:text-white">
-                    {registrationMode} Hackathon Registration
+                    {registrationMode} {eventTypeInfo.label} Registration
                   </h2>
                   <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                    Register your team for the <span className="font-semibold text-slate-700 dark:text-slate-200">{registrationMode.toLowerCase()} track</span>.
+                    {Number(teamSize) === 1
+                      ? `Register yourself as an attendee for the ${registrationMode.toLowerCase()} track.`
+                      : `Register your team for the ${registrationMode.toLowerCase()} track.`}
                   </p>
                 </div>
                 <button type="button" onClick={closeRegistration} disabled={submitting} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900 disabled:cursor-not-allowed">
@@ -1721,39 +1740,46 @@ function EventDetails() {
               </div>
 
               {/* Step indicator */}
-              <div className="mb-8">
-                <div className="flex items-center">
-                  <div
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
-                    style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
-                  >
-                    1
+              {Number(teamSize) === 1 ? (
+                <div className="mb-6 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" />
+                  <span>Individual Attendee Registration &bull; Single-step submission (No additional team members required)</span>
+                </div>
+              ) : (
+                <div className="mb-8">
+                  <div className="flex items-center">
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
+                      style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
+                    >
+                      1
+                    </div>
+                    <div
+                      className="h-1 flex-1 transition-colors"
+                      style={{ backgroundColor: currentStep >= 2 ? eventTheme.buttonBg : undefined }}
+                    />
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${
+                        currentStep < 2 ? 'bg-slate-200 text-slate-500 dark:bg-zinc-800 dark:text-slate-300' : ''
+                      }`}
+                      style={currentStep >= 2 ? { backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText } : undefined}
+                    >
+                      2
+                    </div>
                   </div>
-                  <div
-                    className="h-1 flex-1 transition-colors"
-                    style={{ backgroundColor: currentStep >= 2 ? eventTheme.buttonBg : undefined }}
-                  />
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${
-                      currentStep < 2 ? 'bg-slate-200 text-slate-500 dark:bg-zinc-800 dark:text-slate-300' : ''
-                    }`}
-                    style={currentStep >= 2 ? { backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText } : undefined}
-                  >
-                    2
+                  <div className="mt-2 flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+                    <span>Team Details</span><span>Team Members</span>
                   </div>
                 </div>
-                <div className="mt-2 flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
-                  <span>Team Details</span><span>Team Members</span>
-                </div>
-              </div>
+              )}
 
               {currentStep === 1 && (
                 <div className="space-y-6">
-                  {getAvailableModes(event?.HackathonMode).length > 1 && (
+                  {availableModes.length > 1 && (
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
                         <p className="text-[11px] font-bold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">Event Mode Selection</p>
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">Track: {registrationMode} Hackathon</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">Track: {registrationMode} {eventTypeInfo.label}</p>
                       </div>
                       <div className="inline-flex rounded-xl bg-slate-200/80 dark:bg-zinc-900 p-1 self-start sm:self-auto">
                         <button
@@ -1780,55 +1806,143 @@ function EventDetails() {
                     </div>
                   )}
 
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
-                    <div className="mb-6"><h2 className="text-lg font-bold">Team Details</h2><p className="text-sm text-slate-500 dark:text-slate-400">Enter your team information.</p></div>
-                    <div className="grid gap-5 md:grid-cols-2">
-                      <div>
-                        <label className="mb-2 block text-sm font-medium">Team Name</label>
-                        <input type="text" name="TeamName" value={formData.TeamName} onChange={handleChange} placeholder="Enter team name" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                  {Number(teamSize) === 1 ? (
+                    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
+                      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h2 className="text-lg font-bold">Individual Attendee Registration</h2>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Confirm your attendee details below to complete your direct 1-click registration.
+                          </p>
+                        </div>
+                        <span
+                          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                          style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" style={{ color: eventTheme.accent }} />
+                          Individual (Solo)
+                        </span>
                       </div>
-                      <div>
-                        <label className="mb-2 block text-sm font-medium">Team Size</label>
-                        <select value={teamSize} onChange={handleTeamSizeChange} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white">
-                          <option value="">Select team size</option>
-                          {teamSizeOptions.map((size) => (<option key={size} value={size}>{size} Members</option>))}
-                        </select>
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-sm font-medium">Participant Name</label>
+                          <input type="text" name="TeamLeadName" value={formData.TeamLeadName} onChange={handleChange} placeholder="Enter your full name" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium">Registered Email</label>
+                          <input type="email" name="TeamLeadEmail" value={formData.TeamLeadEmail} onChange={handleChange} placeholder="Enter registered email" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium">College / Organization</label>
+                          <input type="text" name="TeamLeadCollege" value={formData.TeamLeadCollege} onChange={handleChange} placeholder="Enter college or company" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-medium">State / Region</label>
+                          <input type="text" name="TeamLeadState" value={formData.TeamLeadState} onChange={handleChange} placeholder="Enter state" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                        </div>
                       </div>
-                    </div>
-                  </section>
+                    </section>
+                  ) : (
+                    <>
+                      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
+                        <div className="mb-6">
+                          <h2 className="text-lg font-bold">Team Details</h2>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            Enter your team information. {teamSizeOptions.length === 1 ? `This event strictly requires ${teamSizeOptions[0]} members per team.` : `Choose an allowed team size between ${teamSizeOptions[0]} and ${teamSizeOptions[teamSizeOptions.length - 1]} members.`}
+                          </p>
+                        </div>
+                        <div className="grid gap-5 md:grid-cols-2">
+                          <div>
+                            <label className="mb-2 block text-sm font-medium">Team Name</label>
+                            <input
+                              type="text"
+                              name="TeamName"
+                              value={formData.TeamName}
+                              onChange={handleChange}
+                              placeholder="Enter team name"
+                              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium">
+                              Team Size {teamSizeOptions.length === 1 ? '(Fixed Requirement)' : '(Select Allowed Size)'}
+                            </label>
+                            <select
+                              value={teamSize}
+                              onChange={handleTeamSizeChange}
+                              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white"
+                            >
+                              {teamSizeOptions.length > 1 && <option value="">Select team size</option>}
+                              {teamSizeOptions.map((size) => (
+                                <option key={size} value={size}>
+                                  {teamSizeOptions.length === 1 ? `${size} Members (Mandatory Fixed Team)` : `${size} Members`}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </section>
 
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
-                    <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <h2 className="text-lg font-bold">Team Lead</h2>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Team lead details (automatically filled for current user).</p>
-                      </div>
-                      <span
-                        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
-                        style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" style={{ color: eventTheme.accent }} />
-                        Auto-filled (You)
-                      </span>
-                    </div>
-                    <div className="grid gap-5 sm:grid-cols-2">
-                      <div><label className="mb-2 block text-sm font-medium">Team Lead Name</label><input type="text" name="TeamLeadName" value={formData.TeamLeadName} onChange={handleChange} placeholder="Enter team lead name" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" /></div>
-                      <div><label className="mb-2 block text-sm font-medium">Registered Email</label><input type="email" name="TeamLeadEmail" value={formData.TeamLeadEmail} onChange={handleChange} placeholder="Enter registered email" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" /></div>
-                      <div><label className="mb-2 block text-sm font-medium">College</label><input type="text" name="TeamLeadCollege" value={formData.TeamLeadCollege} onChange={handleChange} placeholder="Enter team lead college" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" /></div>
-                      <div><label className="mb-2 block text-sm font-medium">State</label><input type="text" name="TeamLeadState" value={formData.TeamLeadState} onChange={handleChange} placeholder="Enter team lead state" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" /></div>
-                    </div>
-                  </section>
+                      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black">
+                        <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <h2 className="text-lg font-bold">Team Lead (Member 1)</h2>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              Team lead details (automatically filled for current user).
+                            </p>
+                          </div>
+                          <span
+                            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
+                            style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" style={{ color: eventTheme.accent }} />
+                            Leader (You)
+                          </span>
+                        </div>
+                        <div className="grid gap-5 sm:grid-cols-2">
+                          <div>
+                            <label className="mb-2 block text-sm font-medium">Team Lead Name</label>
+                            <input type="text" name="TeamLeadName" value={formData.TeamLeadName} onChange={handleChange} placeholder="Enter lead name" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium">Registered Email</label>
+                            <input type="email" name="TeamLeadEmail" value={formData.TeamLeadEmail} onChange={handleChange} placeholder="Enter registered email" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium">College / Institution</label>
+                            <input type="text" name="TeamLeadCollege" value={formData.TeamLeadCollege} onChange={handleChange} placeholder="Enter college" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium">State / Region</label>
+                            <input type="text" name="TeamLeadState" value={formData.TeamLeadState} onChange={handleChange} placeholder="Enter state" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                          </div>
+                        </div>
+                      </section>
+                    </>
+                  )}
 
                   <div className="flex justify-between">
                     <button type="button" onClick={closeRegistration} className="flex items-center gap-2 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900">Back</button>
-                    <button
-                      type="button"
-                      onClick={handleNext}
-                      className="flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold text-white shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all"
-                      style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
-                    >
-                      Continue
-                    </button>
+                    {Number(teamSize) === 1 ? (
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className="flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold text-white shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50"
+                        style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
+                      >
+                        {submitting ? 'Registering...' : `Complete Registration (${registrationMode})`}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleNext}
+                        className="flex items-center gap-2 rounded-xl px-7 py-3 text-sm font-semibold text-white shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all"
+                        style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
+                      >
+                        Continue
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -1860,7 +1974,7 @@ function EventDetails() {
                         <p className="text-xs text-slate-600 dark:text-slate-400">Participation Mode</p>
                         <p className="mt-1 font-semibold inline-flex items-center gap-1.5">
                           <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: eventTheme.accent }} />
-                          {registrationMode} Hackathon
+                          {registrationMode} {eventTypeInfo.label}
                         </p>
                       </div>
                     </div>
@@ -1881,7 +1995,7 @@ function EventDetails() {
                       className="rounded-xl px-7 py-3 text-sm font-semibold text-white shadow-md hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:cursor-not-allowed disabled:opacity-50"
                       style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                     >
-                      {submitting ? 'Registering...' : `Register for ${registrationMode} Hackathon`}
+                      {submitting ? 'Registering...' : `Register for ${registrationMode} ${eventTypeInfo.label}`}
                     </button>
                   </div>
                 </form>

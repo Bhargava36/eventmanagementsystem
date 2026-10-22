@@ -326,6 +326,10 @@ const updateEventSettings = (id, settings, callback) => {
     const allowedKeys = [
         'Description',
         'EventName',
+        'StartDate',
+        'EndDate',
+        'Location',
+        'EventType',
         'VirtualRegistrationOpen',
         'PhysicalRegistrationOpen',
         'RegistrationOpen',
@@ -335,6 +339,10 @@ const updateEventSettings = (id, settings, callback) => {
         'VirtualRegistrationStart',
         'PhysicalRegistrationStart',
         'RegistrationStart',
+        'VirtualStartDate',
+        'VirtualEndDate',
+        'PhysicalStartDate',
+        'PhysicalEndDate',
         'TeamSize',
         'VirtualStatus',
         'VirtualMeetUrl',
@@ -343,6 +351,31 @@ const updateEventSettings = (id, settings, callback) => {
         'FoodEnabled',
         'IDCardEnabled'
     ];
+
+    // Auto-sync generic RegistrationStart/RegistrationEnd if track-specific ones were supplied
+    if (settings.PhysicalRegistrationStart && !settings.RegistrationStart) {
+        settings.RegistrationStart = settings.PhysicalRegistrationStart;
+    } else if (settings.VirtualRegistrationStart && !settings.RegistrationStart) {
+        settings.RegistrationStart = settings.VirtualRegistrationStart;
+    }
+
+    if (settings.PhysicalRegistrationEnd && !settings.RegistrationEnd) {
+        settings.RegistrationEnd = settings.PhysicalRegistrationEnd;
+    } else if (settings.VirtualRegistrationEnd && !settings.RegistrationEnd) {
+        settings.RegistrationEnd = settings.VirtualRegistrationEnd;
+    }
+
+    if (settings.PhysicalStartDate && !settings.StartDate) {
+        settings.StartDate = settings.PhysicalStartDate;
+    } else if (settings.VirtualStartDate && !settings.StartDate) {
+        settings.StartDate = settings.VirtualStartDate;
+    }
+
+    if (settings.PhysicalEndDate && !settings.EndDate) {
+        settings.EndDate = settings.PhysicalEndDate;
+    } else if (settings.VirtualEndDate && !settings.EndDate) {
+        settings.EndDate = settings.VirtualEndDate;
+    }
 
     const updates = [];
     const values = [];
@@ -356,6 +389,11 @@ const updateEventSettings = (id, settings, callback) => {
             updates.push(`${key} = ?`);
             values.push(val);
         }
+    }
+
+    if (settings.StartDate && settings.EndDate) {
+        updates.push(`EventStatus = ?`);
+        values.push(getEventStatus(settings.StartDate, settings.EndDate));
     }
 
     if (updates.length === 0) {
@@ -444,8 +482,13 @@ const getAdminDashboardSummary = (eventId, callback) => {
                 return callback(null, null);
             }
             const countRow = counts && counts[0] ? counts[0] : {};
+            const ev = events[0];
+            if (ev) {
+                ev.EventStatus = getEventStatus(ev.StartDate, ev.EndDate);
+                ev.Posters = parsePosters(ev.Posters);
+            }
             return callback(null, {
-                event: events[0],
+                event: ev,
                 declaredPrizes: prizes || [],
                 recentRegistrations: registrations || [],
                 recentActivities: activities || [],

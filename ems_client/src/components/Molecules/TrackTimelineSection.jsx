@@ -4,11 +4,15 @@ import {
   Clock,
   Globe,
   MapPin,
-  CheckCircle2
+  CheckCircle2,
+  BookOpen,
+  Award
 } from 'lucide-react';
+import { getEventTypeInfo } from '../../lib/utils';
 
-export default function TrackTimelineSection({ trackType = 'virtual', timelines = [], eventTheme = null }) {
+export default function TrackTimelineSection({ trackType = 'virtual', timelines = [], eventTheme = null, eventType = '' }) {
   const isVirtual = trackType.toLowerCase() === 'virtual';
+  const typeInfo = getEventTypeInfo(eventType);
 
   // Filter timelines for this track, or general ones
   const filteredTimelines = (timelines || []).filter((item) => {
@@ -24,6 +28,35 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
     return (a.Id || 0) - (b.Id || 0);
   });
 
+  const getHeaderTitle = () => {
+    if (typeInfo.isWorkshop) {
+      return isVirtual ? 'Virtual Workshop Agenda & Labs' : 'Campus Workshop Sessions & Hands-on Agenda';
+    }
+    if (typeInfo.isSeminar) {
+      return isVirtual ? 'Webinar Keynotes & Talk Schedule' : 'Conference Keynotes & Speaker Sessions';
+    }
+    if (typeInfo.isCodingContest) {
+      return isVirtual ? 'Online Contest Schedule & Rounds' : 'On-Campus Coding Rounds & Rules';
+    }
+    return isVirtual ? 'Virtual Track Milestones & Roadmap' : 'On-Campus Track Milestones & Schedule';
+  };
+
+  const getHeaderDesc = () => {
+    if (typeInfo.isWorkshop || typeInfo.isSeminar) {
+      return isVirtual
+        ? 'Schedule for live streams, interactive exercises, code labs & expert Q&A'
+        : 'Detailed agenda for venue check-in, speaker presentations, lab practice & certificate award';
+    }
+    if (typeInfo.isCodingContest) {
+      return isVirtual
+        ? 'Time limits, problem unlock timings, code submissions and leaderboard freeze'
+        : 'Reporting time, coding rounds, algorithmic challenge judging and winners announcement';
+    }
+    return isVirtual
+      ? 'Step-by-step roadmap for cloud sprints, code freezes, mentor check-ins & virtual jury evaluations'
+      : 'Complete schedule for reporting, in-person mentorship, build sprint & final demos';
+  };
+
   return (
     <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
       {/* Section Header matching Event details typography */}
@@ -33,16 +66,20 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
             className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
             style={eventTheme ? { backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor } : undefined}
           >
-            {isVirtual ? <Globe className="h-5 w-5" /> : <MapPin className="h-5 w-5" />}
+            {typeInfo.isWorkshop || typeInfo.isSeminar ? (
+              <BookOpen className="h-5 w-5" />
+            ) : isVirtual ? (
+              <Globe className="h-5 w-5" />
+            ) : (
+              <MapPin className="h-5 w-5" />
+            )}
           </div>
           <div>
             <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>{isVirtual ? 'Virtual Track Milestones & Roadmap' : 'On-Campus Track Milestones & Schedule'}</span>
+              <span>{getHeaderTitle()}</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-              {isVirtual
-                ? 'Step-by-step roadmap for cloud sprints, code freezes, mentor check-ins & virtual jury evaluations'
-                : 'Complete schedule for reporting, in-person mentorship, 48-hr build sprint & final demos'}
+              {getHeaderDesc()}
             </p>
           </div>
         </div>
@@ -52,7 +89,9 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
           style={eventTheme ? { backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder } : undefined}
         >
           <Clock className="h-3.5 w-3.5" style={eventTheme ? { color: eventTheme.iconColor } : undefined} />
-          <span>{sortedTimelines.length} Phases Scheduled</span>
+          <span>
+            {sortedTimelines.length} {typeInfo.isWorkshop || typeInfo.isSeminar ? 'Sessions Planned' : 'Phases Scheduled'}
+          </span>
         </div>
       </div>
 

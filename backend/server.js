@@ -22,6 +22,8 @@ const idCardRoutes = require("./src/modules/id_cards/idRoutes");
 const physicalServicesRoutes = require("./src/modules/physical_services/physicalServicesRoute");
 const sponsorRoutes = require("./src/modules/sponsors/sponsorRoutes");
 const galleryRoutes = require("./src/modules/gallery/galleryRoutes");
+const devRoute = require("./src/modules/dev/devRoute");
+const evaluatorRoutes = require("./src/modules/evaluators/evaluatorRoutes");
 
 const app = express();
 
@@ -49,6 +51,8 @@ app.use("/api/id-cards", idCardRoutes);
 app.use("/api/physical-services", physicalServicesRoutes);
 app.use("/api/sponsors", sponsorRoutes);
 app.use("/api/gallery", galleryRoutes);
+app.use("/api/dev", devRoute);
+app.use("/api/evaluators", evaluatorRoutes);
 
 
 app.listen(3000, () => {

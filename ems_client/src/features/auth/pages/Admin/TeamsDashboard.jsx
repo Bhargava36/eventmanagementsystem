@@ -13,11 +13,17 @@ import {
     Layers
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getTrackVisibility, isSoloTeamSize, getEventTypeInfo } from '../../../../lib/utils';
 
 function TeamsDashboard() {
     const navigate = useNavigate();
     const storedAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
     const [currentEventId, setCurrentEventId] = useState(storedAdmin?.EventId || storedAdmin?.eventId || null);
+
+    const { showVirtual, showPhysical, isBoth, isVirtual, isPhysical } = getTrackVisibility(
+        storedAdmin?.HackathonMode,
+        storedAdmin?.Location
+    );
 
     const [teams, setTeams] = useState([]);
     const [totalTeams, setTotalTeams] = useState(0);
@@ -26,6 +32,9 @@ function TeamsDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('all');
+
+    const isSolo = isSoloTeamSize(storedAdmin?.TeamSize) || (teams.length > 0 && teams.every((t) => Number(t.MemberCount || t.MembersCount || t.TeamSize || 1) === 1));
+    const typeInfo = getEventTypeInfo(storedAdmin?.EventType);
 
     useEffect(() => {
         const init = async () => {
@@ -140,22 +149,30 @@ function TeamsDashboard() {
     const tabs = [
         {
             id: 'all',
-            label: 'All Teams',
+            label: isSolo ? 'All Attendees' : 'All Teams',
             count: totalTeams,
             icon: Layers
         },
-        {
-            id: 'virtual',
-            label: 'Virtual Track',
-            count: virtualCount,
-            icon: Globe
-        },
-        {
-            id: 'physical',
-            label: 'Physical Track',
-            count: physicalCount,
-            icon: MapPin
-        }
+        ...(isBoth || isVirtual
+            ? [
+                {
+                    id: 'virtual',
+                    label: 'Virtual Track',
+                    count: virtualCount,
+                    icon: Globe
+                }
+              ]
+            : []),
+        ...(isBoth || isPhysical
+            ? [
+                {
+                    id: 'physical',
+                    label: 'Physical Track',
+                    count: physicalCount,
+                    icon: MapPin
+                }
+              ]
+            : [])
     ];
 
     return (
@@ -168,10 +185,12 @@ function TeamsDashboard() {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 sm:mb-8">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                        Registered Teams
+                        {isSolo ? 'Registered Attendees' : 'Registered Teams'}
                     </h1>
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Track, filter and manage virtual and physical hackathon registrations.
+                        {isSolo
+                            ? `Track, filter and manage individual ${typeInfo.label.toLowerCase()} attendee registrations.`
+                            : `Track, filter and manage virtual and physical ${typeInfo.label.toLowerCase()} registrations.`}
                     </p>
                 </div>
 
@@ -204,7 +223,7 @@ function TeamsDashboard() {
                 </div>
             )}
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className={`grid grid-cols-2 ${isBoth ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 sm:gap-4 mb-6 sm:mb-8`}>
                 <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -215,7 +234,7 @@ function TeamsDashboard() {
                     <div className="flex items-start justify-between">
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                Total Teams
+                                {isSolo ? 'Total Attendees' : 'Total Teams'}
                             </p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                                 {totalTeams}
@@ -230,55 +249,59 @@ function TeamsDashboard() {
                     </p>
                 </motion.div>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.1 }}
-                    whileHover={{ y: -3 }}
-                    className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm transition-shadow hover:shadow-md"
-                >
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                Virtual Track
-                            </p>
-                            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-                                {virtualCount}
-                            </p>
+                {(isBoth || isVirtual) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                        whileHover={{ y: -3 }}
+                        className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                    Virtual Track
+                                </p>
+                                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                                    {virtualCount}
+                                </p>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
+                                <Globe className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                            </div>
                         </div>
-                        <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10">
-                            <Globe className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-                        Online participants
-                    </p>
-                </motion.div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                            Online participants
+                        </p>
+                    </motion.div>
+                )}
 
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.15 }}
-                    whileHover={{ y: -3 }}
-                    className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm transition-shadow hover:shadow-md"
-                >
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                Physical Track
-                            </p>
-                            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
-                                {physicalCount}
-                            </p>
+                {(isBoth || isPhysical) && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.15 }}
+                        whileHover={{ y: -3 }}
+                        className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                    Physical Track
+                                </p>
+                                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
+                                    {physicalCount}
+                                </p>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/10">
+                                <MapPin className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                            </div>
                         </div>
-                        <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-500/10">
-                            <MapPin className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                        </div>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-                        On-campus participants
-                    </p>
-                </motion.div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+                            On-campus participants
+                        </p>
+                    </motion.div>
+                )}
 
                 <motion.div
                     initial={{ opacity: 0, y: 12 }}
@@ -407,16 +430,16 @@ function TeamsDashboard() {
                                         #
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
-                                        Team Details
+                                        {isSolo ? 'Attendee Details' : 'Team Details'}
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
                                         Track
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
-                                        Team Leader
+                                        {isSolo ? 'Contact Details' : 'Team Leader'}
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold text-center">
-                                        Members
+                                        {isSolo ? 'Format' : 'Members'}
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
                                         Registered On
