@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/api';
-import { useNavigate, NavLink, Outlet } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useNavigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { motion, LayoutGroup } from 'framer-motion';
 import ThemeToggle from './ThemeToggler';
 import useAuth from '../../Hooks/useAuth';
 import useToast from '../../Hooks/useToast';
@@ -43,6 +43,7 @@ const SidebarContent = ({
 }) => {
   const [showText, setShowText] = useState(!collapsed);
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const { user, logout } = useAuth();
 
@@ -216,13 +217,14 @@ const SidebarContent = ({
 
   return (
     <aside
-      className={`relative ${isMobile ? 'w-[280px]' : collapsed ? 'w-[80px]' : 'w-[280px]'
-        } h-screen relative z-10 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
+      className={`relative ${isMobile ? 'w-[280px]' : collapsed ? 'w-[90px]' : 'w-[280px]'
+        } h-screen max-h-screen z-20 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
     >
       {!isMobile && (
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute top-8 -right-8 -z-10 w-8 h-9 rounded-r-full text-white bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center shadow-md hover:bg-transparent hover:dark:text-white hover:text-black hover:border-2 hover:border-emerald-500 transition-transform transition-all duration-500 ease-in-out z-10 cursor-pointer"
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="absolute top-8 -right-7 z-30 w-7 h-9 rounded-r-full text-white bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center shadow-lg hover:bg-emerald-800 hover:dark:bg-emerald-400 transition-all duration-300 cursor-pointer"
         >
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
@@ -237,8 +239,9 @@ const SidebarContent = ({
         </button>
       )}
 
+      {/* Fixed Header */}
       <div
-        className={`flex items-center gap-3 mb-8 mt-2 ${!isMobile && collapsed ? 'justify-center' : ''
+        className={`flex items-center gap-3 mb-6 mt-2 shrink-0 ${!isMobile && collapsed ? 'justify-center' : ''
           }`}
       >
         <div className="relative shrink-0">
@@ -263,59 +266,74 @@ const SidebarContent = ({
             </p>
           </motion.div>
         )}
-
       </div>
 
-      <div className="border-t border-gray-200 dark:border-[#1A2440] mb-4"></div>
+      <div className="border-t border-gray-200 dark:border-[#1A2440] mb-3 shrink-0"></div>
 
-      <nav className="space-y-2 flex-1">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.name}
-              to={item.path}
-              end={item.end}
-              title={!isMobile && collapsed ? item.name : ''}
-              onClick={() => isMobile && setMobileOpen(false)}
-              className={({ isActive }) =>
-                `w-full flex items-center ${!isMobile && collapsed ? 'justify-center' : 'justify-between'
-                } px-4 py-3 rounded-full transition-all duration-200 cursor-pointer ${isActive
-                  ? 'bg-emerald-700 dark:bg-emerald-500 text-white shadow-md'
-                  : 'hover:bg-emerald-50 dark:hover:bg-emerald-800'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <div
-                    className={`flex items-center ${!isMobile && collapsed ? '' : 'gap-3'
-                      }`}
-                  >
-                    <div className="relative shrink-0">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    {canShowText && (
-                      <motion.span
-                        initial={{ opacity: 0, x: -5 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.1, delay: 0.1 }}
-                        className="font-medium text-sm whitespace-nowrap"
-                      >
-                        {item.name}
-                      </motion.span>
-                    )}
+      {/* Only Navigation Links Scroll */}
+      <LayoutGroup id={isMobile ? 'admin-nav-mobile' : 'admin-nav-desktop'}>
+        <nav className="space-y-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden sidebar-scrollbar">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isCurrentActive = item.end
+              ? location.pathname === item.path
+              : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+
+            return (
+              <NavLink
+                key={item.name}
+                to={item.path}
+                end={item.end}
+                title={!isMobile && collapsed ? item.name : ''}
+                onClick={() => isMobile && setMobileOpen(false)}
+                className={`relative w-full flex items-center ${
+                  !isMobile && collapsed ? 'justify-center px-5' : 'justify-between px-4'
+                } py-3 rounded-full cursor-pointer select-none transition-colors duration-200 ${
+                  isCurrentActive
+                    ? 'text-white'
+                    : 'text-gray-700 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-500/10'
+                }`}
+              >
+                {isCurrentActive && (
+                  <motion.span
+                    layoutId={isMobile ? 'admin-pill-mobile' : 'admin-pill-desktop'}
+                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-full shadow-md z-0"
+                    transition={{
+                      type: 'spring',
+                      stiffness: 350,
+                      damping: 30,
+                    }}
+                  />
+                )}
+                <div
+                  className={`relative z-10 flex items-center ${
+                    !isMobile && collapsed ? '' : 'gap-3'
+                  }`}
+                >
+                  <div className="relative shrink-0">
+                    <Icon className="w-5 h-5" />
                   </div>
-                </>
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
+                  {canShowText && (
+                    <motion.span
+                      initial={{ opacity: 0, x: -5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.1, delay: 0.1 }}
+                      className="font-medium text-sm whitespace-nowrap"
+                    >
+                      {item.name}
+                    </motion.span>
+                  )}
+                </div>
+              </NavLink>
+            );
+          })}
+        </nav>
+      </LayoutGroup>
 
-      <div className="mt-auto">
+      {/* Fixed Footer */}
+      <div className="mt-auto shrink-0 pt-1 ">
         <ThemeToggle variant="sidebar" canShowText={canShowText} />
-        <div className="border-t border-gray-200 dark:border-[#1A2440] my-4"></div>
+        <div className="border-t border-gray-200 dark:border-[#1A2440] my-1"></div>
         <button
           onClick={handleLogout}
           title={!isMobile && collapsed ? 'Logout' : ''}
@@ -345,7 +363,7 @@ const Sidebar = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-black overflow-hidden">
-      <div className="hidden lg:flex h-screen sticky top-0">
+      <div className="hidden lg:flex h-screen sticky top-0 z-20">
         <SidebarContent
           isMobile={false}
           collapsed={collapsed}

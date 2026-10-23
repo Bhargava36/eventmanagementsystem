@@ -15,6 +15,7 @@ import {
   Trophy,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Copy,
   Check,
   Search,
@@ -352,7 +353,12 @@ export default function AdminVirtualEvent() {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (socket) {
         socket.onclose = null;
-        socket.close();
+        socket.onerror = null;
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.close();
+        } else if (socket.readyState === WebSocket.CONNECTING) {
+          socket.onopen = () => socket.close();
+        }
       }
     };
   }, [currentEventId, loadPSData]);
