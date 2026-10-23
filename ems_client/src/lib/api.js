@@ -1,4 +1,4 @@
-export const API_BASE_URL = (import.meta.env.VITE_API_URL || `${API_BASE_URL}`).replace(/\/+$/, '');
+export const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/+$/, '');
 
 /**
  * Helper to build an absolute API endpoint URL

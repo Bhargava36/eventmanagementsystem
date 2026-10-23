@@ -16,7 +16,6 @@ import {
     Award,
     CheckCircle2,
     Clock,
-    Sparkles,
     ChevronDown,
     ChevronUp,
     ShieldCheck,
@@ -903,7 +902,7 @@ function TeamInfo() {
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4 text-amber-500" />
+                                        <Trophy className="w-4 h-4 text-amber-500" />
                                         <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                                             Official Leaderboard Standing
                                         </span>

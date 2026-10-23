@@ -274,6 +274,48 @@ const updateBookingStatus = async (req, res) => {
     }
 };
 
+const verifyFoodToken = async (req, res) => {
+    const token = String(req.body.token || req.query.token || "").trim();
+    if (!token) {
+        return res.status(400).json({ message: "Food token code is required." });
+    }
+
+    try {
+        const tokenInfo = await physicalServicesService.verifyFoodToken(token);
+        return res.status(200).json({
+            success: true,
+            tokenInfo
+        });
+    } catch (error) {
+        if (error.status) {
+            return res.status(error.status).json({ message: error.message });
+        }
+        console.error("Verify food token error:", error);
+        return res.status(500).json({ message: "Failed to verify food token." });
+    }
+};
+
+const redeemFoodToken = async (req, res) => {
+    const token = String(req.body.token || "").trim();
+    if (!token) {
+        return res.status(400).json({ message: "Food token code is required." });
+    }
+
+    try {
+        const result = await physicalServicesService.redeemFoodToken(token);
+        return res.status(200).json(result);
+    } catch (error) {
+        if (error.status) {
+            return res.status(error.status).json({
+                message: error.message,
+                tokenInfo: error.tokenInfo || null
+            });
+        }
+        console.error("Redeem food token error:", error);
+        return res.status(500).json({ message: "Failed to redeem food token." });
+    }
+};
+
 module.exports = {
     getTeamPreference,
     saveTeamPreference,
@@ -282,5 +324,8 @@ module.exports = {
     getEventTeamPreferences,
     generateFoodTokens,
     getFacilityBookings,
-    updateBookingStatus
+    updateBookingStatus,
+    verifyFoodToken,
+    redeemFoodToken
 };
+

@@ -376,6 +376,86 @@ const updateBookingStatus = async (eventId, teamId, bookingStatus, adminRemarks 
     return { success: true, bookingStatus: status, adminRemarks };
 };
 
+const verifyFoodToken = async (tokenString) => {
+    const cleanToken = String(tokenString || '').trim();
+    if (!cleanToken) {
+        const error = new Error('Token string is required.');
+        error.status = 400;
+        throw error;
+    }
+
+    const [rows] = await db.promise().query(
+        `SELECT 
+            ft.Id,
+            ft.EventId,
+            ft.TeamId,
+            ft.UserId,
+            ft.MealType,
+            ft.Token,
+            COALESCE(ft.IsRedeemed, 0) AS IsRedeemed,
+            ft.RedeemedAt,
+            ft.CreatedAt,
+            e.EventName,
+            t.TeamName,
+            u.UserName,
+            u.Email AS UserEmail,
+            u.PhoneNumber
+        FROM physical_food_tokens ft
+        INNER JOIN events e ON e.Id = ft.EventId
+        INNER JOIN registered_teams t ON t.Id = ft.TeamId
+        INNER JOIN users u ON u.Id = ft.UserId
+        WHERE ft.Token = ?
+        LIMIT 1`,
+        [cleanToken]
+    );
+
+    if (rows.length === 0) {
+        const notFound = new Error('Invalid token. No food token found with this code.');
+        notFound.status = 404;
+        throw notFound;
+    }
+
+    return rows[0];
+};
+
+const redeemFoodToken = async (tokenString) => {
+    const cleanToken = String(tokenString || '').trim();
+    if (!cleanToken) {
+        const error = new Error('Token string is required.');
+        error.status = 400;
+        throw error;
+    }
+
+    const tokenInfo = await verifyFoodToken(cleanToken);
+
+    if (tokenInfo.IsRedeemed) {
+        const conflict = new Error(`Token already redeemed for ${tokenInfo.MealType} on ${new Date(tokenInfo.RedeemedAt).toLocaleString()}.`);
+        conflict.status = 409;
+        conflict.tokenInfo = tokenInfo;
+        throw conflict;
+    }
+
+    const [result] = await db.promise().query(
+        `UPDATE physical_food_tokens
+         SET IsRedeemed = 1, RedeemedAt = NOW()
+         WHERE Token = ? AND (IsRedeemed = 0 OR IsRedeemed IS NULL)`,
+        [cleanToken]
+    );
+
+    if (result.affectedRows === 0) {
+        const raceConflict = new Error('Token was already redeemed.');
+        raceConflict.status = 409;
+        throw raceConflict;
+    }
+
+    const updated = await verifyFoodToken(cleanToken);
+    return {
+        success: true,
+        message: `${updated.MealType.toUpperCase()} coupon successfully redeemed for ${updated.UserName} (${updated.TeamName})!`,
+        tokenInfo: updated
+    };
+};
+
 module.exports = {
     getTeamPreference,
     saveTeamPreference,
@@ -384,5 +464,8 @@ module.exports = {
     getEventTeamPreferences,
     generateFoodTokens,
     getFacilityBookings,
-    updateBookingStatus
+    updateBookingStatus,
+    verifyFoodToken,
+    redeemFoodToken
 };
+

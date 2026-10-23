@@ -13,7 +13,6 @@ import {
   ExternalLink,
   AlertCircle,
   RefreshCw,
-  Sparkles,
 } from 'lucide-react';
 import { isSoloTeamSize } from '../../../../lib/utils';
 

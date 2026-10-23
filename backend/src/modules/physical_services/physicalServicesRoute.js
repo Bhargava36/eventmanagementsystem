@@ -10,5 +10,9 @@ router.put("/events/:eventId/teams/:teamId/booking-status", controller.updateBoo
 router.get("/events/:eventId/accommodation-participants", controller.getAccommodationParticipants);
 router.get("/events/:eventId/food-participants", controller.getFoodParticipants);
 router.post("/events/:eventId/food-tokens", controller.generateFoodTokens);
+router.get("/food-tokens/verify", controller.verifyFoodToken);
+router.post("/food-tokens/verify", controller.verifyFoodToken);
+router.post("/food-tokens/redeem", controller.redeemFoodToken);
 
 module.exports = router;
+

@@ -17,7 +17,6 @@ import {
     Utensils,
     Download,
     Printer,
-    Sparkles,
     IdCard,
     X,
     Eye,
@@ -229,14 +228,14 @@ function TeamDetails() {
                             </div>
                         </div>
 
-                        {/* Action 1: Download Team Card (Landscape Cyber Format) */}
+                        {/* Action 1: Download Team Card (Landscape Format) */}
                         <button
                             type="button"
                             onClick={() => setShowTeamCardModal(true)}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-cyan-600/25 transition cursor-pointer"
+                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer"
                             title="Generate and download official landscape Team Display Card"
                         >
-                            <Sparkles className="w-3.5 h-3.5" />
+                            <IdCard className="w-3.5 h-3.5" />
                             <span>Download Team Card</span>
                         </button>
 
@@ -593,8 +592,8 @@ function TeamDetails() {
                             <div className="mb-4 flex items-center justify-between border-b border-cyan-500/20 pb-3">
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4 text-cyan-400" />
-                                        <h2 className="text-base sm:text-lg font-extrabold text-cyan-400">
+                                        <IdCard className="w-4 h-4 text-emerald-400" />
+                                        <h2 className="text-base sm:text-lg font-extrabold text-white">
                                             Official Team Display Card
                                         </h2>
                                     </div>

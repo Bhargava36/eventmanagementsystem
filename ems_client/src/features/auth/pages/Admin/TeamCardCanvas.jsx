@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { API_BASE_URL } from "@/lib/api";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, Printer, Sparkles, FileText } from "lucide-react";
+import { Download, Printer, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 
 const hexToRgb = (hex, fallback = { r: 0, g: 229, b: 255 }) => {
@@ -504,7 +504,7 @@ export default function TeamCardCanvas({ team, event }) {
 
       <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-400">
         <span className="flex items-center gap-1.5" style={{ color: primaryColor }}>
-          <Sparkles className="h-3.5 w-3.5" />
+          <FileText className="h-3.5 w-3.5" />
           <span>Official Landscape Team Card</span>
         </span>
         <span className="font-mono text-[11px] bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-slate-300">

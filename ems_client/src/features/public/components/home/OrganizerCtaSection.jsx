@@ -8,7 +8,6 @@ import {
   Check,
   ArrowRight,
   ShieldCheck,
-  Sparkles,
   Cpu,
   Globe2,
   Users2,

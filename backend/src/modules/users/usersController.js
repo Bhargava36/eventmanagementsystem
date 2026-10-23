@@ -211,6 +211,51 @@ const checkEmailExists = (req, res) => {
     );
 };
 
+const sendPasswordResetOtp = (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+    }
+
+    usersService.sendPasswordResetOtp(email, (err, result) => {
+        if (err) {
+            const status = err.status || 500;
+            return res.status(status).json({ message: err.message || "Failed to dispatch verification code" });
+        }
+        res.status(200).json(result);
+    });
+};
+
+const verifyPasswordResetOtp = (req, res) => {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+        return res.status(400).json({ message: "Email and verification code are required" });
+    }
+
+    usersService.verifyPasswordResetOtp(email, otp, (err, result) => {
+        if (err) {
+            const status = err.status || 400;
+            return res.status(status).json({ message: err.message || "Invalid verification code" });
+        }
+        res.status(200).json(result);
+    });
+};
+
+const resetPasswordWithOtp = (req, res) => {
+    const { email, otp, resetToken, newPassword } = req.body;
+    if (!newPassword) {
+        return res.status(400).json({ message: "New password is required" });
+    }
+
+    usersService.resetPasswordWithOtp(email, otp, resetToken, newPassword, (err, result) => {
+        if (err) {
+            const status = err.status || 400;
+            return res.status(status).json({ message: err.message || "Failed to reset password" });
+        }
+        res.status(200).json(result);
+    });
+};
+
 module.exports = {
     createUser,
     loginUser,
@@ -219,5 +264,8 @@ module.exports = {
     getUserById,
     getUserByEmail,
     updateUser,
-    checkEmailExists
+    checkEmailExists,
+    sendPasswordResetOtp,
+    verifyPasswordResetOtp,
+    resetPasswordWithOtp
 };

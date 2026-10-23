@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { API_BASE_URL } from '@/lib/api';
 import { QRCodeSVG } from "qrcode.react";
-import { Printer, Download, Sparkles, FileText } from "lucide-react";
+import { Printer, Download, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 
 const getValue = (obj, ...keys) => {
@@ -521,7 +521,7 @@ export default function ParticipantIdCanvas({
       {/* A6 Dimension Badge */}
       <div className="mb-2 flex items-center justify-between text-[11px] font-semibold text-slate-400">
         <span className="inline-flex items-center gap-1" style={{ color: primaryColor }}>
-          <Sparkles className="h-3 w-3" />
+          <FileText className="h-3 w-3" />
           <span>A6 Participant Pass</span>
         </span>
         <span className="font-mono text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded-md">

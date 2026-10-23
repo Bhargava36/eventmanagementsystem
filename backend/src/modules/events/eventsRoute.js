@@ -12,6 +12,8 @@ router.put('/:id/virtual-status', eventsController.updateVirtualStatus);
 router.put('/:id/virtual-meet', eventsController.updateVirtualMeetUrl);
 router.put('/:id/settings', eventsController.updateEventSettings);
 router.put('/:id/guidelines', eventsController.updateEventGuidelines);
+router.post('/:id/broadcasts', eventsController.sendBroadcast);
+router.get('/:id/broadcasts', eventsController.getBroadcasts);
 router.put('/:id', eventsController.updateEvent);
 router.delete('/:id', eventsController.deleteEvent);
 

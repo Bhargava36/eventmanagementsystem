@@ -17,7 +17,6 @@ import {
   Building2,
   User,
   Star,
-  Sparkles,
   FileText,
   AlertCircle,
   HelpCircle,
@@ -778,7 +777,7 @@ function AdminResultsPage({ track = 'Physical' }) {
               }}
             >
               <div className="flex items-center gap-2 mb-6">
-                <Sparkles className="w-5 h-5" style={{ color: theme.accent }} />
+                <Trophy className="w-5 h-5" style={{ color: theme.accent }} />
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   {isBoth ? `Overall Hackathon Winners Podium (${track} Track)` : 'Overall Hackathon Winners Podium'}
                 </h2>

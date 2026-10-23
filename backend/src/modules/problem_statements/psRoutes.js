@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const psService = require('./psService');
 const { broadcastEvent } = require('../../config/websocket');
 
@@ -172,7 +173,22 @@ router.post('/event/:eventId/select', (req, res) => {
     if (!teamId || !problemStatementId) {
         return res.status(400).json({ message: 'teamId and problemStatementId are required.' });
     }
-    psService.selectProblemStatement(req.params.eventId, teamId, problemStatementId, (err, result) => {
+
+    let userId = null;
+    let userRole = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRECT || 'secret');
+            userId = decoded.Id || decoded.id;
+            userRole = decoded.role || decoded.Role;
+        } catch (e) {
+            // invalid or expired token
+        }
+    }
+
+    psService.selectProblemStatement(req.params.eventId, teamId, problemStatementId, userId, userRole, (err, result) => {
         if (err) {
             const status = err.status || 500;
             return res.status(status).json({ message: err.message || 'Selection failed' });

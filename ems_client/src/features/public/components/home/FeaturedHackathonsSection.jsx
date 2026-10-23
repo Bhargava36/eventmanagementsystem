@@ -9,7 +9,6 @@ import {
   Users,
   Trophy,
   ArrowRight,
-  Sparkles,
   Tag
 } from 'lucide-react';
 import { getEventTypeInfo } from '../../../../lib/utils';

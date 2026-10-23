@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   ChevronRight,
   Code,
-  Sparkles,
   Lock,
   Unlock,
   Check,
@@ -29,7 +28,12 @@ import {
   Lightbulb,
   Target,
   Hash,
-  X
+  X,
+  FolderGit2,
+  Globe,
+  UploadCloud,
+  Send,
+  Edit3
 } from 'lucide-react';
 import useAuth from '../../../../Hooks/useAuth';
 import useToast from '../../../../Hooks/useToast';
@@ -68,7 +72,7 @@ export default function ParticipantVirtualEventPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   const [event, setEvent] = useState(null);
   const [team, setTeam] = useState(null);
@@ -90,6 +94,18 @@ export default function ParticipantVirtualEventPage() {
   const [selectedPSToConfirm, setSelectedPSToConfirm] = useState(null);
   const [submittingSelection, setSubmittingSelection] = useState(false);
 
+  // Project submission state
+  const [projectSubmission, setProjectSubmission] = useState(null);
+  const [submissionModalOpen, setSubmissionModalOpen] = useState(false);
+  const [submissionForm, setSubmissionForm] = useState({
+    githubRepoUrl: '',
+    liveDemoUrl: '',
+    drivePptUrl: '',
+    techStack: '',
+    description: ''
+  });
+  const [submittingProject, setSubmittingProject] = useState(false);
+
   // Filters
   const [selectedThemeFilter, setSelectedThemeFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,6 +114,20 @@ export default function ParticipantVirtualEventPage() {
   const [timeLeft, setTimeLeft] = useState(null);
 
   const userId = user?.Id || user?.id;
+
+  // Determine if logged in user is the Team Leader
+  const isTeamLead = useMemo(() => {
+    if (!team) return true;
+    const currentUid = user?.Id || user?.id;
+    if (!currentUid) return false;
+    if (team.TeamLeadUserId && String(team.TeamLeadUserId) === String(currentUid)) return true;
+    if (team.Role && (team.Role.toLowerCase() === 'teamlead' || team.Role.toLowerCase() === 'lead')) return true;
+    if (Array.isArray(teamMembers) && teamMembers.length > 0) {
+      const myMem = teamMembers.find(m => String(m.UserId || m.id) === String(currentUid));
+      if (myMem && (myMem.Role?.toLowerCase() === 'teamlead' || myMem.Role?.toLowerCase() === 'lead')) return true;
+    }
+    return false;
+  }, [team, user, teamMembers]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -169,6 +199,17 @@ export default function ParticipantVirtualEventPage() {
                   const selData = await selRes.json();
                   setTeamSelection(selData.selection || null);
                 }
+
+                // Fetch team's project submission
+                try {
+                  const subRes = await fetch(`${API_BASE_URL}/api/project-submissions/event/${id}/team/${teamIdentifier}`);
+                  if (subRes.ok) {
+                    const subData = await subRes.json();
+                    setProjectSubmission(subData.submission || null);
+                  }
+                } catch {
+                  // ignore
+                }
               }
             }
           }
@@ -185,7 +226,7 @@ export default function ParticipantVirtualEventPage() {
     }
   };
 
-  // Live countdown timer for problem statement selection deadline
+  // Live countdown timer for problem statement selection deadline (Timezone-safe)
   useEffect(() => {
     const deadlineStr = publishStatus.PSSelectionDeadline || event?.PSSelectionDeadline;
     if (!deadlineStr) {
@@ -193,14 +234,23 @@ export default function ParticipantVirtualEventPage() {
       return;
     }
 
-    const targetDate = new Date(deadlineStr).getTime();
+    let targetDate;
+    if (deadlineStr instanceof Date) {
+      targetDate = deadlineStr.getTime();
+    } else {
+      const s = String(deadlineStr).trim();
+      const normalized = s.includes('T') ? (s.endsWith('Z') ? s : s + 'Z') : s.replace(' ', 'T') + 'Z';
+      targetDate = new Date(normalized).getTime();
+      if (isNaN(targetDate)) targetDate = new Date(s).getTime();
+    }
+
     if (isNaN(targetDate)) {
       setTimeLeft(null);
       return;
     }
 
     const updateTimer = () => {
-      const now = new Date().getTime();
+      const now = Date.now();
       const diff = targetDate - now;
 
       if (diff <= 0) {
@@ -277,12 +327,16 @@ export default function ParticipantVirtualEventPage() {
   const handleConfirmSelection = async () => {
     if (!selectedPSToConfirm || !team) return;
     const teamIdentifier = team.Id || team.TeamId;
+    const authToken = token || localStorage.getItem('token');
 
     try {
       setSubmittingSelection(true);
       const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/select`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+        },
         body: JSON.stringify({
           teamId: teamIdentifier,
           problemStatementId: selectedPSToConfirm.Id
@@ -303,6 +357,71 @@ export default function ParticipantVirtualEventPage() {
       toast.error(err.message || 'Failed to select problem statement');
     } finally {
       setSubmittingSelection(false);
+    }
+  };
+
+  const handleOpenSubmissionModal = () => {
+    if (projectSubmission) {
+      setSubmissionForm({
+        githubRepoUrl: projectSubmission.GithubRepoUrl || '',
+        liveDemoUrl: projectSubmission.LiveDemoUrl || '',
+        drivePptUrl: projectSubmission.DrivePptUrl || '',
+        techStack: projectSubmission.TechStack || '',
+        description: projectSubmission.Description || ''
+      });
+    } else {
+      setSubmissionForm({
+        githubRepoUrl: '',
+        liveDemoUrl: '',
+        drivePptUrl: '',
+        techStack: '',
+        description: ''
+      });
+    }
+    setSubmissionModalOpen(true);
+  };
+
+  const handleSubmitProject = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!submissionForm.githubRepoUrl && !submissionForm.liveDemoUrl && !submissionForm.drivePptUrl) {
+      toast.error('Please provide at least one link (GitHub Repo, Live Demo, or Deck).');
+      return;
+    }
+    const teamIdentifier = team?.Id || team?.TeamId;
+    if (!teamIdentifier) {
+      toast.error('No registered team found');
+      return;
+    }
+
+    try {
+      setSubmittingProject(true);
+      const authToken = token || localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/api/project-submissions/event/${id}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+        },
+        body: JSON.stringify({
+          teamId: teamIdentifier,
+          ...submissionForm
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to submit project');
+      }
+
+      toast.success(projectSubmission ? 'Project submission updated!' : 'Project submitted successfully!');
+      setProjectSubmission(data.submission || null);
+      setSubmissionModalOpen(false);
+      loadAll();
+    } catch (err) {
+      console.error('Submission error:', err);
+      toast.error(err.message || 'Failed to submit project');
+    } finally {
+      setSubmittingProject(false);
     }
   };
 
@@ -477,7 +596,7 @@ export default function ParticipantVirtualEventPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-3">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-              <Sparkles className="h-4 w-4" />
+              <Layers className="h-4 w-4" />
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white flex items-center gap-2">
@@ -533,7 +652,7 @@ export default function ParticipantVirtualEventPage() {
             </div>
           ) : (
             <div className="p-8 rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-center space-y-2">
-              <Sparkles className="h-8 w-8 text-emerald-500 mx-auto" />
+              <Layers className="h-8 w-8 text-emerald-500 mx-auto" />
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">Themes Officially Published</h3>
               <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
                 Organizers have opened the theme phase. Detailed problem statements will be displayed below.
@@ -655,9 +774,145 @@ export default function ParticipantVirtualEventPage() {
           </div>
         )}
 
+        {/* TEAM'S PROJECT SUBMISSION SECTION */}
+        {team && (
+          <div className="p-5 sm:p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-zinc-800/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                  <UploadCloud className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    Project Submission & Deliverables
+                    {projectSubmission ? (
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold uppercase">
+                        Submitted • Ready for Judging
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-[10px] font-extrabold uppercase">
+                        Pending Submission
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    Submit your GitHub source code repository, live hosted deployment, presentation deck, and technical stack.
+                  </p>
+                </div>
+              </div>
+
+              {isTeamLead ? (
+                <button
+                  type="button"
+                  onClick={handleOpenSubmissionModal}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer self-start sm:self-auto shrink-0"
+                >
+                  {projectSubmission ? (
+                    <>
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Update Submission</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Submit Project Work</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <span className="text-[11px] text-slate-400 italic">
+                  Team Leader submission access only
+                </span>
+              )}
+            </div>
+
+            {projectSubmission ? (
+              <div className="space-y-3 pt-1">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {projectSubmission.GithubRepoUrl && (
+                    <a
+                      href={projectSubmission.GithubRepoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-white dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-xs font-bold transition shadow-xs"
+                    >
+                      <FolderGit2 className="w-4 h-4" />
+                      <span>View GitHub Repository</span>
+                      <ExternalLink className="w-3 h-3 opacity-60 ml-0.5" />
+                    </a>
+                  )}
+                  {projectSubmission.LiveDemoUrl && (
+                    <a
+                      href={projectSubmission.LiveDemoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 text-xs font-bold transition shadow-xs"
+                    >
+                      <Globe className="w-4 h-4" />
+                      <span>Live Hosted Application</span>
+                      <ExternalLink className="w-3 h-3 opacity-60 ml-0.5" />
+                    </a>
+                  )}
+                  {projectSubmission.DrivePptUrl && (
+                    <a
+                      href={projectSubmission.DrivePptUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 hover:border-slate-400 text-xs font-bold transition shadow-xs"
+                    >
+                      <FileText className="w-4 h-4 text-amber-500" />
+                      <span>Presentation / Demo Deck</span>
+                      <ExternalLink className="w-3 h-3 opacity-60 ml-0.5" />
+                    </a>
+                  )}
+                </div>
+
+                {projectSubmission.TechStack && (
+                  <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-zinc-300 pt-1">
+                    <span className="font-bold text-slate-400 text-[11px] uppercase tracking-wider">Tech Stack:</span>
+                    <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 font-mono text-[11px]">
+                      {projectSubmission.TechStack}
+                    </span>
+                  </div>
+                )}
+
+                {projectSubmission.Description && (
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 text-xs text-slate-700 dark:text-zinc-300 leading-relaxed">
+                    <span className="font-bold block text-slate-900 dark:text-white mb-1">Project Solution Overview:</span>
+                    {projectSubmission.Description}
+                  </div>
+                )}
+
+                <p className="text-[11px] text-slate-400 pt-0.5">
+                  Last updated: {formatDate(projectSubmission.UpdatedAt || projectSubmission.SubmittedAt)} {formatTime(projectSubmission.UpdatedAt || projectSubmission.SubmittedAt)}
+                  {projectSubmission.SubmittedByName && ` • by ${projectSubmission.SubmittedByName}`}
+                </p>
+              </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-dashed border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 dark:text-zinc-400">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                  <span>
+                    No project deliverables submitted yet. Once your team finishes coding, click <strong>"Submit Project Work"</strong> to provide your links before evaluation begins.
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* PROBLEM STATEMENTS LISTING */}
         {isPSPublished ? (
           <div className="space-y-4">
+            {!isTeamLead && team && (
+              <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-500" />
+                <span>
+                  <strong>Team Member View:</strong> You are viewing problem statements as a team member. Only your <strong>Team Leader</strong> ({team.TeamLeadName || 'team leader'}) can officially lock in or change your team's selection.
+                </span>
+              </div>
+            )}
+
             {/* Search & Theme Filter Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               {/* Theme Pills */}
@@ -801,13 +1056,11 @@ export default function ParticipantVirtualEventPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedPSToConfirm(ps)}
-                              disabled={isFull || isDeadlinePassed}
-                              className={`w-full py-2.5 rounded-xl font-extrabold text-xs tracking-wide transition cursor-pointer flex items-center justify-center gap-2 ${
-                                isFull
+                              disabled={isFull || isDeadlinePassed || !isTeamLead}
+                              className={`w-full py-2.5 rounded-xl font-extrabold text-xs tracking-wide transition flex items-center justify-center gap-2 ${
+                                isFull || isDeadlinePassed || !isTeamLead
                                   ? 'bg-slate-200 dark:bg-zinc-900 text-slate-400 cursor-not-allowed'
-                                  : isDeadlinePassed
-                                  ? 'bg-slate-200 dark:bg-zinc-900 text-slate-400 cursor-not-allowed'
-                                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md shadow-emerald-600/25 active:scale-[0.99]'
+                                  : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-md shadow-emerald-600/25 active:scale-[0.99] cursor-pointer'
                               }`}
                             >
                               <Target className="h-3.5 w-3.5" />
@@ -816,6 +1069,8 @@ export default function ParticipantVirtualEventPage() {
                                   ? 'Slot Limit Reached (Max 5)'
                                   : isDeadlinePassed
                                   ? 'Selection Window Closed'
+                                  : !isTeamLead
+                                  ? 'Leader Only: Awaiting Leader Selection'
                                   : 'Select This Problem Statement'}
                               </span>
                             </button>
@@ -941,6 +1196,139 @@ export default function ParticipantVirtualEventPage() {
                   )}
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* PROJECT SUBMISSION MODAL */}
+      <AnimatePresence>
+        {submissionModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 backdrop-blur-sm p-4"
+            onClick={() => setSubmissionModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="my-auto w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-950 border border-emerald-500/30 p-6 text-slate-900 dark:text-white shadow-2xl space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <UploadCloud className="h-5 w-5 text-emerald-500" />
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                    {projectSubmission ? 'Update Project Deliverables' : 'Submit Project Deliverables'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSubmissionModalOpen(false)}
+                  className="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmitProject} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
+                    GitHub / Git Repository URL
+                  </label>
+                  <div className="relative">
+                    <FolderGit2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      type="url"
+                      placeholder="https://github.com/organization/project-name"
+                      value={submissionForm.githubRepoUrl}
+                      onChange={(e) => setSubmissionForm({ ...submissionForm, githubRepoUrl: e.target.value })}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
+                    Live Hosted Demo URL
+                  </label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      type="url"
+                      placeholder="https://your-hackathon-demo.vercel.app"
+                      value={submissionForm.liveDemoUrl}
+                      onChange={(e) => setSubmissionForm({ ...submissionForm, liveDemoUrl: e.target.value })}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
+                    Presentation Deck / Drive / Video Demo Link
+                  </label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                    <input
+                      type="url"
+                      placeholder="https://docs.google.com/presentation/d/..."
+                      value={submissionForm.drivePptUrl}
+                      onChange={(e) => setSubmissionForm({ ...submissionForm, drivePptUrl: e.target.value })}
+                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
+                    Tech Stack & Tools Used
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. React, Node.js, Express, TailwindCSS, PostgreSQL"
+                    value={submissionForm.techStack}
+                    onChange={(e) => setSubmissionForm({ ...submissionForm, techStack: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
+                    Solution Overview / Implementation Notes
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Briefly describe what your team built, key architectural decisions, and how it addresses the challenge..."
+                    value={submissionForm.description}
+                    onChange={(e) => setSubmissionForm({ ...submissionForm, description: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-zinc-800">
+                  <button
+                    type="button"
+                    onClick={() => setSubmissionModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={submittingProject}
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md shadow-emerald-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {submittingProject ? (
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Send className="h-3.5 w-3.5" />
+                    )}
+                    <span>{projectSubmission ? 'Update Deliverables' : 'Submit Project'}</span>
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

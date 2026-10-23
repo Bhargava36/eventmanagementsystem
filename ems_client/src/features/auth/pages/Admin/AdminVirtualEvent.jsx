@@ -18,7 +18,6 @@ import {
   Copy,
   Check,
   Search,
-  Sparkles,
   RefreshCw,
   Building2,
   Mail,
@@ -46,7 +45,10 @@ import {
   Lightbulb,
   ListChecks,
   Tag,
-  FolderPlus
+  FolderPlus,
+  FolderGit2,
+  Globe,
+  Code2
 } from 'lucide-react';
 import useToast from '../../../../Hooks/useToast';
 
@@ -152,7 +154,17 @@ export default function AdminVirtualEvent() {
       setAdminTimerLeft(null);
       return;
     }
-    const targetDate = new Date(deadlineStr).getTime();
+
+    let targetDate;
+    if (deadlineStr instanceof Date) {
+      targetDate = deadlineStr.getTime();
+    } else {
+      const s = String(deadlineStr).trim();
+      const normalized = s.includes('T') ? (s.endsWith('Z') ? s : s + 'Z') : s.replace(' ', 'T') + 'Z';
+      targetDate = new Date(normalized).getTime();
+      if (isNaN(targetDate)) targetDate = new Date(s).getTime();
+    }
+
     if (isNaN(targetDate)) {
       setAdminTimerLeft(null);
       return;
@@ -531,14 +543,14 @@ export default function AdminVirtualEvent() {
     }
     try {
       const targetTime = new Date(Date.now() + minutesToUse * 60 * 1000);
-      const mysqlDatetime = targetTime.toISOString().slice(0, 19).replace('T', ' ');
+      const isoDeadline = targetTime.toISOString();
       const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${currentEventId}/selection-deadline`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deadline: mysqlDatetime })
+        body: JSON.stringify({ deadline: isoDeadline })
       });
       if (!res.ok) throw new Error('Failed to set deadline');
-      setPublishStatus(prev => ({ ...prev, PSSelectionDeadline: mysqlDatetime }));
+      setPublishStatus(prev => ({ ...prev, PSSelectionDeadline: isoDeadline }));
       toast.success(`Selection timer started for ${minutesToUse} minutes!`);
     } catch {
       toast.error('Failed to set deadline timer');
@@ -1024,7 +1036,7 @@ export default function AdminVirtualEvent() {
           {/* 4 Main Inner Tabs */}
           <div className="flex flex-wrap items-center gap-1.5 mt-5 bg-slate-100 dark:bg-zinc-900 p-1.5 rounded-2xl w-fit">
             {[
-              { key: 'themes', label: `1. Manage Themes (${themes.length})`, icon: Sparkles },
+              { key: 'themes', label: `1. Manage Themes (${themes.length})`, icon: Layers },
               { key: 'manage', label: `2. Problem Statements (${problemStatements.length})`, icon: FileText },
               { key: 'selections', label: `3. Team Selections (${selections.length})`, icon: ListChecks },
               { key: 'settings', label: '4. Publish & Deadlines', icon: Settings2 },
@@ -1054,7 +1066,7 @@ export default function AdminVirtualEvent() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <Layers className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   Hackathon Innovation Themes
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-zinc-400">
@@ -1083,7 +1095,7 @@ export default function AdminVirtualEvent() {
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                      <Layers className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                       {editingThemeId ? 'Edit Hackathon Theme' : 'Create Hackathon Theme'}
                     </h4>
                     <button onClick={resetThemeForm} className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-zinc-800 transition cursor-pointer">
@@ -1220,7 +1232,7 @@ export default function AdminVirtualEvent() {
               </div>
             ) : (
               <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-2">
-                <Sparkles className="h-8 w-8 text-emerald-500 mx-auto" />
+                <Layers className="h-8 w-8 text-emerald-500 mx-auto" />
                 <h4 className="text-sm font-bold text-slate-800 dark:text-white">No Themes Added Yet</h4>
                 <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
                   Click the "Add New Theme" button above to create hackathon tracks (e.g. AI/ML, Web3, FinTech).
@@ -1414,7 +1426,7 @@ export default function AdminVirtualEvent() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-zinc-800/80">
                       <div className="flex items-center gap-2">
                         <span className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                          <Sparkles className="h-4 w-4" />
+                          <Layers className="h-4 w-4" />
                         </span>
                         <div>
                           <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
@@ -1549,6 +1561,7 @@ export default function AdminVirtualEvent() {
                       <th className="py-3 px-4">Problem Code</th>
                       <th className="py-3 px-4">Statement Title</th>
                       <th className="py-3 px-4">Type</th>
+                      <th className="py-3 px-4">Project Submission</th>
                       <th className="py-3 px-4">Selected At</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
@@ -1578,6 +1591,52 @@ export default function AdminVirtualEvent() {
                           }`}>
                             {sel.SelectionType === 'auto' ? 'Auto-Assigned' : 'Manual Pick'}
                           </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          {sel.GithubRepoUrl || sel.LiveDemoUrl || sel.DrivePptUrl ? (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {sel.GithubRepoUrl && (
+                                <a
+                                  href={sel.GithubRepoUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 text-white dark:bg-zinc-800 hover:bg-slate-800 text-[10px] font-bold"
+                                  title="Open GitHub Repository"
+                                >
+                                  <FolderGit2 className="w-3 h-3" />
+                                  <span>Repo</span>
+                                </a>
+                              )}
+                              {sel.LiveDemoUrl && (
+                                <a
+                                  href={sel.LiveDemoUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-500 text-[10px] font-bold"
+                                  title="Open Live Hosted Demo"
+                                >
+                                  <Globe className="w-3 h-3" />
+                                  <span>Demo</span>
+                                </a>
+                              )}
+                              {sel.DrivePptUrl && (
+                                <a
+                                  href={sel.DrivePptUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:border-slate-400 text-[10px] font-bold"
+                                  title="Open Presentation Deck"
+                                >
+                                  <FileText className="w-3 h-3 text-amber-500" />
+                                  <span>Deck</span>
+                                </a>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 dark:text-zinc-500 italic">
+                              Pending
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-4 text-slate-400 text-[11px]">
                           {formatDate(sel.SelectedAt)} {formatTime(sel.SelectedAt)}
@@ -1709,6 +1768,30 @@ export default function AdminVirtualEvent() {
                   </div>
                 )}
               </div>
+
+              {/* Expired & Unassigned Teams Callout */}
+              {adminTimerLeft && adminTimerLeft.expired && unselectedTeamCount > 0 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400">
+                  <div className="flex items-center gap-2.5">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+                    <div>
+                      <p className="text-xs font-bold">Selection Window Closed</p>
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400/80">
+                        {unselectedTeamCount} teams have not selected a problem statement yet.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={autoAssigning}
+                    onClick={handleAutoAssign}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-xs transition cursor-pointer shrink-0 shadow-sm"
+                  >
+                    {autoAssigning ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Shuffle className="h-3 w-3" />}
+                    <span>Auto-Assign Remaining {unselectedTeamCount} Teams</span>
+                  </button>
+                </div>
+              )}
 
               {/* Quick Minutes Preset Buttons */}
               <div className="flex items-center gap-2 flex-wrap pt-1">

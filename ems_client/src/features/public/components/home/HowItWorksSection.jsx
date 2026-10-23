@@ -7,7 +7,6 @@ import {
   Code2,
   Trophy,
   ArrowRight,
-  Sparkles,
 } from 'lucide-react';
 
 const STEPS = [

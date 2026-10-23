@@ -80,6 +80,7 @@ export default function ParallaxStoryBackdrop() {
         <div className="flex justify-between">
           <span>TELEMETRY.SYNC // ENCRYPTED</span>
           <span>BOUNTY.VERIFICATION // AUTOMATED</span>
+          
         </div>
       </div>
 

@@ -16,7 +16,6 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
-  Sparkles,
   Calendar,
   MapPin,
   Lock,
@@ -188,7 +187,7 @@ export default function TestCredentialsPage() {
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                <Sparkles className="w-3.5 h-3.5" />
+                <Shield className="w-3.5 h-3.5" />
                 <span>DEV & QA TESTING SUITE</span>
               </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white">

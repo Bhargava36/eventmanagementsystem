@@ -22,7 +22,6 @@ import {
   ShieldCheck,
   AlertCircle,
   Building,
-  Sparkles,
   Check
 } from 'lucide-react';
 

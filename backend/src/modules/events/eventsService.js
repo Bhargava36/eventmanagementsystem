@@ -575,6 +575,118 @@ const getPublicPlatformStats = (callback) => {
     });
 };
 
+const sendEventBroadcast = (EventId, { subject, message, category, recipientFilter, senderAdminId, organizerName }, callback) => {
+    db.query("SELECT EventName, Location FROM events WHERE Id = ?", [EventId], (evErr, evRows) => {
+        if (evErr) return callback(evErr);
+        if (!evRows || evRows.length === 0) {
+            return callback(new Error("Event not found"));
+        }
+        const eventName = evRows[0].EventName;
+
+        let filterClause = "";
+        if (recipientFilter === 'team_leads') {
+            filterClause = " AND (LOWER(tm.Role) IN ('teamlead', 'team lead') OR tm.UserId = t.TeamLeadUserId)";
+        } else if (recipientFilter === 'checked_in') {
+            filterClause = " AND ea.Status = 'checked_in'";
+        }
+
+        const query = `
+            SELECT DISTINCT 
+                u.Id AS UserId,
+                COALESCE(NULLIF(tm.MemberName, ''), u.UserName, 'Participant') AS ParticipantName,
+                COALESCE(NULLIF(tm.MemberEmail, ''), u.Email) AS Email,
+                t.TeamName
+            FROM event_registrations er
+            INNER JOIN registered_teams t ON t.Id = er.TeamId
+            INNER JOIN registered_team_members tm ON tm.TeamId = t.Id
+            INNER JOIN users u ON u.Id = tm.UserId
+            LEFT JOIN event_attendance ea ON ea.EventId = er.EventId AND ea.UserId = u.Id
+            WHERE er.EventId = ? AND er.Status = 'approved' ${filterClause}
+            AND COALESCE(NULLIF(tm.MemberEmail, ''), u.Email) IS NOT NULL
+        `;
+
+        db.query(query, [EventId], (pErr, recipients) => {
+            if (pErr) return callback(pErr);
+            if (!recipients || recipients.length === 0) {
+                return callback(null, {
+                    success: false,
+                    recipientCount: 0,
+                    message: "No participants matched the selected recipient audience."
+                });
+            }
+
+            const insertBroadcast = `
+                INSERT INTO event_broadcasts (EventId, SenderAdminId, Subject, Message, Category, RecipientFilter, RecipientCount)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `;
+            db.query(insertBroadcast, [
+                EventId,
+                senderAdminId || null,
+                subject,
+                message,
+                category || 'Announcement',
+                recipientFilter || 'all',
+                recipients.length
+            ], (bErr, bRes) => {
+                if (bErr) console.warn("Failed to log broadcast to DB:", bErr.message);
+
+                try {
+                    const { sendEventBroadcastEmail } = require('../../config/mailer');
+                    const { broadcastEvent } = require('../../config/websocket');
+
+                    broadcastEvent(EventId, {
+                        type: 'EVENT_BROADCAST_ANNOUNCEMENT',
+                        eventId: EventId,
+                        subject,
+                        message,
+                        category: category || 'Announcement',
+                        sentAt: new Date()
+                    });
+
+                    // Send email to each recipient
+                    recipients.forEach(async (r) => {
+                        try {
+                            await sendEventBroadcastEmail({
+                                toEmail: r.Email,
+                                userName: r.ParticipantName,
+                                eventName,
+                                subject,
+                                message,
+                                category: category || 'Announcement',
+                                organizerName: organizerName || `${eventName} Organizing Team`
+                            });
+                        } catch (mErr) {
+                            console.error(`Broadcast email error for ${r.Email}:`, mErr.message);
+                        }
+                    });
+                } catch (dispatchErr) {
+                    console.error("Broadcast dispatch helper error:", dispatchErr.message);
+                }
+
+                return callback(null, {
+                    success: true,
+                    broadcastId: bRes?.insertId,
+                    recipientCount: recipients.length,
+                    message: `Broadcast successfully dispatched to ${recipients.length} participant(s) via SMTP.`
+                });
+            });
+        });
+    });
+};
+
+const getEventBroadcasts = (EventId, callback) => {
+    const query = `
+        SELECT Id, EventId, Subject, Message, Category, RecipientFilter, RecipientCount, SentAt
+        FROM event_broadcasts
+        WHERE EventId = ?
+        ORDER BY SentAt DESC
+    `;
+    db.query(query, [EventId], (err, rows) => {
+        if (err) return callback(err);
+        callback(null, rows || []);
+    });
+};
+
 module.exports = {
     createEvent,
     getAllEvents,
@@ -588,5 +700,7 @@ module.exports = {
     updateVirtualEventStatus,
     updateVirtualMeetUrl,
     updateEventSettings,
-    getAdminDashboardSummary
+    getAdminDashboardSummary,
+    sendEventBroadcast,
+    getEventBroadcasts
 };

@@ -31,6 +31,7 @@ const PublicTeamInfo = lazy(() => import('../features/public/pages/PublicTeamInf
 const VerifyIdPage = lazy(() => import('../features/public/pages/VerifyIdPage'));
 const NotFound = lazy(() => import('../features/public/pages/NotFound'));
 const TestCredentialsPage = lazy(() => import('../features/public/pages/TestCredentialsPage'));
+const ForgotPasswordPage = lazy(() => import('../features/auth/pages/ForgotPasswordPage'));
 
 // SuperAdmin Pages
 const Login = lazy(() => import('../features/auth/pages/SuperAdmin/Login'));
@@ -60,6 +61,7 @@ const FoodRedirectionPage = lazy(() => import('../features/auth/pages/Admin/Food
 const IdRedirectionPage = lazy(() => import('../features/auth/pages/Admin/IdRedirectionPage'));
 const Evaluators = lazy(() => import('../features/auth/pages/Admin/Evaluators'));
 const AdminResultsPage = lazy(() => import('../features/auth/pages/Admin/AdminResultsPage'));
+const EventBroadcastEmailer = lazy(() => import('../features/auth/pages/Admin/EventBroadcastEmailer'));
 
 // User Pages
 const UserSidebar = lazy(() => import('../components/Organisms/UserSidebar'));
@@ -138,6 +140,7 @@ function App() {
               <Route path="/user/login" element={<UserLogin />} />
               <Route path="/user/register" element={<UserRegister />} />
               <Route path="/evaluator/login" element={<EvaluatorLogin />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/test-credentials" element={<TestCredentialsPage />} />
               <Route path="/testing" element={<TestCredentialsPage />} />
               <Route path="/dev-users" element={<TestCredentialsPage />} />
@@ -178,6 +181,7 @@ function App() {
                 <Route path="food" element={<AdminModeRoute allowedModes={['physical', 'both']}> <FoodRedirectionPage /> </AdminModeRoute>} />
                 <Route path="id-card" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdRedirectionPage /> </AdminModeRoute>} />
                 <Route path="evaluators" element={<Evaluators />} />
+                <Route path="broadcast-emailer" element={<EventBroadcastEmailer />} />
                 <Route path="physical-results" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AdminResultsPage track="Physical" /> </AdminModeRoute>} />
                 <Route path="virtual-results" element={<AdminModeRoute allowedModes={['virtual', 'both']}> <AdminResultsPage track="Virtual" /> </AdminModeRoute>} />
               </Route>

@@ -86,8 +86,82 @@ const generateIdCards = (req, res) => {
 };
 
 
+const checkInParticipant = (req, res) => {
+    const EventId = Number(req.params.eventId);
+    const { userId, checkedInBy, remarks } = req.body;
+    const UserId = Number(userId);
+
+    if (!Number.isInteger(EventId) || EventId <= 0 || !Number.isInteger(UserId) || UserId <= 0) {
+        return res.status(400).json({ success: false, message: "Valid Event ID and User ID are required." });
+    }
+
+    idCardService.recordCheckIn(EventId, UserId, checkedInBy, remarks, (err, result) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: "Failed to record check-in." });
+        }
+        return res.status(200).json(result);
+    });
+};
+
+const checkOutParticipant = (req, res) => {
+    const EventId = Number(req.params.eventId);
+    const { userId, checkedOutBy, remarks } = req.body;
+    const UserId = Number(userId);
+
+    if (!Number.isInteger(EventId) || EventId <= 0 || !Number.isInteger(UserId) || UserId <= 0) {
+        return res.status(400).json({ success: false, message: "Valid Event ID and User ID are required." });
+    }
+
+    idCardService.recordCheckOut(EventId, UserId, checkedOutBy, remarks, (err, result) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: "Failed to record check-out." });
+        }
+        return res.status(200).json(result);
+    });
+};
+
+const resetParticipantAttendance = (req, res) => {
+    const EventId = Number(req.params.eventId);
+    const { userId } = req.body;
+    const UserId = Number(userId);
+
+    if (!Number.isInteger(EventId) || EventId <= 0 || !Number.isInteger(UserId) || UserId <= 0) {
+        return res.status(400).json({ success: false, message: "Valid Event ID and User ID are required." });
+    }
+
+    idCardService.resetAttendance(EventId, UserId, (err, result) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: "Failed to reset attendance." });
+        }
+        return res.status(200).json(result);
+    });
+};
+
+const scanParticipantAttendance = (req, res) => {
+    const EventId = Number(req.params.eventId);
+    const { idCardNumber, operatorName } = req.body;
+
+    if (!Number.isInteger(EventId) || EventId <= 0 || !idCardNumber) {
+        return res.status(400).json({ success: false, message: "Valid Event ID and ID Card Number are required." });
+    }
+
+    idCardService.scanAttendance(EventId, idCardNumber, operatorName, (err, result) => {
+        if (err) {
+            return res.status(500).json({ success: false, message: "Error scanning attendance." });
+        }
+        if (result.notFound) {
+            return res.status(404).json({ success: false, message: result.message });
+        }
+        return res.status(200).json({ success: true, ...result });
+    });
+};
+
 module.exports = {
     getParticipants,
     verifyParticipantId,
-    generateIdCards
+    generateIdCards,
+    checkInParticipant,
+    checkOutParticipant,
+    resetParticipantAttendance,
+    scanParticipantAttendance
 };

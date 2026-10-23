@@ -850,9 +850,12 @@ function UnifiedLogin({ role: propRole }) {
               <span className="text-gray-500 dark:text-gray-400">
                 {activeRole === "user" ? "Participant access" : "Secured login"}
               </span>
-              <span className="text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer font-medium">
+              <Link
+                to="/forgot-password"
+                className="text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer font-medium"
+              >
                 Forgot Password?
-              </span>
+              </Link>
             </div>
 
             <button

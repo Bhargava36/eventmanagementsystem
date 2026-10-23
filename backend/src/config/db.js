@@ -474,6 +474,72 @@ const migrationQueries = [
         INDEX idx_et_event (EventId),
         UNIQUE KEY unique_event_theme (EventId, ThemeName),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE physical_food_tokens ADD COLUMN IF NOT EXISTS IsRedeemed TINYINT(1) NOT NULL DEFAULT 0`,
+    `ALTER TABLE physical_food_tokens ADD COLUMN IF NOT EXISTS RedeemedAt TIMESTAMP NULL DEFAULT NULL`,
+
+    `CREATE TABLE IF NOT EXISTS hackathon_project_submissions (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TeamId INT NOT NULL,
+        ProblemStatementId INT NULL,
+        GithubRepoUrl VARCHAR(500) NULL,
+        LiveDemoUrl VARCHAR(500) NULL,
+        DrivePptUrl VARCHAR(500) NULL,
+        TechStack VARCHAR(500) NULL,
+        Description TEXT NULL,
+        SubmittedByUserId INT NULL,
+        SubmittedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_event_team_sub (EventId, TeamId),
+        INDEX idx_hps_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
+        FOREIGN KEY (ProblemStatementId) REFERENCES event_problem_statements(Id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS password_reset_otps (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        Email VARCHAR(255) NOT NULL,
+        OtpHash VARCHAR(255) NOT NULL,
+        ExpiresAt DATETIME NOT NULL,
+        IsUsed TINYINT(1) NOT NULL DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_pro_email (Email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS event_attendance (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        UserId INT NOT NULL,
+        Status ENUM('not_checked_in', 'checked_in', 'checked_out') NOT NULL DEFAULT 'not_checked_in',
+        CheckInTime DATETIME NULL,
+        CheckOutTime DATETIME NULL,
+        CheckedInBy VARCHAR(255) NULL,
+        CheckedOutBy VARCHAR(255) NULL,
+        Remarks VARCHAR(255) NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_event_user_att (EventId, UserId),
+        INDEX idx_att_event (EventId),
+        INDEX idx_att_user (UserId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS event_broadcasts (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        SenderAdminId INT NULL,
+        Subject VARCHAR(255) NOT NULL,
+        Message TEXT NOT NULL,
+        Category VARCHAR(50) DEFAULT 'Announcement',
+        RecipientFilter VARCHAR(50) DEFAULT 'all',
+        RecipientCount INT DEFAULT 0,
+        SentAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_eb_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 

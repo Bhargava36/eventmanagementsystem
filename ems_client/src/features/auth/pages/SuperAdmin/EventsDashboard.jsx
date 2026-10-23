@@ -19,7 +19,6 @@ import {
   User,
   Trophy,
   Palette,
-  Sparkles,
   Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -1451,7 +1450,7 @@ function EventsDashboard() {
                       {/* Quick Palette Presets */}
                       <div>
                         <div className="flex items-center gap-1.5 mb-2.5">
-                          <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <Palette className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                             Curated Theme Presets
                           </label>

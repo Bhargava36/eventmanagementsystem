@@ -8,7 +8,6 @@ import {
   Trophy,
   CheckCircle2,
   Clock,
-  Sparkles,
   Save,
   Building2,
   User,
@@ -24,7 +23,11 @@ import {
   MessageSquare,
   Lock,
   Unlock,
-  Edit3
+  Edit3,
+  FolderGit2,
+  Globe,
+  ExternalLink,
+  Code2
 } from 'lucide-react';
 import useAuth from '../../../../Hooks/useAuth';
 import useTheme from '../../../../Hooks/useTheme';
@@ -457,6 +460,64 @@ function EvaluateTeamPage() {
                   </p>
                 </div>
               )}
+
+              {/* Team's Project Submission & Code Artifacts */}
+              {(team?.GithubRepoUrl || team?.LiveDemoUrl || team?.DrivePptUrl || team?.TechStack) && (
+                <div className="p-4 rounded-2xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 mt-3 space-y-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest block text-emerald-600 dark:text-emerald-400">
+                    Project Submission & Demo Links:
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {team.GithubRepoUrl && (
+                      <a
+                        href={team.GithubRepoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-xs font-semibold transition shadow-xs"
+                      >
+                        <FolderGit2 className="w-3.5 h-3.5" />
+                        <span>Source Code</span>
+                        <ExternalLink className="w-3 h-3 opacity-70" />
+                      </a>
+                    )}
+                    {team.LiveDemoUrl && (
+                      <a
+                        href={team.LiveDemoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 text-xs font-semibold transition shadow-xs"
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                        <span>Live Demo</span>
+                        <ExternalLink className="w-3 h-3 opacity-70" />
+                      </a>
+                    )}
+                    {team.DrivePptUrl && (
+                      <a
+                        href={team.DrivePptUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 hover:border-slate-400 text-xs font-semibold transition shadow-xs"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Pitch Deck</span>
+                        <ExternalLink className="w-3 h-3 opacity-70" />
+                      </a>
+                    )}
+                  </div>
+                  {team.TechStack && (
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400 pt-1">
+                      <Code2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      <span>Tech Stack: <strong className="text-slate-800 dark:text-zinc-200">{team.TechStack}</strong></span>
+                    </div>
+                  )}
+                  {team.ProjectDescription && (
+                    <p className="text-xs text-slate-600 dark:text-zinc-300 line-clamp-2 pt-1 border-t border-emerald-500/10">
+                      {team.ProjectDescription}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Score Tally Summary Box */}
@@ -494,7 +555,7 @@ function EvaluateTeamPage() {
         {/* Round Rubric Guidelines Notice */}
         {round?.Description && (
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex items-start gap-3">
-            <Sparkles className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
+            <FileText className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div>
               <h4 className="text-xs font-bold text-slate-800 dark:text-gray-200 uppercase tracking-wider">
                 Round Evaluation Guidelines

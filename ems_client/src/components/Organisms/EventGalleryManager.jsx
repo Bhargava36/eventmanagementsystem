@@ -8,7 +8,6 @@ import {
   Trash2,
   UploadCloud,
   X,
-  Sparkles,
   Image as ImageIcon,
 } from 'lucide-react';
 import useToast from '../../Hooks/useToast';

@@ -353,7 +353,7 @@ export default function PublicTeamInfo() {
                   </p>
                 </div>
 
-                {/* Event & Location Meta Strip (Sparkles removed) */}
+                {/* Event & Location Meta Strip */}
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-slate-600 dark:text-zinc-300 pt-1">
                   <span className="flex items-center gap-1.5 font-bold" style={{ color: theme.accent }}>
                     <span>{teamData.EventName || 'Hackathon Event'}</span>

@@ -13,7 +13,6 @@ import {
   Trophy,
   Tag,
   Clock,
-  Sparkles,
   ExternalLink,
   Search,
   CheckCircle2

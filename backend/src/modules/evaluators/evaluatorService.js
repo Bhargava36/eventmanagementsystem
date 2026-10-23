@@ -390,12 +390,21 @@ const getTeamsForEvaluation = (eventId, track, callback) => {
             COALESCE(er.Status, 'approved') AS RegistrationStatus,
             u.UserName AS TeamLeadName,
             u.Email AS TeamLeadEmail,
-            ps.ProblemStatement AS ProblemStatementTitle,
-            ps.ProblemCode
+            COALESCE(eps.Title, ps.ProblemStatement) AS ProblemStatementTitle,
+            COALESCE(eps.ProblemCode, ps.ProblemCode) AS ProblemCode,
+            hps.GithubRepoUrl,
+            hps.LiveDemoUrl,
+            hps.DrivePptUrl,
+            hps.TechStack,
+            hps.Description AS ProjectDescription,
+            hps.SubmittedAt AS ProjectSubmittedAt
         FROM registered_teams t
         LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
         LEFT JOIN users u ON t.TeamLeadUserId = u.Id
         LEFT JOIN problem_statements ps ON COALESCE(er.ProblemStatementId, t.ProblemStatementId) = ps.Id
+        LEFT JOIN problem_statement_selections pss ON pss.EventId = t.EventId AND pss.TeamId = t.Id
+        LEFT JOIN event_problem_statements eps ON eps.Id = pss.ProblemStatementId
+        LEFT JOIN hackathon_project_submissions hps ON hps.EventId = t.EventId AND hps.TeamId = t.Id
         WHERE t.EventId = ?
     `;
     const params = [eventId];

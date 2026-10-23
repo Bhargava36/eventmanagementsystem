@@ -576,6 +576,51 @@ const getPublicStats = (req, res) => {
     });
 };
 
+const sendBroadcast = (req, res) => {
+    const EventId = Number(req.params.id);
+    const { subject, message, category, recipientFilter, senderAdminId, organizerName } = req.body;
+
+    if (!Number.isInteger(EventId) || EventId <= 0) {
+        return res.status(400).json({ success: false, message: "Valid Event ID is required." });
+    }
+    if (!subject || !subject.trim()) {
+        return res.status(400).json({ success: false, message: "Subject is required." });
+    }
+    if (!message || !message.trim()) {
+        return res.status(400).json({ success: false, message: "Broadcast message is required." });
+    }
+
+    eventsService.sendEventBroadcast(EventId, {
+        subject: subject.trim(),
+        message: message.trim(),
+        category: category || 'Announcement',
+        recipientFilter: recipientFilter || 'all',
+        senderAdminId: Number(senderAdminId) || null,
+        organizerName: organizerName ? organizerName.trim() : null
+    }, (err, result) => {
+        if (err) {
+            console.error('sendBroadcast error:', err);
+            return res.status(500).json({ success: false, message: err.message || "Failed to dispatch broadcast." });
+        }
+        return res.status(200).json(result);
+    });
+};
+
+const getBroadcasts = (req, res) => {
+    const EventId = Number(req.params.id);
+    if (!Number.isInteger(EventId) || EventId <= 0) {
+        return res.status(400).json({ success: false, message: "Valid Event ID is required." });
+    }
+
+    eventsService.getEventBroadcasts(EventId, (err, broadcasts) => {
+        if (err) {
+            console.error('getBroadcasts error:', err);
+            return res.status(500).json({ success: false, message: "Failed to fetch broadcasts." });
+        }
+        return res.status(200).json({ success: true, broadcasts });
+    });
+};
+
 module.exports = {
     createEvent,
     getAllEvents,
@@ -588,5 +633,7 @@ module.exports = {
     updateVirtualStatus,
     updateVirtualMeetUrl,
     updateEventSettings,
-    getAdminDashboardSummary
+    getAdminDashboardSummary,
+    sendBroadcast,
+    getBroadcasts
 };

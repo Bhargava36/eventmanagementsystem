@@ -21,6 +21,7 @@ import {
   Atom,
   UserPen,
   Trophy,
+  Send,
 } from 'lucide-react';
 
 const logoElement = (
@@ -172,6 +173,13 @@ const SidebarContent = ({
       name: 'Evaluators',
       icon: UserPen,
       path: '/admin/evaluators',
+      badge: null,
+      end: false,
+    },
+    {
+      name: 'Broadcast Emailer',
+      icon: Send,
+      path: '/admin/broadcast-emailer',
       badge: null,
       end: false,
     },
