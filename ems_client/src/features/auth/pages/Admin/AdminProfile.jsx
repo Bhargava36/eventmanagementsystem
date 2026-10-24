@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import {
   Pencil,
@@ -18,7 +18,9 @@ import {
   Layers,
   CalendarDays,
   KeyRound,
-  ArrowRight
+  ArrowRight,
+  Camera,
+  Loader2
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -54,12 +56,15 @@ function AdminProfile() {
   const [registrationsCount, setRegistrationsCount] = useState(0);
   const [showEdit, setShowEdit] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     AdminName: '',
     Email: '',
     Mobile: '',
-    EventId: ''
+    EventId: '',
+    Photo: ''
   });
 
   const fetchAdminProfile = useCallback(async () => {
@@ -93,7 +98,8 @@ function AdminProfile() {
           AdminName: adminData.AdminName || '',
           Email: adminData.Email || '',
           Mobile: adminData.Mobile || '',
-          EventId: adminData.EventId || ''
+          EventId: adminData.EventId || '',
+          Photo: adminData.Photo || ''
         });
 
         const eventId = adminData.EventId;
@@ -136,13 +142,104 @@ function AdminProfile() {
     fetchAdminProfile();
   }, [fetchAdminProfile]);
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingPhoto(true);
+      let photoUrl = '';
+
+      try {
+        const uploadForm = new FormData();
+        uploadForm.append('file', file);
+        const upRes = await fetch(`${API_BASE_URL}/api/upload/single`, {
+          method: 'POST',
+          body: uploadForm
+        });
+        if (upRes.ok) {
+          const upData = await upRes.json();
+          photoUrl = upData.fileUrl || upData.url || '';
+        }
+      } catch (upErr) {
+        console.warn('Direct upload failed, using base64 fallback:', upErr);
+      }
+
+      if (!photoUrl) {
+        photoUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const token = localStorage.getItem('token');
+      const decoded = parseJwt(token);
+      const targetId = decoded?.Id || decoded?.id || profile?.Id;
+
+      const payload = {
+        ...formData,
+        Photo: photoUrl
+      };
+
+      const res = await fetch(`${API_BASE_URL}/api/admin/${targetId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.message || 'Failed to update photo');
+      }
+
+      const updatedAdmin = {
+        ...(profile || {}),
+        ...payload,
+        Photo: photoUrl
+      };
+
+      setProfile(updatedAdmin);
+      setFormData((prev) => ({ ...prev, Photo: photoUrl }));
+
+      localStorage.setItem('admin', JSON.stringify(updatedAdmin));
+      localStorage.setItem('user', JSON.stringify(updatedAdmin));
+
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('admin-profile-updated'));
+      window.dispatchEvent(new Event('profileUpdated'));
+
+      toast.success("Admin photo updated successfully!");
+    } catch (err) {
+      console.error('Error uploading admin photo:', err);
+      toast.error(err.message || 'Failed to update photo');
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleEditClick = () => {
     if (!profile) return;
     setFormData({
       AdminName: profile.AdminName || '',
       Email: profile.Email || '',
       Mobile: profile.Mobile || '',
-      EventId: profile.EventId || ''
+      EventId: profile.EventId || '',
+      Photo: profile.Photo || ''
     });
     setShowEdit(true);
   };
@@ -160,10 +257,15 @@ function AdminProfile() {
       const decoded = parseJwt(token);
       const targetId = decoded?.Id || decoded?.id || profile?.Id;
 
+      const payload = {
+        ...formData,
+        Photo: formData.Photo || profile?.Photo || ''
+      };
+
       const res = await fetch(`${API_BASE_URL}/api/admin/${targetId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
@@ -175,13 +277,15 @@ function AdminProfile() {
 
       const updatedAdmin = {
         ...(profile || {}),
-        AdminName: formData.AdminName,
-        Email: formData.Email,
-        Mobile: formData.Mobile
+        ...payload
       };
       localStorage.setItem('admin', JSON.stringify(updatedAdmin));
       localStorage.setItem('user', JSON.stringify(updatedAdmin));
       setProfile(updatedAdmin);
+
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('admin-profile-updated'));
+      window.dispatchEvent(new Event('profileUpdated'));
 
       setShowEdit(false);
       await fetchAdminProfile();
@@ -195,7 +299,7 @@ function AdminProfile() {
 
   const currentAdmin = profile || {
     AdminName: 'Administrator',
-    Email: 'admin@hackhub.com',
+    Email: 'admin@ayojan.com',
     Mobile: '',
     Id: 12,
     createdAt: new Date().toISOString()
@@ -301,13 +405,34 @@ function AdminProfile() {
           <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
               <div className="relative group shrink-0">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl shadow-emerald-700/20 border-2 border-emerald-400/40 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <span>{adminName.charAt(0).toUpperCase()}</span>
+                  {profile?.Photo ? (
+                    <img src={profile.Photo} alt={adminName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{adminName.charAt(0).toUpperCase()}</span>
+                  )}
+                  {uploadingPhoto && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    </div>
+                  )}
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-1.5 rounded-xl shadow-md border-2 border-white dark:border-black">
-                  <Crown className="w-4 h-4" />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="absolute -bottom-2 -right-2 bg-emerald-500 hover:bg-emerald-400 text-white p-2 rounded-xl shadow-md border-2 border-white dark:border-black transition-all hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
+                  title="Upload admin photo"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="space-y-2">
@@ -472,6 +597,34 @@ function AdminProfile() {
                   </div>
 
                   <form onSubmit={handleSave} className="space-y-5">
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-zinc-800">
+                      <div className="relative w-16 h-16 rounded-xl bg-emerald-600/10 border border-emerald-500/20 overflow-hidden flex items-center justify-center shrink-0">
+                        {profile?.Photo || formData.Photo ? (
+                          <img src={formData.Photo || profile.Photo} alt="Admin preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{adminName.charAt(0).toUpperCase()}</span>
+                        )}
+                        {uploadingPhoto && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                            <Loader2 className="w-5 h-5 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Admin Avatar Photo</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">JPG, PNG or WEBP up to 5MB</p>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingPhoto}
+                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 transition cursor-pointer"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          {uploadingPhoto ? 'Uploading...' : 'Change Photo'}
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div className="space-y-1.5 sm:col-span-2">
                         <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
@@ -503,7 +656,7 @@ function AdminProfile() {
                             value={formData.Email}
                             onChange={(e) => setFormData({ ...formData, Email: e.target.value })}
                             required
-                            placeholder="admin@hackhub.com"
+                            placeholder="admin@ayojan.com"
                             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                           />
                         </div>
@@ -691,7 +844,7 @@ function AdminProfile() {
         </div>
 
         <div className="text-center pt-4 pb-2 text-xs text-gray-400 dark:text-gray-600">
-          <p>© 2026 HackHub Event Management System • Authorized Administrator Session</p>
+          <p>© 2026 AYOJAN Event Management System • Authorized Administrator Session</p>
         </div>
       </div>
 

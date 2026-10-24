@@ -34,7 +34,7 @@ const createAdmin = async (UserName, Email, Password, PhoneNumber, callback) => 
 
 const loginAdmin = (Email, callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile AS PhoneNumber, u.Mobile, u.Password, u.CreatedAt AS created_at, r.RoleName 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile AS PhoneNumber, u.Mobile, u.Photo, u.Password, u.CreatedAt AS created_at, r.RoleName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         WHERE LOWER(u.Email) = LOWER(?) AND r.RoleName = 'super_admin'
@@ -49,7 +49,7 @@ const loginAdmin = (Email, callback) => {
 
 const getAdminProfile = (id, callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile AS PhoneNumber, u.Mobile, u.CreatedAt AS created_at, r.RoleName 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile AS PhoneNumber, u.Mobile, u.Photo, u.CreatedAt AS created_at, r.RoleName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         WHERE u.Id = ? AND r.RoleName = 'super_admin'
@@ -64,9 +64,16 @@ const getAdminProfile = (id, callback) => {
     });
 };
 
-const updateAdmin = (id, UserName, Email, PhoneNumber, callback) => {
-    const query = `UPDATE users SET UserName = ?, Email = ?, Mobile = ? WHERE Id = ? AND RoleId = 1`;
-    db.query(query, [UserName, Email, PhoneNumber, id], (err, result) => {
+const updateAdmin = (id, UserName, Email, PhoneNumber, Photo, callback) => {
+    let query, values;
+    if (Photo !== undefined) {
+        query = `UPDATE users SET UserName = ?, Email = ?, Mobile = ?, Photo = ? WHERE Id = ? AND RoleId = 1`;
+        values = [UserName, Email, PhoneNumber, Photo, id];
+    } else {
+        query = `UPDATE users SET UserName = ?, Email = ?, Mobile = ? WHERE Id = ? AND RoleId = 1`;
+        values = [UserName, Email, PhoneNumber, id];
+    }
+    db.query(query, values, (err, result) => {
         if (err) {
             return callback(err, null);
         }

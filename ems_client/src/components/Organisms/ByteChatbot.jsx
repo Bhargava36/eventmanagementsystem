@@ -11,9 +11,12 @@ import {
   Compass,
   ArrowRight,
   User,
-  HelpCircle
+  HelpCircle,
+  Bot,
+
 } from 'lucide-react';
 import useTheme from '../../Hooks/useTheme';
+import ScrollToTopButton from '../ui/ScrollToTopButton';
 
 function ByteChatbot() {
   const navigate = useNavigate();
@@ -98,7 +101,7 @@ function ByteChatbot() {
 
     if (text.includes('who are you') || text.includes('byte') || text.includes('robot')) {
       return {
-        text: "I'm Byte! 🤖 The official mascot and AI navigator of Hack_Hub. I keep an eye on schedules, guide students, and make sure nobody gets lost at the venue!",
+        text: "I'm Byte! 🤖 The official mascot and AI navigator of AYOJAN. I keep an eye on schedules, guide students, and make sure nobody gets lost at the venue!",
         action: null
       };
     }
@@ -306,75 +309,59 @@ function ByteChatbot() {
         )}
       </AnimatePresence>
 
-      <div className="relative flex items-center">
-        <AnimatePresence>
-          {showHintBubble && !isOpen && (
-            <motion.div
-              initial={{ opacity: 0, x: 10, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 10, scale: 0.9 }}
-              className="mr-3 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 text-slate-800 dark:text-zinc-200 border border-slate-200 dark:border-zinc-800 shadow-lg text-xs font-semibold flex items-center gap-2 select-none"
-            >
-              <span>Ask Byte! 🤖</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowHintBubble(false);
-                }}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* Floating Scroll to Top button - exact same w-12 h-12 size and styling harmony */}
+      {!isOpen && <ScrollToTopButton />}
 
+      <div className="group relative flex items-center">
+        {/* Sleek Tooltip on Hover (Desktop) */}
+        {!isOpen && (
+          <span className="pointer-events-none absolute right-full mr-3 hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-950/90 dark:bg-zinc-900/95 text-white border border-emerald-500/30 shadow-xl text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap backdrop-blur-md">
+            <span>Ask Byte AI</span>
+          </span>
+        )}
+
+        {/* Modern AI Floating Trigger - exact w-12 h-12 */}
         <motion.button
           onClick={() => setIsOpen(!isOpen)}
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.94 }}
-          className="relative w-14 h-14 rounded-2xl bg-white dark:bg-zinc-900 border-2 border-emerald-500/50 shadow-xl shadow-emerald-500/20 flex items-center justify-center p-1.5 group transition-colors duration-200 cursor-pointer overflow-hidden"
-          aria-label="Open Byte Chatbot"
+          className="relative w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-tr from-emerald-600 via-emerald-500 to-teal-400 text-white shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 ring-2 ring-white/20 dark:ring-emerald-400/30 transition-all duration-300 cursor-pointer overflow-visible"
+          aria-label={isOpen ? "Close Byte Chatbot" : "Open Byte Chatbot"}
+          title={isOpen ? "Close Byte" : "Ask Byte AI"}
         >
-          <div className="relative w-full h-full flex items-center justify-center">
-            <svg
-              viewBox="0 0 100 100"
-              className="w-10 h-10 overflow-visible"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <line x1="50" y1="28" x2="50" y2="14" stroke="#10b981" strokeWidth="4" strokeLinecap="round" />
-              <motion.circle
-                cx="50"
-                cy="12"
-                r="5"
-                fill="#10b981"
-                animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-              />
-              <rect x="22" y="28" width="56" height="46" rx="14" fill={theme === 'dark' ? '#27272a' : '#ffffff'} stroke="#10b981" strokeWidth="2.5" />
-              <rect x="28" y="34" width="44" height="34" rx="8" fill="#09090b" />
-              
-              <g>
-                <motion.g
-                  animate={{ scaleY: [1, 1, 1, 0.1, 1, 1] }}
-                  transition={{ duration: 3.5, repeat: Infinity, times: [0, 0.45, 0.48, 0.5, 0.8, 1] }}
-                >
-                  <circle cx="40" cy="48" r="4.5" fill="#10b981" />
-                  <circle cx="39" cy="46.5" r="1.5" fill="#ffffff" />
-                  <circle cx="60" cy="48" r="4.5" fill="#10b981" />
-                  <circle cx="59" cy="46.5" r="1.5" fill="#ffffff" />
-                </motion.g>
-                <circle cx="33" cy="56" rx="2.5" ry="1.5" fill="#fb7185" opacity="0.7" />
-                <circle cx="67" cy="56" rx="2.5" ry="1.5" fill="#fb7185" opacity="0.7" />
-                <path d="M 45 58 Q 50 63 55 58" stroke="#10b981" strokeWidth="2" strokeLinecap="round" fill="none" />
-              </g>
-            </svg>
-          </div>
+          <AnimatePresence mode="wait" initial={false}>
+            {isOpen ? (
+              <motion.div
+                key="close"
+                initial={{ rotate: -90, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                exit={{ rotate: 90, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex items-center justify-center"
+              >
+                <X className="w-5 h-5 text-white" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="open"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="relative flex items-center justify-center"
+              >
+                <Bot className="w-5 h-5 text-white transition-transform duration-200 group-hover:scale-110" />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-          </span>
+          {/* Active online indicator dot */}
+          {!isOpen && (
+            <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-400 border-2 border-white dark:border-black" />
+            </span>
+          )}
         </motion.button>
       </div>
 

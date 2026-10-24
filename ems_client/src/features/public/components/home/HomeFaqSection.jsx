@@ -6,11 +6,11 @@ import gsap from 'gsap';
 
 const FAQS = [
   {
-    q: 'Who is eligible to participate in HackHub competitions?',
-    a: 'HackHub hackathons are open to students, developers, designers, and innovators globally. Each competition details whether participation is virtual (open globally online) or on-campus (in-person attendance).',
+    q: 'Who is eligible to participate in AYOJAN competitions?',
+    a: 'AYOJAN hackathons are open to students, developers, designers, and innovators globally. Each competition details whether participation is virtual (open globally online) or on-campus (in-person attendance).',
   },
   {
-    q: 'Are hackathons on HackHub completely free for students?',
+    q: 'Are hackathons on AYOJAN completely free for students?',
     a: 'Yes, 100%. All student registrations, squad submissions, and participation are free. We never charge entry fees to participate, access mentors, or receive bounty rewards.',
   },
   {
@@ -26,7 +26,7 @@ const FAQS = [
     a: 'Submissions are evaluated through structured judging rubrics across rounds. Winners are published on transparent leaderboards, and prize bounties are disbursed directly via bank transfer or verified credentials.',
   },
   {
-    q: 'How can universities and student chapters host events on HackHub?',
+    q: 'How can universities and student chapters host events on AYOJAN?',
     a: 'Colleges and clubs can register directly through our Organizer Portal. You gain access to manage registrations, assign mentors, review Git submissions, allocate lodging, and score participants.',
   },
 ];

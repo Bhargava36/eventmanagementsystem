@@ -1435,9 +1435,16 @@ export default function AdminEventSettings() {
                               aria-checked={enabled}
                               aria-label={`Toggle ${label}`}
                               onClick={() => handleToggle(key)}
-                              className={`relative h-7 w-12 rounded-full transition-colors shrink-0 cursor-pointer ${enabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-zinc-800'}`}
+                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                enabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-zinc-800'
+                              }`}
                             >
-                              <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                              <span
+                                aria-hidden="true"
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                  enabled ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                              />
                             </button>
                           </div>
                         );

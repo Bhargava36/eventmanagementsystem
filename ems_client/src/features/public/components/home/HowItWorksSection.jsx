@@ -188,7 +188,7 @@ export default function HowItWorksSection() {
       {/* Header with ScrollReveal */}
       <div ref={headerRef} className="max-w-3xl mb-12 sm:mb-16 space-y-3">
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
-          How HackHub Works
+          How AYOJAN Works
         </h2>
         <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 font-normal leading-relaxed">
           A straightforward, transparent pathway from discovering an event to presenting your final project.

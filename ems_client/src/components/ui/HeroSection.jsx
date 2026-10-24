@@ -46,7 +46,7 @@ export const CanvasRevealEffect = ({
 const DotMatrix = ({
   colors = [[0, 0, 0]],
   opacities = [0.04, 0.04, 0.04, 0.04, 0.04, 0.08, 0.08, 0.08, 0.08, 0.14],
-  totalSize = 20,
+  totalSize = 10,
   dotSize = 10,
   shader = "",
   center = ["x", "y"],
@@ -426,7 +426,7 @@ const HeroSection = ({ className }) => {
                 [4, 120, 87],
                 [4, 120, 87],
               ]}
-              dotSize={6}
+              dotSize={10}
               reverse={false}
             />
           </div>
@@ -551,7 +551,7 @@ const HeroSection = ({ className }) => {
                     </div>
 
                     <p className="text-xs text-black/40 dark:text-white/40 pt-4">
-                      By continuing, you agree to HackHub <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Terms of Service</Link>, <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Privacy Notice</Link>, and <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Policies</Link>.
+                      By continuing, you agree to AYOJAN <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Terms of Service</Link>, <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Privacy Notice</Link>, and <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Policies</Link>.
                     </p>
                   </motion.div>
                 ) : step === "code" ? (

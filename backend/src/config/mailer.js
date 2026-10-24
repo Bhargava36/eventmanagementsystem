@@ -235,12 +235,12 @@ const sendEventBroadcastEmail = async ({
           </div>
           <div class="organizer-card">
             <strong>Dispatched by:</strong> ${organizerName}<br/>
-            <span>Broadcast sent via HackHub Event Management Protocol.</span>
+            <span>Broadcast sent via AYOJAN Event Management Protocol.</span>
           </div>
         </div>
         <div class="footer">
           You are receiving this communication because you are registered for ${eventName}.<br/>
-          &copy; ${new Date().getFullYear()} HackHub Event Management.
+          &copy; ${new Date().getFullYear()} AYOJAN Event Management.
         </div>
       </div>
     </body>

@@ -49,7 +49,8 @@ import {
   FolderPlus,
   FolderGit2,
   Globe,
-  Code2
+  Code2,
+  ArrowLeftRight
 } from 'lucide-react';
 import useToast from '../../../../Hooks/useToast';
 
@@ -98,8 +99,8 @@ export default function AdminVirtualEvent() {
   const [copiedMeet, setCopiedMeet] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Problem Statement & Themes Tab
-  const [psTab, setPsTab] = useState('themes'); // 'themes' | 'manage' | 'selections' | 'settings'
+  // Main Page Folder Tab ('control' | 'themes' | 'statements' | 'selections' | 'settings' | 'teams' | 'schedule')
+  const [activeTab, setActiveTab] = useState('control');
 
   // Themes State
   const [themes, setThemes] = useState([]);
@@ -138,6 +139,8 @@ export default function AdminVirtualEvent() {
   });
   const [psSaving, setPsSaving] = useState(false);
   const [autoAssigning, setAutoAssigning] = useState(false);
+  const [reassignModal, setReassignModal] = useState({ open: false, selection: null, selectedPsId: '' });
+  const [reassigning, setReassigning] = useState(false);
 
   // Grouping / filtering
   const [psThemeFilter, setPsThemeFilter] = useState('ALL');
@@ -503,7 +506,7 @@ export default function AdminVirtualEvent() {
     resetPsForm();
     setPsForm(prev => ({ ...prev, Theme: themeName }));
     setShowPsForm(true);
-    setPsTab('manage');
+    setActiveTab('statements');
   };
 
   // =============================================
@@ -677,6 +680,35 @@ export default function AdminVirtualEvent() {
     }
   };
 
+  const handleOpenReassign = (sel) => {
+    setReassignModal({
+      open: true,
+      selection: sel,
+      selectedPsId: String(sel.ProblemStatementId || '')
+    });
+  };
+
+  const handleConfirmReassign = async () => {
+    if (!reassignModal.selection || !reassignModal.selectedPsId) return;
+    try {
+      setReassigning(true);
+      const res = await fetch(`${API_BASE_URL}/api/problem-statements/selection/${reassignModal.selection.Id}/reassign`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problemStatementId: reassignModal.selectedPsId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to reassign problem statement');
+      toast.success(`Problem statement reassigned for "${reassignModal.selection.TeamName}"`);
+      setReassignModal({ open: false, selection: null, selectedPsId: '' });
+      loadPSData();
+    } catch (err) {
+      toast.error(err.message || 'Failed to reassign problem statement');
+    } finally {
+      setReassigning(false);
+    }
+  };
+
   const handleRemoveSelection = async (selId, teamName) => {
     if (!confirm(`Remove selection for "${teamName}"?`)) return;
     try {
@@ -762,10 +794,31 @@ export default function AdminVirtualEvent() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
-            <Radio className="h-3.5 w-3.5 animate-pulse" />
-            Virtual Event Control Room
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
+              <Radio className="h-3.5 w-3.5 animate-pulse" />
+              Virtual Event Control Room
+            </div>
+
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition ${
+              themePublished
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-500/20'
+                : 'bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'
+            }`}>
+              {themePublished ? <Eye className="h-3 w-3 text-emerald-500" /> : <EyeOff className="h-3 w-3 text-slate-400" />}
+              <span>Themes: {themePublished ? 'Published' : 'Draft'}</span>
+            </span>
+
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition ${
+              psPublished
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-500/20'
+                : 'bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'
+            }`}>
+              {psPublished ? <Eye className="h-3 w-3 text-emerald-500" /> : <EyeOff className="h-3 w-3 text-slate-400" />}
+              <span>Problem Statements: {psPublished ? 'Published' : 'Draft'}</span>
+            </span>
           </div>
+
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             {event.EventName}
           </h1>
@@ -807,267 +860,261 @@ export default function AdminVirtualEvent() {
         </div>
       </div>
 
-      {/* Main Action Banner: START VIRTUAL EVENT */}
-      <div className={`p-6 sm:p-8 rounded-3xl border transition-all ${
-        isLive
-          ? 'bg-white dark:bg-black border-emerald-500/40 shadow-sm'
-          : 'bg-white dark:bg-black border-slate-200 dark:border-zinc-800 shadow-sm'
-      }`}>
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2.5">
-              <div className={`p-2 rounded-xl ${isLive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-black border dark:border-zinc-800 text-slate-700 dark:text-zinc-300'}`}>
-                {isLive ? <Radio className="h-5 w-5 animate-pulse" /> : <Play className="h-5 w-5" />}
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                {isLive ? 'Virtual Event is Currently Running' : 'Ready to Kick Off the Virtual Event?'}
-              </h2>
-            </div>
-            <p className="text-slate-600 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed">
-              {isLive ? (
-                <>
-                  Participants can now click <strong className="text-emerald-600 dark:text-emerald-400">"Open Virtual Event Page"</strong> from their event details page to join the Google Meet room and access the live agenda.
-                  {event.VirtualStartedAt && (
-                    <span className="block mt-1 text-xs text-slate-400">
-                      Started on: {formatDate(event.VirtualStartedAt)} at {formatTime(event.VirtualStartedAt)}
-                    </span>
-                  )}
-                </>
-              ) : (
-                <>
-                  On the virtual event day, click the button below to turn the virtual track <strong className="text-slate-900 dark:text-white">LIVE</strong>.
-                  Registered participants will immediately see the interactive <strong className="text-emerald-600 dark:text-emerald-400">"Open Virtual Event Page"</strong> button on their event screen!
-                </>
-              )}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {isNotStarted ? (
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={() => handleUpdateStatus('LIVE')}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-sm sm:text-base tracking-wide shadow-xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-              >
-                {actionLoading ? (
-                  <RefreshCw className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Play className="h-5 w-5 fill-current" />
-                )}
-                <span>START VIRTUAL EVENT</span>
-              </button>
-            ) : isLive ? (
-              <>
-                <button
-                  type="button"
-                  disabled={actionLoading}
-                  onClick={() => handleUpdateStatus('COMPLETED')}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-rose-600/30 hover:scale-[1.02] transition-all cursor-pointer"
-                >
-                  <StopCircle className="h-4 w-4" />
-                  <span>Conclude Event</span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={actionLoading}
-                  onClick={() => handleUpdateStatus('NOT_STARTED')}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-semibold text-xs transition cursor-pointer"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  <span>Reset Status</span>
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                disabled={actionLoading}
-                onClick={() => handleUpdateStatus('LIVE')}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-md transition cursor-pointer"
-              >
-                <RotateCcw className="h-4 w-4" />
-                <span>Reopen Virtual Event</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Google Meet & Quick Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Google Meet Configuration */}
-        <div className="lg:col-span-2 bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Video className="h-4 w-4 text-emerald-500" />
-              Live Virtual Meeting Link (Google Meet / Zoom)
-            </h3>
-            {event.VirtualMeetUrl && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
-                <Check className="h-3 w-3" /> Configured
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <label className="text-xs text-slate-500 dark:text-zinc-400">
-              Provide the meeting link where mentors, juries, and participants will connect.
-            </label>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="relative flex-1">
-                <LinkIcon className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
-                <input
-                  type="url"
-                  value={meetUrlInput}
-                  onChange={(e) => setMeetUrlInput(e.target.value)}
-                  placeholder="https://meet.google.com/xyz-abc-def"
-                  className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
-                />
-              </div>
-
-              <button
-                type="button"
-                disabled={savingMeetUrl}
-                onClick={handleSaveMeetUrl}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-black text-white font-bold text-xs transition cursor-pointer"
-              >
-                {savingMeetUrl ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                <span>Save Link</span>
-              </button>
-
-              {event.VirtualMeetUrl && (
-                <>
-                  <button
-                    type="button"
-                    onClick={copyMeetLink}
-                    className="p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 transition cursor-pointer"
-                    title="Copy Link"
-                  >
-                    {copiedMeet ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
-                  </button>
-                  <a
-                    href={event.VirtualMeetUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-4 py-3 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-semibold text-xs transition cursor-pointer"
-                  >
-                    <span>Test</span>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Virtual Track Overview */}
-        <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
-          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-emerald-500" />
-            Virtual Track Stats
-          </h3>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-100 dark:border-zinc-800">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Virtual Teams</span>
-              <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{virtualTeams.length}</p>
-            </div>
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-100 dark:border-zinc-800">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Participants</span>
-              <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{totalVirtualParticipants}</p>
-            </div>
-          </div>
-
-          <div className="space-y-2 text-xs text-slate-600 dark:text-zinc-300 border-t border-slate-100 dark:border-zinc-800 pt-3">
-            <div className="flex justify-between">
-              <span className="text-slate-400">Virtual Start Date:</span>
-              <span className="font-semibold">{formatDate(event.VirtualStartDate || event.StartDate)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Virtual End Date:</span>
-              <span className="font-semibold">{formatDate(event.VirtualEndDate || event.EndDate)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Virtual Prize Pool:</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                ₹{event.VirtualPrizeMoney || event.PrizeMoney || 'N/A'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ============================================================ */}
-      {/* PROBLEM STATEMENTS & THEMES MANAGEMENT SECTION */}
-      {/* ============================================================ */}
-      <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden">
-        {/* Section Header */}
-        <div className="p-6 border-b border-slate-100 dark:border-zinc-800">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
-                <Target className="h-3.5 w-3.5" />
-                Themes & Problem Statements Hub
-              </div>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                Hackathon Themes & Problem Statements
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Add innovation themes, assign problem statements under each theme, set selection limits, and control publishing.
-              </p>
-            </div>
-
-            {/* Publish Status Badges */}
-            <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border ${
-                themePublished
-                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-500/20'
-                  : 'bg-slate-100 dark:bg-black text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-700'
-              }`}>
-                {themePublished ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                Themes {themePublished ? 'Published' : 'Draft'}
-              </span>
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold border ${
-                psPublished
-                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-500/20'
-                  : 'bg-slate-100 dark:bg-black text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-700'
-              }`}>
-                {psPublished ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                Statements {psPublished ? 'Published' : 'Draft'}
-              </span>
-            </div>
-          </div>
-
-          {/* 4 Main Inner Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 mt-5 bg-slate-100 dark:bg-zinc-900 p-1.5 rounded-2xl w-fit">
-            {[
-              { key: 'themes', label: `1. Manage Themes (${themes.length})`, icon: Layers },
-              { key: 'manage', label: `2. Problem Statements (${problemStatements.length})`, icon: FileText },
-              { key: 'selections', label: `3. Team Selections (${selections.length})`, icon: ListChecks },
-              { key: 'settings', label: '4. Publish & Deadlines', icon: Settings2 },
-            ].map(tab => (
+      {/* Folder Tabs Navigation for Entire Virtual Event Management */}
+      <div className="space-y-0">
+        <div className="flex items-end gap-1.5 overflow-x-auto scrollbar-none relative z-10 -mb-px">
+          {[
+            { key: 'control', label: 'Control Room & Meet', icon: Radio },
+            { key: 'themes', label: `Themes (${themes.length})`, icon: Layers },
+            { key: 'statements', label: `Problem Statements (${problemStatements.length})`, icon: FileText },
+            { key: 'selections', label: `Team Selections (${selections.length})`, icon: ListChecks },
+            { key: 'settings', label: 'Publish & Deadlines', icon: Settings2 },
+            { key: 'teams', label: `Registered Teams (${virtualTeams.length})`, icon: Users },
+            { key: 'schedule', label: `Schedule & Milestones (${timelines.length})`, icon: Clock },
+          ].map(tab => {
+            const isActive = activeTab === tab.key;
+            const IconComp = tab.icon;
+            return (
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setPsTab(tab.key)}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  psTab === tab.key
-                    ? 'bg-white dark:bg-black text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-zinc-700'
-                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200'
-                }`}
+                onClick={() => setActiveTab(tab.key)}
+                className="relative h-11 px-4 sm:px-6 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2 transition-colors duration-200 outline-none cursor-pointer whitespace-nowrap"
               >
-                <tab.icon className="h-3.5 w-3.5" />
-                {tab.label}
+                {isActive ? (
+                  <motion.div
+                    layoutId="adminVirtualPageFolderTabActive"
+                    className="absolute inset-0 -bottom-[2px] rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-20 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                    transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                  >
+                    {/* Seamless bottom mask */}
+                    <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-30" />
+                  </motion.div>
+                ) : (
+                  <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200/60 dark:hover:bg-zinc-800/60 transition" />
+                )}
+
+                <span className={`relative z-20 flex items-center gap-2 ${
+                  isActive
+                    ? 'text-slate-900 dark:text-white'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                }`}>
+                  <IconComp className="h-4 w-4" />
+                  <span>{tab.label}</span>
+                  {isActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  )}
+                </span>
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
-        {/* ============================================================ */}
-        {/* TAB 1: THEMES & DOMAINS MANAGEMENT */}
-        {/* ============================================================ */}
-        {psTab === 'themes' && (
+        {/* Connected Card Container for the entire page */}
+        <div className="rounded-3xl rounded-tl-none bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm relative z-0 overflow-hidden p-6 sm:p-8">
+
+          {/* ============================================================ */}
+          {/* TAB 1: CONTROL ROOM & LIVE MEETING LINK */}
+          {/* ============================================================ */}
+          {activeTab === 'control' && (
+            <div className="space-y-6">
+              {/* Main Action Banner: START VIRTUAL EVENT */}
+              <div className={`p-6 sm:p-8 rounded-3xl border transition-all ${
+                isLive
+                  ? 'bg-white dark:bg-black border-emerald-500/40 shadow-sm'
+                  : 'bg-white dark:bg-black border-slate-200 dark:border-zinc-800 shadow-sm'
+              }`}>
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="space-y-2 max-w-2xl">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`p-2 rounded-xl ${isLive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-zinc-900 border dark:border-zinc-800 text-slate-700 dark:text-zinc-300'}`}>
+                        {isLive ? <Radio className="h-5 w-5 animate-pulse" /> : <Play className="h-5 w-5" />}
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                        {isLive ? 'Virtual Event is Currently Running' : 'Ready to Kick Off the Virtual Event?'}
+                      </h2>
+                    </div>
+                    <p className="text-slate-600 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed">
+                      {isLive ? (
+                        <>
+                          Participants can now click <strong className="text-emerald-600 dark:text-emerald-400">"Open Virtual Event Page"</strong> from their event details page to join the Google Meet room and access the live agenda.
+                          {event.VirtualStartedAt && (
+                            <span className="block mt-1 text-xs text-slate-400">
+                              Started on: {formatDate(event.VirtualStartedAt)} at {formatTime(event.VirtualStartedAt)}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          On the virtual event day, click the button below to turn the virtual track <strong className="text-slate-900 dark:text-white">LIVE</strong>.
+                          Registered participants will immediately see the interactive <strong className="text-emerald-600 dark:text-emerald-400">"Open Virtual Event Page"</strong> button on their event screen!
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    {isNotStarted ? (
+                      <button
+                        type="button"
+                        disabled={actionLoading}
+                        onClick={() => handleUpdateStatus('LIVE')}
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm sm:text-base tracking-wide shadow-xl shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+                      >
+                        {actionLoading ? (
+                          <RefreshCw className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <Play className="h-5 w-5 fill-current" />
+                        )}
+                        <span>START VIRTUAL EVENT</span>
+                      </button>
+                    ) : isLive ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={actionLoading}
+                          onClick={() => handleUpdateStatus('COMPLETED')}
+                          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm tracking-wide shadow-lg shadow-rose-600/30 hover:scale-[1.02] transition-all cursor-pointer"
+                        >
+                          <StopCircle className="h-4 w-4" />
+                          <span>Conclude Event</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={actionLoading}
+                          onClick={() => handleUpdateStatus('NOT_STARTED')}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-semibold text-xs transition cursor-pointer"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          <span>Reset Status</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={actionLoading}
+                        onClick={() => handleUpdateStatus('LIVE')}
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-md transition cursor-pointer"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        <span>Reopen Virtual Event</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Google Meet & Quick Stats */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Google Meet Configuration */}
+                <div className="lg:col-span-2 bg-slate-50/70 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Video className="h-4 w-4 text-emerald-500" />
+                      Live Virtual Meeting Link (Google Meet / Zoom)
+                    </h3>
+                    {event.VirtualMeetUrl && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                        <Check className="h-3 w-3" /> Configured
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-xs text-slate-500 dark:text-zinc-400">
+                      Provide the meeting link where mentors, juries, and participants will connect.
+                    </label>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <div className="relative flex-1">
+                        <LinkIcon className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+                        <input
+                          type="url"
+                          value={meetUrlInput}
+                          onChange={(e) => setMeetUrlInput(e.target.value)}
+                          placeholder="https://meet.google.com/xyz-abc-def"
+                          className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={savingMeetUrl}
+                        onClick={handleSaveMeetUrl}
+                        className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-black text-white font-bold text-xs transition cursor-pointer"
+                      >
+                        {savingMeetUrl ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                        <span>Save Link</span>
+                      </button>
+
+                      {event.VirtualMeetUrl && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={copyMeetLink}
+                            className="p-3 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 transition cursor-pointer"
+                            title="Copy Link"
+                          >
+                            {copiedMeet ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                          </button>
+                          <a
+                            href={event.VirtualMeetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-semibold text-xs transition cursor-pointer"
+                          >
+                            <span>Test</span>
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Virtual Track Overview */}
+                <div className="bg-slate-50/70 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-xs space-y-4">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-emerald-500" />
+                    Virtual Track Stats
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200/80 dark:border-zinc-800">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Virtual Teams</span>
+                      <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{virtualTeams.length}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200/80 dark:border-zinc-800">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Participants</span>
+                      <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{totalVirtualParticipants}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs text-slate-600 dark:text-zinc-300 border-t border-slate-200/60 dark:border-zinc-800 pt-3">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Virtual Start Date:</span>
+                      <span className="font-semibold">{formatDate(event.VirtualStartDate || event.StartDate)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Virtual End Date:</span>
+                      <span className="font-semibold">{formatDate(event.VirtualEndDate || event.EndDate)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Virtual Prize Pool:</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        ₹{event.VirtualPrizeMoney || event.PrizeMoney || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================ */}
+          {/* TAB 2: THEMES & DOMAINS MANAGEMENT */}
+          {/* ============================================================ */}
+          {activeTab === 'themes' && (
           <div className="p-6 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -1249,9 +1296,9 @@ export default function AdminVirtualEvent() {
         )}
 
         {/* ============================================================ */}
-        {/* TAB 2: PROBLEM STATEMENTS ORGANIZED BY THEME */}
+        {/* TAB 3: PROBLEM STATEMENTS ORGANIZED BY THEME */}
         {/* ============================================================ */}
-        {psTab === 'manage' && (
+        {activeTab === 'statements' && (
           <div className="p-6 space-y-6">
             {/* Top Action Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1527,9 +1574,9 @@ export default function AdminVirtualEvent() {
         )}
 
         {/* ============================================================ */}
-        {/* TAB 3: TEAM SELECTIONS LIST & AUTO-ASSIGN */}
+        {/* TAB 4: TEAM SELECTIONS LIST & AUTO-ASSIGN */}
         {/* ============================================================ */}
-        {psTab === 'selections' && (
+        {activeTab === 'selections' && (
           <div className="p-6 space-y-5">
             {/* Action Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1548,7 +1595,7 @@ export default function AdminVirtualEvent() {
                   type="button"
                   disabled={autoAssigning}
                   onClick={handleAutoAssign}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition cursor-pointer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm transition cursor-pointer"
                 >
                   {autoAssigning ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Shuffle className="h-3.5 w-3.5" />}
                   <span>Auto-Assign Remaining {unselectedTeamCount} Teams</span>
@@ -1648,14 +1695,25 @@ export default function AdminVirtualEvent() {
                           {formatDate(sel.SelectedAt)} {formatTime(sel.SelectedAt)}
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSelection(sel.Id, sel.TeamName)}
-                            className="p-1 rounded text-slate-400 hover:text-rose-500 transition cursor-pointer"
-                            title="Remove Selection"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenReassign(sel)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-900/50 text-[11px] font-bold transition cursor-pointer"
+                              title="Change Problem Statement"
+                            >
+                              <ArrowLeftRight className="h-3 w-3" />
+                              <span>Change PS</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSelection(sel.Id, sel.TeamName)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
+                              title="Remove Selection"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1675,9 +1733,9 @@ export default function AdminVirtualEvent() {
         )}
 
         {/* ============================================================ */}
-        {/* TAB 4: PUBLISH WORKFLOW & SELECTION SETTINGS */}
+        {/* TAB 5: PUBLISH WORKFLOW & SELECTION SETTINGS */}
         {/* ============================================================ */}
-        {psTab === 'settings' && (
+        {activeTab === 'settings' && (
           <div className="p-6 space-y-6 max-w-3xl">
             {/* Step 1: Themes Publishing */}
             <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-3">
@@ -1791,7 +1849,7 @@ export default function AdminVirtualEvent() {
                     type="button"
                     disabled={autoAssigning}
                     onClick={handleAutoAssign}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-xs transition cursor-pointer shrink-0 shadow-sm"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition cursor-pointer shrink-0 shadow-sm"
                   >
                     {autoAssigning ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Shuffle className="h-3 w-3" />}
                     <span>Auto-Assign Remaining {unselectedTeamCount} Teams</span>
@@ -1885,135 +1943,229 @@ export default function AdminVirtualEvent() {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Virtual Teams List */}
-      <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-100 dark:border-zinc-800">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Users className="h-5 w-5 text-emerald-500" />
-                All Virtual Track Registered Teams
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Teams registered with Participation Mode set to Virtual or Both
-              </p>
-            </div>
-
-            <div className="relative min-w-[240px]">
-              <Search className="absolute left-3.5 top-3 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search team, leader, college..."
-                className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-800 dark:text-zinc-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
-              />
-            </div>
-          </div>
-        </div>
-
-        {filteredTeams.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-500 dark:text-zinc-400">
-            No virtual teams found matching your search.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/70 dark:bg-zinc-900/40 text-slate-500 dark:text-zinc-400 border-b border-slate-100 dark:border-zinc-800 font-bold uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="py-3 px-4">Team Name</th>
-                  <th className="py-3 px-4">Leader</th>
-                  <th className="py-3 px-4">College</th>
-                  <th className="py-3 px-4">Size</th>
-                  <th className="py-3 px-4">Problem Statement</th>
-                  <th className="py-3 px-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
-                {filteredTeams.map((team) => {
-                  const teamSel = selections.find(s => s.TeamId === (team.Id || team.TeamId));
-                  return (
-                    <tr key={team.Id || team.TeamId} className="hover:bg-slate-50/70 dark:hover:bg-zinc-900/60 transition">
-                      <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                        {team.TeamName}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-800 dark:text-zinc-200">{team.LeaderName || 'Lead'}</div>
-                        <div className="text-[11px] text-slate-400">{team.LeaderEmail}</div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div>{team.College || 'N/A'}</div>
-                        <div className="text-[10px] text-slate-400">{team.State}</div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center gap-1 font-semibold">
-                          <Users className="h-3 w-3 text-slate-400" />
-                          {team.MemberCount || team.TeamSize || 1}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        {teamSel ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                            <Hash className="h-2.5 w-2.5" />
-                            {teamSel.ProblemCode}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[10px] italic">Not selected</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px]">
-                          Virtual Track
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Virtual Timelines / Day Milestones Preview */}
-      {timelines.length > 0 && (
-        <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Clock className="h-5 w-5 text-emerald-500" />
-                Virtual Day Agenda & Milestones
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                Schedule of virtual rounds and evaluation phases
-              </p>
-            </div>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              {timelines.length} Milestones
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-            {timelines.map((tl, index) => (
-              <div
-                key={tl.Id || index}
-                className="p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-1.5"
-              >
-                <div className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                  <Calendar className="h-3 w-3" />
-                  <span>{tl.TimelineDate}</span>
-                </div>
-                <h4 className="font-bold text-sm text-slate-800 dark:text-zinc-100">{tl.Heading}</h4>
-                <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
-                  {tl.Description}
+        {/* ============================================================ */}
+        {/* TAB 6: REGISTERED VIRTUAL TEAMS */}
+        {/* ============================================================ */}
+        {activeTab === 'teams' && (
+          <div className="p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Users className="h-4 w-4 text-emerald-500" />
+                  All Virtual Track Registered Teams
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Teams registered with Participation Mode set to Virtual or Both ({filteredTeams.length} of {virtualTeams.length} shown)
                 </p>
               </div>
-            ))}
+
+              <div className="relative min-w-[240px]">
+                <Search className="absolute left-3.5 top-3 h-3.5 w-3.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search team, leader, college..."
+                  className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-800 dark:text-zinc-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
+                />
+              </div>
+            </div>
+
+            {filteredTeams.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-500 dark:text-zinc-400 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800">
+                No virtual teams found matching your search.
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-zinc-800">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-zinc-900/60 text-slate-500 dark:text-zinc-400 border-b border-slate-200 dark:border-zinc-800 font-bold uppercase tracking-wider text-[10px]">
+                    <tr>
+                      <th className="py-3 px-4">Team Name</th>
+                      <th className="py-3 px-4">Leader</th>
+                      <th className="py-3 px-4">College</th>
+                      <th className="py-3 px-4">Size</th>
+                      <th className="py-3 px-4">Problem Statement</th>
+                      <th className="py-3 px-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
+                    {filteredTeams.map((team) => {
+                      const teamSel = selections.find(s => s.TeamId === (team.Id || team.TeamId));
+                      return (
+                        <tr key={team.Id || team.TeamId} className="hover:bg-slate-50/70 dark:hover:bg-zinc-900/60 transition">
+                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                            {team.TeamName}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div className="font-semibold text-slate-800 dark:text-zinc-200">{team.LeaderName || 'Lead'}</div>
+                            <div className="text-[11px] text-slate-400">{team.LeaderEmail}</div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <div>{team.College || 'N/A'}</div>
+                            <div className="text-[10px] text-slate-400">{team.State}</div>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="inline-flex items-center gap-1 font-semibold">
+                              <Users className="h-3 w-3 text-slate-400" />
+                              {team.MemberCount || team.TeamSize || 1}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            {teamSel ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                                <Hash className="h-2.5 w-2.5" />
+                                {teamSel.ProblemCode}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-[10px] italic">Not selected</span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px]">
+                              Virtual Track
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
+        )}
+
+        {/* ============================================================ */}
+        {/* TAB 7: SCHEDULE & MILESTONES */}
+        {/* ============================================================ */}
+        {activeTab === 'schedule' && (
+          <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-emerald-500" />
+                  Virtual Day Agenda & Milestones
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Schedule of virtual rounds and evaluation phases
+                </p>
+              </div>
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                {timelines.length} Milestones
+              </span>
+            </div>
+
+            {timelines.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                {timelines.map((tl, index) => (
+                  <div
+                    key={tl.Id || index}
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-1.5"
+                  >
+                    <div className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                      <Calendar className="h-3 w-3" />
+                      <span>{tl.TimelineDate}</span>
+                    </div>
+                    <h4 className="font-bold text-sm text-slate-800 dark:text-zinc-100">{tl.Heading}</h4>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                      {tl.Description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center text-xs text-slate-500 dark:text-zinc-400 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800">
+                No virtual timelines configured for this event.
+              </div>
+            )}
+          </div>
+        )}
+
         </div>
-      )}
+      </div>
+      {/* Admin Reassign Problem Statement Modal */}
+      <AnimatePresence>
+        {reassignModal.open && reassignModal.selection && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-2xl p-6 space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800/80 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <ArrowLeftRight className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                      Change Problem Statement
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Reassign challenge for team: <strong className="text-slate-800 dark:text-zinc-200">{reassignModal.selection.TeamName}</strong>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReassignModal({ open: false, selection: null, selectedPsId: '' })}
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-zinc-900 dark:hover:text-white transition cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 pt-1">
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 text-xs">
+                  <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider block mb-0.5">Currently Assigned:</span>
+                  <p className="font-bold text-slate-900 dark:text-white">
+                    {reassignModal.selection.ProblemCode}: {reassignModal.selection.ProblemTitle}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">
+                    Select New Problem Statement
+                  </label>
+                  <select
+                    value={reassignModal.selectedPsId}
+                    onChange={(e) => setReassignModal(prev => ({ ...prev, selectedPsId: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white font-medium outline-none focus:border-emerald-500"
+                  >
+                    <option value="">-- Choose Problem Statement --</option>
+                    {problemStatements.map((ps) => (
+                      <option key={ps.Id} value={ps.Id}>
+                        {ps.ProblemCode}: {ps.Title} {ps.Theme ? `(${ps.Theme})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800/80">
+                <button
+                  type="button"
+                  onClick={() => setReassignModal({ open: false, selection: null, selectedPsId: '' })}
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-900 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={reassigning || !reassignModal.selectedPsId || String(reassignModal.selectedPsId) === String(reassignModal.selection.ProblemStatementId)}
+                  onClick={handleConfirmReassign}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50"
+                >
+                  {reassigning ? 'Reassigning...' : 'Confirm & Reassign'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

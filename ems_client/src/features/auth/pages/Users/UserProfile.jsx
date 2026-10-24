@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import {
   Mail,
@@ -22,7 +22,9 @@ import {
   X,
   Save,
   Check,
-  Code
+  Code,
+  Camera,
+  Loader2
 } from 'lucide-react';
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -59,6 +61,8 @@ function UserProfile() {
   const [showEdit, setShowEdit] = useState(false);
   const [teamsCount, setTeamsCount] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
     UserName: '',
@@ -67,7 +71,8 @@ function UserProfile() {
     Location: '',
     State: '',
     Mobile: '',
-    Gender: ''
+    Gender: '',
+    Photo: ''
   });
 
   useEffect(() => {
@@ -109,7 +114,8 @@ function UserProfile() {
         Location: user.Location || '',
         State: user.State || '',
         Mobile: user.Mobile || '',
-        Gender: user.Gender || 'Male'
+        Gender: user.Gender || 'Male',
+        Photo: user.Photo || ''
       });
 
       try {
@@ -128,6 +134,84 @@ function UserProfile() {
     }
   };
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingPhoto(true);
+      let photoUrl = '';
+
+      try {
+        const uploadForm = new FormData();
+        uploadForm.append('file', file);
+        const upRes = await fetch(`${API_BASE_URL}/api/upload/single`, {
+          method: 'POST',
+          body: uploadForm
+        });
+        if (upRes.ok) {
+          const upData = await upRes.json();
+          photoUrl = upData.fileUrl || upData.url || '';
+        }
+      } catch (upErr) {
+        console.warn('Direct upload failed, using base64 fallback:', upErr);
+      }
+
+      if (!photoUrl) {
+        photoUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const targetId = id || storedUser.Id || profile?.Id;
+
+      const res = await fetch(`${API_BASE_URL}/api/users/${targetId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, Photo: photoUrl })
+      });
+
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.message || 'Failed to update photo');
+      }
+
+      setProfile((prev) => ({ ...prev, Photo: photoUrl }));
+      setFormData((prev) => ({ ...prev, Photo: photoUrl }));
+
+      const updatedUser = { ...storedUser, ...formData, Photo: photoUrl };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('user-profile-updated'));
+      window.dispatchEvent(new Event('profileUpdated'));
+
+      toast.success("Profile photo updated successfully!");
+    } catch (err) {
+      console.error('Error uploading photo:', err);
+      toast.error(err.message || 'Failed to update photo');
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -140,14 +224,19 @@ function UserProfile() {
     try {
       setSaving(true);
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const targetId = id || storedUser.Id;
+      const targetId = id || storedUser.Id || profile?.Id;
+
+      const payload = {
+        ...formData,
+        Photo: formData.Photo || profile?.Photo || ''
+      };
 
       const res = await fetch(`${API_BASE_URL}/api/users/${targetId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
@@ -156,8 +245,12 @@ function UserProfile() {
         throw new Error(data.message || 'Profile update failed');
       }
 
-      const updatedUser = { ...storedUser, ...formData };
+      const updatedUser = { ...storedUser, ...payload };
       localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('user-profile-updated'));
+      window.dispatchEvent(new Event('profileUpdated'));
 
       await fetchUserProfile();
       toast.success("Profile updated successfully!");
@@ -254,12 +347,34 @@ function UserProfile() {
             
             <div className="flex items-center gap-5 sm:gap-6">
               <div className="relative shrink-0">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/15 backdrop-blur-md border-2 border-white/30 flex items-center justify-center text-3xl sm:text-4xl font-bold shadow-inner">
-                  {userInitial}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/15 backdrop-blur-md border-2 border-white/30 flex items-center justify-center text-3xl sm:text-4xl font-bold shadow-inner overflow-hidden relative group">
+                  {profile.Photo ? (
+                    <img src={profile.Photo} alt={profile.UserName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{userInitial}</span>
+                  )}
+                  {uploadingPhoto && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    </div>
+                  )}
                 </div>
-                <div className="absolute -bottom-1 -right-1 bg-emerald-400 text-slate-950 rounded-full p-1 shadow-md border-2 border-emerald-900">
-                  <BadgeCheck className="w-4 h-4" />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="absolute -bottom-2 -right-2 bg-emerald-400 hover:bg-emerald-300 text-slate-950 rounded-full p-2 shadow-lg border-2 border-emerald-950 transition-all hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
+                  title="Upload profile photo"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="min-w-0">
@@ -273,7 +388,7 @@ function UserProfile() {
                 </div>
 
                 <p className="text-xs sm:text-sm text-emerald-100/90 mt-1 font-medium">
-                  {profile.College || 'HackHub EMS Member'}
+                  {profile.College || 'AYOJAN EMS Member'}
                 </p>
 
                 <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-white/80">
@@ -354,6 +469,34 @@ function UserProfile() {
               </div>
 
               <form onSubmit={handleSave} className="space-y-6">
+                <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+                  <div className="relative w-16 h-16 rounded-xl bg-emerald-600/10 border border-emerald-500/20 overflow-hidden flex items-center justify-center shrink-0">
+                    {profile.Photo || formData.Photo ? (
+                      <img src={formData.Photo || profile.Photo} alt="Profile preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{userInitial}</span>
+                    )}
+                    {uploadingPhoto && (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-white">Profile Photo</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">JPG, PNG or WEBP under 5MB</p>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingPhoto}
+                      className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 transition cursor-pointer"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      {uploadingPhoto ? 'Uploading...' : 'Change Photo'}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">

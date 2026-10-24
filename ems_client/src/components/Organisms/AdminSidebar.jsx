@@ -54,6 +54,7 @@ const SidebarContent = ({
       return {};
     }
   });
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (collapsed) {
@@ -71,10 +72,35 @@ const SidebarContent = ({
       try {
         const stored = JSON.parse(localStorage.getItem('admin') || '{}');
         setAdminData(stored);
+        setImageError(false);
       } catch {
         // ignore
       }
     };
+
+    const targetAdminId = adminData?.Id || adminData?.id || user?.Id || user?.id;
+    if (targetAdminId) {
+      fetch(`${API_BASE_URL}/api/admin/${targetAdminId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data) return;
+          const aData = data.events?.[0] || data.admin || data;
+          if (aData) {
+            setAdminData((prev) => {
+              const updated = {
+                ...prev,
+                ...aData
+              };
+              try {
+                localStorage.setItem('admin', JSON.stringify(updated));
+              } catch (e) {}
+              return updated;
+            });
+            setImageError(false);
+          }
+        })
+        .catch(() => {});
+    }
 
     const targetEventId = adminData?.EventId || user?.EventId;
     if (targetEventId) {
@@ -104,11 +130,15 @@ const SidebarContent = ({
 
     window.addEventListener('storage', syncAdminData);
     window.addEventListener('admin-event-updated', syncAdminData);
+    window.addEventListener('admin-profile-updated', syncAdminData);
+    window.addEventListener('profileUpdated', syncAdminData);
     return () => {
       window.removeEventListener('storage', syncAdminData);
       window.removeEventListener('admin-event-updated', syncAdminData);
+      window.removeEventListener('admin-profile-updated', syncAdminData);
+      window.removeEventListener('profileUpdated', syncAdminData);
     };
-  }, [adminData?.EventId, user?.EventId]);
+  }, [adminData?.EventId, user?.EventId, adminData?.Id, user?.Id]);
 
   const canShowText = isMobile || showText;
 
@@ -118,7 +148,8 @@ const SidebarContent = ({
     navigate('/admin/login');
   }
 
-  const adminDisplayName = adminData?.AdminName || user?.AdminName || 'Admin';
+  const adminDisplayName = adminData?.AdminName || user?.AdminName || adminData?.UserName || user?.UserName || adminData?.name || user?.name || 'Admin';
+  const adminPhoto = adminData?.Photo || adminData?.photo || user?.Photo || user?.photo || adminData?.ProfilePic || '';
   const rawMode = adminData?.HackathonMode || user?.HackathonMode;
   const { showVirtual, showPhysical, isBoth } = getTrackVisibility(rawMode, adminData?.Location);
   const isIndividual = isSoloTeamSize(adminData?.TeamSize || user?.TeamSize);
@@ -247,9 +278,18 @@ const SidebarContent = ({
         <div className="relative shrink-0">
           <div
             className={`${!isMobile && collapsed ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg'
-              } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300`}
+              } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300 overflow-hidden ring-2 ring-emerald-500/30`}
           >
-            {adminDisplayName.charAt(0).toUpperCase()}
+            {adminPhoto && !imageError ? (
+              <img
+                src={adminPhoto}
+                alt={adminDisplayName}
+                onError={() => setImageError(true)}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{adminDisplayName.charAt(0).toUpperCase()}</span>
+            )}
           </div>
           <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white dark:border-black"></span>
         </div>
@@ -403,7 +443,7 @@ const Sidebar = () => {
             <div className="mt-2">{logoElement}</div>
             <div className="flex flex-col">
               <span className="font-bold text-sm tracking-wide text-gray-900 dark:text-white">
-                HACK_HUB
+                AYOJAN
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400 tracking-widest">
                 EMS

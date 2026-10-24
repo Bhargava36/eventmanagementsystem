@@ -172,9 +172,9 @@ const getUserByEmail = (req, res) => {
 };
 
 const updateUser = (req, res) => {
-    const {UserName, Email, Mobile, Gender, College, Location, State } = req.body;
+    const {UserName, Email, Mobile, Gender, College, Location, State, Photo } = req.body;
     const id = req.params.id;
-    usersService.updateUser(id, UserName, Email, Mobile, Gender, College, Location, State, (err, result) => {
+    usersService.updateUser(id, UserName, Email, Mobile, Gender, College, Location, State, Photo, (err, result) => {
             if (err) {
                 return res.status(500).json({
                     message: err.message
@@ -189,7 +189,18 @@ const updateUser = (req, res) => {
 
             res.status(200).json({
                 message: "User updated successfully",
-                result
+                result,
+                user: {
+                    Id: id,
+                    UserName,
+                    Email,
+                    Mobile,
+                    Gender,
+                    College,
+                    Location,
+                    State,
+                    Photo
+                }
             });
         }
     );

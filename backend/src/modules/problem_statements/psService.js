@@ -217,6 +217,26 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
             });
         };
 
+        const checkExistingSelectionThenProceed = () => {
+            if (userRole === 'admin') {
+                return proceedWithSelection();
+            }
+            db.query(
+                `SELECT Id, ProblemStatementId FROM problem_statement_selections WHERE EventId = ? AND TeamId = ?`,
+                [eventId, teamId],
+                (selErr, selRows) => {
+                    if (selErr) return callback(selErr);
+                    if (selRows && selRows.length > 0) {
+                        return callback({
+                            status: 400,
+                            message: 'A problem statement has already been selected and locked. Only an event admin can modify or reassign your selection.'
+                        });
+                    }
+                    proceedWithSelection();
+                }
+            );
+        };
+
         if (userId && userRole !== 'admin') {
             db.query(
                 `SELECT Id, TeamLeadUserId FROM registered_teams WHERE Id = ? AND EventId = ?`,
@@ -226,14 +246,14 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
                     if (teamRows && teamRows.length > 0) {
                         const team = teamRows[0];
                         if (team.TeamLeadUserId && String(team.TeamLeadUserId) !== String(userId)) {
-                            return callback({ status: 403, message: 'Only the Team Leader can choose or modify the problem statement for your team.' });
+                            return callback({ status: 403, message: 'Only the Team Leader or registered participant can choose the problem statement.' });
                         }
                     }
-                    proceedWithSelection();
+                    checkExistingSelectionThenProceed();
                 }
             );
         } else {
-            proceedWithSelection();
+            checkExistingSelectionThenProceed();
         }
     });
 };
@@ -358,6 +378,25 @@ const autoAssignRemainingTeams = (eventId, callback) => {
 };
 
 // ========================
+// ADMIN: Reassign a team's selection
+// ========================
+
+const reassignTeamSelection = (selectionId, newProblemStatementId, callback) => {
+    const query = `
+        UPDATE problem_statement_selections 
+        SET ProblemStatementId = ?, SelectionType = 'admin_reassigned', SelectedAt = CURRENT_TIMESTAMP
+        WHERE Id = ?
+    `;
+    db.query(query, [newProblemStatementId, selectionId], (err, result) => {
+        if (err) return callback(err);
+        db.query(`SELECT EventId, TeamId, ProblemStatementId FROM problem_statement_selections WHERE Id = ?`, [selectionId], (err2, rows) => {
+            if (err2 || !rows || rows.length === 0) return callback(null, { message: 'Reassigned successfully' });
+            callback(null, { message: 'Problem statement reassigned successfully', selection: rows[0] });
+        });
+    });
+};
+
+// ========================
 // ADMIN: Remove a team's selection
 // ========================
 
@@ -383,5 +422,6 @@ module.exports = {
     getTeamSelection,
     getSelectionsByEvent,
     autoAssignRemainingTeams,
-    removeSelection
+    removeSelection,
+    reassignTeamSelection
 };

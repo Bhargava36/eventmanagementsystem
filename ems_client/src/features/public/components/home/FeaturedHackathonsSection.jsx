@@ -9,7 +9,9 @@ import {
   Users,
   Trophy,
   ArrowRight,
-  Tag
+  Tag,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 import { getEventTypeInfo } from '../../../../lib/utils';
 
@@ -17,6 +19,7 @@ export default function FeaturedHackathonsSection() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [brokenImages, setBrokenImages] = useState({});
   const cardsRef = useRef([]);
 
   useEffect(() => {
@@ -204,11 +207,14 @@ export default function FeaturedHackathonsSection() {
             const posterUrl = getEventPosterUrl(event.Posters);
             const mode = String(event.HackathonMode || 'Virtual');
             const typeInfo = getEventTypeInfo(event.EventType);
-            const prize = event.PrizeMoney || event.PhysicalPrizeMoney 
-              ? `₹${Number(event.PrizeMoney || event.PhysicalPrizeMoney).toLocaleString('en-IN')}` 
-              : typeInfo.isWorkshop 
-              ? 'Certificates & Swag' 
-              : 'TBD';
+            const rawPrize = event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney;
+            const prize = (() => {
+              if (!rawPrize) return typeInfo.isWorkshop ? 'Certificates & Swag' : 'TBD';
+              const str = String(rawPrize).trim();
+              const num = Number(str.replace(/[^0-9.-]+/g, ''));
+              if (!isNaN(num) && num > 0) return `₹${num.toLocaleString('en-IN')}`;
+              return str.startsWith('₹') ? str : `₹${str}`;
+            })();
 
             return (
               <div
@@ -219,15 +225,21 @@ export default function FeaturedHackathonsSection() {
               >
                 {/* Poster Image */}
                 <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 dark:bg-zinc-950">
-                  {posterUrl ? (
+                  {posterUrl && !brokenImages[event.Id || idx] ? (
                     <img
                       src={posterUrl}
                       alt={event.EventName}
+                      onError={() => setBrokenImages((prev) => ({ ...prev, [event.Id || idx]: true }))}
                       className="w-full h-full object-cover transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-zinc-900 text-slate-400 dark:text-zinc-600">
-                      <Trophy className="w-12 h-12" />
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 via-slate-200/60 to-slate-100 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900 text-slate-400 dark:text-zinc-600 transition-colors">
+                      <div className="p-3.5 text-emerald-600 dark:text-emerald-400 mb-2 ">
+                        <Camera className="w-20 h-20" />
+                      </div>
+                      <span className="text-[11px] font-semibold tracking-wider text-slate-500 dark:text-zinc-500 uppercase">
+                        No Image
+                      </span>
                     </div>
                   )}
 

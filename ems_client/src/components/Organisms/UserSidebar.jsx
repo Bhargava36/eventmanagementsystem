@@ -4,6 +4,8 @@ import { motion, LayoutGroup } from 'framer-motion';
 import ThemeToggle from './ThemeToggler';
 import useAuth from '../../Hooks/useAuth';
 import useToast from '../../Hooks/useToast';
+import { API_BASE_URL } from '@/lib/api';
+
 import {
   LayoutDashboard,
   Users,
@@ -57,8 +59,57 @@ const UserSidebarContent = ({
     navigate('/user/login'); 
   }
 
-  const userInitials = user?.name ? user.name.charAt(0).toUpperCase() : (user?.username ? user.username.charAt(0).toUpperCase() : 'U');
-  const displayName = user?.name || user?.username || 'Participant';
+  const [profileData, setProfileData] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || '{}');
+    } catch {
+      return {};
+    }
+  });
+  const [imageError, setImageError] = useState(false);
+
+  useEffect(() => {
+    const syncUserData = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('user') || '{}');
+        setProfileData(stored);
+        setImageError(false);
+      } catch {}
+    };
+
+    const targetId = user?.Id || user?.id || profileData?.Id || profileData?.id;
+    if (targetId) {
+      fetch(`${API_BASE_URL}/api/users/${targetId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.user) {
+            setProfileData((prev) => {
+              const updated = { ...prev, ...data.user };
+              try {
+                localStorage.setItem('user', JSON.stringify(updated));
+              } catch (e) {}
+              return updated;
+            });
+            setImageError(false);
+          }
+        })
+        .catch(() => {});
+    }
+
+    window.addEventListener('storage', syncUserData);
+    window.addEventListener('user-profile-updated', syncUserData);
+    window.addEventListener('profileUpdated', syncUserData);
+    return () => {
+      window.removeEventListener('storage', syncUserData);
+      window.removeEventListener('user-profile-updated', syncUserData);
+      window.removeEventListener('profileUpdated', syncUserData);
+    };
+  }, [user?.Id, user?.id]);
+
+  const displayName = profileData?.UserName || user?.UserName || profileData?.name || user?.name || profileData?.username || user?.username || 'Participant';
+  const userPhoto = profileData?.Photo || profileData?.photo || user?.Photo || user?.photo || profileData?.ProfilePic || user?.ProfilePic || '';
+  const userInitials = (displayName && displayName !== 'Participant') ? displayName.charAt(0).toUpperCase() : (user?.UserName ? user.UserName.charAt(0).toUpperCase() : 'U');
+
   const menuItems = [
     { name: 'Dashboard',          icon: LayoutDashboard, path: '/user/dashboard',      badge: null, end: true  },
     { name: 'Competitions',       icon: Trophy,          path: '/user/competitions',   badge: null, end: false },
@@ -102,9 +153,18 @@ const UserSidebarContent = ({
           <div
             className={`${
               !isMobile && collapsed ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg'
-            } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300`}
+            } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300 overflow-hidden ring-2 ring-emerald-500/30`}
           >
-            {userInitials}
+            {userPhoto && !imageError ? (
+              <img
+                src={userPhoto}
+                alt={displayName}
+                onError={() => setImageError(true)}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{userInitials}</span>
+            )}
           </div>
           <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white dark:border-black"></span>
         </div>
@@ -113,9 +173,11 @@ const UserSidebarContent = ({
             initial={{ opacity: 0, x: -5 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.2, delay: 0.2 }}
-            className="overflow-hidden"
+            className="overflow-hidden min-w-0"
           >
-            <h3 className="font-bold text-base whitespace-nowrap overflow-hidden text-ellipsis max-w-[130px]">{displayName}</h3>
+            <h3 className="font-bold text-base whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]" title={displayName}>
+              {displayName}
+            </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
               Participant
             </p>
@@ -260,7 +322,7 @@ const UserSidebar = () => {
             <div className="mt-2">{logoElement}</div>
             <div className="flex flex-col">
               <span className="font-bold text-sm tracking-wide text-gray-900 dark:text-white">
-                HACK_HUB
+                AYOJAN
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400 tracking-widest">
                 EMS

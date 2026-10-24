@@ -25,6 +25,8 @@ import {
   AlertCircle,
   Radio,
   Layers,
+  Camera,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { resolveEventMode } from '../../../public/pages/ExploreEvents';
 
@@ -35,6 +37,7 @@ export default function UserCompetitions() {
   const [events,     setEvents]     = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [fetchError, setFetchError] = useState(null);
+  const [brokenImages, setBrokenImages] = useState({});
 
   const [searchTerm,      setSearchTerm]      = useState('');
   const [selectedMode,    setSelectedMode]    = useState('ALL');
@@ -357,12 +360,12 @@ export default function UserCompetitions() {
                 >
                   {/* background */}
                   <div className="absolute inset-0 w-full h-full">
-                    {posterUrl ? (
+                    {posterUrl && !brokenImages[event.Id] ? (
                       <img
                         src={posterUrl}
                         alt={event.EventName}
                         className="w-full h-full object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105 group-hover:brightness-[0.2] group-hover:blur-sm"
-                        onError={(e) => { e.target.style.display = 'none'; }}
+                        onError={() => setBrokenImages((prev) => ({ ...prev, [event.Id]: true }))}
                       />
                     ) : (
                       <div
@@ -373,9 +376,11 @@ export default function UserCompetitions() {
                             : `radial-gradient(circle at 50% 40%, ${customBg}25 0%, #e2e8f0 85%)`
                         }}
                       >
-                        <Tag className={`h-14 w-14 mb-2 ${theme === 'dark' ? 'text-emerald-400/60' : 'text-emerald-600'}`} />
-                        <span className={`text-xs font-bold tracking-widest uppercase ${theme === 'dark' ? 'text-emerald-400/70' : 'text-emerald-700'}`}>
-                          {event.EventType || 'CHALLENGE'}
+                        <div className="p-3.5 text-emerald-400 mb-2">
+                          <Camera className="h-20 w-20" />
+                        </div>
+                        <span className={`text-xs font-bold tracking-widest uppercase ${theme === 'dark' ? 'text-emerald-400/80' : 'text-emerald-700'}`}>
+                          No Image
                         </span>
                       </div>
                     )}

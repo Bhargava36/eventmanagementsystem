@@ -10,6 +10,9 @@ import {
   Bell,
   ShieldCheck,
   Globe,
+  Layers,
+  Sparkles,
+  ExternalLink,
 } from "lucide-react";
 
 // Social SVG Icons
@@ -67,29 +70,21 @@ export function Footer() {
   );
 
   const footerNavigation = {
-    product: [
-      { name: "Event Dashboards", href: "/sidebar" },
-      { name: "Attendee Management", href: "#" },
-      { name: "Ticketing & Passes", href: "#" },
-      { name: "Live Analytics", href: "#" },
-      { name: "Schedule Planner", href: "#" },
+    events: [
+      { name: "Explore Events", href: "/events" },
+      { name: "Hackathons", href: "/events" },
+      { name: "Tech Fests", href: "/events" },
+      { name: "Workshops", href: "/events" },
     ],
-    resources: [
-      { name: "Documentation", href: "#" },
-      { name: "API Reference", href: "#" },
-      { name: "Community Guides", href: "#" },
-      { name: "System Status", href: "#" },
-      { name: "Release Notes", href: "#" },
-    ],
-    company: [
-      { name: "About Us", href: "#" },
-      { name: "Manifesto", href: "#1" },
-      { name: "Privacy Policy", href: "#" },
-      { name: "Terms of Service", href: "#" },
+    portals: [
+      { name: "Participant Portal", href: "/user/login" },
+      { name: "Organizer Portal", href: "/admin/login" },
+      { name: "Jury Portal", href: "/evaluator/login" },
+      { name: "Test Accounts", href: "/test-credentials" },
     ],
     social: [
       { name: "GitHub", href: "https://github.com", icon: GithubIcon },
-      { name: "Twitter", href: "https://twitter.com", icon: TwitterIcon },
+      { name: "Twitter / X", href: "https://twitter.com", icon: TwitterIcon },
       { name: "LinkedIn", href: "https://linkedin.com", icon: LinkedinIcon },
       { name: "Discord", href: "https://discord.com", icon: DiscordIcon },
     ],
@@ -97,43 +92,33 @@ export function Footer() {
 
   return (
     <motion.footer 
-    initial={{opacity:0, y: 100}}
-    animate={{opacity:1, y: 0}}
-    exit={{opacity:0, y: 100}}
-    transition={{duration: 0.5,delay:0.5,repeat: 1,ease: "easeInOut"}}
-    className="relative z-20 border-t border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/90 backdrop-blur-md transition-colors duration-300">
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="relative z-20 border-t border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/90 backdrop-blur-md transition-colors duration-300"
+    >
       {/* Decorative top ambient glow line */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-gray-400 dark:via-white/30 to-transparent" />
 
       <div className="max-w-7xl mx-auto px-6 pt-16 pb-12 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 pb-16 border-b border-gray-200 dark:border-white/10">
-          {/* Brand Column */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="flex items-center gap-3">
+        {/* 4 Clean, Balanced Columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 pb-14 border-b border-gray-200 dark:border-white/10">
+          {/* Column 1: Brand */}
+          <div className="space-y-4">
+            <Link to="/" className="flex items-center gap-2.5">
               {logoElement}
-              <span className="font-bold text-xl tracking-tight text-gray-900 dark:text-white">
-                Hack_Hub
+              <span className="font-bold text-lg tracking-wider text-gray-900 dark:text-white">
+                AYOJAN
               </span>
-            </div>
+            </Link>
 
-            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed max-w-sm">
-              The next-generation event management ecosystem. Streamline registrations, engage attendees, and analyze performance effortlessly.
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed max-w-sm">
+              All-in-one event management platform for college hackathons, competitions, and technical symposia.
             </p>
 
-            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                Enterprise Ready
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <Globe className="w-4 h-4 text-blue-500" />
-                99.99% Uptime
-              </span>
-            </div>
-
             {/* Social Links */}
-            <div className="flex items-center space-x-3 pt-2">
+            <div className="flex items-center space-x-2.5 pt-1">
               {footerNavigation.social.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -142,8 +127,8 @@ export function Footer() {
                     href={item.href}
                     target="_blank"
                     rel="noreferrer"
-                    className="p-2.5 rounded-full border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:border-gray-400 dark:hover:border-white/40 dark:bg-black/5 bg-gray-50 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 dark:hover:text-white transition-colors"
-                    whileHover={{ scale: 1.1, y: -2 }}
+                    className="p-2 rounded-full border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-white hover:border-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-600 dark:hover:border-emerald-600 transition-colors"
+                    whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.95 }}
                     aria-label={item.name}
                   >
@@ -154,78 +139,54 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Navigation Links Columns */}
-          <div className="lg:col-span-5 grid grid-cols-3 gap-6">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white mb-4">
-                Product
-              </h3>
-              <ul className="space-y-3 text-sm">
-                {footerNavigation.product.map((item) => (
-                  <li key={item.name}>
-                    <Link
-                      to={item.href}
-                      className="text-gray-600 dark:text-gray-400  hover:text-emerald-700 dark:hover:text-emerald-600 transition-colors duration-200"
-                    >
-                      {item.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white mb-4">
-                Resources
-              </h3>
-              <ul className="space-y-3 text-sm">
-                {footerNavigation.resources.map((item) => (
-                  <li key={item.name}>
-                    <a
-                      href={item.href}
-                      className="text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors duration-200"
-                    >
-                      {item.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white mb-4">
-                Company
-              </h3>
-              <ul className="space-y-3 text-sm">
-                {footerNavigation.company.map((item) => (
-                  <li key={item.name} className="flex items-center gap-1.5">
-                    <a
-                      href={item.href}
-                      className="text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors duration-200"
-                    >
-                      {item.name}
-                    </a>
-                    {item.badge && (
-                      <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        {item.badge}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* Column 2: Events */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white mb-4">
+              Events
+            </h3>
+            <ul className="space-y-3 text-xs sm:text-sm">
+              {footerNavigation.events.map((item) => (
+                <li key={item.name}>
+                  <Link
+                    to={item.href}
+                    className="text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-200"
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* Newsletter Column */}
-          <div className="lg:col-span-3 space-y-4">
+          {/* Column 3: Portals */}
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white mb-4">
+              Portals
+            </h3>
+            <ul className="space-y-3 text-xs sm:text-sm">
+              {footerNavigation.portals.map((item) => (
+                <li key={item.name}>
+                  <Link
+                    to={item.href}
+                    className="text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-200"
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 4: Stay Updated */}
+          <div className="space-y-3.5">
             <div className="flex items-center gap-2">
-              <Bell className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white">
                 Stay Updated
               </h3>
             </div>
             <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-              Get product updates, event tips, and platform insights straight to your inbox.
+              Get updates about new hackathons and competitions straight to your inbox.
             </p>
 
             <form onSubmit={handleSubscribe} className="space-y-2">
@@ -235,12 +196,12 @@ export function Footer() {
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full text-xs bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white border border-gray-300 dark:border-white/10 rounded-full py-2.5 pl-4 pr-12 focus:outline-none focus:border-gray-500 dark:focus:border-white/40 transition-colors"
+                  className="w-full text-xs bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white border border-gray-300 dark:border-white/10 rounded-full py-2.5 pl-4 pr-11 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors"
                   required
                 />
                 <button
                   type="submit"
-                  className="absolute right-1 top-1 text-white dark:text-white w-7 h-7 flex items-center justify-center rounded-full bg-emerald-600 dark:bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-colors shadow-sm"
+                  className="absolute right-1 top-1 text-white w-7 h-7 flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm"
                   aria-label="Subscribe"
                 >
                   <Mail className="w-3.5 h-3.5" />
@@ -249,34 +210,35 @@ export function Footer() {
 
               {subscribed && (
                 <motion.p
-                  initial={{ opacity: 0, y: -5 }}
+                  initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium pt-1"
                 >
-                  <Check className="w-3.5 h-3.5" /> Thank you for subscribing!
+                  <Check className="w-3.5 h-3.5" /> Subscribed successfully!
                 </motion.p>
               )}
             </form>
           </div>
         </div>
 
+
         {/* Bottom copyright bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500 dark:text-gray-400">
-          <p>© {new Date().getFullYear()} HackHub. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Ayojan Event Management Platform. Built for student builders &amp; organizers.</p>
 
           <div className="flex items-center space-x-6">
-            <a href="#" className="hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors">
-              Privacy
-            </a>
-            <a href="#" className="hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors">
-              Terms
-            </a>
-            <a href="#" className="hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors">
-              Cookies
-            </a>
-            <a href="#" className="hover:text-emerald-600 dark:hover:text-emerald-600 transition-colors">
-              Security
-            </a>
+            <Link to="/events" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+              Competitions
+            </Link>
+            <Link to="/test-credentials" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+              Demo Access
+            </Link>
+            <Link to="/user/login" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+              Participant Sign In
+            </Link>
+            <Link to="/admin/login" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+              Organizers
+            </Link>
           </div>
 
           <button

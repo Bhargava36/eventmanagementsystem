@@ -46,7 +46,7 @@ const createAdmin = async (AdminName, Email, Password, Mobile, EventId, callback
 
 const loginAdmin = (Email, EventName, callback) => {
     const query = `
-        SELECT u.Id, u.UserName AS AdminName, u.UserName, u.Email, u.Mobile, u.Password, u.EventId, events.EventName, events.HackathonMode, r.RoleName 
+        SELECT u.Id, u.UserName AS AdminName, u.UserName, u.Email, u.Mobile, u.Password, u.EventId, u.Photo, events.EventName, events.HackathonMode, r.RoleName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         JOIN events ON u.EventId = events.Id 
@@ -64,7 +64,7 @@ const loginAdmin = (Email, EventName, callback) => {
 
 const getAllAdmin = (callback) => {
     const query = `
-        SELECT u.Id, u.UserName AS AdminName, u.UserName, u.Email, u.Mobile, u.EventId, u.CreatedAt AS createdAt, events.EventName 
+        SELECT u.Id, u.UserName AS AdminName, u.UserName, u.Email, u.Mobile, u.EventId, u.Photo, u.CreatedAt AS createdAt, events.EventName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         LEFT JOIN events ON u.EventId = events.Id 
@@ -83,7 +83,7 @@ const getAllAdmin = (callback) => {
 
 const getAdminById = (id, callback) => {
     const query = `
-        SELECT u.Id, u.UserName AS AdminName, u.UserName, u.Email, u.Mobile, u.EventId, u.CreatedAt AS createdAt, events.EventName 
+        SELECT u.Id, u.UserName AS AdminName, u.UserName, u.Email, u.Mobile, u.EventId, u.Photo, u.CreatedAt AS createdAt, events.EventName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         LEFT JOIN events ON u.EventId = events.Id 
@@ -101,7 +101,7 @@ const getAdminById = (id, callback) => {
 
 const getAdminByEventId = (EventId, callback) => {
     const query = `
-        SELECT u.Id, u.UserName AS AdminName, u.UserName, u.Email, u.Mobile, u.EventId, u.CreatedAt AS createdAt, events.EventName 
+        SELECT u.Id, u.UserName AS AdminName, u.UserName, u.Email, u.Mobile, u.EventId, u.Photo, u.CreatedAt AS createdAt, events.EventName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         LEFT JOIN events ON u.EventId = events.Id 
@@ -117,9 +117,16 @@ const getAdminByEventId = (EventId, callback) => {
     });
 };
 
-const updateAdmin = (id, AdminName, Email, Mobile, EventId, callback) => {
-    const query = `UPDATE users SET UserName = ?, Email = ?, Mobile = ?, EventId = ? WHERE Id = ? AND RoleId = 2`;
-    db.query(query, [AdminName, Email, Mobile, EventId, id], (err, result) => {
+const updateAdmin = (id, AdminName, Email, Mobile, EventId, Photo, callback) => {
+    let query, values;
+    if (Photo !== undefined) {
+        query = `UPDATE users SET UserName = ?, Email = ?, Mobile = ?, EventId = ?, Photo = ? WHERE Id = ? AND RoleId = 2`;
+        values = [AdminName, Email, Mobile, EventId, Photo, id];
+    } else {
+        query = `UPDATE users SET UserName = ?, Email = ?, Mobile = ?, EventId = ? WHERE Id = ? AND RoleId = 2`;
+        values = [AdminName, Email, Mobile, EventId, id];
+    }
+    db.query(query, values, (err, result) => {
         if (err) {
             return callback(err, null);
         } else {

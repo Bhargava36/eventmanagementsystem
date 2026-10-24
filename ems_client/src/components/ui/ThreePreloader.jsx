@@ -6,7 +6,7 @@ import useTheme from '../../Hooks/useTheme';
 /**
  * ThreePreloader
  * Official 4-dots brand preloader:
- * - Premium Title Style: HACK_HUB with radiant emerald underscore and accent lines.
+ * - Premium Title Style: Ayojan with radiant emerald underscore and accent lines.
  * - Full Theme Support: Dynamic Light & Dark Mode styling.
  * - 4 balls bounce in dynamically from 4 screen corners to top diamond.
  * - 4 balls rotate 360 degrees and smoothly stop.
@@ -31,14 +31,12 @@ export default function ThreePreloader({ onComplete }) {
 
   // Luxury Brand Title Letters with Emerald Underscore accent
   const BRAND_LETTERS = [
-    { char: 'H', isAccent: false },
-    { char: 'A', isAccent: false },
-    { char: 'C', isAccent: false },
-    { char: 'K', isAccent: false },
-    { char: '_', isAccent: true },
-    { char: 'H', isAccent: false },
-    { char: 'U', isAccent: false },
-    { char: 'B', isAccent: false },
+    { char: 'A', isAccent: true },
+    { char: 'Y', isAccent: false },
+    { char: 'O', isAccent: false },
+    { char: 'J', isAccent: false },
+    { char: 'A', isAccent: true },
+    { char: 'N', isAccent: false },
   ];
 
   useEffect(() => {
@@ -210,7 +208,7 @@ export default function ThreePreloader({ onComplete }) {
       1.1
     );
 
-    // --- PHASE 3: Right as rotation completes & stops, HACK_HUB letters appear in Title Style ---
+    // --- PHASE 3: Right as rotation completes & stops, Ayojan letters appear in Title Style ---
     tl.to(
       lettersRef.current,
       {
@@ -308,7 +306,7 @@ export default function ThreePreloader({ onComplete }) {
 
       {/* Display Title Typography Placed Cleanly BELOW the Logo */}
       <div className="relative z-10 flex flex-col items-center space-y-3 mt-48 pointer-events-none">
-        {/* Title-style HACK_HUB with emerald underscore */}
+        {/* Title-style AYOJAN with emerald underscore */}
         <div className="flex items-center tracking-[0.2em] sm:tracking-[0.25em] pl-[0.2em]">
           {BRAND_LETTERS.map((item, i) => (
             <span
@@ -328,22 +326,17 @@ export default function ThreePreloader({ onComplete }) {
           ))}
         </div>
 
+          <div className='text-emerald-600'>
+            <span
+              ref={subRef}
+              className={`inline-block text-sm sm:text-base md:text-lg  font-semibold opacity-0`}
+              style={{ transform: 'translateY(12px)' }}
+            >
+              PLAN. ORGANIZE. CELEBRATE.
+            </span>
+          </div>
         {/* Title Tagline with flanking geometric lines */}
-        <div
-          ref={subRef}
-          className="flex items-center space-x-3 pt-1 opacity-0"
-          style={{ transform: 'translateY(8px)' }}
-        >
-          <span className="h-[2px] w-22 sm:w-40 bg-gradient-to-r from-transparent to-emerald-500/50" />
-          {/* <span
-            className={`text-[10px] sm:text-xs font-semibold tracking-[0.35em] uppercase ${
-              isDark ? 'text-zinc-400' : 'text-zinc-600'
-            }`}
-          >
-            Operating System
-          </span> */}
-          <span className="h-[2px] w-22 sm:w-40 bg-gradient-to-l from-transparent to-emerald-500/50" />
-        </div>
+        
       </div>
     </div>
   );

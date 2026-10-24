@@ -24,7 +24,7 @@ export default function OrganizerCtaSection() {
   const stat3Ref = useRef(null);
   const statValues = useRef({ hackathons: 0, universities: 0, builders: 0 });
 
-  // 1. Three.js Interactive 3D HackHub Network Sphere
+  // 1. Three.js Interactive 3D Ayojan Network Sphere
   useEffect(() => {
     const container = mountRef.current;
     if (!container) return;
@@ -47,7 +47,7 @@ export default function OrganizerCtaSection() {
     const globeGroup = new THREE.Group();
     scene.add(globeGroup);
 
-    // Core Wireframe Icosahedron (HackHub Network Core)
+    // Core Wireframe Icosahedron (Ayojan Network Core)
     const icoGeometry = new THREE.IcosahedronGeometry(2.3, 2);
     const icoMaterial = new THREE.MeshBasicMaterial({
       color: 0x10b981,
@@ -151,11 +151,9 @@ export default function OrganizerCtaSection() {
 
     // Animation Loop
     let animationFrameId;
-    const clock = new THREE.Clock();
 
     const animateScene = () => {
       animationFrameId = requestAnimationFrame(animateScene);
-      const elapsedTime = clock.getElapsedTime();
 
       // Idle Rotation
       globeGroup.rotation.y += 0.004;
@@ -311,7 +309,7 @@ export default function OrganizerCtaSection() {
           {/* Left Column: Text & Actions with ScrollReveal */}
           <div ref={leftColRef} className="lg:col-span-6 space-y-6">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight">
-              Host Your Hackathon on HackHub.
+              Host Your Hackathon on AYOJAN.
             </h2>
 
             <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-normal">
@@ -384,7 +382,7 @@ export default function OrganizerCtaSection() {
             </div>
           </div>
 
-          {/* Right Column: Three.js Interactive 3D HackHub Network Cluster with ScrollReveal */}
+          {/* Right Column: Three.js Interactive 3D Ayojan Network Cluster with ScrollReveal */}
           <div ref={rightColRef} className="lg:col-span-6 relative flex flex-col items-center justify-center">
             <div className="relative w-full aspect-square max-w-[460px] flex items-center justify-center">
               {/* Three.js Canvas Container */}

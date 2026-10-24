@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -21,7 +21,9 @@ import {
   Bell,
   MessageSquare,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Camera,
+  Loader2
 } from 'lucide-react';
 import WaveDots from '../../../../components/Atoms/WaveDots';
 import { useNavigate, useParams, Link } from 'react-router-dom';
@@ -54,6 +56,8 @@ function SuperAdminProfile() {
   const [profile, setProfile] = useState(() => getStoredSuperAdmin());
   const [showEdit, setShowEdit] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef(null);
   const [stats, setStats] = useState({
     eventsCount: 0,
     adminsCount: 0,
@@ -64,7 +68,8 @@ function SuperAdminProfile() {
   const [formData, setFormData] = useState({
     UserName: '',
     Email: '',
-    PhoneNumber: ''
+    PhoneNumber: '',
+    Photo: ''
   });
 
   const fetchProfile = useCallback(async () => {
@@ -105,7 +110,8 @@ function SuperAdminProfile() {
       setFormData({
         UserName: admin.UserName || '',
         Email: admin.Email || '',
-        PhoneNumber: admin.PhoneNumber || ''
+        PhoneNumber: admin.PhoneNumber || '',
+        Photo: admin.Photo || ''
       });
 
       const updatedUser = {
@@ -169,12 +175,104 @@ function SuperAdminProfile() {
     fetchSystemStats();
   }, [fetchProfile, fetchSystemStats]);
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingPhoto(true);
+      let photoUrl = '';
+
+      try {
+        const uploadForm = new FormData();
+        uploadForm.append('file', file);
+        const upRes = await fetch(`${API_BASE_URL}/api/upload/single`, {
+          method: 'POST',
+          body: uploadForm
+        });
+        if (upRes.ok) {
+          const upData = await upRes.json();
+          photoUrl = upData.fileUrl || upData.url || '';
+        }
+      } catch (upErr) {
+        console.warn('Direct upload failed, using base64 fallback:', upErr);
+      }
+
+      if (!photoUrl) {
+        photoUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const token = localStorage.getItem('token');
+      const decoded = parseJwt(token);
+      const targetId = id || decoded?.Id || decoded?.id || profile?.Id;
+
+      const payload = {
+        UserName: formData.UserName || profile?.UserName,
+        Email: formData.Email || profile?.Email,
+        PhoneNumber: formData.PhoneNumber || profile?.PhoneNumber,
+        Photo: photoUrl
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/super_admin/profile/${targetId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const d = await response.json();
+        throw new Error(d.message || 'Failed to update photo');
+      }
+
+      const updated = {
+        ...(profile || {}),
+        ...payload,
+        Photo: photoUrl
+      };
+      setProfile(updated);
+      setFormData((prev) => ({ ...prev, Photo: photoUrl }));
+
+      localStorage.setItem('user', JSON.stringify(updated));
+      localStorage.setItem('superAdmin', JSON.stringify(updated));
+
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('superadmin-profile-updated'));
+      window.dispatchEvent(new Event('profileUpdated'));
+
+      toast.success('Super admin photo updated successfully!');
+    } catch (err) {
+      console.error('Error uploading photo:', err);
+      toast.error(err.message || 'Failed to update photo');
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleEditClick = () => {
     if (!profile) return;
     setFormData({
       UserName: profile.UserName || '',
       Email: profile.Email || '',
-      PhoneNumber: profile.PhoneNumber || ''
+      PhoneNumber: profile.PhoneNumber || '',
+      Photo: profile.Photo || ''
     });
     setShowEdit(true);
   };
@@ -192,16 +290,19 @@ function SuperAdminProfile() {
       const decoded = parseJwt(token);
       const targetId = id || decoded?.Id || decoded?.id || profile?.Id;
 
+      const payload = {
+        UserName: formData.UserName,
+        Email: formData.Email,
+        PhoneNumber: formData.PhoneNumber,
+        Photo: formData.Photo || profile?.Photo || ''
+      };
+
       const response = await fetch(`${API_BASE_URL}/api/super_admin/profile/${targetId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          UserName: formData.UserName,
-          Email: formData.Email,
-          PhoneNumber: formData.PhoneNumber
-        })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -213,12 +314,15 @@ function SuperAdminProfile() {
 
       const updated = {
         ...(profile || {}),
-        UserName: formData.UserName,
-        Email: formData.Email,
-        PhoneNumber: formData.PhoneNumber
+        ...payload
       };
       setProfile(updated);
       localStorage.setItem('user', JSON.stringify(updated));
+      localStorage.setItem('superAdmin', JSON.stringify(updated));
+
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('superadmin-profile-updated'));
+      window.dispatchEvent(new Event('profileUpdated'));
 
       setShowEdit(false);
       await fetchProfile();
@@ -232,7 +336,7 @@ function SuperAdminProfile() {
 
   const currentAdmin = profile || {
     UserName: 'Super Administrator',
-    Email: 'superadmin@hackhub.com',
+    Email: 'superadmin@ayojan.com',
     PhoneNumber: '+91 99887 76655',
     created_at: new Date().toISOString()
   };
@@ -333,13 +437,34 @@ function SuperAdminProfile() {
           <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
               <div className="relative group shrink-0">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
                 <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-slate-900 text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl shadow-emerald-700/20 border-2 border-emerald-400/40 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <span>{currentAdmin.UserName.charAt(0).toUpperCase()}</span>
+                  {profile?.Photo ? (
+                    <img src={profile.Photo} alt={currentAdmin.UserName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span>{currentAdmin.UserName.charAt(0).toUpperCase()}</span>
+                  )}
+                  {uploadingPhoto && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    </div>
+                  )}
                 </div>
-                <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-1.5 rounded-xl shadow-md border-2 border-white dark:border-gray-950">
-                  <Crown className="w-4 h-4" />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="absolute -bottom-2 -right-2 bg-emerald-500 hover:bg-emerald-400 text-white p-2 rounded-xl shadow-md border-2 border-white dark:border-gray-950 transition-all hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
+                  title="Upload super admin photo"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="space-y-2">
@@ -515,6 +640,34 @@ function SuperAdminProfile() {
                   </div>
 
                   <form onSubmit={handleSave} className="space-y-5">
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                      <div className="relative w-16 h-16 rounded-xl bg-emerald-600/10 border border-emerald-500/20 overflow-hidden flex items-center justify-center shrink-0">
+                        {profile?.Photo || formData.Photo ? (
+                          <img src={formData.Photo || profile.Photo} alt="Super admin preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{currentAdmin.UserName.charAt(0).toUpperCase()}</span>
+                        )}
+                        {uploadingPhoto && (
+                          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                            <Loader2 className="w-5 h-5 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Super Admin Avatar Photo</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">JPG, PNG or WEBP up to 5MB</p>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingPhoto}
+                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 transition cursor-pointer"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          {uploadingPhoto ? 'Uploading...' : 'Change Photo'}
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div className="space-y-1.5 sm:col-span-2">
                         <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
@@ -546,7 +699,7 @@ function SuperAdminProfile() {
                             value={formData.Email}
                             onChange={(e) => setFormData({ ...formData, Email: e.target.value })}
                             required
-                            placeholder="superadmin@hackhub.com"
+                            placeholder="superadmin@ayojan.com"
                             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                           />
                         </div>
@@ -751,7 +904,7 @@ function SuperAdminProfile() {
         </div>
 
         <div className="text-center pt-4 pb-2 text-xs text-gray-400 dark:text-gray-600">
-          <p>© 2026 HackHub Event Management System • Authorized Super Administrator Session</p>
+          <p>© 2026 AYOJAN Event Management System • Authorized Super Administrator Session</p>
         </div>
       </div>
     </div>

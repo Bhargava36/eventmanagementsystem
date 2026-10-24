@@ -24,7 +24,7 @@ const createUser = async (UserName, Email, Password, Mobile, Gender, College, Lo
 
 const loginUser = (Email, callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Password, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, r.RoleName 
+        SELECT u.Id, u.UserName, u.Email, u.Password, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.Photo, r.RoleName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         WHERE LOWER(u.Email) = LOWER(?)
@@ -46,7 +46,7 @@ const loginUser = (Email, callback) => {
 
 const getAllUsers = (callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.CreatedAt, r.RoleName 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.CreatedAt, u.Photo, r.RoleName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         ORDER BY u.CreatedAt DESC
@@ -62,7 +62,7 @@ const getAllUsers = (callback) => {
 
 const getUserById = (id, callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.CreatedAt, r.RoleName 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.CreatedAt, u.Photo, r.RoleName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         WHERE u.Id = ?
@@ -94,7 +94,7 @@ const getUserCount = (callback) => {
 
 const getUserByEmail = (Email, callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, r.RoleName 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.Photo, r.RoleName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
         WHERE LOWER(u.Email) = LOWER(?)
@@ -108,9 +108,17 @@ const getUserByEmail = (Email, callback) => {
     });
 };
 
-const updateUser = ( id, UserName, Email, Mobile, Gender, College, Location, State, callback ) => {
-    const query = `UPDATE users SET UserName = ?, Email = ?, Mobile = ?, Gender = ?, College = ?, Location = ?, State = ? WHERE Id = ?`;
-    db.query( query, [UserName, Email, Mobile, Gender, College, Location, State, id ], (err, result) => {
+const updateUser = ( id, UserName, Email, Mobile, Gender, College, Location, State, Photo, callback ) => {
+    // If Photo is undefined, keep existing; if passed (string or null), update Photo
+    let query, params;
+    if (Photo !== undefined) {
+        query = `UPDATE users SET UserName = ?, Email = ?, Mobile = ?, Gender = ?, College = ?, Location = ?, State = ?, Photo = ? WHERE Id = ?`;
+        params = [UserName, Email, Mobile, Gender, College, Location, State, Photo, id];
+    } else {
+        query = `UPDATE users SET UserName = ?, Email = ?, Mobile = ?, Gender = ?, College = ?, Location = ?, State = ? WHERE Id = ?`;
+        params = [UserName, Email, Mobile, Gender, College, Location, State, id];
+    }
+    db.query( query, params, (err, result) => {
             if (err) {
                 return callback(err, null);
             }

@@ -1,3 +1,12 @@
+// Suppress upstream Three.js r183 deprecation warning inside @react-three/fiber until v10 is released
+const _origWarn = console.warn;
+console.warn = (...args) => {
+  if (typeof args[0] === 'string' && args[0].includes('THREE.Clock: This module has been deprecated')) {
+    return;
+  }
+  _origWarn(...args);
+};
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from '../src/app/App'

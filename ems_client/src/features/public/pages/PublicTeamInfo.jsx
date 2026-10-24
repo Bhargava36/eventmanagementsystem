@@ -1016,7 +1016,7 @@ export default function PublicTeamInfo() {
             </Link>
             <span>•</span>
             <Link to="/" className="hover:opacity-80 transition-opacity">
-              Hack_Hub Home
+              AYOJAN Home
             </Link>
           </div>
         </motion.div>

@@ -53,12 +53,12 @@ export function Navbar() {
   const currentHeaderShapeClass = isOpen ? 'rounded-xl' : headerShapeClass;
 
   const logoElement = (
-    <Link to="/" className="relative w-5 h-5 flex items-center justify-center shrink-0">
+    <h4 className="relative w-5 h-5 flex items-center justify-center shrink-0">
       <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-emerald-600 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
       <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
       <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-80"></span>
       <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-emerald-600 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
-    </Link>
+    </h4>
   );
 
   const navLinksData = [
@@ -91,12 +91,12 @@ export function Navbar() {
 
   return (
     <motion.header className={cn(
-      `fixed top-6 left-1/2 transform -translate-x-1/2 z-50
+      `fixed top-6 md:w-auto w-full left-1/2 transform -translate-x-1/2 z-50
                        flex flex-col items-center
                        pl-5 pr-5 py-2.5 sm:pl-6 sm:pr-6 sm:py-3 backdrop-blur-sm
                        ${currentHeaderShapeClass}
                        border border-gray-300 dark:border-[#333] bg-white/80 dark:bg-[#1f1f1f70] shadow-sm dark:shadow-none
-                       w-auto max-w-[calc(100%-2rem)] whitespace-nowrap
+                        max-w-[calc(100%-1rem)] whitespace-nowrap
                        transition-[border-radius] duration-0 ease-in-out`
     )}
     animate={{
@@ -111,8 +111,10 @@ export function Navbar() {
 
       <div className="flex items-center justify-between w-full flex-nowrap gap-x-4 sm:gap-x-7 whitespace-nowrap">
         <div className="flex gap-2.5 items-center shrink-0">
+          <Link to='/' className="flex gap-3 items-center">
           {logoElement}
-          <h5 className="text-sm sm:text-base font-bold text-gray-700 dark:text-white whitespace-nowrap">HACK_<span className="text-emerald-600">HUB</span></h5>
+          <h5 className="text-sm sm:text-base font-bold text-gray-700 dark:text-white tracking-widest whitespace-nowrap">AYOJAN<span className="text-emerald-600"></span></h5>
+          </Link>
         </div>
 
         <nav className="hidden sm:flex items-center space-x-4 sm:space-x-6 text-sm flex-nowrap whitespace-nowrap">

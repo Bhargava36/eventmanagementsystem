@@ -407,7 +407,7 @@ export default function IdRedirectionPage() {
     }
   };
 
-  const eventName = getValue(event, "EventName", "eventName", "Name", "name") || "HackHub Event";
+  const eventName = getValue(event, "EventName", "eventName", "Name", "name") || "AYOJAN Event";
   const startDate = getValue(event, "StartDate", "startDate", "EventDate");
   const endDate = getValue(event, "EndDate", "endDate") || startDate;
   const location = getValue(event, "Location", "location", "Venue", "venue") || "Venue not available";

@@ -376,7 +376,7 @@ export default function EventBroadcastEmailer() {
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
                   </div>
-                  <span className="font-mono text-[11px]">smtp.hackhub-mail.com</span>
+                  <span className="font-mono text-[11px]">smtp.ayojan-mail.com</span>
                 </div>
 
                 {/* Email Header */}
@@ -413,7 +413,7 @@ export default function EventBroadcastEmailer() {
 
                   <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 text-[11px] text-slate-500 dark:text-zinc-400">
                     <strong>Dispatched by:</strong> {organizerName || "Event Organizing Committee"}<br />
-                    <span>Sent via HackHub Event Broadcast Protocol.</span>
+                    <span>Sent via AYOJAN Event Broadcast Protocol.</span>
                   </div>
                 </div>
               </div>

@@ -89,6 +89,7 @@ const loginAdminController = (req,res) => {
                 Email: admin.Email,
                 PhoneNumber: admin.PhoneNumber || admin.Mobile,
                 Mobile: admin.Mobile || admin.PhoneNumber,
+                Photo: admin.Photo || null,
                 role: "super_admin"
             }
         });
@@ -121,7 +122,7 @@ const getAdminProfile = (req, res) => {
 
 const updateAdmin = (req,res) => {
     const { id } = req.params;
-    const { UserName, Email, PhoneNumber } = req.body;
+    const { UserName, Email, PhoneNumber, Photo } = req.body;
 
     if(!UserName || !Email || !PhoneNumber){
         return res.status(400).json({
@@ -129,7 +130,7 @@ const updateAdmin = (req,res) => {
         });
     }
 
-    superAdminService.updateAdmin(id, UserName, Email, PhoneNumber, (err,result) => {
+    superAdminService.updateAdmin(id, UserName, Email, PhoneNumber, Photo, (err,result) => {
             if(err){
                 return res.status(500).json({
                     message: "Profile update failed",
@@ -139,7 +140,16 @@ const updateAdmin = (req,res) => {
 
             return res.status(200).json({
                 message: "Profile updated successfully",
-                result: result
+                result: result,
+                admin: {
+                    Id: id,
+                    UserName,
+                    Email,
+                    PhoneNumber,
+                    Mobile: PhoneNumber,
+                    Photo,
+                    role: "super_admin"
+                }
             });
         }
     );

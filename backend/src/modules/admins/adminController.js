@@ -98,6 +98,7 @@ const loginAdminController = (req, res) => {
                 EventId: admin.EventId,
                 EventName: admin.EventName,
                 HackathonMode: admin.HackathonMode,
+                Photo: admin.Photo || null,
                 role: "admin"
             }
         });
@@ -167,9 +168,9 @@ const getAdminByEventId = (req, res) => {
 
 const updateAdmin = (req, res) => {
     const { id } = req.params;
-    const { AdminName, Email, Mobile, EventId } = req.body;
+    const { AdminName, Email, Mobile, EventId, Photo } = req.body;
 
-    adminService.updateAdmin(id, AdminName, Email, Mobile, EventId, (err, result) => {
+    adminService.updateAdmin(id, AdminName, Email, Mobile, EventId, Photo, (err, result) => {
         if (err) {
             return res.status(500).json({
                 message: "Failed to update admin",
@@ -179,7 +180,15 @@ const updateAdmin = (req, res) => {
 
         return res.status(200).json({
             message: "Admin updated successfully",
-            admin: result
+            admin: {
+                Id: id,
+                AdminName,
+                UserName: AdminName,
+                Email,
+                Mobile,
+                EventId,
+                Photo
+            }
         });
     });
 };

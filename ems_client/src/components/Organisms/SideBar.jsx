@@ -43,15 +43,62 @@ const SidebarContent = ({
   const [count, setCount] = useState([]);
   const { user } = useAuth();
 
+  const [superAdminData, setSuperAdminData] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user') || localStorage.getItem('admin') || '{}');
+    } catch {
+      return {};
+    }
+  });
+  const [imageError, setImageError] = useState(false);
+
   useEffect(() => {
     fetchEventCount();
   },[]);
+
+  useEffect(() => {
+    const syncSuperAdminData = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('user') || localStorage.getItem('admin') || '{}');
+        setSuperAdminData(stored);
+        setImageError(false);
+      } catch {}
+    };
+
+    const targetId = superAdminData?.Id || superAdminData?.id || user?.Id || user?.id;
+    if (targetId) {
+      fetch(`${API_BASE_URL}/api/super_admin/profile/${targetId}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.admin) {
+            setSuperAdminData((prev) => {
+              const updated = { ...prev, ...data.admin };
+              try {
+                localStorage.setItem('user', JSON.stringify(updated));
+              } catch (e) {}
+              return updated;
+            });
+            setImageError(false);
+          }
+        })
+        .catch(() => {});
+    }
+
+    window.addEventListener('storage', syncSuperAdminData);
+    window.addEventListener('superadmin-profile-updated', syncSuperAdminData);
+    window.addEventListener('profileUpdated', syncSuperAdminData);
+    return () => {
+      window.removeEventListener('storage', syncSuperAdminData);
+      window.removeEventListener('superadmin-profile-updated', syncSuperAdminData);
+      window.removeEventListener('profileUpdated', syncSuperAdminData);
+    };
+  }, [user?.Id, user?.id]);
 
   const fetchEventCount = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/events/`);
       const data = await response.json();
-      setCount(data.events);
+      setCount(data.events || []);
     } catch (error) {
       console.error('Error fetching event count:', error);
     }
@@ -59,13 +106,17 @@ const SidebarContent = ({
 
   const totalEvents = count.length;
   const profilePath = '/sidebar/profile';
+  const superAdminDisplayName = superAdminData?.UserName || user?.UserName || superAdminData?.Name || user?.Name || 'Super Admin';
+  const superAdminPhoto = superAdminData?.Photo || superAdminData?.photo || user?.Photo || user?.photo || superAdminData?.ProfilePic || '';
+  const superAdminInitials = superAdminDisplayName ? superAdminDisplayName.charAt(0).toUpperCase() : 'SA';
+
   const menuItems = [
-  { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
-  { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: totalEvents, dot: false },
-  { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: '4', dot: true },
-  { name: 'Feedback', icon: MessageCircleQuestion, path: '/sidebar/feedback', badge: null },
-  { name: 'Profile', icon: CircleUserRound, path: profilePath, badge: null },
-];
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
+    { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: totalEvents, dot: false },
+    { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: '4', dot: true },
+    { name: 'Feedback', icon: MessageCircleQuestion, path: '/sidebar/feedback', badge: null },
+    { name: 'Profile', icon: CircleUserRound, path: profilePath, badge: null },
+  ];
 
   useEffect(() => {
     if (collapsed) {
@@ -127,9 +178,18 @@ const SidebarContent = ({
           <div
             className={`${
               !isMobile && collapsed ? 'w-10 h-10 text-sm' : 'w-14 h-14 text-lg'
-            } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300`}
+            } rounded-full bg-emerald-700 dark:bg-emerald-500 flex items-center justify-center text-white font-bold transition-all duration-300 overflow-hidden ring-2 ring-emerald-500/30`}
           >
-            SA
+            {superAdminPhoto && !imageError ? (
+              <img
+                src={superAdminPhoto}
+                alt={superAdminDisplayName}
+                onError={() => setImageError(true)}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{superAdminInitials}</span>
+            )}
           </div>
           <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white dark:border-black"></span>
         </div>
@@ -138,11 +198,13 @@ const SidebarContent = ({
             initial={{ opacity: 0, x: -5 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.2, delay:0.2 }}
-            className="overflow-hidden"
+            className="overflow-hidden min-w-0"
           >
-            <h3 className="font-bold text-base whitespace-nowrap">Super Admin</h3>
+            <h3 className="font-bold text-base whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]" title={superAdminDisplayName}>
+              {superAdminDisplayName}
+            </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-              Administrator
+              Super Administrator
             </p>
           </motion.div>
         )}
@@ -302,7 +364,7 @@ const Sidebar = () => {
             <div className="mt-2">{logoElement}</div>
             <div className="flex flex-col">
               <span className="font-bold text-sm tracking-wide text-gray-900 dark:text-white">
-                HACK_HUB
+                AYOJAN
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400 tracking-widest">
                 EMS

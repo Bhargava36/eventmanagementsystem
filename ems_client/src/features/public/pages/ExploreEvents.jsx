@@ -24,34 +24,56 @@ import {
   SlidersHorizontal,
   AlertCircle,
   Radio,
-  Layers
+  Layers,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export const resolveEventMode = (ev) => {
   const raw = String(ev?.HackathonMode || '').trim().toLowerCase();
-  const hasVirtualDates = Boolean(ev?.VirtualStartDate || ev?.VirtualRegistrationStart);
-  const hasPhysicalDatesOrVenue = Boolean(ev?.PhysicalStartDate || ev?.Location);
 
+  // 1. Explicit HackathonMode from DB takes highest priority
   if (
     raw === 'both' ||
     raw === 'virtual and physical' ||
     raw === 'virtual & physical' ||
-    (hasVirtualDates && hasPhysicalDatesOrVenue)
+    raw === 'physical and virtual' ||
+    raw === 'physical & virtual'
   ) {
     return 'both';
   }
+
   if (raw === 'hybrid') {
     return 'hybrid';
   }
-  if (raw === 'physical' || (!raw && hasPhysicalDatesOrVenue && !hasVirtualDates)) {
-    return 'physical';
-  }
-  if (raw === 'virtual' || (!raw && hasVirtualDates && !hasPhysicalDatesOrVenue)) {
+
+  if (raw === 'virtual' || raw === 'online') {
     return 'virtual';
   }
-  if (ev?.Location) {
+
+  if (raw === 'physical' || raw === 'offline' || raw === 'in person' || raw === 'in-person' || raw === 'on campus' || raw === 'on-campus') {
     return 'physical';
   }
+
+  // 2. Fallback heuristic only when HackathonMode is empty
+  const loc = String(ev?.Location || '').trim().toLowerCase();
+  const isVirtualLoc = loc.includes('virtual') || loc.includes('online') || loc.includes('zoom') || loc.includes('meet') || loc === 'remote';
+  const hasRealPhysicalVenue = Boolean(loc && !isVirtualLoc);
+  const hasVirtualDates = Boolean(ev?.VirtualStartDate || ev?.VirtualRegistrationStart);
+  const hasPhysicalDates = Boolean(ev?.PhysicalStartDate || ev?.PhysicalRegistrationStart);
+
+  if ((hasVirtualDates || isVirtualLoc) && (hasPhysicalDates || hasRealPhysicalVenue)) {
+    return 'both';
+  }
+
+  if (hasVirtualDates || isVirtualLoc) {
+    return 'virtual';
+  }
+
+  if (hasPhysicalDates || hasRealPhysicalVenue) {
+    return 'physical';
+  }
+
   return 'virtual';
 };
 
@@ -62,6 +84,7 @@ function ExploreEvents() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
+  const [brokenImages, setBrokenImages] = useState({});
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMode, setSelectedMode] = useState('ALL');
@@ -500,14 +523,12 @@ function ExploreEvents() {
                   className="group relative h-[450px] sm:h-[460px] rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/50 shadow-sm hover:shadow-xl transition-all duration-400 ease-out select-none"
                 >
                   <div className="absolute inset-0 w-full h-full">
-                    {posterUrl ? (
+                    {posterUrl && !brokenImages[event.Id] ? (
                       <img
                         src={posterUrl}
                         alt={event.EventName}
                         className="w-full h-full object-cover object-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105 group-hover:brightness-[0.2] group-hover:blur-sm"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
+                        onError={() => setBrokenImages((prev) => ({ ...prev, [event.Id]: true }))}
                       />
                     ) : (
                       <div
@@ -519,9 +540,11 @@ function ExploreEvents() {
                               : `radial-gradient(circle at 50% 40%, ${customBg}25 0%, #e2e8f0 85%)`
                         }}
                       >
-                        <Tag className={`h-14 w-14 mb-2 ${theme === 'dark' ? 'text-emerald-400/60' : 'text-emerald-600'}`} />
-                        <span className={`text-xs font-bold tracking-widest uppercase ${theme === 'dark' ? 'text-emerald-400/70' : 'text-emerald-700'}`}>
-                          {event.EventType || 'CHALLENGE'}
+                        <div className="p-3.5 text-emerald-400 mb-2">
+                          <Camera className="h-20 w-20" />
+                        </div>
+                        <span className={`text-xs font-bold tracking-widest uppercase ${theme === 'dark' ? 'text-emerald-400/80' : 'text-emerald-700'}`}>
+                          No Image
                         </span>
                       </div>
                     )}

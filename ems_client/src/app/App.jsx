@@ -11,15 +11,10 @@ import PublicLayout from '../components/Templates/PublicLayout';
 import ProtectedRoute from '../components/Organisms/ProtectedRoute';
 import Unauthorized from '../components/ui/Unauthorized';
 import ThreePreloader from '../components/ui/ThreePreloader';
+import ScrollToTopOnNavigate from '../components/ui/ScrollToTopOnNavigate';
 import { normalizeHackathonMode } from '../lib/utils';
 
-// Minimal sleek loading spinner for on-demand lazy chunks
-const RouteLoadingSpinner = () => (
-  <div className="min-h-screen bg-slate-50 dark:bg-black flex flex-col items-center justify-center gap-3 transition-colors">
-    <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-    <span className="text-xs font-medium text-slate-500 dark:text-gray-400">Loading module...</span>
-  </div>
-);
+
 
 // ── LAZY LOADED ROUTE CHUNKS FOR LIGHTNING FAST INITIAL BUNDLE ──
 
@@ -103,27 +98,25 @@ function App() {
   const [isReady, setIsReady] = useState(() => {
     // Only run the full preloader once per session to maintain quick subsequent navigation
     try {
-      return Boolean(sessionStorage.getItem('hackhub_preloader_seen'));
+      return Boolean(sessionStorage.getItem('ayojan_preloader_seen'));
     } catch {
       return false;
     }
   });
 
   const handlePreloaderComplete = () => {
-    try {
-      sessionStorage.setItem('hackhub_preloader_seen', 'true');
-    } catch {}
     setIsReady(true);
   };
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">
+      <ScrollToTopOnNavigate />
       {/* Three.js 4-Dots Official Website Preloader - Runs once per browser session */}
       {!isReady && <ThreePreloader onComplete={handlePreloaderComplete} />}
 
       {/* Website loads and renders on-demand with Suspense */}
       {isReady && (
-        <Suspense fallback={<RouteLoadingSpinner />}>
+        <Suspense >
           <Routes>
             <Route element={<PublicLayout />}>
               <Route path="/" element={<HomePage />} />

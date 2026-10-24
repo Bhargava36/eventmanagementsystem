@@ -230,6 +230,29 @@ router.post('/event/:eventId/auto-assign', (req, res) => {
 });
 
 // ========================
+// ADMIN: Reassign a Selection
+// ========================
+
+router.put('/selection/:id/reassign', (req, res) => {
+    const { problemStatementId } = req.body;
+    if (!problemStatementId) {
+        return res.status(400).json({ message: 'problemStatementId is required.' });
+    }
+    psService.reassignTeamSelection(req.params.id, problemStatementId, (err, result) => {
+        if (err) return res.status(500).json({ message: 'Failed to reassign selection', error: err.message });
+        if (result?.selection?.EventId) {
+            broadcastEvent(result.selection.EventId, {
+                type: 'SELECTION_MADE',
+                eventId: result.selection.EventId,
+                teamId: result.selection.TeamId,
+                problemStatementId
+            });
+        }
+        res.json(result);
+    });
+});
+
+// ========================
 // ADMIN: Remove a Selection
 // ========================
 
