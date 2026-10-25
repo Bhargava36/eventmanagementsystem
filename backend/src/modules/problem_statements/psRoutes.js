@@ -130,6 +130,19 @@ router.put('/event/:eventId/publish-statements', (req, res) => {
     });
 });
 
+// Publish/Unpublish Physical Problem Statements
+router.put('/event/:eventId/publish-physical-statements', (req, res) => {
+    psService.publishPhysicalProblemStatements(req.params.eventId, req.body.published, (err) => {
+        if (err) return res.status(500).json({ message: 'Failed to update physical status', error: err.message });
+        broadcastEvent(req.params.eventId, {
+            type: 'PHYSICAL_STATEMENTS_PUBLISHED',
+            eventId: req.params.eventId,
+            published: req.body.published
+        });
+        res.json({ message: `Physical problem statements ${req.body.published ? 'published' : 'unpublished'} successfully` });
+    });
+});
+
 // Set Selection Deadline
 router.put('/event/:eventId/selection-deadline', (req, res) => {
     psService.setSelectionDeadline(req.params.eventId, req.body.deadline, (err) => {
@@ -140,6 +153,19 @@ router.put('/event/:eventId/selection-deadline', (req, res) => {
             deadline: req.body.deadline
         });
         res.json({ message: 'Selection deadline updated successfully' });
+    });
+});
+
+// Set Physical Selection Deadline
+router.put('/event/:eventId/physical-selection-deadline', (req, res) => {
+    psService.setPhysicalSelectionDeadline(req.params.eventId, req.body.deadline, (err) => {
+        if (err) return res.status(500).json({ message: 'Failed to set physical deadline', error: err.message });
+        broadcastEvent(req.params.eventId, {
+            type: 'PHYSICAL_DEADLINE_UPDATED',
+            eventId: req.params.eventId,
+            deadline: req.body.deadline
+        });
+        res.json({ message: 'Physical selection deadline updated successfully' });
     });
 });
 
@@ -261,6 +287,74 @@ router.delete('/selection/:id', (req, res) => {
         if (err) return res.status(500).json({ message: 'Failed to remove selection', error: err.message });
         broadcastEvent(null, { type: 'SELECTION_REMOVED' });
         res.json({ message: 'Selection removed successfully' });
+    });
+});
+
+// ========================
+// PARTICIPANT-SUBMITTED PROBLEM STATEMENTS
+// ========================
+
+// GET all participant-submitted statements for an event (Admin view)
+router.get('/event/:eventId/participant-statements', (req, res) => {
+    psService.getParticipantStatementsByEvent(req.params.eventId, (err, results) => {
+        if (err) return res.status(500).json({ message: 'Failed to fetch participant statements', error: err.message });
+        res.json({ statements: results });
+    });
+});
+
+// GET specific team's participant-submitted statement
+router.get('/event/:eventId/team/:teamId/participant-statement', (req, res) => {
+    psService.getParticipantStatementByTeam(req.params.eventId, req.params.teamId, (err, result) => {
+        if (err) return res.status(500).json({ message: 'Failed to fetch team statement', error: err.message });
+        res.json({ statement: result });
+    });
+});
+
+// CREATE or UPDATE a participant-submitted statement (Participant/Team Lead)
+router.post('/event/:eventId/participant-statement', (req, res) => {
+    const { teamId, ThemeName, Category, Title, Description, TechStack } = req.body;
+    if (!teamId || !Title || !Title.trim()) {
+        return res.status(400).json({ message: 'teamId and Title are required.' });
+    }
+
+    let userId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRECT || 'secret');
+            userId = decoded.Id || decoded.id;
+        } catch (e) {
+            // invalid token
+        }
+    }
+
+    psService.upsertParticipantStatement(
+        req.params.eventId,
+        teamId,
+        { ThemeName, Category, Title, Description, TechStack },
+        userId,
+        (err, result) => {
+            if (err) {
+                const status = err.status || 500;
+                return res.status(status).json({ message: err.message || 'Failed to submit problem statement' });
+            }
+            broadcastEvent(req.params.eventId, {
+                type: 'PARTICIPANT_STATEMENT_SUBMITTED',
+                eventId: req.params.eventId,
+                teamId
+            });
+            res.json(result);
+        }
+    );
+});
+
+// UPDATE status of participant-submitted statement (Admin approve / revision)
+router.put('/participant-statements/:id/status', (req, res) => {
+    psService.updateParticipantStatementStatus(req.params.id, req.body, (err) => {
+        if (err) return res.status(500).json({ message: 'Failed to update statement status', error: err.message });
+        broadcastEvent(null, { type: 'PARTICIPANT_STATEMENT_STATUS_UPDATED' });
+        res.json({ message: 'Problem statement status updated successfully' });
     });
 });
 

@@ -194,16 +194,18 @@ const getEventById = (id, callback) => {
             ev.EventStatus = getEventStatus(ev.StartDate, ev.EndDate);
             ev.Posters = parsePosters(ev.Posters);
 
-            const [[descRows], [facRows], [reqRows], [sponsorRows], [galleryRows]] = await Promise.all([
+            const [[descRows], [facRows], [reqRows], [sponsorRows], [galleryRows], [themeRows]] = await Promise.all([
                 conn.promise().query('SELECT Description FROM event_descriptions WHERE EventId = ?', [id]),
                 conn.promise().query('SELECT Phase, Facility FROM event_facilities WHERE EventId = ? ORDER BY Id ASC', [id]),
                 conn.promise().query('SELECT Phase, Requirement FROM event_requirements WHERE EventId = ? ORDER BY Id ASC', [id]),
                 conn.promise().query('SELECT Id, EventId, Name, LogoUrl, Tier, WebsiteUrl, DisplayOrder FROM event_sponsors WHERE EventId = ? ORDER BY DisplayOrder ASC, Id ASC', [id]),
-                conn.promise().query('SELECT Id, EventId, ImageUrl, Caption, Season, Year, DisplayOrder FROM event_gallery WHERE EventId = ? ORDER BY Season ASC, DisplayOrder ASC, Id DESC', [id])
+                conn.promise().query('SELECT Id, EventId, ImageUrl, Caption, Season, Year, DisplayOrder FROM event_gallery WHERE EventId = ? ORDER BY Season ASC, DisplayOrder ASC, Id DESC', [id]),
+                conn.promise().query('SELECT Id, EventId, ThemeName, Description, DisplayOrder, ImageUrl FROM event_themes WHERE EventId = ? ORDER BY DisplayOrder ASC, Id ASC', [id])
             ]);
 
             ev.Sponsors = sponsorRows || [];
             ev.Gallery = galleryRows || [];
+            ev.Themes = themeRows || [];
 
             if (descRows.length > 0 && descRows[0].Description !== null) {
                 ev.Description = descRows[0].Description;
@@ -361,7 +363,11 @@ const updateEventSettings = (id, settings, callback) => {
         'ThemePublished',
         'ProblemStatementsPublished',
         'PSSelectionDeadline',
-        'PSMaxTeamsPerStatement'
+        'PSMaxTeamsPerStatement',
+        'PhysicalPSMode',
+        'PhysicalPSPublished',
+        'PhysicalPSSelectionDeadline',
+        'PhysicalPSMaxTeamsPerStatement'
     ];
 
     // Auto-sync generic RegistrationStart/RegistrationEnd if track-specific ones were supplied

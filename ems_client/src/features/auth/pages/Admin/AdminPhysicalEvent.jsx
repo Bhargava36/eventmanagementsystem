@@ -22,8 +22,20 @@ import {
   ShieldCheck,
   AlertCircle,
   Building,
-  Check
+  Check,
+  Lightbulb,
+  Plus,
+  Trash2,
+  Edit2,
+  X,
+  Save,
+  FileText,
+  Target,
+  Code,
+  Filter,
+  Layers
 } from 'lucide-react';
+import { getThemeIcon } from '@/components/Molecules/PhysicalHackathonThemesSection';
 
 const readApiResponse = async (response, fallbackMessage) => {
   const body = await response.text();
@@ -120,6 +132,40 @@ function AdminPhysicalEvent() {
   const [teamServicePreferences, setTeamServicePreferences] = useState({});
   const [idCardStatusByTeam, setIdCardStatusByTeam] = useState({});
 
+  // ── Hackathon Themes & Problem Statements Management ──
+  const [themes, setThemes] = useState([]);
+  const [themesLoading, setThemesLoading] = useState(false);
+  const [organizerStatements, setOrganizerStatements] = useState([]);
+  const [participantStatements, setParticipantStatements] = useState([]);
+  const [physicalPSMode, setPhysicalPSMode] = useState('organizer_provided');
+  const [statementSelections, setStatementSelections] = useState([]);
+
+  // Theme Form Modal
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [editingThemeId, setEditingThemeId] = useState(null);
+  const [themeForm, setThemeForm] = useState({ ThemeName: '', Description: '', DisplayOrder: 0, ImageUrl: '' });
+  const [themeSaving, setThemeSaving] = useState(false);
+
+  // Problem Statement Form Modal (for Organizer-Provided mode)
+  const [showStatementModal, setShowStatementModal] = useState(false);
+  const [editingStatementId, setEditingStatementId] = useState(null);
+  const [statementForm, setStatementForm] = useState({
+    ProblemCode: '',
+    Title: '',
+    Description: '',
+    Theme: '',
+    Category: 'Software',
+    MaxTeams: 5
+  });
+  const [statementSaving, setStatementSaving] = useState(false);
+
+  // Filters
+  const [participantThemeFilter, setParticipantThemeFilter] = useState('ALL');
+  const [participantCategoryFilter, setParticipantCategoryFilter] = useState('ALL');
+  const [participantStatusFilter, setParticipantStatusFilter] = useState('ALL');
+  const [statementCategoryFilter, setStatementCategoryFilter] = useState('ALL');
+  const [searchPSSubmissions, setSearchPSSubmissions] = useState('');
+
   const accommodationEnabled =
     eventDetails?.AccommodationEnabled ??
     eventDetails?.accommodationEnabled ??
@@ -198,6 +244,159 @@ function AdminPhysicalEvent() {
 
     fetchEventDetails();
   }, [eventId]);
+
+  useEffect(() => {
+    if (eventDetails?.PhysicalPSMode) {
+      setPhysicalPSMode(eventDetails.PhysicalPSMode);
+    }
+  }, [eventDetails?.PhysicalPSMode]);
+
+  const fetchThemesAndStatements = async () => {
+    if (!eventId) return;
+    try {
+      setThemesLoading(true);
+      const [tRes, osRes, psRes, pubRes, selRes] = await Promise.allSettled([
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/themes`),
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}`),
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/participant-statements`),
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/publish-status`),
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/selections`)
+      ]);
+
+      if (tRes.status === 'fulfilled' && tRes.value.ok) {
+        const tData = await tRes.value.json();
+        setThemes(tData.themes || []);
+      }
+      if (osRes.status === 'fulfilled' && osRes.value.ok) {
+        const osData = await osRes.value.json();
+        setOrganizerStatements(osData.problemStatements || []);
+      }
+      if (psRes.status === 'fulfilled' && psRes.value.ok) {
+        const psData = await psRes.value.json();
+        setParticipantStatements(psData.statements || []);
+      }
+      if (selRes.status === 'fulfilled' && selRes.value.ok) {
+        const selData = await selRes.value.json();
+        setStatementSelections(selData.selections || []);
+      }
+    } catch (e) {
+      console.error('Failed to load themes/statements:', e);
+    } finally {
+      setThemesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (eventId && (eventDetails?.EventType || '').toLowerCase() === 'hackathon') {
+      fetchThemesAndStatements();
+    }
+  }, [eventId, eventDetails?.EventType]);
+
+  const handleSaveTheme = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!themeForm.ThemeName.trim()) {
+      alert('Theme Name is required');
+      return;
+    }
+    try {
+      setThemeSaving(true);
+      const url = editingThemeId
+        ? `${API_BASE_URL}/api/problem-statements/themes/${editingThemeId}`
+        : `${API_BASE_URL}/api/problem-statements/event/${eventId}/themes`;
+      const method = editingThemeId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(themeForm)
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to save theme');
+      }
+      setShowThemeModal(false);
+      setEditingThemeId(null);
+      setThemeForm({ ThemeName: '', Description: '', DisplayOrder: 0, ImageUrl: '' });
+      fetchThemesAndStatements();
+    } catch (err) {
+      alert(err.message || 'Failed to save theme');
+    } finally {
+      setThemeSaving(false);
+    }
+  };
+
+  const handleDeleteTheme = async (themeId) => {
+    if (!window.confirm('Are you sure you want to delete this theme?')) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/problem-statements/themes/${themeId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to delete theme');
+      fetchThemesAndStatements();
+    } catch (err) {
+      alert(err.message || 'Failed to delete theme');
+    }
+  };
+
+  const handleSaveStatement = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!statementForm.ProblemCode.trim() || !statementForm.Title.trim()) {
+      alert('Problem Code and Title are required');
+      return;
+    }
+    try {
+      setStatementSaving(true);
+      const url = editingStatementId
+        ? `${API_BASE_URL}/api/problem-statements/${editingStatementId}`
+        : `${API_BASE_URL}/api/problem-statements/event/${eventId}`;
+      const method = editingStatementId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(statementForm)
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to save problem statement');
+      }
+      setShowStatementModal(false);
+      setEditingStatementId(null);
+      setStatementForm({ ProblemCode: '', Title: '', Description: '', Theme: '', Category: 'Software', MaxTeams: 5 });
+      fetchThemesAndStatements();
+    } catch (err) {
+      alert(err.message || 'Failed to save problem statement');
+    } finally {
+      setStatementSaving(false);
+    }
+  };
+
+  const handleDeleteStatement = async (psId) => {
+    if (!window.confirm('Are you sure you want to delete this problem statement?')) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/problem-statements/${psId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Failed to delete statement');
+      fetchThemesAndStatements();
+    } catch (err) {
+      alert(err.message || 'Failed to delete statement');
+    }
+  };
+
+  const handleUpdateParticipantStatus = async (id, status, remarks = '') => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/problem-statements/participant-statements/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ Status: status, AdminRemarks: remarks })
+      });
+      if (!res.ok) throw new Error('Failed to update status');
+      fetchThemesAndStatements();
+    } catch (err) {
+      alert(err.message || 'Failed to update status');
+    }
+  };
 
   const eventName =
     eventDetails?.EventName ??
@@ -735,6 +934,15 @@ function AdminPhysicalEvent() {
                   label: `ID Card Studio (${idCardCounts.generated}/${idCardCounts.total})`,
                   icon: IdCard,
                 },
+                ...((eventDetails?.EventType || '').toLowerCase() === 'hackathon'
+                  ? [
+                      {
+                        id: 'themes-challenges',
+                        label: `Themes & Challenges (${themes.length})`,
+                        icon: Lightbulb,
+                      },
+                    ]
+                  : []),
                 {
                   id: 'controls',
                   label: 'Event Controls',
@@ -1467,6 +1675,767 @@ function AdminPhysicalEvent() {
               </div>
             </motion.div>
           )}
+
+          {/* TAB: HACKATHON THEMES & PROBLEM STATEMENTS */}
+          {activeTab === 'themes-challenges' && (
+            <motion.div
+              key="tab-themes-challenges"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-zinc-800/80">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                    <Lightbulb className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>Physical Hackathon Themes & Challenges</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        Shown in Advance
+                      </span>
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
+                      Themes are displayed beforehand on the public Event Details and participant Event Redirect pages.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingThemeId(null);
+                      setThemeForm({ ThemeName: '', Description: '', DisplayOrder: themes.length + 1 });
+                      setShowThemeModal(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add New Theme</span>
+                  </button>
+
+                  {physicalPSMode === 'organizer_provided' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingStatementId(null);
+                        setStatementForm({
+                          ProblemCode: `PS-${String(organizerStatements.length + 1).padStart(2, '0')}`,
+                          Title: '',
+                          Description: '',
+                          Theme: themes[0]?.ThemeName || '',
+                          MaxTeams: 5
+                        });
+                        setShowStatementModal(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-black font-bold text-xs shadow-xs transition cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Add Problem Statement</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Active Format Info Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
+                <div className="flex items-center gap-2.5">
+                  {physicalPSMode === 'participant_defined' ? (
+                    <span className="px-3 py-1 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-500/20 flex items-center gap-1.5">
+                      <Target className="h-3.5 w-3.5" />
+                      Active Mode: Open Innovation (Participant-Submitted)
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 flex items-center gap-1.5">
+                      <FileText className="h-3.5 w-3.5" />
+                      Active Mode: Organizer-Provided Challenges
+                    </span>
+                  )}
+                  <span className="text-xs text-slate-500 dark:text-zinc-400 hidden sm:inline">
+                    {physicalPSMode === 'participant_defined'
+                      ? 'Participants submit their own problem statements under themes'
+                      : 'Participants select from organizer-defined challenge statements'}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin/settings')}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer self-start sm:self-auto"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                  <span>Configure Settings in Event Settings &rarr;</span>
+                </button>
+              </div>
+
+              {/* ── THEMES SECTION ── */}
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                  <div className="flex items-center gap-2.5">
+                    <Layers className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    <div>
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                        Innovation Themes ({themes.length})
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Published domains shown on the Event Details & Event Redirect pages
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingThemeId(null);
+                      setThemeForm({ ThemeName: '', Description: '', DisplayOrder: themes.length + 1 });
+                      setShowThemeModal(true);
+                    }}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add Theme</span>
+                  </button>
+                </div>
+
+                {themesLoading ? (
+                  <div className="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin text-emerald-600" />
+                    <span>Loading themes...</span>
+                  </div>
+                ) : themes.length === 0 ? (
+                  <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3">
+                    <Lightbulb className="h-8 w-8 mx-auto text-slate-400" />
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      No innovation themes created yet. Themes will be shown beforehand to participants on the detailed event page and eventredirectpage.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingThemeId(null);
+                        setThemeForm({ ThemeName: '', Description: '', DisplayOrder: 1 });
+                        setShowThemeModal(true);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 text-white font-bold text-xs"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Create First Theme</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {themes.map((theme, idx) => {
+                      const statementCount = organizerStatements.filter(
+                        (s) => (s.Theme || '').trim().toLowerCase() === theme.ThemeName.trim().toLowerCase()
+                      ).length;
+                      const submissionCount = participantStatements.filter(
+                        (p) => (p.ThemeName || '').trim().toLowerCase() === theme.ThemeName.trim().toLowerCase()
+                      ).length;
+
+                      const IconComponent = getThemeIcon(theme.ThemeName, theme.Description);
+                      const hasImage = Boolean(theme.ImageUrl && theme.ImageUrl.trim());
+
+                      return (
+                        <div
+                          key={theme.Id}
+                          className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/60 dark:bg-black space-y-3 flex flex-col justify-between hover:border-emerald-500/40 transition overflow-hidden"
+                        >
+                          <div className="space-y-2.5">
+                            {hasImage && (
+                              <div className="w-full h-24 rounded-xl overflow-hidden mb-2 border border-slate-200 dark:border-zinc-800 bg-zinc-900">
+                                <img src={theme.ImageUrl} alt={theme.ThemeName} className="w-full h-full object-cover" />
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
+                                  <IconComponent className="h-4 w-4" />
+                                </div>
+                                <span className="font-mono text-xs font-semibold text-slate-400 dark:text-zinc-500 tracking-wider">
+                                  #{String(idx + 1).padStart(2, '0')}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingThemeId(theme.Id);
+                                    setThemeForm({
+                                      ThemeName: theme.ThemeName,
+                                      Description: theme.Description || '',
+                                      DisplayOrder: theme.DisplayOrder || 0,
+                                      ImageUrl: theme.ImageUrl || ''
+                                    });
+                                    setShowThemeModal(true);
+                                  }}
+                                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 transition cursor-pointer"
+                                  title="Edit Theme"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteTheme(theme.Id)}
+                                  className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
+                                  title="Delete Theme"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                              {theme.ThemeName}
+                            </h4>
+
+                            <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2">
+                              {theme.Description || 'No description provided.'}
+                            </p>
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-200/60 dark:border-zinc-800 flex items-center justify-between text-[11px] font-semibold text-slate-400">
+                            <span>Order #{theme.DisplayOrder || idx + 1}</span>
+                            <span>
+                              {physicalPSMode === 'organizer_provided'
+                                ? `${statementCount} Challenges`
+                                : `${submissionCount} Submissions`}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* ── PROBLEM STATEMENTS / SUBMISSIONS VIEW (DYNAMIC) ── */}
+              {physicalPSMode === 'organizer_provided' ? (
+                /* ORGANIZER-PROVIDED PROBLEM STATEMENTS */
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-2.5">
+                      <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      <div>
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                          Organizer Problem Statements ({organizerStatements.length})
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Predefined challenges available for teams to choose from
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <select
+                        value={statementCategoryFilter}
+                        onChange={(e) => setStatementCategoryFilter(e.target.value)}
+                        className="px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none cursor-pointer"
+                      >
+                        <option value="ALL">All Domains</option>
+                        <option value="Software">Software</option>
+                        <option value="Hardware">Hardware</option>
+                        <option value="Both">Both (Hybrid)</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingStatementId(null);
+                          setStatementForm({
+                            ProblemCode: `PS-${String(organizerStatements.length + 1).padStart(2, '0')}`,
+                            Title: '',
+                            Description: '',
+                            Theme: themes[0]?.ThemeName || '',
+                            Category: 'Software',
+                            MaxTeams: 5
+                          });
+                          setShowStatementModal(true);
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Add Statement</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {organizerStatements.length === 0 ? (
+                    <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-2">
+                      <FileText className="h-8 w-8 mx-auto text-slate-400" />
+                      <p className="text-xs text-slate-500 dark:text-zinc-400">
+                        No problem statements added yet. Add challenges under your themes for physical teams.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {organizerStatements
+                        .filter((ps) => {
+                          if (statementCategoryFilter !== 'ALL' && (ps.Category || 'Software').toLowerCase() !== statementCategoryFilter.toLowerCase()) return false;
+                          return true;
+                        })
+                        .map((ps) => {
+                        const assignedSelections = statementSelections.filter(
+                          (s) => Number(s.ProblemStatementId) === Number(ps.Id)
+                        );
+                        const isFull = assignedSelections.length >= (ps.MaxTeams || 5);
+
+                        return (
+                        <div
+                          key={ps.Id}
+                          className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-2"
+                        >
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10">
+                                {ps.ProblemCode}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                (ps.Category || '').toLowerCase() === 'hardware'
+                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                                  : (ps.Category || '').toLowerCase() === 'both'
+                                  ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                                  : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
+                              }`}>
+                                {ps.Category || 'Software'}
+                              </span>
+                              {ps.Theme && (
+                                <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 px-2 py-0.5 rounded-md bg-slate-200 dark:bg-zinc-800">
+                                  {ps.Theme}
+                                </span>
+                              )}
+                              <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
+                                isFull
+                                  ? 'bg-rose-500/10 text-rose-600'
+                                  : 'bg-emerald-500/10 text-emerald-600'
+                              }`}>
+                                {assignedSelections.length} / {ps.MaxTeams || 5} Teams Selected
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingStatementId(ps.Id);
+                                  setStatementForm({
+                                    ProblemCode: ps.ProblemCode,
+                                    Title: ps.Title,
+                                    Description: ps.Description || '',
+                                    Theme: ps.Theme || '',
+                                    Category: ps.Category || 'Software',
+                                    MaxTeams: ps.MaxTeams || 5
+                                  });
+                                  setShowStatementModal(true);
+                                }}
+                                className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 transition cursor-pointer"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteStatement(ps.Id)}
+                                className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                            {ps.Title}
+                          </h4>
+
+                          {ps.Description && (
+                            <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
+                              {ps.Description}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* PARTICIPANT-SUBMITTED PROBLEM STATEMENTS */
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-2.5">
+                      <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <div>
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                          Participant-Submitted Problem Statements ({participantStatements.length})
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Custom innovation ideas and problem statements submitted by teams
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <input
+                        type="text"
+                        value={searchPSSubmissions}
+                        onChange={(e) => setSearchPSSubmissions(e.target.value)}
+                        placeholder="Search team or statement..."
+                        className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
+                      />
+
+                      <select
+                        value={participantThemeFilter}
+                        onChange={(e) => setParticipantThemeFilter(e.target.value)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none cursor-pointer"
+                      >
+                        <option value="ALL">All Themes</option>
+                        {themes.map((t) => (
+                          <option key={t.Id} value={t.ThemeName}>{t.ThemeName}</option>
+                        ))}
+                      </select>
+
+                      <select
+                        value={participantCategoryFilter}
+                        onChange={(e) => setParticipantCategoryFilter(e.target.value)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none cursor-pointer"
+                      >
+                        <option value="ALL">All Domains (Software & Hardware)</option>
+                        <option value="Software">Software</option>
+                        <option value="Hardware">Hardware</option>
+                        <option value="Both">Both (Hybrid)</option>
+                      </select>
+
+                      <select
+                        value={participantStatusFilter}
+                        onChange={(e) => setParticipantStatusFilter(e.target.value)}
+                        className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none cursor-pointer"
+                      >
+                        <option value="ALL">All Status</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Needs_Revision">Needs Revision</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {participantStatements.length === 0 ? (
+                    <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-2">
+                      <Target className="h-8 w-8 mx-auto text-slate-400" />
+                      <p className="text-xs text-slate-500 dark:text-zinc-400">
+                        No teams have submitted their problem statements yet. Once participants submit from their event page, they will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {participantStatements
+                        .filter((ps) => {
+                          if (participantThemeFilter !== 'ALL' && (ps.ThemeName || '').toLowerCase() !== participantThemeFilter.toLowerCase()) return false;
+                          if (participantCategoryFilter !== 'ALL' && (ps.Category || 'Software').toLowerCase() !== participantCategoryFilter.toLowerCase()) return false;
+                          if (participantStatusFilter !== 'ALL' && (ps.Status || '').toLowerCase() !== participantStatusFilter.toLowerCase()) return false;
+                          if (searchPSSubmissions) {
+                            const query = searchPSSubmissions.toLowerCase();
+                            const matchTitle = (ps.Title || '').toLowerCase().includes(query);
+                            const matchTeam = (ps.TeamName || '').toLowerCase().includes(query);
+                            const matchDesc = (ps.Description || '').toLowerCase().includes(query);
+                            if (!matchTitle && !matchTeam && !matchDesc) return false;
+                          }
+                          return true;
+                        })
+                        .map((ps) => (
+                          <div
+                            key={ps.Id}
+                            className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div>
+                                <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                                  {ps.TeamName}
+                                </span>
+                                {ps.College && (
+                                  <span className="text-xs text-slate-500 ml-2">({ps.College})</span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                                  {ps.ThemeName || 'General Innovation'}
+                                </span>
+
+                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                                  (ps.Category || '').toLowerCase() === 'hardware'
+                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                    : (ps.Category || '').toLowerCase() === 'both'
+                                    ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                }`}>
+                                  {ps.Category === 'Both' ? 'Hardware & Software' : (ps.Category || 'Software')}
+                                </span>
+
+                                <select
+                                  value={ps.Status || 'Approved'}
+                                  onChange={(e) => handleUpdateParticipantStatus(ps.Id, e.target.value)}
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border focus:outline-none cursor-pointer ${
+                                    ps.Status === 'Needs_Revision'
+                                      ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                                      : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                                  }`}
+                                >
+                                  <option value="Approved">Approved</option>
+                                  <option value="Pending">Pending</option>
+                                  <option value="Needs_Revision">Needs Revision</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                {ps.Title}
+                              </h4>
+                              {ps.Description && (
+                                <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
+                                  {ps.Description}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-200/60 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+                              {ps.TechStack && (
+                                <div className="flex items-center gap-1.5 font-medium">
+                                  <Code className="h-3.5 w-3.5 text-slate-400" />
+                                  <span>Stack: {ps.TechStack}</span>
+                                </div>
+                              )}
+                              <span>Lead: {ps.TeamLeadName || ps.TeamLeadEmail || 'N/A'}</span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* THEME FORM MODAL */}
+          <AnimatePresence>
+            {showThemeModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Lightbulb className="h-4 w-4 text-emerald-600" />
+                      <span>{editingThemeId ? 'Edit Theme' : 'Create Hackathon Theme'}</span>
+                    </h3>
+                    <button
+                      onClick={() => setShowThemeModal(false)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveTheme} className="space-y-3">
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                        Theme Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={themeForm.ThemeName}
+                        onChange={(e) => setThemeForm(prev => ({ ...prev, ThemeName: e.target.value }))}
+                        placeholder="e.g. Artificial Intelligence & Robotics"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                        Display Order
+                      </label>
+                      <input
+                        type="number"
+                        value={themeForm.DisplayOrder}
+                        onChange={(e) => setThemeForm(prev => ({ ...prev, DisplayOrder: parseInt(e.target.value) || 0 }))}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                        Theme Description
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={themeForm.Description}
+                        onChange={(e) => setThemeForm(prev => ({ ...prev, Description: e.target.value }))}
+                        placeholder="Scope, suggested problem domains, or challenge goals..."
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                        Theme Image / Photo URL (Optional)
+                      </label>
+                      <input
+                        type="url"
+                        value={themeForm.ImageUrl || ''}
+                        onChange={(e) => setThemeForm(prev => ({ ...prev, ImageUrl: e.target.value }))}
+                        placeholder="https://images.unsplash.com/... or direct image link"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1">If empty, a modern technical icon based on the theme name will be shown automatically.</p>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowThemeModal(false)}
+                        className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-600 dark:text-zinc-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={themeSaving}
+                        className="px-5 py-1.5 rounded-xl bg-emerald-700 text-white font-bold text-xs shadow-xs"
+                      >
+                        {themeSaving ? 'Saving...' : 'Save Theme'}
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* PROBLEM STATEMENT FORM MODAL */}
+          <AnimatePresence>
+            {showStatementModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-emerald-600" />
+                      <span>{editingStatementId ? 'Edit Problem Statement' : 'Add Problem Statement'}</span>
+                    </h3>
+                    <button
+                      onClick={() => setShowStatementModal(false)}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveStatement} className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                          Problem Code *
+                        </label>
+                        <input
+                          type="text"
+                          value={statementForm.ProblemCode}
+                          onChange={(e) => setStatementForm(prev => ({ ...prev, ProblemCode: e.target.value }))}
+                          placeholder="e.g. HACK-01"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                          Domain Category *
+                        </label>
+                        <select
+                          value={statementForm.Category || 'Software'}
+                          onChange={(e) => setStatementForm(prev => ({ ...prev, Category: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer"
+                        >
+                          <option value="Software">Software</option>
+                          <option value="Hardware">Hardware</option>
+                          <option value="Both">Both (Hybrid)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                          Innovation Theme
+                        </label>
+                        <select
+                          value={statementForm.Theme}
+                          onChange={(e) => setStatementForm(prev => ({ ...prev, Theme: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer"
+                        >
+                          <option value="">General</option>
+                          {themes.map((t) => (
+                            <option key={t.Id} value={t.ThemeName}>{t.ThemeName}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                        Problem Title *
+                      </label>
+                      <input
+                        type="text"
+                        value={statementForm.Title}
+                        onChange={(e) => setStatementForm(prev => ({ ...prev, Title: e.target.value }))}
+                        placeholder="e.g. Automated Soil Nutrient Prediction for Smart Farming"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                        Detailed Description & Scope
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={statementForm.Description}
+                        onChange={(e) => setStatementForm(prev => ({ ...prev, Description: e.target.value }))}
+                        placeholder="Explain problem objectives, constraints, and target outcomes..."
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowStatementModal(false)}
+                        className="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-600 dark:text-zinc-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={statementSaving}
+                        className="px-5 py-1.5 rounded-xl bg-emerald-700 text-white font-bold text-xs shadow-xs"
+                      >
+                        {statementSaving ? 'Saving...' : 'Save Statement'}
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
           {/* TAB 5: EVENT CONTROLS */}
           {activeTab === 'controls' && (

@@ -36,7 +36,10 @@ import {
     FileCheck,
     Radio,
     Video,
-    ArrowRight
+    ArrowRight,
+    Sparkles,
+    Code2,
+    Target
 } from "lucide-react";
 import { API_BASE_URL } from '@/lib/api';
 import { QRCodeSVG } from "qrcode.react";
@@ -45,6 +48,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { getEventTheme, isSoloTeamSize } from "../../../../lib/utils";
 import useTheme from "../../../../Hooks/useTheme";
+import PhysicalHackathonThemesSection from "../../../../components/Molecules/PhysicalHackathonThemesSection";
+import PhysicalTeamPSActionCard from "../../../../components/Molecules/PhysicalTeamPSActionCard";
 
 function formatDate(date) {
     if (!date) return "Not available";
@@ -124,6 +129,14 @@ function TeamInfo() {
     const [resultsData, setResultsData] = useState(null);
     const [loadingResults, setLoadingResults] = useState(false);
     const [expandedRoundId, setExpandedRoundId] = useState(null);
+
+    // Problem Statement / Theme state
+    const [teamProblemStatement, setTeamProblemStatement] = useState(null);
+    const [loadingPs, setLoadingPs] = useState(false);
+    const [eventThemes, setEventThemes] = useState([]);
+    const [organizerStatements, setOrganizerStatements] = useState([]);
+    const [participantStatement, setParticipantStatement] = useState(null);
+    const [selectedStatement, setSelectedStatement] = useState(null);
 
     // Public QR Pass state
     const [qrModalOpen, setQrModalOpen] = useState(false);
@@ -278,6 +291,69 @@ function TeamInfo() {
                 console.error("Failed to fetch published results:", evalErr);
             } finally {
                 setLoadingResults(false);
+            }
+
+            // Fetch Problem Statement / Theme Details for Hackathons
+            if (targetTeam.EventId && String(targetTeam.EventType || '').toLowerCase() === 'hackathon') {
+                try {
+                    setLoadingPs(true);
+                    const [themesRes, statementsRes, partRes, selRes] = await Promise.all([
+                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/themes`),
+                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}`),
+                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/team/${teamId}/participant-statement`),
+                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/team/${teamId}`)
+                    ]);
+
+                    if (themesRes.ok) {
+                        const themesData = await themesRes.json();
+                        setEventThemes(themesData.themes || []);
+                    }
+
+                    if (statementsRes.ok) {
+                        const stData = await statementsRes.json();
+                        setOrganizerStatements(stData.problemStatements || []);
+                    }
+
+                    const partData = partRes.ok ? await partRes.json() : null;
+                    if (partData?.statement) {
+                        setParticipantStatement(partData.statement);
+                        setTeamProblemStatement({
+                            title: partData.statement.Title,
+                            theme: partData.statement.ThemeName,
+                            description: partData.statement.Description,
+                            techStack: partData.statement.TechStack,
+                            type: 'Participant Submitted',
+                            status: partData.statement.Status,
+                            adminRemarks: partData.statement.AdminRemarks
+                        });
+                    } else {
+                        setParticipantStatement(null);
+                    }
+
+                    const selData = selRes.ok ? await selRes.json() : null;
+                    if (selData?.selection) {
+                        setSelectedStatement(selData.selection);
+                        if (!partData?.statement) {
+                            setTeamProblemStatement({
+                                code: selData.selection.ProblemCode,
+                                title: selData.selection.ProblemTitle,
+                                theme: selData.selection.Theme,
+                                description: selData.selection.Description,
+                                type: 'Organizer Provided',
+                                status: 'Approved'
+                            });
+                        }
+                    } else {
+                        setSelectedStatement(null);
+                        if (!partData?.statement) {
+                            setTeamProblemStatement(null);
+                        }
+                    }
+                } catch (psErr) {
+                    console.error("Failed to fetch problem statements / themes:", psErr);
+                } finally {
+                    setLoadingPs(false);
+                }
             }
 
         } catch (err) {
@@ -438,6 +514,19 @@ function TeamInfo() {
     const theme = useMemo(() => {
         return getEventTheme(team || {}, isDark);
     }, [team, isDark]);
+
+    const eventObj = useMemo(() => {
+        if (!team?.EventId) return null;
+        return {
+            Id: team.EventId,
+            EventType: team.EventType,
+            PhysicalPSMode: team.PhysicalPSMode || 'organizer_provided',
+            PhysicalPSPublished: team.PhysicalPSPublished,
+            PhysicalPSSelectionDeadline: team.PhysicalPSSelectionDeadline,
+            ProblemStatementsPublished: team.ProblemStatementsPublished,
+            PSSelectionDeadline: team.PSSelectionDeadline
+        };
+    }, [team]);
 
     const isIndividual = Boolean(
         isSoloTeamSize(team?.TeamSize) ||
@@ -838,6 +927,49 @@ function TeamInfo() {
                     </div>
                 </div>
             </section>
+
+            {/* ══════════════════════════════════════════════════════════════ */}
+            {/* ── PRIORITY 1.8: HACKATHON THEME & PROBLEM STATEMENT ─────── */}
+            {/* ══════════════════════════════════════════════════════════════ */}
+            {/* ══════════════════════════════════════════════════════════════ */}
+            {/* ── PRIORITY 1.8: HACKATHON THEME & PROBLEM STATEMENT ─────── */}
+            {/* ══════════════════════════════════════════════════════════════ */}
+            {String(team.EventType || '').toLowerCase() === 'hackathon' && eventObj && (
+                <div className="space-y-6">
+                    {/* Team Problem Statement Action Card (Selection & Submission in-place) */}
+                    <PhysicalTeamPSActionCard
+                        event={eventObj}
+                        eventTheme={theme}
+                        registeredTeam={{
+                            TeamId: team.Id || teamId,
+                            Id: team.Id || teamId,
+                            TeamName: team.TeamName
+                        }}
+                        isRegistered={true}
+                        participantStatement={participantStatement}
+                        onParticipantStatementSaved={(updated) => {
+                            setParticipantStatement(updated);
+                            fetchTeamInfo();
+                        }}
+                        organizerStatements={organizerStatements}
+                        selectedStatement={selectedStatement}
+                        onSelectOrganizerStatement={(locked) => {
+                            setSelectedStatement(locked);
+                            fetchTeamInfo();
+                        }}
+                        themes={eventThemes}
+                    />
+
+                    {/* Innovation Themes Display (Photo/Icon, Title, Description) */}
+                    <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-4">
+                        <PhysicalHackathonThemesSection
+                            themes={eventThemes}
+                            event={eventObj}
+                            eventTheme={theme}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 2: EVALUATION RESULTS & SCORECARD (OR PENDING) ── */}

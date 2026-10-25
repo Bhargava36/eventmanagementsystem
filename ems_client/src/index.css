@@ -48,7 +48,9 @@
 .font-playfair {
   font-family: "Playfair Display", Georgia, serif !important;
 }
-
+*::-webkit-scrollbar{
+  width: 0px;
+}
 .font-syne {
   font-family: "Syne", sans-serif !important;
 }

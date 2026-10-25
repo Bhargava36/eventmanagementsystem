@@ -9,6 +9,7 @@ import TrackTimelineSection from '../../../components/Molecules/TrackTimelineSec
 import EventMediaSlider from '../../../components/Molecules/EventMediaSlider';
 import EventGallerySection from '../../../components/Molecules/EventGallerySection';
 import EventSponsorsSection from '../../../components/Molecules/EventSponsorsSection';
+import PhysicalHackathonThemesSection from '../../../components/Molecules/PhysicalHackathonThemesSection';
 import {
   ArrowLeft,
   Calendar,
@@ -376,6 +377,8 @@ function PublicEventDetails() {
   const [timelines, setTimelines] = useState([]);
   const [sponsors, setSponsors] = useState([]);
   const [gallery, setGallery] = useState([]);
+  const [themes, setThemes] = useState([]);
+  const [organizerStatements, setOrganizerStatements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -407,6 +410,25 @@ function PublicEventDetails() {
       if (eventRes.status === 'fulfilled' && eventRes.value.ok) {
         const evData = await eventRes.value.json();
         setEvent(evData.event || null);
+        setThemes(evData.event?.Themes || []);
+
+        const isHackathonEvent = (evData.event?.EventType || '').toLowerCase() === 'hackathon';
+        if (isHackathonEvent) {
+          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/themes`)
+            .then((r) => r.json())
+            .then((tData) => {
+              if (tData?.themes && tData.themes.length > 0) setThemes(tData.themes);
+            })
+            .catch(() => {});
+
+          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}`)
+            .then((r) => r.json())
+            .then((psData) => {
+              if (psData?.problemStatements) setOrganizerStatements(psData.problemStatements);
+            })
+            .catch(() => {});
+        }
+
         if (evData.event?.Sponsors && (!sponsorsRes.value || !sponsorsRes.value.ok)) {
           setSponsors(evData.event.Sponsors);
         }
@@ -1487,6 +1509,15 @@ function PublicEventDetails() {
                             </span>
                           </div>
                         </div>
+                      )}
+
+                      {/* Hackathon Innovation Themes (Displayed in advance strictly for Physical Hackathons) */}
+                      {String(event?.EventType || '').toLowerCase() === 'hackathon' && (
+                        <PhysicalHackathonThemesSection
+                          themes={themes}
+                          event={event}
+                          eventTheme={eventTheme}
+                        />
                       )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

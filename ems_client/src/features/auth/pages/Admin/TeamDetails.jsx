@@ -32,6 +32,7 @@ function TeamDetails() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(false);
+    const [problemStatement, setProblemStatement] = useState(null);
 
     // Modals
     const [showTeamCardModal, setShowTeamCardModal] = useState(false);
@@ -57,6 +58,39 @@ function TeamDetails() {
 
                 const data = await res.json();
                 setTeam(data.team || null);
+
+                if (data.team?.EventId) {
+                    fetch(`${API_BASE_URL}/api/problem-statements/event/${data.team.EventId}/team/${id}/participant-statement`)
+                        .then((r) => (r.ok ? r.json() : null))
+                        .then((psData) => {
+                            if (psData?.statement) {
+                                setProblemStatement({
+                                    title: psData.statement.Title,
+                                    theme: psData.statement.ThemeName,
+                                    description: psData.statement.Description,
+                                    techStack: psData.statement.TechStack,
+                                    type: 'Participant Submitted',
+                                    status: psData.statement.Status
+                                });
+                            } else {
+                                fetch(`${API_BASE_URL}/api/problem-statements/event/${data.team.EventId}/team/${id}`)
+                                    .then((r) => (r.ok ? r.json() : null))
+                                    .then((selData) => {
+                                        if (selData?.selection) {
+                                            setProblemStatement({
+                                                code: selData.selection.ProblemCode,
+                                                title: selData.selection.ProblemTitle,
+                                                theme: selData.selection.Theme,
+                                                description: selData.selection.Description,
+                                                type: 'Organizer Provided'
+                                            });
+                                        }
+                                    })
+                                    .catch(() => {});
+                            }
+                        })
+                        .catch(() => {});
+                }
             } catch (err) {
                 console.error('TEAM DETAILS ERROR:', err);
                 setError(err.message || 'Error fetching team');
@@ -322,6 +356,38 @@ function TeamDetails() {
                                     </span>
                                 </div>
                             </>
+                        )}
+
+                        {problemStatement && (
+                            <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm pt-2 border-t border-slate-100 dark:border-zinc-800">
+                                <Lightbulb className="w-4 h-4 text-amber-500 mt-0.5" />
+                                <span className="text-gray-500 dark:text-gray-400">Problem Statement</span>
+                                <div className="space-y-1">
+                                    <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
+                                        {problemStatement.code && (
+                                            <span className="font-mono text-xs text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded font-black">
+                                                {problemStatement.code}
+                                            </span>
+                                        )}
+                                        <span>{problemStatement.title}</span>
+                                    </div>
+                                    {problemStatement.theme && (
+                                        <span className="text-xs text-slate-500 dark:text-zinc-400 block">
+                                            Theme: <strong className="text-slate-700 dark:text-zinc-300">{problemStatement.theme}</strong> ({problemStatement.type})
+                                        </span>
+                                    )}
+                                    {problemStatement.techStack && (
+                                        <span className="text-xs text-slate-500 dark:text-zinc-400 block">
+                                            Tech Stack: {problemStatement.techStack}
+                                        </span>
+                                    )}
+                                    {problemStatement.description && (
+                                        <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line pt-1">
+                                            {problemStatement.description}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
                         )}
 
                         <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">

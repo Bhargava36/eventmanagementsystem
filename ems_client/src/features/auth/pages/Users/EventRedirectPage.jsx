@@ -9,6 +9,8 @@ import TrackTimelineSection from '../../../../components/Molecules/TrackTimeline
 import EventMediaSlider from '../../../../components/Molecules/EventMediaSlider';
 import EventGallerySection from '../../../../components/Molecules/EventGallerySection';
 import EventSponsorsSection from '../../../../components/Molecules/EventSponsorsSection';
+import PhysicalHackathonThemesSection from '../../../../components/Molecules/PhysicalHackathonThemesSection';
+import PhysicalTeamPSActionCard from '../../../../components/Molecules/PhysicalTeamPSActionCard';
 import { getEventTheme, getEventTypeInfo, isSoloTeamSize, parseTeamSizeOptions } from '../../../../lib/utils';
 import {
   ArrowLeft,
@@ -240,6 +242,10 @@ function EventDetails() {
   const [timelines, setTimelines] = useState([]);
   const [sponsors,  setSponsors]  = useState([]);
   const [gallery,   setGallery]   = useState([]);
+  const [themes,    setThemes]    = useState([]);
+  const [organizerStatements, setOrganizerStatements] = useState([]);
+  const [participantStatement, setParticipantStatement] = useState(null);
+  const [selectedStatement, setSelectedStatement] = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
 
@@ -326,6 +332,27 @@ function EventDetails() {
   const isVirtualRegistered = Boolean(virtualTeam);
   const isPhysicalRegistered = Boolean(physicalTeam);
 
+  // Fetch participant statement or organizer selection for the physical team
+  useEffect(() => {
+    if (!id || !physicalTeam?.TeamId) return;
+    const isHackathonEvent = (event?.EventType || '').toLowerCase() === 'hackathon';
+    if (!isHackathonEvent) return;
+
+    fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/team/${physicalTeam.TeamId}/participant-statement`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.statement) setParticipantStatement(data.statement);
+      })
+      .catch(() => {});
+
+    fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/team/${physicalTeam.TeamId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.selection) setSelectedStatement(data.selection);
+      })
+      .catch(() => {});
+  }, [id, physicalTeam?.TeamId, event?.EventType]);
+
   const availableModes = useMemo(() => getAvailableModes(event?.HackathonMode), [event?.HackathonMode]);
   const hasBothModes = availableModes.includes('Virtual') && availableModes.includes('Physical');
   const isFullyRegistered = hasBothModes
@@ -362,6 +389,25 @@ function EventDetails() {
       if (eventRes.status === 'fulfilled' && eventRes.value.ok) {
         const evData = await eventRes.value.json();
         setEvent(evData.event || null);
+        setThemes(evData.event?.Themes || []);
+
+        const isHackathonEvent = (evData.event?.EventType || '').toLowerCase() === 'hackathon';
+        if (isHackathonEvent) {
+          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/themes`)
+            .then((r) => r.json())
+            .then((tData) => {
+              if (tData?.themes && tData.themes.length > 0) setThemes(tData.themes);
+            })
+            .catch(() => {});
+
+          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}`)
+            .then((r) => r.json())
+            .then((psData) => {
+              if (psData?.problemStatements) setOrganizerStatements(psData.problemStatements);
+            })
+            .catch(() => {});
+        }
+
         if (evData.event?.Sponsors && (!sponsorsRes.value || !sponsorsRes.value.ok)) {
           setSponsors(evData.event.Sponsors);
         }
@@ -1450,6 +1496,33 @@ function EventDetails() {
                           </div>
                         </div>
                       )}
+
+                      {/* Physical Hackathon Themes (Shown in advance only for Physical Hackathons) */}
+                      {String(event?.EventType || '').toLowerCase() === 'hackathon' && (
+                        <div className="space-y-6">
+                          <PhysicalHackathonThemesSection
+                            themes={themes}
+                            event={event}
+                            eventTheme={eventTheme}
+                          />
+
+                          {isPhysicalRegistered && physicalTeam && (
+                            <PhysicalTeamPSActionCard
+                              event={event}
+                              eventTheme={eventTheme}
+                              registeredTeam={physicalTeam}
+                              isRegistered={isPhysicalRegistered}
+                              participantStatement={participantStatement}
+                              onParticipantStatementSaved={(updated) => setParticipantStatement(updated)}
+                              organizerStatements={organizerStatements}
+                              selectedStatement={selectedStatement}
+                              onSelectOrganizerStatement={(locked) => setSelectedStatement(locked)}
+                              themes={themes}
+                            />
+                          )}
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-3">
                           <div className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: eventTheme.accent }}>

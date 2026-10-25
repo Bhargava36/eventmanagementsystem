@@ -582,6 +582,8 @@ const getTeamInfo = (teamId, userId, callback) => {
                     e.PrimaryColor, e.SecondaryColor, e.TertiaryColor, e.HackathonMode,
                     e.PhysicalResultsPublished, e.VirtualResultsPublished,
                     e.VirtualStatus, e.VirtualMeetUrl, e.VirtualStartDate, e.VirtualEndDate,
+                    e.PhysicalPSMode, e.PhysicalPSPublished, e.PhysicalPSSelectionDeadline,
+                    e.ProblemStatementsPublished, e.PSSelectionDeadline,
                     er.ParticipationMode, er.Status AS RegistrationStatus 
                 FROM registered_teams t 
                 INNER JOIN events e ON t.EventId = e.Id 

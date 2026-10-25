@@ -477,6 +477,8 @@ const migrationQueries = [
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
+    `ALTER TABLE event_themes ADD COLUMN IF NOT EXISTS ImageUrl VARCHAR(500) DEFAULT NULL`,
+
     `ALTER TABLE physical_food_tokens ADD COLUMN IF NOT EXISTS IsRedeemed TINYINT(1) NOT NULL DEFAULT 0`,
     `ALTER TABLE physical_food_tokens ADD COLUMN IF NOT EXISTS RedeemedAt TIMESTAMP NULL DEFAULT NULL`,
 
@@ -541,7 +543,35 @@ const migrationQueries = [
         SentAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_eb_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalPSMode VARCHAR(50) NOT NULL DEFAULT 'organizer_provided'`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalPSPublished TINYINT(1) NOT NULL DEFAULT 0`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalPSSelectionDeadline DATETIME DEFAULT NULL`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalPSMaxTeamsPerStatement INT NOT NULL DEFAULT 5`,
+
+    `CREATE TABLE IF NOT EXISTS participant_problem_statements (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TeamId INT NOT NULL,
+        ThemeName VARCHAR(255) NULL,
+        Title VARCHAR(500) NOT NULL,
+        Description TEXT,
+        TechStack VARCHAR(500) NULL,
+        Status ENUM('Pending', 'Approved', 'Needs_Revision') NOT NULL DEFAULT 'Approved',
+        AdminRemarks TEXT NULL,
+        SubmittedByUserId INT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_event_team_pps (EventId, TeamId),
+        INDEX idx_pps_event (EventId),
+        INDEX idx_pps_team (TeamId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE participant_problem_statements ADD COLUMN IF NOT EXISTS Category VARCHAR(50) NOT NULL DEFAULT 'Software'`,
+    `ALTER TABLE event_problem_statements ADD COLUMN IF NOT EXISTS Category VARCHAR(50) NOT NULL DEFAULT 'Software'`
 ];
 
 let isMigrating = false;

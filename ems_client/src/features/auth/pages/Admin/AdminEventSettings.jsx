@@ -35,7 +35,13 @@ import {
   Upload,
   Loader2,
   BedDouble,
-  Utensils
+  Utensils,
+  Target,
+  Check,
+  Lightbulb,
+  Timer,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import useToast from '../../../../Hooks/useToast';
 import useAuth from '../../../../Hooks/useAuth';
@@ -95,7 +101,11 @@ export default function AdminEventSettings() {
     AdminPaymentQr: '',
     AdminPaymentInstructions: '',
     IdCardBackground: '',
-    TeamCardBackground: ''
+    TeamCardBackground: '',
+    PhysicalPSMode: 'organizer_provided',
+    PhysicalPSPublished: 0,
+    PhysicalPSSelectionDeadline: null,
+    PhysicalPSMaxTeamsPerStatement: 5
   });
 
   // Track visibility is controlled strictly by the event's configured HackathonMode.
@@ -230,7 +240,11 @@ export default function AdminEventSettings() {
         AdminPaymentQr: ev.AdminPaymentQr || '',
         AdminPaymentInstructions: ev.AdminPaymentInstructions || '',
         IdCardBackground: ev.IdCardBackground || '',
-        TeamCardBackground: ev.TeamCardBackground || ''
+        TeamCardBackground: ev.TeamCardBackground || '',
+        PhysicalPSMode: ev.PhysicalPSMode || 'organizer_provided',
+        PhysicalPSPublished: ev.PhysicalPSPublished !== undefined ? ev.PhysicalPSPublished : 0,
+        PhysicalPSSelectionDeadline: ev.PhysicalPSSelectionDeadline || null,
+        PhysicalPSMaxTeamsPerStatement: ev.PhysicalPSMaxTeamsPerStatement || 5
       });
     } catch (err) {
       console.error(err);
@@ -462,9 +476,13 @@ export default function AdminEventSettings() {
           ? 'Food selection'
           : key === 'IDCardEnabled'
           ? 'ID card generation'
+          : key === 'PhysicalPSPublished'
+          ? 'Physical Problem Statements'
           : 'All Registrations';
 
-      if (key.endsWith('Enabled')) {
+      if (key === 'PhysicalPSPublished') {
+        toast.success(newVal === 1 ? 'Physical Problem Statements published to participants!' : 'Physical Problem Statements unpublished (draft).');
+      } else if (key.endsWith('Enabled')) {
         toast.success(`${trackName} ${newVal === 1 ? 'enabled' : 'disabled'}.`);
       } else if (newVal === 1) {
         toast.success(`${trackName} registrations resumed & opened!`);
@@ -1393,6 +1411,160 @@ export default function AdminEventSettings() {
                         />
                       </div>
                     </div>
+
+                    {/* Problem Statement Mode for Physical Hackathons */}
+                    {(eventData?.EventType || '').toLowerCase() === 'hackathon' && (
+                      <div className="pt-4 border-t border-slate-200/60 dark:border-zinc-800 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                          <label className="text-xs font-bold text-slate-800 dark:text-white">
+                            Problem Statement Submission Format (Physical Track)
+                          </label>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400">
+                          Configure whether physical hackathon teams choose from organizer-provided problem statements or submit their own open innovation statements under the event themes.
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setSettingsForm((prev) => ({ ...prev, PhysicalPSMode: 'organizer_provided' }))}
+                            className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                              settingsForm.PhysicalPSMode === 'organizer_provided'
+                                ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-200 font-bold'
+                                : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="text-xs font-bold flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                                <span>Organizer-Provided Challenges</span>
+                              </span>
+                              {settingsForm.PhysicalPSMode === 'organizer_provided' && <Check className="h-3.5 w-3.5 text-emerald-600" />}
+                            </div>
+                            <span className="text-[11px] font-normal text-slate-500 dark:text-zinc-400 block mt-1 leading-relaxed">
+                              Organizers define problem statements; teams select from the official list.
+                            </span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setSettingsForm((prev) => ({ ...prev, PhysicalPSMode: 'participant_defined' }))}
+                            className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                              settingsForm.PhysicalPSMode === 'participant_defined'
+                                ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 font-bold'
+                                : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:border-slate-300'
+                            }`}
+                          >
+                            <div className="text-xs font-bold flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <Target className="h-3.5 w-3.5 text-blue-600" />
+                                <span>Participant-Submitted (Open Innovation)</span>
+                              </span>
+                              {settingsForm.PhysicalPSMode === 'participant_defined' && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                            </div>
+                            <span className="text-[11px] font-normal text-slate-500 dark:text-zinc-400 block mt-1 leading-relaxed">
+                              Teams choose an innovation theme and submit their custom problem statement.
+                            </span>
+                          </button>
+                        </div>
+
+                        {/* When Organizer-Provided is selected: Problem Statement Publishing, Live Release & Timer */}
+                        {settingsForm.PhysicalPSMode === 'organizer_provided' && (
+                          <div className="mt-4 p-5 rounded-2xl bg-slate-100/70 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-zinc-800">
+                              <div>
+                                <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                  {settingsForm.PhysicalPSPublished === 1 ? (
+                                    <Eye className="h-4 w-4 text-emerald-600" />
+                                  ) : (
+                                    <EyeOff className="h-4 w-4 text-slate-400" />
+                                  )}
+                                  <span>Problem Statements Event Release Status</span>
+                                </h4>
+                                <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                                  {settingsForm.PhysicalPSPublished === 1
+                                    ? 'Statements are currently PUBLISHED and OPEN for physical teams to select.'
+                                    : 'Statements are in DRAFT. Physical participants only see Themes in advance; problem statements remain hidden until you publish them at the event kickoff.'}
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleToggle('PhysicalPSPublished')}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer self-start sm:self-auto shrink-0 shadow-sm ${
+                                  settingsForm.PhysicalPSPublished === 1
+                                    ? 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/30 dark:border-rose-900/40 hover:bg-rose-100'
+                                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                                }`}
+                              >
+                                {settingsForm.PhysicalPSPublished === 1 ? 'Close & Unpublish Statements' : '🚀 Publish Statements Now at Event'}
+                              </button>
+                            </div>
+
+                            {/* Selection Deadline & Max Teams Row */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+                                  <Timer className="h-3.5 w-3.5 text-emerald-600" />
+                                  <span>Selection Deadline (Countdown Timer)</span>
+                                </label>
+                                <input
+                                  type="datetime-local"
+                                  name="PhysicalPSSelectionDeadline"
+                                  value={
+                                    settingsForm.PhysicalPSSelectionDeadline
+                                      ? new Date(settingsForm.PhysicalPSSelectionDeadline).toISOString().slice(0, 16)
+                                      : ''
+                                  }
+                                  onChange={handleInputChange}
+                                  className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                                />
+                                <div className="flex items-center gap-1.5 pt-1">
+                                  <span className="text-[10px] text-slate-400">Quick timers:</span>
+                                  {[15, 30, 45, 60].map((mins) => (
+                                    <button
+                                      key={mins}
+                                      type="button"
+                                      onClick={() => {
+                                        const dt = new Date(Date.now() + mins * 60 * 1000);
+                                        setSettingsForm((prev) => ({
+                                          ...prev,
+                                          PhysicalPSSelectionDeadline: dt.toISOString()
+                                        }));
+                                        toast.success(`Set timer to ${mins} minutes from now`);
+                                      }}
+                                      className="px-2 py-0.5 rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-[10px] font-bold hover:bg-slate-50 cursor-pointer"
+                                    >
+                                      +{mins}m
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1">
+                                  <Users className="h-3.5 w-3.5 text-blue-600" />
+                                  <span>Max Teams Per Problem Statement</span>
+                                </label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="50"
+                                  name="PhysicalPSMaxTeamsPerStatement"
+                                  value={settingsForm.PhysicalPSMaxTeamsPerStatement || 5}
+                                  onChange={handleInputChange}
+                                  placeholder="5"
+                                  className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+                                />
+                                <span className="text-[10px] text-slate-400 block">
+                                  Cap the maximum number of physical teams that can select the same problem statement.
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Physical Campus Services Toggles */}
