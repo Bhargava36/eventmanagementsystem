@@ -54,6 +54,7 @@ const AdminEventSettings = lazy(() => import('../features/auth/pages/Admin/Admin
 const AccomodationRedirectPage = lazy(() => import('../features/auth/pages/Admin/AccomodationRedirectPage'));
 const FoodRedirectionPage = lazy(() => import('../features/auth/pages/Admin/FoodRedirectionPage'));
 const IdRedirectionPage = lazy(() => import('../features/auth/pages/Admin/IdRedirectionPage'));
+const IdDesignerPage = lazy(() => import('../features/auth/pages/Admin/IdDesignerPage'));
 const Evaluators = lazy(() => import('../features/auth/pages/Admin/Evaluators'));
 const AdminResultsPage = lazy(() => import('../features/auth/pages/Admin/AdminResultsPage'));
 const EventBroadcastEmailer = lazy(() => import('../features/auth/pages/Admin/EventBroadcastEmailer'));
@@ -173,6 +174,10 @@ function App() {
                 <Route path="accomodation" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AccomodationRedirectPage /> </AdminModeRoute>} />
                 <Route path="food" element={<AdminModeRoute allowedModes={['physical', 'both']}> <FoodRedirectionPage /> </AdminModeRoute>} />
                 <Route path="id-card" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdRedirectionPage /> </AdminModeRoute>} />
+                <Route path="id-card-designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage /> </AdminModeRoute>} />
+                <Route path="id-card/designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage /> </AdminModeRoute>} />
+                <Route path="team-card-designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage defaultCardType="team_card" /> </AdminModeRoute>} />
+                <Route path="team-card/designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage defaultCardType="team_card" /> </AdminModeRoute>} />
                 <Route path="evaluators" element={<Evaluators />} />
                 <Route path="broadcast-emailer" element={<EventBroadcastEmailer />} />
                 <Route path="physical-results" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AdminResultsPage track="Physical" /> </AdminModeRoute>} />

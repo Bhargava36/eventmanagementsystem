@@ -33,7 +33,8 @@ import {
   Target,
   Code,
   Filter,
-  Layers
+  Layers,
+  Palette
 } from 'lucide-react';
 import { getThemeIcon } from '@/components/Molecules/PhysicalHackathonThemesSection';
 
@@ -996,7 +997,7 @@ function AdminPhysicalEvent() {
               activeTab === 'teams' ? 'rounded-tl-none' : ''
             } bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-xs relative z-0`}
           >
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               {/* TAB 1: REGISTERED PHYSICAL TEAMS */}
               {activeTab === 'teams' && (
                 <motion.div
@@ -1042,15 +1043,27 @@ function AdminPhysicalEvent() {
                     : `${filteredTeams.length} matching physical team(s)`}
                 </span>
 
-                <button
-                  type="button"
-                  onClick={fetchTeams}
-                  disabled={loading || !eventId}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-zinc-800 dark:text-slate-300 dark:hover:bg-zinc-900"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/admin/team-card-designer?eventId=${encodeURIComponent(eventId)}`)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 dark:bg-cyan-950/40 dark:hover:bg-cyan-900/40 px-3.5 py-2 text-xs font-semibold text-cyan-600 dark:text-cyan-300 transition cursor-pointer shadow-xs"
+                    title="Design custom table display cards for teams"
+                  >
+                    <Palette className="h-3.5 w-3.5 text-cyan-500" />
+                    <span>Design Team Cards</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={fetchTeams}
+                    disabled={loading || !eventId}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-zinc-800 dark:text-slate-300 dark:hover:bg-zinc-900"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </button>
+                </div>
               </div>
 
               {error && (
@@ -1542,16 +1555,37 @@ function AdminPhysicalEvent() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleIdRedirect}
-                  disabled={!isEnabled(idCardEnabled)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition disabled:opacity-50 cursor-pointer dark:bg-emerald-600 dark:hover:bg-emerald-500"
-                >
-                  <IdCard className="h-4 w-4" />
-                  <span>{isEnabled(idCardEnabled) ? 'Open ID Card Studio' : 'ID Cards Disabled'}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/admin/id-card-designer?eventId=${encodeURIComponent(eventId)}`)}
+                    disabled={!isEnabled(idCardEnabled)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-800 dark:text-zinc-200 shadow-xs transition disabled:opacity-50 cursor-pointer"
+                  >
+                    <Palette className="h-4 w-4 text-emerald-500" />
+                    <span>ID Card Designer</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/admin/team-card-designer?eventId=${encodeURIComponent(eventId)}`)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 dark:bg-cyan-950/40 dark:hover:bg-cyan-900/40 px-4 py-2.5 text-xs sm:text-sm font-bold text-cyan-600 dark:text-cyan-300 shadow-xs transition cursor-pointer"
+                  >
+                    <Palette className="h-4 w-4 text-cyan-500" />
+                    <span>Team Card Designer</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleIdRedirect}
+                    disabled={!isEnabled(idCardEnabled)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition disabled:opacity-50 cursor-pointer dark:bg-emerald-600 dark:hover:bg-emerald-500"
+                  >
+                    <IdCard className="h-4 w-4" />
+                    <span>{isEnabled(idCardEnabled) ? 'Open ID Card Studio' : 'ID Cards Disabled'}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* KPI Cards Grid */}

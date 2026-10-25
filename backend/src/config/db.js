@@ -571,7 +571,48 @@ const migrationQueries = [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
     `ALTER TABLE participant_problem_statements ADD COLUMN IF NOT EXISTS Category VARCHAR(50) NOT NULL DEFAULT 'Software'`,
-    `ALTER TABLE event_problem_statements ADD COLUMN IF NOT EXISTS Category VARCHAR(50) NOT NULL DEFAULT 'Software'`
+    `ALTER TABLE event_problem_statements ADD COLUMN IF NOT EXISTS Category VARCHAR(50) NOT NULL DEFAULT 'Software'`,
+
+    `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS VerificationToken VARCHAR(100) UNIQUE DEFAULT NULL`,
+    `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS TemplateId INT DEFAULT NULL`,
+    `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS FrontImageUrl VARCHAR(500) DEFAULT NULL`,
+    `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS BackImageUrl VARCHAR(500) DEFAULT NULL`,
+    `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS GeneratedAt TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP`,
+
+    `CREATE TABLE IF NOT EXISTS id_card_templates (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TemplateName VARCHAR(255) NOT NULL,
+        Orientation ENUM('portrait', 'landscape') DEFAULT 'portrait',
+        CardWidth DECIMAL(8,2) DEFAULT 85.60,
+        CardHeight DECIMAL(8,2) DEFAULT 53.98,
+        Unit VARCHAR(10) DEFAULT 'mm',
+        FrontConfig LONGTEXT NOT NULL,
+        BackConfig LONGTEXT DEFAULT NULL,
+        IsDefault TINYINT(1) DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_id_templates_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS id_card_batches (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TemplateId INT DEFAULT NULL,
+        Status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending',
+        TotalParticipants INT DEFAULT 0,
+        ProcessedCount INT DEFAULT 0,
+        SuccessCount INT DEFAULT 0,
+        FailedCount INT DEFAULT 0,
+        SummaryText TEXT DEFAULT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_batches_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE id_card_templates ADD COLUMN IF NOT EXISTS CardType VARCHAR(50) NOT NULL DEFAULT 'id_card'`
 ];
 
 let isMigrating = false;

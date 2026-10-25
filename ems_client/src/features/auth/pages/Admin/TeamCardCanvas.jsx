@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "@/lib/api";
 import { QRCodeSVG } from "qrcode.react";
-import { Download, Printer, FileText } from "lucide-react";
+import { Download, Printer, FileText, Palette } from "lucide-react";
 import { jsPDF } from "jspdf";
+import { renderCardSide } from "@/features/id_card/services/idCardRenderer";
 
 const hexToRgb = (hex, fallback = { r: 0, g: 229, b: 255 }) => {
   if (!hex || typeof hex !== "string") return fallback;
@@ -46,13 +48,16 @@ const BASE_H = 750;
 const RENDER_SCALE = 2;
 
 export default function TeamCardCanvas({ team, event }) {
+  const navigate = useNavigate();
   const canvasRef = useRef(null);
   const qrRef = useRef(null);
+  const [usingCustomTemplate, setUsingCustomTemplate] = useState(false);
 
   const teamId = team?.Id || team?.TeamId || "";
   const teamName = team?.TeamName || "Team";
   const members = Array.isArray(team?.members) ? team.members : [];
   const eventName = event?.EventName || team?.EventName || "AVISHKAAR";
+  const eventId = event?.Id || team?.EventId || team?.eventId || "";
 
   // Dynamic Event Colors from Admin Settings
   const primaryColor = event?.PrimaryColor || team?.PrimaryColor || "#00E5FF";
@@ -71,7 +76,7 @@ export default function TeamCardCanvas({ team, event }) {
   useEffect(() => {
     let cancelled = false;
 
-    const drawTeamCard = async () => {
+    const drawBuiltInTeamCard = async () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -398,12 +403,71 @@ export default function TeamCardCanvas({ team, event }) {
       ctx.restore(); // Restore scale
     };
 
+    const drawTeamCard = async () => {
+      if (cancelled) return;
+
+      // Check if a custom visual Team Card template exists for this event
+      if (eventId) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/id-cards/events/${eventId}/templates?cardType=team_card`, { credentials: "include" });
+          if (res.ok) {
+            const data = await res.json();
+            const templates = data?.templates || [];
+            const activeTpl = templates.find((t) => t.IsDefault) || templates[0];
+
+            if (activeTpl?.FrontConfig?.elements?.length > 0 && canvasRef.current) {
+              setUsingCustomTemplate(true);
+              const teamData = {
+                team_name: teamName,
+                team_id: teamId,
+                placement: placement,
+                direction: direction,
+                problem_statement: team?.ProblemStatement || team?.ProblemStatementText || "",
+                ps_domain: team?.Domain || team?.Category || "",
+                members_count: members.length,
+                team_lead_name: members[0]?.Name || members[0]?.FullName || "",
+                team_lead_photo: members[0]?.ProfilePhoto || members[0]?.PhotoUrl || "",
+                event_name: eventName,
+                public_team_url: publicTeamUrl,
+                ...team,
+              };
+
+              members.forEach((m, idx) => {
+                const i = idx + 1;
+                teamData[`member_${i}_name`] = m?.Name || m?.FullName || "";
+                teamData[`member_${i}_role`] = m?.Role || (idx === 0 ? "Team Lead" : `Member ${i}`);
+                teamData[`member_${i}_roll`] = m?.RollNumber || m?.RollNo || "";
+                teamData[`member_${i}_photo`] = m?.ProfilePhoto || m?.PhotoUrl || "";
+              });
+
+              await renderCardSide({
+                canvas: canvasRef.current,
+                config: activeTpl.FrontConfig,
+                orientation: activeTpl.Orientation || "horizontal",
+                cardWidth: activeTpl.CardWidth || 150,
+                cardHeight: activeTpl.CardHeight || 95,
+                unit: activeTpl.Unit || "mm",
+                participant: teamData,
+                dpi: 300,
+              });
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn("Failed to load custom team card template, using built-in design:", err);
+        }
+      }
+
+      setUsingCustomTemplate(false);
+      await drawBuiltInTeamCard();
+    };
+
     drawTeamCard();
 
     return () => {
       cancelled = true;
     };
-  }, [team, event, teamId, teamName, members, eventName, placement, direction, primaryColor, secondaryColor, r, g, b]);
+  }, [team, event, teamId, teamName, members, eventName, placement, direction, primaryColor, secondaryColor, r, g, b, eventId]);
 
   // Download direct PDF for Team Card
   const downloadTeamCardPdf = () => {
@@ -506,10 +570,28 @@ export default function TeamCardCanvas({ team, event }) {
         <span className="flex items-center gap-1.5" style={{ color: primaryColor }}>
           <FileText className="h-3.5 w-3.5" />
           <span>Official Landscape Team Card</span>
+          {usingCustomTemplate && (
+            <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Custom Designed
+            </span>
+          )}
         </span>
-        <span className="font-mono text-[11px] bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-slate-300">
-          PDF & Ultra HD (2400 × 1500)
-        </span>
+        <div className="flex items-center gap-2">
+          {eventId && (
+            <button
+              type="button"
+              onClick={() => navigate(`/admin/team-card-designer?eventId=${eventId}`)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20 transition cursor-pointer"
+              title="Open Visual Team Card Designer"
+            >
+              <Palette className="h-3 w-3" />
+              <span>Customize Card</span>
+            </button>
+          )}
+          <span className="font-mono text-[11px] bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-slate-300">
+            PDF & Ultra HD
+          </span>
+        </div>
       </div>
 
       <canvas
@@ -521,35 +603,45 @@ export default function TeamCardCanvas({ team, event }) {
         }}
       />
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-4 gap-2">
         <button
           type="button"
           onClick={downloadTeamCardPdf}
-          className="flex items-center justify-center gap-1.5 rounded-xl text-white font-bold py-2.5 px-3 text-xs shadow-lg transition hover:brightness-110 cursor-pointer"
+          className="flex items-center justify-center gap-1.5 rounded-xl text-white font-bold py-2.5 px-2 text-xs shadow-lg transition hover:brightness-110 cursor-pointer"
           style={{ backgroundColor: primaryColor }}
           title="Save as official PDF document"
         >
           <FileText className="h-4 w-4" />
-          <span>Download PDF</span>
+          <span>PDF</span>
         </button>
 
         <button
           type="button"
           onClick={downloadTeamCardPng}
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold py-2.5 px-3 text-xs transition cursor-pointer"
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold py-2.5 px-2 text-xs transition cursor-pointer"
           title="Download as PNG image"
         >
           <Download className="h-4 w-4" />
-          <span>Save PNG</span>
+          <span>PNG</span>
         </button>
 
         <button
           type="button"
           onClick={printTeamCard}
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold py-2.5 px-3 text-xs transition cursor-pointer"
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold py-2.5 px-2 text-xs transition cursor-pointer"
         >
           <Printer className="h-4 w-4" style={{ color: primaryColor }} />
           <span>Print</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate(eventId ? `/admin/team-card-designer?eventId=${eventId}` : "/admin/team-card-designer")}
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/40 hover:bg-cyan-900/40 text-cyan-300 font-bold py-2.5 px-2 text-xs transition cursor-pointer"
+          title="Open Visual Studio to customize layout, colors & placeholders"
+        >
+          <Palette className="h-4 w-4" />
+          <span>Design</span>
         </button>
       </div>
     </div>

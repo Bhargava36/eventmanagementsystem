@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE_URL } from '@/lib/api';
-import ParticipantIdCanvas from "./ParticipantIdCanvas";
+import VisualParticipantCardPreview from "@/features/id_card/components/VisualParticipantCardPreview";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   IdCard,
@@ -21,7 +21,10 @@ import {
   ShieldCheck,
   UserCheck,
   RotateCcw,
+  Palette,
 } from "lucide-react";
+import IdCardDesigner from "@/features/id_card/components/IdCardDesigner";
+import BulkGenerationModal from "@/features/id_card/components/BulkGenerationModal";
 
 const getAssignedEventId = () => {
   try {
@@ -118,11 +121,14 @@ export default function IdRedirectionPage() {
     }
   });
 
-  // Main View Switcher: 'attendance' | 'id-cards'
-  const [activeView, setActiveView] = useState("attendance");
+  // Main View Switcher: 'attendance' | 'id-cards' | 'designer'
+  const [activeView, setActiveView] = useState(() => searchParams.get("view") || "attendance");
 
   const [event, setEvent] = useState(null);
   const [participants, setParticipants] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [activeTemplate, setActiveTemplate] = useState(null);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
@@ -175,6 +181,19 @@ export default function IdRedirectionPage() {
 
       setEvent(eventData?.event || eventData?.data || eventData || null);
       setParticipants(getArray(participantsData));
+
+      // Fetch Templates for this event
+      try {
+        const tRes = await fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/templates`);
+        const tData = await tRes.json();
+        const tList = Array.isArray(tData.templates) ? tData.templates : [];
+        setTemplates(tList);
+        if (tList.length > 0) {
+          setActiveTemplate(tList.find((t) => t.IsDefault) || tList[0]);
+        }
+      } catch (tErr) {
+        console.error("Failed to fetch templates:", tErr);
+      }
     } catch (err) {
       setError(err.message || "Unable to load data.");
     } finally {
@@ -185,6 +204,12 @@ export default function IdRedirectionPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (activeView === "id-cards") {
+      loadData();
+    }
+  }, [activeView, loadData]);
 
   // ID Cards stats
   const cardStats = useMemo(() => {
@@ -427,71 +452,137 @@ export default function IdRedirectionPage() {
         </button>
 
         {/* Section Header Banner */}
-        <section className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm sm:p-8 lg:flex-row lg:items-center">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-4">
+        {activeView !== "designer" ? (
+          <section className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm sm:p-8 lg:flex-row lg:items-center">
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-4">
+                <div
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white"
+                  style={{ backgroundColor: themeColor }}
+                >
+                  {activeView === "attendance" ? (
+                    <ShieldCheck className="h-6 w-6" />
+                  ) : (
+                    <IdCard className="h-6 w-6" />
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
+                    Event Ground Operations
+                  </p>
+                  <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl">
+                    {activeView === "attendance" ? "Gate Check-in & Check-out Tracking" : "ID Card Generation & Passes"}
+                  </h1>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
+                <strong className="text-slate-900 dark:text-white">{eventName}</strong>
+                <span className="flex items-center gap-1.5">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  {formatDate(startDate)} – {formatDate(endDate)}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {location}
+                </span>
+              </div>
+            </div>
+
+            {/* Primary View Switcher Tabs */}
+            <div className="flex items-center bg-slate-100 dark:bg-zinc-800 p-1.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setActiveView("attendance")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  activeView === "attendance"
+                    ? "bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                    : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <LogIn className="w-4 h-4" />
+                Check-in / Check-out ({attendanceStats.checkedIn}/{attendanceStats.total})
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("id-cards")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  activeView === "id-cards"
+                    ? "bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                    : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <IdCard className="w-4 h-4" />
+                ID Cards & Passes
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("designer")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  activeView === "designer"
+                    ? "bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                    : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <Palette className="w-4 h-4 text-emerald-500" />
+                Visual ID Designer
+              </button>
+            </div>
+          </section>
+        ) : (
+          <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-3 shadow-sm">
+            <div className="flex items-center gap-3">
               <div
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-sm"
                 style={{ backgroundColor: themeColor }}
               >
-                {activeView === "attendance" ? (
-                  <ShieldCheck className="h-6 w-6" />
-                ) : (
-                  <IdCard className="h-6 w-6" />
-                )}
+                <Palette className="h-4 w-4" />
               </div>
-
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
-                  Event Ground Operations
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    Visual ID Card Designer Studio
+                  </h2>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    {eventName}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-zinc-400">
+                  Custom drag-and-drop ID badge designer with dynamic data binding & high-res print export
                 </p>
-                <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl">
-                  {activeView === "attendance" ? "Gate Check-in & Check-out Tracking" : "ID Card Generation & Passes"}
-                </h1>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
-              <strong className="text-slate-900 dark:text-white">{eventName}</strong>
-              <span className="flex items-center gap-1.5">
-                <CalendarDays className="h-3.5 w-3.5" />
-                {formatDate(startDate)} – {formatDate(endDate)}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" />
-                {location}
-              </span>
+            {/* Compact Mode Switcher */}
+            <div className="flex items-center bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl border border-slate-200/80 dark:border-zinc-700/80">
+              <button
+                type="button"
+                onClick={() => setActiveView("attendance")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                Gate
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("id-cards")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+              >
+                <IdCard className="w-3.5 h-3.5" />
+                Passes List
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveView("designer")}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 shadow-xs cursor-pointer"
+              >
+                <Palette className="w-3.5 h-3.5 text-emerald-500" />
+                Designer Studio
+              </button>
             </div>
-          </div>
-
-          {/* Primary View Switcher Tabs */}
-          <div className="flex items-center bg-slate-100 dark:bg-zinc-800 p-1.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setActiveView("attendance")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                activeView === "attendance"
-                  ? "bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-400 shadow-sm"
-                  : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              <LogIn className="w-4 h-4" />
-              Check-in / Check-out ({attendanceStats.checkedIn}/{attendanceStats.total})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveView("id-cards")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                activeView === "id-cards"
-                  ? "bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-400 shadow-sm"
-                  : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              <IdCard className="w-4 h-4" />
-              ID Cards & Passes
-            </button>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Alerts & Messages */}
         {error && (
@@ -705,7 +796,7 @@ export default function IdRedirectionPage() {
 
                         return (
                           <tr
-                            key={getUserId(p) ?? idx}
+                            key={getUserId(p) || p.IdCardNumber || p.RegistrationId || `part-${idx}`}
                             className="transition hover:bg-slate-50/80 dark:hover:bg-zinc-800/30"
                           >
                             {/* Participant */}
@@ -876,26 +967,27 @@ export default function IdRedirectionPage() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                disabled={
-                  loading ||
-                  generating ||
-                  !/^[1-9]\d*$/.test(eventId) ||
-                  !isFeatureEnabled ||
-                  cardStats.pending === 0
-                }
-                onClick={generateCards}
-                className="flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer self-start sm:self-auto"
-                style={{ backgroundColor: themeColor }}
-              >
-                {generating ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveView("designer")}
+                  className="flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 transition cursor-pointer"
+                >
+                  <Palette className="h-4 w-4 text-emerald-500" />
+                  <span>Design ID Template</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={loading || !isFeatureEnabled || participants.length === 0}
+                  onClick={() => setShowBulkModal(true)}
+                  className="flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-extrabold text-white shadow-lg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer self-start sm:self-auto"
+                  style={{ backgroundColor: themeColor }}
+                >
                   <IdCard className="h-4 w-4" />
-                )}
-                {generating ? "GENERATING..." : "GENERATE ALL ID CARDS"}
-              </button>
+                  <span>GENERATE ALL ID CARDS</span>
+                </button>
+              </div>
             </div>
 
             {/* ID Cards 4 Metric Cards */}
@@ -992,7 +1084,7 @@ export default function IdRedirectionPage() {
                     {!loading &&
                       filteredParticipants.map((participant, index) => (
                         <tr
-                          key={getUserId(participant) ?? index}
+                          key={getUserId(participant) || participant.IdCardNumber || participant.RegistrationId || `card-${index}`}
                           className="transition hover:bg-slate-50/80 dark:hover:bg-zinc-800/30"
                         >
                           <td className="px-6 py-4">
@@ -1062,57 +1154,43 @@ export default function IdRedirectionPage() {
           </div>
         )}
 
-        {/* Modal: ID Card Canvas Preview */}
+        {/* Modal: ID Card Visual Preview with Saved Designer Template */}
         {selected && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 backdrop-blur-xs p-3 sm:p-5"
-            onClick={() => setSelected(null)}
-          >
-            <div
-              className="my-auto w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 p-4 text-slate-900 dark:text-white shadow-2xl sm:p-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
-                    Preview
-                  </p>
-                  <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">
-                    Participant ID Card
-                  </h2>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setSelected(null)}
-                  className="rounded-lg p-2 transition text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-900 cursor-pointer"
-                  aria-label="Close preview"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mx-auto w-full max-w-[330px]">
-                <ParticipantIdCanvas
-                  participant={selected}
-                  event={event}
-                  eventId={eventId}
-                  cardNumber={getCardId(selected)}
-                />
-              </div>
-
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setSelected(null)}
-                  className="rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 px-4 py-2 text-sm font-semibold transition hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+          <VisualParticipantCardPreview
+            participant={selected}
+            template={activeTemplate}
+            event={event}
+            onClose={() => setSelected(null)}
+          />
+        )}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/* VIEW 3: VISUAL ID CARD DESIGNER STUDIO                       */}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {activeView === "designer" && (
+          <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-2xl h-[calc(100vh-140px)] min-h-[680px]">
+            <IdCardDesigner
+              eventId={eventId}
+              onBack={() => {
+                setActiveView("id-cards");
+                loadData();
+              }}
+              onSaveTemplate={(savedTpl) => {
+                setActiveTemplate(savedTpl);
+                loadData();
+              }}
+            />
           </div>
         )}
+
+        {/* Modal: Bulk Generation */}
+        <BulkGenerationModal
+          isOpen={showBulkModal}
+          onClose={() => setShowBulkModal(false)}
+          eventId={eventId}
+          event={event}
+          template={activeTemplate}
+          onCompleted={() => loadData()}
+        />
       </div>
     </div>
   );

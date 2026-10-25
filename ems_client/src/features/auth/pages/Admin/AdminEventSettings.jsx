@@ -41,8 +41,10 @@ import {
   Lightbulb,
   Timer,
   Eye,
-  EyeOff
+  EyeOff,
+  Palette
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';
 import useAuth from '../../../../Hooks/useAuth';
 import EventSponsorsManager from '../../../../components/Organisms/EventSponsorsManager';
@@ -50,6 +52,7 @@ import EventGalleryManager from '../../../../components/Organisms/EventGalleryMa
 import { getTrackVisibility, isSoloTeamSize, validateEventDates } from '../../../../lib/utils';
 
 export default function AdminEventSettings() {
+  const navigate = useNavigate();
   const toast = useToast();
   const { user } = useAuth();
 
@@ -623,27 +626,39 @@ export default function AdminEventSettings() {
             </div>
 
             <div className="flex-1 space-y-2">
-              <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition shadow-sm">
-                {uploadingIdBg ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Upload className="w-3.5 h-3.5" />
-                )}
-                <span>
-                  {uploadingIdBg
-                    ? 'Uploading...'
-                    : settingsForm.IdCardBackground
-                    ? 'Change Background'
-                    : 'Upload Background'}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleUploadIdBg}
-                  disabled={uploadingIdBg}
-                  className="hidden"
-                />
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition shadow-sm">
+                  {uploadingIdBg ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {uploadingIdBg
+                      ? 'Uploading...'
+                      : settingsForm.IdCardBackground
+                      ? 'Change Background'
+                      : 'Upload Background'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUploadIdBg}
+                    disabled={uploadingIdBg}
+                    className="hidden"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => navigate(selectedEventId ? `/admin/id-card-designer?eventId=${selectedEventId}` : '/admin/id-card-designer')}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-950/20 hover:bg-emerald-900/30 text-emerald-400 text-xs font-bold transition shadow-sm cursor-pointer"
+                  title="Open Visual Drag-and-Drop ID Card Designer"
+                >
+                  <Palette className="w-3.5 h-3.5" />
+                  <span>Visual ID Studio</span>
+                </button>
+              </div>
 
               {settingsForm.IdCardBackground && (
                 <button
@@ -695,27 +710,39 @@ export default function AdminEventSettings() {
             </div>
 
             <div className="flex-1 space-y-2">
-              <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition shadow-sm">
-                {uploadingTeamBg ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Upload className="w-3.5 h-3.5" />
-                )}
-                <span>
-                  {uploadingTeamBg
-                    ? 'Uploading...'
-                    : settingsForm.TeamCardBackground
-                    ? 'Change Background'
-                    : 'Upload Background'}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleUploadTeamBg}
-                  disabled={uploadingTeamBg}
-                  className="hidden"
-                />
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition shadow-sm">
+                  {uploadingTeamBg ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {uploadingTeamBg
+                      ? 'Uploading...'
+                      : settingsForm.TeamCardBackground
+                      ? 'Change Background'
+                      : 'Upload Background'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUploadTeamBg}
+                    disabled={uploadingTeamBg}
+                    className="hidden"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => navigate(selectedEventId ? `/admin/team-card-designer?eventId=${selectedEventId}` : '/admin/team-card-designer')}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 text-cyan-400 text-xs font-bold transition shadow-sm cursor-pointer"
+                  title="Open Visual Drag-and-Drop Team Card Designer"
+                >
+                  <Palette className="w-3.5 h-3.5" />
+                  <span>Visual Team Studio</span>
+                </button>
+              </div>
 
               {settingsForm.TeamCardBackground && (
                 <button

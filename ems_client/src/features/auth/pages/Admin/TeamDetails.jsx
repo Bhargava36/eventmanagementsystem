@@ -20,7 +20,8 @@ import {
     IdCard,
     X,
     Eye,
-    ExternalLink
+    ExternalLink,
+    Palette
 } from 'lucide-react';
 import TeamCardCanvas from './TeamCardCanvas';
 import ParticipantIdCanvas from './ParticipantIdCanvas';
@@ -271,6 +272,17 @@ function TeamDetails() {
                         >
                             <IdCard className="w-3.5 h-3.5" />
                             <span>Download Team Card</span>
+                        </button>
+
+                        {/* Action: Visual Designer for Team Card */}
+                        <button
+                            type="button"
+                            onClick={() => navigate(team?.EventId ? `/admin/team-card-designer?eventId=${team.EventId}` : '/admin/team-card-designer')}
+                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-cyan-500/30 bg-cyan-950/30 hover:bg-cyan-900/40 text-cyan-300 font-bold text-xs shadow-md transition cursor-pointer"
+                            title="Open visual studio to design custom team card"
+                        >
+                            <Palette className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Design Card</span>
                         </button>
 
                         {/* Action 2: Download Member ID Passes (A6 Format) */}

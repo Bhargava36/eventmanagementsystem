@@ -5,6 +5,7 @@ import { BadgeCheck, CheckCircle2, CircleAlert, LoaderCircle, Clock, LogIn, LogO
 
 export default function VerifyIdPage() {
   const [searchParams] = useSearchParams();
+  const token = searchParams.get("token")?.trim() || "";
   const eventId = searchParams.get("eventId")?.trim() || "";
   const userId = searchParams.get("userId")?.trim() || "";
   const idCardNumber = searchParams.get("idCardNumber")?.trim() || "";
@@ -15,9 +16,8 @@ export default function VerifyIdPage() {
   const [actionMessage, setActionMessage] = useState("");
 
   const hasValidParams =
-    /^[1-9]\d*$/.test(eventId) &&
-    /^[1-9]\d*$/.test(userId) &&
-    Boolean(idCardNumber);
+    Boolean(token) ||
+    (/^[1-9]\d*$/.test(eventId) && Boolean(idCardNumber));
 
   const verifyCard = async () => {
     if (!hasValidParams) return;
@@ -25,8 +25,13 @@ export default function VerifyIdPage() {
     setError("");
 
     try {
-      const query = new URLSearchParams({ eventId, userId, idCardNumber });
-      const response = await fetch(`${API_BASE_URL}/api/id-cards/verify?${query}`);
+      const query = new URLSearchParams();
+      if (token) query.set("token", token);
+      if (eventId) query.set("eventId", eventId);
+      if (userId) query.set("userId", userId);
+      if (idCardNumber) query.set("idCardNumber", idCardNumber);
+
+      const response = await fetch(`${API_BASE_URL}/api/id-cards/verify?${query.toString()}`);
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
@@ -51,12 +56,13 @@ export default function VerifyIdPage() {
     setActionLoading(true);
     setActionMessage("");
     try {
-      const endpoint = actionType === "check_in" ? "check-in" : "check-out";
-      const res = await fetch(`${API_BASE_URL}/api/id-cards/events/${eventId}/${endpoint}`, {
+      const targetEventId = eventId || participant?.EventId;
+      const targetUserId = userId || participant?.UserId;
+      const res = await fetch(`${API_BASE_URL}/api/id-cards/events/${targetEventId}/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId: Number(userId),
+          userId: Number(targetUserId),
           checkedInBy: "Badge QR Verification Gate",
           checkedOutBy: "Badge QR Verification Gate",
         }),
