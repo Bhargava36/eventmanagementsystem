@@ -1910,11 +1910,11 @@ function EventsDashboard() {
                                 }
                               </p>
 
-                              <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block line-clamp-1">
+                              {/* <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block line-clamp-1">
                                 {
                                   event.Description
                                 }
-                              </p>
+                              </p> */}
 
                               {(event.VirtualPrizeMoney || event.PhysicalPrizeMoney || event.PrizeMoney) && (
                                 <div className="flex items-center gap-2 mt-1">

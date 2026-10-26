@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Clock,
   CreditCard,
+  Activity,
   UserCheck,
 } from 'lucide-react';
 
@@ -67,14 +68,6 @@ function getThemeStyles(hex = '#10B981', isDark = false) {
   };
 }
 
-const recentActivities = [
-  { icon: Calendar, text: 'New event created', time: '2 mins ago' },
-  { icon: UsersRound, text: 'New team registered', time: '10 mins ago' },
-  { icon: CreditCard, text: 'Payment received', time: '1 hour ago' },
-  { icon: UserCheck, text: 'New user registered', time: '2 hours ago' },
-  { icon: CheckCircle2, text: 'Event completed', time: '5 hours ago' },
-];
-
 function SuperAdminDashboard() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -83,6 +76,8 @@ function SuperAdminDashboard() {
   const [teamsCount, setTeamsCount] = useState(0);
   const [eventsCount, setEventsCount] = useState(0);
   const [events, setEvents] = useState([]);
+  const [recentRegistrations, setRecentRegistrations] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
 
   useEffect(() => {
     fetchUsersCount();
@@ -90,6 +85,7 @@ function SuperAdminDashboard() {
     fetchTeamsCount();
     fetchEventsCount();
     fetchEvents();
+    fetchRecentRegistrations();
   }, []);
 
   const fetchUsersCount = async () => {
@@ -193,7 +189,7 @@ function SuperAdminDashboard() {
                   if (!memberCount) memberCount = Number(summaryInfo.usersCount || 0);
                 }
               }
-            } catch (_) {}
+            } catch (_) { }
           }
 
           return {
@@ -211,6 +207,184 @@ function SuperAdminDashboard() {
     }
   };
 
+  const fetchRecentRegistrations = async () => {
+    try {
+      const registrationsResponse = await fetch(
+        `${API_BASE_URL}/api/event_reg/recent`
+      );
+      const registrationsData = await registrationsResponse.json();
+
+      if (!registrationsResponse.ok) {
+        throw new Error(
+          registrationsData.message || 'Failed to fetch recent registrations'
+        );
+      }
+
+      const activitiesResponse = await fetch(
+        `${API_BASE_URL}/api/event_reg/activities`
+      );
+      const activitiesData = await activitiesResponse.json();
+
+      if (!activitiesResponse.ok) {
+        throw new Error(
+          activitiesData.message || 'Failed to fetch recent activities'
+        );
+      }
+
+      const teamsResponse = await fetch(`${API_BASE_URL}/api/teams`);
+      const teamsData = await teamsResponse.json().catch(() => ({}));
+
+      let team = [];
+
+      if (teamsResponse.ok) {
+        team = Array.isArray(teamsData)
+          ? teamsData
+          : Array.isArray(teamsData.team)
+            ? teamsData.team
+            : [];
+      } else {
+        console.error("Failed to fetch teams:", teamsData);
+      }
+
+      const registrations = Array.isArray(registrationsData.registration)
+        ? registrationsData.registration
+        : [];
+
+      const activities = Array.isArray(activitiesData.activities)
+        ? activitiesData.activities
+        : [];
+
+      const teams = Array.isArray(teamsData.teams)
+        ? teamsData.teams
+        : [];
+
+      const teamsById = new Map();
+
+      teams.forEach((team) => {
+        teamsById.set(String(team.Id ?? team.id), team);
+      });
+
+      const eventIds = [
+        ...new Set(
+          [...registrations, ...activities]
+            .map((item) => item.EventId ?? item.eventId)
+            .filter((id) => id !== undefined && id !== null)
+            .map(String)
+        ),
+      ];
+
+      const eventsResponse = await fetch(`${API_BASE_URL}/api/events/`);
+      const eventsData = await eventsResponse.json();
+
+      const allEvents = Array.isArray(eventsData)
+        ? eventsData
+        : eventsData.events || [];
+
+      const eventsById = new Map(
+        allEvents.map((event) => [
+          String(event.Id ?? event.id),
+          event,
+        ])
+      );
+
+      const teamsByIdWithLeaders = new Map(teamsById);
+
+      for (const eventId of eventIds) {
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/api/teams/event/${eventId}`
+          );
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(
+              data.message || 'Failed to fetch event teams'
+            );
+          }
+
+          const eventTeams = Array.isArray(data.teams)
+            ? data.teams
+            : [];
+
+          eventTeams.forEach((team) => {
+            teamsByIdWithLeaders.set(
+              String(team.Id ?? team.id),
+              team
+            );
+          });
+        } catch (error) {
+          console.error(
+            `Error fetching teams for event ${eventId}:`,
+            error
+          );
+        }
+      }
+
+      const enrichRegistration = (registration) => {
+        const teamId = registration.TeamId ?? registration.teamId;
+
+        const team = teamsByIdWithLeaders.get(String(teamId));
+
+        const eventId =
+          registration.EventId ??
+          registration.eventId ??
+          team?.EventId ??
+          team?.eventId;
+
+        const event = eventsById.get(String(eventId));
+
+        return {
+          ...team,
+          ...registration,
+
+          TeamName:
+            registration.TeamName ||
+            registration.teamName ||
+            team?.TeamName ||
+            team?.teamName ||
+            '—',
+
+          EventName:
+            registration.EventName ||
+            registration.eventName ||
+            team?.EventName ||
+            team?.eventName ||
+            event?.EventName ||
+            event?.eventName ||
+            '—',
+
+          EventStatus:
+            registration.EventStatus ||
+            registration.eventStatus ||
+            team?.EventStatus ||
+            team?.eventStatus ||
+            event?.EventStatus ||
+            event?.status ||
+            'unknown',
+
+          LeaderName:
+            registration.LeaderName ||
+            registration.leaderName ||
+            team?.LeaderName ||
+            team?.leaderName ||
+            '—',
+        };
+      };
+      setRecentRegistrations(
+        registrations.map(enrichRegistration)
+      );
+
+      setRecentActivities(
+        activities.map(enrichRegistration)
+      );
+    } catch (error) {
+      console.error(
+        'Error fetching recent dashboard registrations:',
+        error
+      );
+    }
+  };
   const fetchTeamCountByEvent = async (eventId) => {
     try {
       const response = await fetch(
@@ -237,6 +411,54 @@ function SuperAdminDashboard() {
       String(event.status || event.EventStatus || '').toLowerCase() ===
       'ongoing'
   );
+
+  const getActivityName = (activity) => {
+    return (
+      activity.TeamName ||
+      activity.teamName ||
+      activity.UserName ||
+      activity.userName ||
+      activity.Name ||
+      activity.name ||
+      "Registration"
+    );
+  };
+
+  const getActivityLeader = (activity) => {
+    return (
+      activity.LeaderName ||
+      activity.leaderName ||
+      activity.UserName ||
+      activity.userName ||
+      activity.Email ||
+      activity.email ||
+      "User"
+    );
+  };
+
+  const getActivityStatus = (activity) => {
+    return (
+      activity.Status ||
+      activity.status ||
+      "pending"
+    );
+  };
+
+  const getActivityDate = (activity) => {
+    return (
+      activity.CreatedAt ||
+      activity.createdAt ||
+      activity.ActivityDate ||
+      activity.activityDate ||
+      activity.Date ||
+      activity.date
+    );
+  };
+
+  const formatTime = (value) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 'Recently' : date.toLocaleString();
+  };
 
   const stats = [
     {
@@ -427,22 +649,22 @@ function SuperAdminDashboard() {
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {event.StartDate
                               ? new Date(
-                                  event.StartDate
-                                ).toLocaleDateString('en-GB', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })
+                                event.StartDate
+                              ).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              })
                               : '—'}{' '}
                             -{' '}
                             {event.EndDate
                               ? new Date(
-                                  event.EndDate
-                                ).toLocaleDateString('en-GB', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })
+                                event.EndDate
+                              ).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              })
                               : '—'}
                           </p>
                         </div>
@@ -530,22 +752,22 @@ function SuperAdminDashboard() {
                   <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                     {currentEvent.StartDate
                       ? new Date(
-                          currentEvent.StartDate
-                        ).toLocaleDateString('en-GB', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })
+                        currentEvent.StartDate
+                      ).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })
                       : '—'}{' '}
                     -{' '}
                     {currentEvent.EndDate
                       ? new Date(
-                          currentEvent.EndDate
-                        ).toLocaleDateString('en-GB', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })
+                        currentEvent.EndDate
+                      ).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                      })
                       : '—'}
                   </p>
                 </div>
@@ -663,7 +885,7 @@ function SuperAdminDashboard() {
               duration: 0.5,
               ease: [0.25, 0.1, 0.25, 1.0],
             }}
-            className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm"
+            className="bg-white dark:bg-black rounded-xl p-2 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm"
           >
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
@@ -698,9 +920,9 @@ function SuperAdminDashboard() {
                 </thead>
 
                 <tbody>
-                  {events.slice(0, 5).map((event, i) => (
+                  {recentRegistrations.slice(0, 5).map((registration, i) => (
                     <motion.tr
-                      key={event.Id || i}
+                      key={registration.Id || registration.id || i}
                       initial={{
                         opacity: 0,
                         y: 15,
@@ -719,26 +941,28 @@ function SuperAdminDashboard() {
                       className="border-b border-gray-100 dark:border-zinc-800/60 hover:bg-gray-50/50 dark:hover:bg-zinc-900/40 transition-colors"
                     >
                       <td className="py-3 text-gray-900 dark:text-white font-medium">
-                        {event.TeamName || '—'}
+                        {registration.TeamName || '—'}
                       </td>
 
                       <td className="py-3 text-gray-600 dark:text-gray-300">
-                        {event.EventName}
+                        <td className="py-3 text-gray-600 dark:text-gray-300">
+                          {registration.EventName || registration.eventName || '—'}
+                        </td>
                       </td>
 
                       <td className="py-3 text-gray-600 dark:text-gray-300 hidden sm:table-cell">
-                        {event.CreatedAt
+                        {registration.CreatedAt || registration.createdAt
                           ? new Date(
-                              event.CreatedAt
-                            ).toLocaleDateString()
+                            registration.CreatedAt || registration.createdAt
+                          ).toLocaleDateString()
                           : '—'}
                       </td>
 
                       <td className="py-3">
                         <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500">
-                          {event.status ||
-                            event.EventStatus ||
-                            'Confirmed'}
+                          {registration.Status ||
+                            registration.status ||
+                            'Pending'}
                         </span>
                       </td>
                     </motion.tr>
@@ -776,48 +1000,100 @@ function SuperAdminDashboard() {
               </button>
             </div>
 
-            <div className="space-y-4">
-              {recentActivities.map((activity, i) => {
-                const Icon = activity.icon;
+            <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm">
 
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{
-                      opacity: 0,
-                      x: 15,
-                    }}
-                    whileInView={{
-                      opacity: 1,
-                      x: 0,
-                    }}
-                    viewport={{
-                      amount: 0.1,
-                    }}
-                    transition={{
-                      duration: 0.3,
-                      delay: i * 0.07,
-                    }}
-                    className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-900/40 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 shrink-0">
-                        <Icon className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
+              <div className="flex items-center justify-between mb-5">
+
+                <div>
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                    Recent Activities
+                  </h2>
+
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Latest team registrations across events
+                  </p>
+                </div>
+
+                <Activity className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
+
+              </div>
+
+              {recentActivities.length === 0 ? (
+                <div className="py-10 text-center">
+
+                  <Activity className="w-8 h-8 mx-auto text-gray-400" />
+
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    No recent activities
+                  </p>
+
+                </div>
+              ) : (
+                <div className="space-y-4">
+
+                  {recentActivities.slice(0, 5).map((activity, index) => {
+
+                    const status = getActivityStatus(activity);
+
+                    return (
+                      <div
+                        key={activity.Id || activity.id || index}
+                        className="flex items-start gap-3"
+                      >
+
+                        <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 shrink-0">
+
+                          {status.toLowerCase() === "approved" ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
+                          ) : (
+                            <UserPlus className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
+                          )}
+
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+
+                          <p className="text-sm text-gray-900 dark:text-white font-medium">
+                            New registration from{" "}
+                            {getActivityName(activity)}
+                          </p>
+
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Leader: {getActivityLeader(activity)}
+                          </p>
+
+                          <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-1">
+
+                            <Clock className="w-3 h-3" />
+
+                            {getActivityDate(activity)
+                              ? formatTime(getActivityDate(activity))
+                              : "Recently"}
+
+                          </div>
+
+                        </div>
+
+                        <span
+                          className={`text-[10px] px-2 py-1 rounded-full ${status.toLowerCase() === "approved"
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500"
+                            : status.toLowerCase() === "rejected"
+                              ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400"
+                              : "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500"
+                            }`}
+                        >
+                          {status}
+                        </span>
+
                       </div>
+                    );
+                  })}
 
-                      <p className="text-xs sm:text-sm text-gray-900 dark:text-white truncate">
-                        {activity.text}
-                      </p>
-                    </div>
+                </div>
+              )}
 
-                    <div className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap shrink-0">
-                      <Clock className="w-3 h-3" />
-                      {activity.time}
-                    </div>
-                  </motion.div>
-                );
-              })}
             </div>
+
           </motion.div>
         </div>
       </div>

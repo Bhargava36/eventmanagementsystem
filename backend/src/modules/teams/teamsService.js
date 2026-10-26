@@ -307,7 +307,7 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
 };
 
 const getAllTeams = (callback) => {
-    const query = `SELECT t.Id, t.TeamName, t.TeamLeadUserId, t.TeamSize, t.College, t.State, t.EventId, e.EventName, e.StartDate, e.EndDate, e.Location, e.EventType, e.Status FROM registered_teams t LEFT JOIN events e ON t.EventId = e.Id ORDER BY t.Id DESC`;
+    const query = `SELECT t.Id, t.TeamName, t.TeamLeadUserId, t.TeamSize, t.College, t.State, t.EventId, e.EventName, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus FROM registered_teams t LEFT JOIN events e ON t.EventId = e.Id ORDER BY t.Id DESC`;
     db.query(query, (err, result) => {
         if (err) {
             return callback(err, null);
