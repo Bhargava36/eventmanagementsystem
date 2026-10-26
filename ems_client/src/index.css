@@ -77,3 +77,32 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(16, 185, 129, 0.25) transparent;
 }
+
+/* ── SMOOTH THEME SWITCH (VIEW TRANSITIONS & CSS FALLBACK) ── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 9999;
+}
+
+/* Smooth CSS fallback for browsers without View Transitions */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 850ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 850ms cubic-bezier(0.22, 1, 0.36, 1),
+              color 850ms cubic-bezier(0.22, 1, 0.36, 1),
+              fill 850ms cubic-bezier(0.22, 1, 0.36, 1),
+              stroke 850ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 850ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+  transition-delay: 0s !important;
+}

@@ -12,6 +12,17 @@ const getTransporter = () => {
         console.warn('⚠️ [SMTP Mailer] SMTP_USER or SMTP_PASS not set in .env. Emails will be logged to console.');
     }
 
+    const isGmail = host === 'smtp.gmail.com' || (user && user.endsWith('@gmail.com'));
+    if (isGmail && user && pass) {
+        return nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user, pass },
+            tls: {
+                rejectUnauthorized: false
+            }
+        });
+    }
+
     return nodemailer.createTransport({
         host,
         port,
@@ -27,7 +38,7 @@ const getTransporter = () => {
  * Send 6-digit OTP verification email for password reset
  */
 const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
-    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"Event Management System" <no-reply@eventmanagement.com>';
+    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AYOJAN" <no-reply@ayojan.live>';
     
     // Beautiful, responsive, Google-grade HTML template
     const html = `
@@ -57,7 +68,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
     <body>
       <div class="container">
         <div class="header">
-          <h1>Event Management System</h1>
+          <h1>AYOJAN</h1>
           <p>Security & Account Protection Portal</p>
         </div>
         <div class="content">
@@ -77,7 +88,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
           </div>
         </div>
         <div class="footer">
-          &copy; ${new Date().getFullYear()} Event Management System. All rights reserved.
+          &copy; ${new Date().getFullYear()} AYOJAN. All rights reserved.
         </div>
       </div>
     </body>
@@ -104,7 +115,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
     const info = await transporter.sendMail({
         from: fromAddress,
         to: toEmail,
-        subject: `${otpCode} is your Event Management System password reset code`,
+        subject: `${otpCode} is your AYOJAN Verification code`,
         text: `Your password reset code is: ${otpCode}. It expires in 10 minutes.`,
         html
     });
@@ -116,7 +127,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
  * Send confirmation email after password has been successfully reset
  */
 const sendPasswordResetSuccessEmail = async (toEmail, userName = 'Participant') => {
-    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"Event Management System" <no-reply@eventmanagement.com>';
+    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AYOJAN" <no-reply@ayojan.live>';
     
     const html = `
     <!DOCTYPE html>
@@ -235,12 +246,12 @@ const sendEventBroadcastEmail = async ({
           </div>
           <div class="organizer-card">
             <strong>Dispatched by:</strong> ${organizerName}<br/>
-            <span>Broadcast sent via AYOJAN Event Management Protocol.</span>
+            <span>Broadcast sent via AYOJAN Event Protocol.</span>
           </div>
         </div>
         <div class="footer">
           You are receiving this communication because you are registered for ${eventName}.<br/>
-          &copy; ${new Date().getFullYear()} AYOJAN Event Management.
+          &copy; ${new Date().getFullYear()} AYOJAN.
         </div>
       </div>
     </body>

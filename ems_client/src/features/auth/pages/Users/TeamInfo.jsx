@@ -37,7 +37,6 @@ import {
     Radio,
     Video,
     ArrowRight,
-    Sparkles,
     Code2,
     Target
 } from "lucide-react";

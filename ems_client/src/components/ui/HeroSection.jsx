@@ -328,6 +328,103 @@ const Shader = ({ source, uniforms }) => {
   );
 };
 
+const AnimatedNumber = ({
+  value,
+  prefix = "",
+  suffix = "",
+  decimals = 0,
+  formatNumber = false,
+  duration = 1600,
+}) => {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    const target = typeof value === 'number' ? value : parseFloat(String(value || '').replace(/[^0-9.]/g, '')) || 0;
+    if (target === 0) {
+      setDisplayValue(0);
+      return;
+    }
+
+    let startTime = null;
+    let animationFrame;
+
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      // easeOutCubic: smooth and natural decelerating curve
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = ease * target;
+      setDisplayValue(current);
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(target);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [value, duration]);
+
+  let formatted;
+  if (decimals > 0) {
+    formatted = displayValue.toFixed(decimals);
+  } else {
+    const intVal = Math.floor(displayValue);
+    formatted = formatNumber ? intVal.toLocaleString('en-IN') : intVal;
+  }
+
+  return (
+    <span>
+      {prefix}{formatted}{suffix}
+    </span>
+  );
+};
+
+const formatPrizeCompact = (amount) => {
+  const num = Number(amount || 0);
+  if (num >= 10000000) {
+    // Crores (Cr)
+    const cr = num / 10000000;
+    const decimals = cr % 1 === 0 ? 0 : (cr * 10) % 1 === 0 ? 1 : 2;
+    return {
+      value: Number(cr.toFixed(2)),
+      prefix: "₹",
+      suffix: "Cr",
+      decimals,
+    };
+  } else if (num >= 100000) {
+    // Lakhs (L)
+    const lk = num / 100000;
+    const decimals = lk % 1 === 0 ? 0 : (lk * 10) % 1 === 0 ? 1 : 2;
+    return {
+      value: Number(lk.toFixed(2)),
+      prefix: "₹",
+      suffix: "L",
+      decimals,
+    };
+  } else if (num >= 1000) {
+    const k = num / 1000;
+    const decimals = k % 1 === 0 ? 0 : 1;
+    return {
+      value: Number(k.toFixed(1)),
+      prefix: "₹",
+      suffix: "K",
+      decimals,
+    };
+  }
+  return {
+    value: num,
+    prefix: "₹",
+    suffix: "",
+    decimals: 0,
+  };
+};
+
 const HeroSection = ({ className }) => {
   const { theme } = useTheme();
   const [email, setEmail] = useState("");
@@ -337,23 +434,61 @@ const HeroSection = ({ className }) => {
   const [initialCanvasVisible, setInitialCanvasVisible] = useState(true);
   const [reverseCanvasVisible, setReverseCanvasVisible] = useState(false);
   const [stats, setStats] = useState({
-    eventsFormatted: '5+',
-    buildersFormatted: '29+',
-    prizesFormatted: '₹7L+',
-    freeForStudents: '100%',
+    eventsCount: null,
+    buildersCount: null,
+    totalPrizeMoney: null,
+    freePercentage: 100,
   });
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/events/public-stats`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.stats) {
-          setStats(data.stats);
+    let isMounted = true;
+    const fetchPlatformStats = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/events/public-stats`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.stats && isMounted) {
+            setStats({
+              eventsCount: Number(data.stats.eventsCount ?? 0),
+              buildersCount: Number(data.stats.buildersCount ?? 0),
+              totalPrizeMoney: Number(data.stats.totalPrizeMoney ?? 0),
+              freePercentage: 100,
+            });
+            setLoadingStats(false);
+            return;
+          }
         }
-      })
-      .catch((err) => {
-        console.error('Failed to fetch realtime platform stats:', err);
-      });
+      } catch {
+        // Retry with relative path in case of proxy / localhost port differences
+      }
+
+      try {
+        const res2 = await fetch('/api/events/public-stats');
+        if (res2.ok) {
+          const data2 = await res2.json();
+          if (data2?.stats && isMounted) {
+            setStats({
+              eventsCount: Number(data2.stats.eventsCount ?? 0),
+              buildersCount: Number(data2.stats.buildersCount ?? 0),
+              totalPrizeMoney: Number(data2.stats.totalPrizeMoney ?? 0),
+              freePercentage: 100,
+            });
+            setLoadingStats(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Realtime platform stats fetch fallback encountered issue:', err);
+      } finally {
+        if (isMounted) setLoadingStats(false);
+      }
+    };
+
+    fetchPlatformStats();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleEmailSubmit = (e) => {
@@ -475,9 +610,8 @@ const HeroSection = ({ className }) => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 30 }}
                         transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
-                        className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-black dark:text-white leading-[1.12]"
-                      >
-                        Where builders connect, <br className="hidden sm:inline" />
+                        className="text-5xl sm:text-5xl md:text-6xl uppercase font-bold tracking-tight text-black dark:text-white leading-[1.3]"
+                      > Where crafters connect, <br className="hidden sm:inline" />
                         and bold ideas take flight.
                       </motion.h1>
 
@@ -526,32 +660,63 @@ const HeroSection = ({ className }) => {
                     <div className="pt-8 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 max-w-2xl mx-auto border-t border-black/10 dark:border-white/10 mt-6 text-center">
                       <div>
                         <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">
-                          {stats.eventsFormatted || `${stats.eventsCount || 0}+`}
+                          {loadingStats ? (
+                            <span className="opacity-30 animate-pulse">—</span>
+                          ) : (
+                            <>
+                            <AnimatedNumber value={stats.eventsCount ?? 0} duration={1200} />+
+                            </>
+                          )}
                         </div>
-                        <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Hackathons Hosted</div>
+                        <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Events Hosted</div>
                       </div>
                       <div>
                         <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">
-                          {stats.buildersFormatted || `${stats.buildersCount || 0}+`}
+                          {loadingStats ? (
+                            <span className="opacity-30 animate-pulse">—</span>
+                          ) : (
+                            <>
+                            <AnimatedNumber value={stats.buildersCount ?? 0} duration={1600} />+
+                            </>
+                          )}
                         </div>
-                        <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Builders Connected</div>
+                        <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Crafters Connected</div>
                       </div>
                       <div>
                         <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">
-                          {stats.prizesFormatted || '₹0'}
+                          {loadingStats ? (
+                            <span className="opacity-30 animate-pulse">—</span>
+                          ) : (() => {
+                            const prize = formatPrizeCompact(stats.totalPrizeMoney);
+                            return (
+                              <>
+                              <AnimatedNumber
+                                value={prize.value}
+                                prefix={prize.prefix}
+                                suffix={prize.suffix}
+                                decimals={prize.decimals}
+                                duration={2000}
+                              />+
+                              </>
+                            );
+                          })()}
                         </div>
                         <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Prizes Awarded</div>
                       </div>
                       <div>
                         <div className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight">
-                          {stats.freeForStudents || '100%'}
+                          {loadingStats ? (
+                            <span className="opacity-30 animate-pulse">—</span>
+                          ) : (
+                            <AnimatedNumber value={stats.freePercentage ?? 100} suffix="%" duration={1200} />
+                          )}
                         </div>
                         <div className="text-xs text-black/50 dark:text-white/50 mt-1 font-medium">Free for Students</div>
                       </div>
                     </div>
 
                     <p className="text-xs text-black/40 dark:text-white/40 pt-4">
-                      By continuing, you agree to AYOJAN <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Terms of Service</Link>, <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Privacy Notice</Link>, and <Link to="#" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Policies</Link>.
+                      By continuing, you agree to AYOJAN <Link to="/terms" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Terms of Service</Link>, <Link to="/privacy" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Privacy Notice</Link>, and <Link to="/policies" className="underline text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors">Policies</Link>.
                     </p>
                   </motion.div>
                 ) : step === "code" ? (

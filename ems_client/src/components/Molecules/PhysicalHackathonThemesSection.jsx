@@ -19,7 +19,6 @@ import {
 
 /**
  * Intelligent icon resolver based on theme name / keywords.
- * Strict rule: No sparkles icon used anywhere.
  */
 export const getThemeIcon = (name = '', desc = '') => {
   const text = `${name} ${desc}`.toLowerCase();
@@ -133,7 +132,6 @@ export const getThemeIcon = (name = '', desc = '') => {
  * 
  * STRICT GUIDELINES:
  * - No pills anywhere
- * - No sparkles
  * - No problem statements / challenges
  * - Seamless match with the application design
  */
@@ -169,7 +167,6 @@ export default function PhysicalHackathonThemesSection({
         </div>
       </div>
 
-      {/* ── THEMES GRID (No pills, no sparkles, no problem statements) ── */}
       {themes && themes.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {themes.map((theme, idx) => {

@@ -14,7 +14,7 @@ const FAQS = [
     a: 'Yes, 100%. All student registrations, squad submissions, and participation are free. We never charge entry fees to participate, access mentors, or receive bounty rewards.',
   },
   {
-    q: 'Can I register as an individual builder without an existing team?',
+    q: 'Can I register as an individual crafter without an existing team?',
     a: 'Yes. Solo hackers can sign up and participate individually, or take advantage of squad codes and open squad listings on the event page to team up with fellow participants before hacking starts.',
   },
   {

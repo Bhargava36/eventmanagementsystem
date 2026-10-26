@@ -377,7 +377,7 @@ export default function OrganizerCtaSection() {
                 >
                   15,000+
                 </span>
-                <span className="text-[11px] text-zinc-400">Active Builders</span>
+                <span className="text-[11px] text-zinc-400">Active Crafters</span>
               </div>
             </div>
           </div>

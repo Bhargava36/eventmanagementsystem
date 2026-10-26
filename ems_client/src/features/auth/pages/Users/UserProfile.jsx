@@ -383,7 +383,7 @@ function UserProfile() {
                     {profile.UserName || 'Participant'}
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wider uppercase bg-white/20 text-emerald-100 backdrop-blur-sm border border-white/20">
-                    Verified Builder
+                    Verified Crafter
                   </span>
                 </div>
 

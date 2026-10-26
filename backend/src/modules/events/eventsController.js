@@ -576,16 +576,14 @@ const getAdminDashboardSummary = (req, res) => {
     });
 };
 
-let cachedStats = {
-    eventsCount: 5,
-    eventsFormatted: "5+",
-    buildersCount: 38,
-    buildersFormatted: "38+",
-    teamsCount: 7,
-    totalPrizeMoney: 685000,
-    prizesFormatted: "₹6.8L+",
-    freeForStudents: "100%"
-};
+let cachedStats = null;
+
+// Warm up cache on module load with actual database metrics
+eventsService.getPublicPlatformStats((err, stats) => {
+    if (!err && stats) {
+        cachedStats = stats;
+    }
+});
 
 const getPublicStats = (req, res) => {
     eventsService.getPublicPlatformStats((err, stats) => {
@@ -593,7 +591,7 @@ const getPublicStats = (req, res) => {
             console.warn('getPublicStats temporary DB issue:', err.message);
             if (cachedStats) {
                 return res.status(200).json({
-                    message: 'Platform stats fetched successfully (cached fallback)',
+                    message: 'Platform stats fetched successfully (cached)',
                     stats: cachedStats
                 });
             }

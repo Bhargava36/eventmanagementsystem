@@ -27,6 +27,9 @@ const VerifyIdPage = lazy(() => import('../features/public/pages/VerifyIdPage'))
 const NotFound = lazy(() => import('../features/public/pages/NotFound'));
 const TestCredentialsPage = lazy(() => import('../features/public/pages/TestCredentialsPage'));
 const ForgotPasswordPage = lazy(() => import('../features/auth/pages/ForgotPasswordPage'));
+const TermsOfService = lazy(() => import('../features/public/pages/TermsOfService'));
+const PrivacyNotice = lazy(() => import('../features/public/pages/PrivacyNotice'));
+const PoliciesPage = lazy(() => import('../features/public/pages/PoliciesPage'));
 
 // SuperAdmin Pages
 const Login = lazy(() => import('../features/auth/pages/SuperAdmin/Login'));
@@ -140,6 +143,12 @@ function App() {
               <Route path="/dev-users" element={<TestCredentialsPage />} />
               <Route path="/teams/public/:teamId" element={<PublicTeamInfo />} />
               <Route path="/public/team/:teamId" element={<PublicTeamInfo />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyNotice />} />
+              <Route path="/privacy-notice" element={<PrivacyNotice />} />
+              <Route path="/policies" element={<PoliciesPage />} />
+              <Route path="/guidelines" element={<PoliciesPage />} />
               <Route path="/404" element={<NotFound />} />
               <Route path="/not-found" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />

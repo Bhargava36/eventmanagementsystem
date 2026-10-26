@@ -124,7 +124,7 @@ const REGISTER_CONFIGS = {
   user: {
     role: "user",
     roleName: "Participant",
-    badge: "START YOUR BUILDER JOURNEY",
+    badge: "START YOUR CRAFTER JOURNEY",
     titleFirst: "Join the Next",
     titleHighlight: "Cohort",
     description:

@@ -13,7 +13,6 @@ import {
   Trash2,
   Camera,
   Upload,
-  Sparkles,
   ShieldCheck,
   UserCheck,
   Award

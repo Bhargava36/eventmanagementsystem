@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   Globe,
   Layers,
-  Sparkles,
   ExternalLink,
 } from "lucide-react";
 
@@ -224,20 +223,23 @@ export function Footer() {
 
         {/* Bottom copyright bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500 dark:text-gray-400">
-          <p>© {new Date().getFullYear()} Ayojan Event Management Platform. Built for student builders &amp; organizers.</p>
+          <p>© {new Date().getFullYear()} Ayojan Event Management Platform. Built for student crafters &amp; organizers.</p>
 
-          <div className="flex items-center space-x-6">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             <Link to="/events" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
               Competitions
             </Link>
+            <Link to="/terms" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+              Terms of Service
+            </Link>
+            <Link to="/privacy" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+              Privacy Notice
+            </Link>
+            <Link to="/policies" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+              Policies
+            </Link>
             <Link to="/test-credentials" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
               Demo Access
-            </Link>
-            <Link to="/user/login" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-              Participant Sign In
-            </Link>
-            <Link to="/admin/login" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-              Organizers
             </Link>
           </div>
 

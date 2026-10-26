@@ -10,7 +10,6 @@ import {
   History,
   ShieldCheck,
   RefreshCw,
-  Sparkles, // Wait, remember rule: no sparkles!
   Eye,
   Megaphone,
   Radio,
