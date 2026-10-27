@@ -67,7 +67,7 @@ const UserSidebar = lazy(() => import('../components/Organisms/UserSidebar'));
 const UserLogin = lazy(() => import('../features/auth/pages/Users/UserLogin'));
 const UserRegister = lazy(() => import('../features/auth/pages/Users/UserRegister'));
 const UserDashboard = lazy(() => import('../features/auth/pages/Users/UserDashboard'));
-const ProblemStatementsPage = lazy(() => import('../features/auth/pages/Users/ProblemStatements'));
+const UserFeedback = lazy(() => import('../features/auth/pages/Users/UserFeedback'));
 const EventRedirectPage = lazy(() => import('../features/auth/pages/Users/EventRedirectPage'));
 const ParticipantVirtualEventPage = lazy(() => import('../features/auth/pages/Users/ParticipantVirtualEventPage'));
 const MyTeams = lazy(() => import('../features/auth/pages/Users/MyTeams'));
@@ -204,7 +204,7 @@ function App() {
                 <Route path="events/:id" element={<EventRedirectPage />} />
                 <Route path="events/:id/virtual" element={<ParticipantVirtualEventPage />} />
                 <Route path="competitions" element={<UserCompetitions />} />
-                <Route path="problem-statements" element={<ProblemStatementsPage />} />
+                <Route path="feedback" element={<UserFeedback />} />
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="profile/:id" element={<UserProfile />} />
               </Route>
