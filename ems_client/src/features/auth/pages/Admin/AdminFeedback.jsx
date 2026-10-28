@@ -60,7 +60,7 @@ function AdminFeedback() {
       const adminId = getStoredAdminId();
       if (!adminId) {
         throw new Error(
-          'Admin ID localStorage lo dorakaledu. Login code lo admin ID save cheyyali.'
+          'AdminId not fetched from localStorage'
         );
       }
       const response = await fetch(
