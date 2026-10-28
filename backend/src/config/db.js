@@ -258,7 +258,7 @@ const migrationQueries = [
         INDEX idx_timeline_track (Track),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-     
+
     `CREATE TABLE IF NOT EXISTS accommodation_blocks (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NULL,
@@ -290,7 +290,7 @@ const migrationQueries = [
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `ALTER TABLE Accommodation ADD COLUMN IF NOT EXISTS BlockId INT NULL`,
 
-`CREATE TABLE IF NOT EXISTS accommodation_allocations (
+    `CREATE TABLE IF NOT EXISTS accommodation_allocations (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     EventId INT NOT NULL,
     RoomId INT NOT NULL,
@@ -305,7 +305,7 @@ const migrationQueries = [
     FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
-`CREATE TABLE IF NOT EXISTS participant_id_cards (
+    `CREATE TABLE IF NOT EXISTS participant_id_cards (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     EventId INT NOT NULL,
     UserId INT NOT NULL,
@@ -612,7 +612,21 @@ const migrationQueries = [
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
-    `ALTER TABLE id_card_templates ADD COLUMN IF NOT EXISTS CardType VARCHAR(50) NOT NULL DEFAULT 'id_card'`
+    `ALTER TABLE id_card_templates ADD COLUMN IF NOT EXISTS CardType VARCHAR(50) NOT NULL DEFAULT 'id_card'`,
+
+    `CREATE TABLE IF NOT EXISTS feedback (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        UserName VARCHAR(100) NOT NULL,
+        EventName VARCHAR(255) NOT NULL,
+        Category VARCHAR(100),
+        Rating TINYINT NOT NULL,
+        Comments TEXT,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE feedback ADD COLUMN IF NOT EXISTS EventId INT NULL`,
+    `ALTER TABLE feedback ADD COLUMN IF NOT EXISTS AdminId INT NULL`
+
 ];
 
 let isMigrating = false;

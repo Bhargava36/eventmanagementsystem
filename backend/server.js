@@ -26,6 +26,7 @@ const devRoute = require("./src/modules/dev/devRoute");
 const evaluatorRoutes = require("./src/modules/evaluators/evaluatorRoutes");
 const psRoutes = require("./src/modules/problem_statements/psRoutes");
 const projectSubmissionRoutes = require("./src/modules/project_submissions/projectSubmissionRoute");
+const feedbackRoutes = require("./src/modules/feedback/feedbackRoute");
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use("/api/dev", devRoute);
 app.use("/api/evaluators", evaluatorRoutes);
 app.use("/api/problem-statements", psRoutes);
 app.use("/api/project-submissions", projectSubmissionRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 
 const http = require('http');

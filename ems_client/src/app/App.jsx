@@ -61,6 +61,7 @@ const IdDesignerPage = lazy(() => import('../features/auth/pages/Admin/IdDesigne
 const Evaluators = lazy(() => import('../features/auth/pages/Admin/Evaluators'));
 const AdminResultsPage = lazy(() => import('../features/auth/pages/Admin/AdminResultsPage'));
 const EventBroadcastEmailer = lazy(() => import('../features/auth/pages/Admin/EventBroadcastEmailer'));
+const AdminFeedback = lazy(() => import('../features/auth/pages/Admin/AdminFeedback'));
 
 // User Pages
 const UserSidebar = lazy(() => import('../components/Organisms/UserSidebar'));
@@ -191,6 +192,7 @@ function App() {
                 <Route path="broadcast-emailer" element={<EventBroadcastEmailer />} />
                 <Route path="physical-results" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AdminResultsPage track="Physical" /> </AdminModeRoute>} />
                 <Route path="virtual-results" element={<AdminModeRoute allowedModes={['virtual', 'both']}> <AdminResultsPage track="Virtual" /> </AdminModeRoute>} />
+                <Route path="feedback" element={<AdminFeedback />} />
               </Route>
             </Route>
 

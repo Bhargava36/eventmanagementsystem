@@ -1,9 +1,73 @@
+import { useState } from 'react';
 import { Calendar, MessageSquare, Send, Star } from 'lucide-react';
 
-const fieldClassName = 'w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors focus:border-emerald-500';
-const eventOptions = ['Hacksprint', 'Ideathon', 'Avishkaar 4'];
-
 export default function UserFeedback() {
+  const [formData, setFormData] = useState({
+    name: '',
+    eventName: '',
+    category: '',
+    rating: 0,
+    comments: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({...prevData, [name]: value,}));
+  };
+  const handleRating = (rating) => { setFormData((prevData) => ({...prevData, rating,})); };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    setMessageType('');
+    if (!formData.name.trim() || !formData.eventName.trim() || !formData.category.trim()) {
+      setMessage('Please fill in all required fields.');
+      setMessageType('error');
+      return;
+    }
+    if (formData.rating < 1 || formData.rating > 5) {
+      setMessage('Please select a star rating from 1 to 5.');
+      setMessageType('error');
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:3000/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          eventName: formData.eventName.trim(),
+          category: formData.category.trim(),
+          rating: formData.rating,
+          comments: formData.comments.trim(),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to submit feedback.');
+      }
+      setMessage(data.message || 'Feedback submitted successfully!');
+      setMessageType('success');
+      setFormData({
+        name: '',
+        eventName: '',
+        category: '',
+        rating: 0,
+        comments: '',
+      });
+    } catch (error) {
+      console.error('Feedback submission error:', error);
+      setMessage(error.message || 'Unable to submit feedback. Please try again.');
+      setMessageType('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 p-4 md:p-6 lg:p-10 font-sans transition-colors duration-200">
       <div className="w-full max-w-6xl mx-auto space-y-6">
@@ -42,83 +106,146 @@ export default function UserFeedback() {
           </div>
 
           <div className="p-5 sm:p-8">
-              <form className="space-y-6">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="block space-y-2">
-                    <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Name</span>
-                    <input
-                      type="text"
-                      autoComplete="name"
-                      required
-                      maxLength={255}
-                      placeholder="Enter your name"
-                      className={fieldClassName}
-                    />
-                  </label>
-
-                  <label className="block space-y-2">
-                    <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">Event name</span>
-                    <select
-                      required
-                      className={fieldClassName}
-                    >
-                      <option value="" disabled>Select an event</option>
-                      {eventOptions.map((option) => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <fieldset className="space-y-2">
-                  <legend className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                    5 star rating <span className="text-red-500">*</span>
-                  </legend>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <div key={value}>
-                        <input
-                          id={`feedback-rating-${value}`}
-                          className="peer sr-only"
-                          type="radio"
-                          name="rating"
-                          value={value}
-                          aria-label={`${value} ${value === 1 ? 'star' : 'stars'}`}
-                          required={value === 1}
-                        />
-                        <label
-                          htmlFor={`feedback-rating-${value}`}
-                          className="inline-flex cursor-pointer rounded-lg p-1.5 transition-transform hover:scale-110 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-emerald-500 peer-checked:[&>svg]:fill-amber-400 peer-checked:[&>svg]:text-amber-400"
-                        >
-                          <Star className="h-7 w-7 text-slate-300 dark:text-zinc-700" />
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </fieldset>
-
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <label className="block space-y-2">
                   <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                    Comments <span className="font-normal text-slate-400 dark:text-zinc-500">(optional)</span>
+                    Name <span className="text-red-500">*</span>
                   </span>
-                  <textarea
-                    rows={5}
-                    maxLength={2000}
-                    placeholder="Tell us what you liked or what could be improved..."
-                    className={`${fieldClassName} resize-y`}
+
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    autoComplete="name"
+                    required
+                    maxLength={100}
+                    placeholder="Enter your name"
+                    className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
                   />
                 </label>
 
-                <div className="flex justify-end border-t border-slate-100 dark:border-zinc-800 pt-5">
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-500"
-                  >
-                    <Send className="h-3.5 w-3.5" />
-                    Submit feedback
-                  </button>
+                <label className="block space-y-2">
+                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                    Event Name <span className="text-red-500">*</span>
+                  </span>
+
+                  <input
+                    type="text"
+                    name="eventName"
+                    value={formData.eventName}
+                    onChange={handleChange}
+                    required
+                    maxLength={255}
+                    placeholder="Enter event name"
+                    className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                  />
+                </label>
+              </div>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  Feedback Category <span className="text-red-500">*</span>
+                </span>
+
+                <input
+                  type="text"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  required
+                  maxLength={100}
+                  placeholder="e.g. Event Organization, Technical Issues"
+                  className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                />
+
+                <span className="block text-xs text-slate-500 dark:text-zinc-500">
+                  Enter the category related to your feedback.
+                </span>
+              </label>
+
+              <fieldset className="space-y-3">
+                <legend className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  5 Star Rating <span className="text-red-500">*</span>
+                </legend>
+
+                <div className="flex flex-wrap items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => handleRating(value)}
+                      aria-label={`Rate ${value} ${value === 1 ? 'star' : 'stars'}`}
+                      aria-pressed={formData.rating === value}
+                      className="rounded-lg p-1.5 transition-transform hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+                    >
+                      <Star
+                        className={`h-7 w-7 transition-colors ${
+                          value <= formData.rating
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-slate-300 dark:text-zinc-700'
+                        }`}
+                      />
+                    </button>
+                  ))}
+
+                  <span className="ml-2 text-xs font-semibold text-slate-500 dark:text-zinc-400">
+                    {formData.rating > 0
+                      ? `${formData.rating}/5 Stars`
+                      : 'Select a rating'}
+                  </span>
                 </div>
-              </form>
+              </fieldset>
+
+              <label className="block space-y-2">
+                <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  Comments{' '}
+                  <span className="font-normal text-slate-400 dark:text-zinc-500">
+                    (optional)
+                  </span>
+                </span>
+
+                <textarea
+                  name="comments"
+                  value={formData.comments}
+                  onChange={handleChange}
+                  rows={5}
+                  maxLength={2000}
+                  placeholder="Tell us what you liked or what could be improved..."
+                  className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 resize-y"
+                />
+
+                <span className="block text-right text-xs text-slate-400 dark:text-zinc-500">
+                  {formData.comments.length}/2000
+                </span>
+              </label>
+
+              {message && (
+                <div
+                  role="alert"
+                  aria-live="polite"
+                  className={`rounded-xl border px-4 py-3 text-sm font-medium ${
+                    messageType === 'success'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400'
+                      : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400'
+                  }`}
+                >
+                  {message}
+                </div>
+              )}
+
+              <div className="flex justify-end border-t border-slate-100 dark:border-zinc-800 pt-5">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  {loading ? 'Submitting...' : 'Submit Feedback'}
+                </button>
+              </div>
+            </form>
           </div>
         </section>
       </div>

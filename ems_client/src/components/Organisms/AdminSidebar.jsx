@@ -22,6 +22,7 @@ import {
   UserPen,
   Trophy,
   Send,
+  MessageCircleQuestion,
 } from 'lucide-react';
 
 const logoElement = (
@@ -235,6 +236,12 @@ const SidebarContent = ({
       path: '/admin/teams',
       badge: null,
       end: false,
+    },
+    { 
+      name: 'Feedback', 
+      icon: MessageCircleQuestion, 
+      path: '/admin/feedback', 
+      badge: null,
     },
     {
       name: 'Profile',

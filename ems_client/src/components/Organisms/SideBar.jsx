@@ -113,7 +113,7 @@ const SidebarContent = ({
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
     { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: totalEvents, dot: false },
-    { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: '4', dot: true },
+    { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: null},
     { name: 'Feedback', icon: MessageCircleQuestion, path: '/sidebar/feedback', badge: null },
     { name: 'Profile', icon: CircleUserRound, path: profilePath, badge: null },
   ];
