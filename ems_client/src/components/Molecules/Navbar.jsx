@@ -95,7 +95,7 @@ export function Navbar() {
                        flex flex-col items-center
                        pl-5 pr-5 py-2.5 sm:pl-6 sm:pr-6 sm:py-3 backdrop-blur-sm
                        ${currentHeaderShapeClass}
-                       border border-gray-300 dark:border-[#333] bg-white/80 dark:bg-[#1f1f1f70] shadow-sm dark:shadow-none
+                       border border-gray-300 dark:border-white/10 bg-white/80 dark:bg-black/90 shadow-sm dark:shadow-none
                         max-w-[calc(100%-1rem)] whitespace-nowrap
                        transition-[border-radius] duration-0 ease-in-out`
     )}

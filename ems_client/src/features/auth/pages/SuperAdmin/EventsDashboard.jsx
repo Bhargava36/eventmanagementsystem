@@ -656,7 +656,7 @@ function EventsDashboard() {
                 y: 15
               }}
               transition={{ duration: 0.25 }}
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-950 rounded-2xl shadow-2xl"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black rounded-2xl shadow-2xl"
             >
               <div className="flex items-center justify-between px-7 py-5 border-b border-gray-200 dark:border-gray-800">
                 <div>
@@ -672,7 +672,7 @@ function EventsDashboard() {
                 <button
                   type="button"
                   onClick={closeCreateForm}
-                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-900"
+                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-black"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -791,7 +791,7 @@ function EventsDashboard() {
                           onChange={handleChange}
                           placeholder="Enter event name"
                           required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -805,7 +805,7 @@ function EventsDashboard() {
                           </span>
                         </div>
 
-                        <label className="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-xl p-5 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50/50 dark:bg-gray-900/50">
+                        <label className="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-xl p-5 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50/50 dark:bg-black">
                           <UploadCloud className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mb-2" />
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             Click or drag images to upload event posters
@@ -827,7 +827,7 @@ function EventsDashboard() {
                             {formData.Posters.map((poster, index) => (
                               <div
                                 key={index}
-                                className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 aspect-[4/3]"
+                                className="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-black aspect-[4/3]"
                               >
                                 <img
                                   src={resolvePosterUrl(poster)}
@@ -933,7 +933,7 @@ function EventsDashboard() {
                                   value={formData.VirtualRegistrationStart}
                                   onChange={handleChange}
                                   required
-                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm"
                                 />
                               </div>
                               <div>
@@ -946,7 +946,7 @@ function EventsDashboard() {
                                   value={formData.VirtualRegistrationEnd}
                                   onChange={handleChange}
                                   required
-                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm"
                                 />
                               </div>
                               <div>
@@ -959,7 +959,7 @@ function EventsDashboard() {
                                   value={formData.VirtualStartDate}
                                   onChange={handleChange}
                                   required
-                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm"
                                 />
                               </div>
                               <div>
@@ -972,7 +972,7 @@ function EventsDashboard() {
                                   value={formData.VirtualEndDate}
                                   onChange={handleChange}
                                   required
-                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm"
                                 />
                               </div>
                             </div>
@@ -994,7 +994,7 @@ function EventsDashboard() {
                                   value={formData.PhysicalRegistrationStart}
                                   onChange={handleChange}
                                   required
-                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm"
                                 />
                               </div>
                               <div>
@@ -1007,7 +1007,7 @@ function EventsDashboard() {
                                   value={formData.PhysicalRegistrationEnd}
                                   onChange={handleChange}
                                   required
-                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm"
                                 />
                               </div>
                               <div>
@@ -1020,7 +1020,7 @@ function EventsDashboard() {
                                   value={formData.PhysicalStartDate}
                                   onChange={handleChange}
                                   required
-                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm"
                                 />
                               </div>
                               <div>
@@ -1033,7 +1033,7 @@ function EventsDashboard() {
                                   value={formData.PhysicalEndDate}
                                   onChange={handleChange}
                                   required
-                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm"
+                                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm"
                                 />
                               </div>
                             </div>
@@ -1064,7 +1064,7 @@ function EventsDashboard() {
                                   value={formData.RegistrationStart}
                                   onChange={handleChange}
                                   required
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
                                 />
                               </div>
                               <div>
@@ -1077,7 +1077,7 @@ function EventsDashboard() {
                                   value={formData.RegistrationEnd}
                                   onChange={handleChange}
                                   required
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
                                 />
                               </div>
                             </div>
@@ -1113,7 +1113,7 @@ function EventsDashboard() {
                                     }
                                   }}
                                   required
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
                                 />
                               </div>
                               <div>
@@ -1133,7 +1133,7 @@ function EventsDashboard() {
                                     }
                                   }}
                                   required
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs sm:text-sm font-medium"
                                 />
                               </div>
                             </div>
@@ -1156,7 +1156,7 @@ function EventsDashboard() {
                             value={formData.EventType}
                             onChange={handleChange}
                             required
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white"
                           >
                             <option value="">
                               Select Event Type
@@ -1190,7 +1190,7 @@ function EventsDashboard() {
                               className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                 formData.TeamSize === '1' || formData.TeamSize?.toLowerCase() === 'solo' || formData.TeamSize?.toLowerCase() === 'individual'
                                   ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 ring-2 ring-emerald-500/20'
-                                  : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50'
+                                  : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-300 hover:bg-gray-50'
                               }`}
                             >
                               <User className="w-3.5 h-3.5" />
@@ -1207,7 +1207,7 @@ function EventsDashboard() {
                               className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                 formData.TeamSize !== '1' && formData.TeamSize && formData.TeamSize?.toLowerCase() !== 'solo' && formData.TeamSize?.toLowerCase() !== 'individual'
                                   ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 ring-2 ring-emerald-500/20'
-                                  : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50'
+                                  : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-300 hover:bg-gray-50'
                               }`}
                             >
                               <Users className="w-3.5 h-3.5" />
@@ -1237,7 +1237,7 @@ function EventsDashboard() {
                               className={`py-2 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
                                 formData.TeamSize === '2-4' || formData.TeamSize === '2 - 4'
                                   ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
-                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-300 hover:border-gray-400'
                               }`}
                             >
                               Range: 2 - 4
@@ -1248,7 +1248,7 @@ function EventsDashboard() {
                               className={`py-2 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
                                 formData.TeamSize === '2-3' || formData.TeamSize === '2 - 3'
                                   ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
-                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-300 hover:border-gray-400'
                               }`}
                             >
                               Range: 2 - 3
@@ -1259,7 +1259,7 @@ function EventsDashboard() {
                               className={`py-2 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
                                 formData.TeamSize === '4'
                                   ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
-                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-300 hover:border-gray-400'
                               }`}
                             >
                               Fixed: 4 Members
@@ -1270,7 +1270,7 @@ function EventsDashboard() {
                               className={`py-2 px-2.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
                                 formData.TeamSize === '2'
                                   ? 'border-emerald-500 bg-emerald-600 text-white shadow-sm'
-                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-300 hover:border-gray-400'
                               }`}
                             >
                               Fixed: 2 Members
@@ -1287,7 +1287,7 @@ function EventsDashboard() {
                               value={formData.TeamSize}
                               onChange={handleChange}
                               placeholder="e.g. 4 or 2-4"
-                              className="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-semibold"
+                              className="w-full px-3.5 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-xs font-semibold"
                             />
                             <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
                               {formData.TeamSize?.includes('-')
@@ -1317,7 +1317,7 @@ function EventsDashboard() {
                           onChange={handleChange}
                           placeholder={formData.HackathonMode === 'Virtual' ? 'Online / Meeting Platform (e.g. Google Meet, Zoom)' : 'Enter venue location (e.g. Campus Auditorium / Hall A)'}
                           required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white"
                         />
                       </div>
 
@@ -1342,7 +1342,7 @@ function EventsDashboard() {
                                 value={formData.PhysicalPrizeMoney}
                                 onChange={handleChange}
                                 placeholder="e.g. ₹50,000"
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm"
                               />
                             </div>
 
@@ -1356,7 +1356,7 @@ function EventsDashboard() {
                                 value={formData.VirtualPrizeMoney}
                                 onChange={handleChange}
                                 placeholder="e.g. ₹25,000"
-                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+                                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm"
                               />
                             </div>
                           </div>
@@ -1382,7 +1382,7 @@ function EventsDashboard() {
                               value={formData.PrizeMoney}
                               onChange={handleChange}
                               placeholder="e.g. ₹50,000 or $1,000"
-                              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                              className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                             />
                           </div>
                         </div>
@@ -1512,7 +1512,7 @@ function EventsDashboard() {
                       </div>
 
                       {/* Live Brand Preview Card */}
-                      <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+                      <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black">
                         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">
                           Live Event Theme Preview
                         </p>
@@ -1596,7 +1596,7 @@ function EventsDashboard() {
                                     setColorSelected(true);
                                     setSelectedPresetName('Custom Palette');
                                   }}
-                                  className="w-11 h-10 rounded-lg cursor-pointer border border-gray-200 dark:border-gray-700 p-0.5 bg-white dark:bg-gray-900 shrink-0"
+                                  className="w-11 h-10 rounded-lg cursor-pointer border border-gray-200 dark:border-gray-700 p-0.5 bg-white dark:bg-black shrink-0"
                                 />
 
                                 <input
@@ -1610,7 +1610,7 @@ function EventsDashboard() {
                                   }}
                                   required
                                   placeholder="#000000"
-                                  className="flex-1 px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white uppercase font-mono text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                                  className="flex-1 px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white uppercase font-mono text-xs outline-none focus:ring-2 focus:ring-emerald-500"
                                 />
                               </div>
                             </div>
@@ -1627,7 +1627,7 @@ function EventsDashboard() {
                       <button
                         type="button"
                         onClick={() => setCurrentStep(currentStep - 1)}
-                        className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer"
+                        className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-black cursor-pointer"
                       >
                         Back
                       </button>
@@ -1638,7 +1638,7 @@ function EventsDashboard() {
                     <button
                       type="button"
                       onClick={closeCreateForm}
-                      className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer"
+                      className="px-5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-black cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -1698,7 +1698,7 @@ function EventsDashboard() {
           }}
           className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
         >
-          <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Calendar className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
@@ -1712,7 +1712,7 @@ function EventsDashboard() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
@@ -1726,7 +1726,7 @@ function EventsDashboard() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Radio className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
@@ -1740,7 +1740,7 @@ function EventsDashboard() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Clock className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
@@ -1762,7 +1762,7 @@ function EventsDashboard() {
             duration: 0.45,
             delay: 0.2
           }}
-          className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden"
+          className="bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden"
         >
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1775,7 +1775,7 @@ function EventsDashboard() {
                   onClick={() =>
                     setSortOpen(!sortOpen)
                   }
-                  className="flex items-center gap-2 text-xs sm:text-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  className="flex items-center gap-2 text-xs sm:text-sm bg-white dark:bg-black border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   {sortValue}
 
@@ -1788,7 +1788,7 @@ function EventsDashboard() {
                 </button>
 
                 {sortOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg z-10 overflow-hidden">
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg z-10 overflow-hidden">
                     {sortOptions.map(
                       (option) => (
                         <button
@@ -1887,7 +1887,7 @@ function EventsDashboard() {
                             0.4
                           )
                         }}
-                        className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50/70 dark:hover:bg-gray-900/50 transition-colors"
+                        className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50/70 dark:hover:bg-black transition-colors"
                       >
                         <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <div className="flex items-center gap-2 sm:gap-3">

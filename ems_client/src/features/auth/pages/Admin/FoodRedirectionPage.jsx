@@ -152,7 +152,7 @@ function FoodRedirectionPage() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-slate-50 p-4 font-sans text-slate-900 dark:bg-[#070908] dark:text-white sm:p-6 lg:p-8">
+    <div className="min-h-screen w-full bg-slate-50 p-4 font-sans text-slate-900 dark:bg-black dark:text-white sm:p-6 lg:p-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
         <button
           type="button"

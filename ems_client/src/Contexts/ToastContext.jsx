@@ -35,21 +35,21 @@ export function ToastProvider({ children }) {
         return {
           icon: <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />,
           borderColor: 'border-emerald-500/30 dark:border-emerald-500/30',
-          bgColor: 'bg-white/95 dark:bg-gray-950/95',
+          bgColor: 'bg-white/95 dark:bg-black/95',
           accentColor: 'text-emerald-700 dark:text-emerald-400',
         };
       case 'error':
         return {
           icon: <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0" />,
           borderColor: 'border-red-500/30 dark:border-red-500/30',
-          bgColor: 'bg-white/95 dark:bg-gray-950/95',
+          bgColor: 'bg-white/95 dark:bg-black/95',
           accentColor: 'text-red-700 dark:text-red-400',
         };
       case 'warning':
         return {
           icon: <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0" />,
           borderColor: 'border-amber-500/30 dark:border-amber-500/30',
-          bgColor: 'bg-white/95 dark:bg-gray-950/95',
+          bgColor: 'bg-white/95 dark:bg-black/95',
           accentColor: 'text-amber-700 dark:text-amber-400',
         };
       case 'info':
@@ -57,7 +57,7 @@ export function ToastProvider({ children }) {
         return {
           icon: <Info className="w-5 h-5 text-blue-500 dark:text-blue-400 shrink-0" />,
           borderColor: 'border-blue-500/30 dark:border-blue-500/30',
-          bgColor: 'bg-white/95 dark:bg-gray-950/95',
+          bgColor: 'bg-white/95 dark:bg-black/95',
           accentColor: 'text-blue-700 dark:text-blue-400',
         };
     }

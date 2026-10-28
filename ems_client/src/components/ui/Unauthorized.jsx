@@ -24,7 +24,7 @@ export default function Unauthorized({ allowedRoles = [] }) {
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-gray-100 flex items-center justify-center p-4 sm:p-6 transition-colors duration-300">
-      <div className="max-w-lg w-full bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800/80 rounded-3xl p-6 sm:p-8 md:p-10 shadow-xl text-center relative overflow-hidden">
+      <div className="max-w-lg w-full bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 md:p-10 shadow-xl text-center relative overflow-hidden">
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 dark:bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-red-500/10 dark:bg-red-500/20 rounded-full blur-3xl pointer-events-none" />
 

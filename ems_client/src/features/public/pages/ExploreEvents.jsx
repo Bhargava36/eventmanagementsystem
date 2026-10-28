@@ -258,7 +258,7 @@ function ExploreEvents() {
     selectedType !== 'ALL';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#070908] text-slate-900 dark:text-white pt-28 sm:pt-32 pb-24 transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white pt-28 sm:pt-32 pb-24 transition-colors duration-300">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
         <motion.div

@@ -424,7 +424,7 @@ function SuperAdminProfile() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
-          className="relative overflow-hidden rounded-3xl bg-white dark:bg-gray-950 border border-gray-200 dark:border-emerald-500/20 shadow-xl p-6 sm:p-8 lg:p-10"
+          className="relative overflow-hidden rounded-3xl bg-white dark:bg-black border border-gray-200 dark:border-emerald-500/20 shadow-xl p-6 sm:p-8 lg:p-10"
         >
           <WaveDots
             rows={8}
@@ -460,7 +460,7 @@ function SuperAdminProfile() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingPhoto}
-                  className="absolute -bottom-2 -right-2 bg-emerald-500 hover:bg-emerald-400 text-white p-2 rounded-xl shadow-md border-2 border-white dark:border-gray-950 transition-all hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
+                  className="absolute -bottom-2 -right-2 bg-emerald-500 hover:bg-emerald-400 text-white p-2 rounded-xl shadow-md border-2 border-white dark:border-black transition-all hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
                   title="Upload super admin photo"
                 >
                   <Camera className="w-4 h-4" />
@@ -528,7 +528,7 @@ function SuperAdminProfile() {
         >
           <Link
             to="/sidebar/events"
-            className="bg-white dark:bg-gray-950 rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group cursor-pointer"
+            className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group cursor-pointer"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Total Events Hosted</span>
@@ -547,7 +547,7 @@ function SuperAdminProfile() {
             </div>
           </Link>
 
-          <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
+          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Appointed Admins</span>
               <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -565,7 +565,7 @@ function SuperAdminProfile() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
+          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Active Squads</span>
               <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -583,7 +583,7 @@ function SuperAdminProfile() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
+          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Total Users</span>
               <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -612,7 +612,7 @@ function SuperAdminProfile() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.25 }}
-                  className="bg-white dark:bg-gray-950 rounded-3xl border-2 border-emerald-500/40 shadow-xl overflow-hidden p-6 sm:p-8"
+                  className="bg-white dark:bg-black rounded-3xl border-2 border-emerald-500/40 shadow-xl overflow-hidden p-6 sm:p-8"
                 >
                   <div className="flex items-center justify-between pb-5 mb-6 border-b border-gray-200 dark:border-gray-800">
                     <div className="flex items-center gap-3">
@@ -776,7 +776,7 @@ function SuperAdminProfile() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.25 }}
-                  className="relative bg-white dark:bg-gray-950 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden"
+                  className="relative bg-white dark:bg-black rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden"
                 >
                   <div className="p-5 sm:p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between relative z-10">
                     <div className="flex items-center gap-2.5">
@@ -829,7 +829,7 @@ function SuperAdminProfile() {
             transition={{ duration: 0.4, delay: 0.2 }}
             className="lg:col-span-4 space-y-6"
           >
-            <div className="bg-white dark:bg-gray-950 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
+            <div className="bg-white dark:bg-black rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm p-6">
               <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">
                 Quick Actions
               </h3>

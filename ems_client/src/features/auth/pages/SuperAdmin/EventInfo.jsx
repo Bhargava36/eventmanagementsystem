@@ -605,7 +605,7 @@ function EventInfo() {
     if (loading && !event) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-black flex flex-col animate-pulse transition-colors">
-                <div className="bg-white dark:bg-gray-950 border-b border-gray-200 dark:border-gray-800 p-4 sm:p-6 md:p-8">
+                <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 p-4 sm:p-6 md:p-8">
                     <div className="flex items-center justify-between">
                         <div className="space-y-2">
                             <div className="h-4 w-28 bg-gray-200 dark:bg-gray-800 rounded-lg" />
@@ -616,7 +616,7 @@ function EventInfo() {
                 </div>
                 <div className="p-4 sm:p-6 md:p-8 grid grid-cols-1 xl:grid-cols-3 gap-6">
                     <div className="xl:col-span-2 space-y-6">
-                        <div className="bg-white dark:bg-gray-950 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+                        <div className="bg-white dark:bg-black rounded-xl p-6 border border-gray-200 dark:border-gray-800">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="h-72 bg-gray-200 dark:bg-gray-800 rounded-xl" />
                                 <div className="space-y-4">
@@ -628,7 +628,7 @@ function EventInfo() {
                         </div>
                     </div>
                     <div className="space-y-6">
-                        <div className="h-64 bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-6" />
+                        <div className="h-64 bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-gray-800 p-6" />
                     </div>
                 </div>
             </div>
@@ -704,7 +704,7 @@ function EventInfo() {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={handleBack}
-                            className="p-2 rounded-lg bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 shrink-0"
+                            className="p-2 rounded-lg bg-white dark:bg-black border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 shrink-0"
                         >
                             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                         </motion.button>
@@ -759,7 +759,7 @@ function EventInfo() {
 
                     <form onSubmit={handleUpdateEvent}>
 
-                        <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
+                        <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                 <div>
                                     <div className="flex items-center gap-3">
@@ -824,7 +824,7 @@ function EventInfo() {
 
                             <div className="lg:col-span-7 xl:col-span-8 space-y-6">
 
-                                <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
+                                <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
                                     <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-800">
                                         <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
                                             <Layers className="w-4 h-4" />
@@ -952,7 +952,7 @@ function EventInfo() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
+                                <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
                                     <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
                                         <div className="flex items-center gap-2.5">
                                             <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
@@ -1050,7 +1050,7 @@ function EventInfo() {
                                 {/* Event Season Gallery & Highlights Manager */}
                                 <EventGalleryManager eventId={id} />
 
-                                <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
+                                <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
                                     <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
                                         <div className="flex items-center gap-2.5">
                                             <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
@@ -1407,7 +1407,7 @@ function EventInfo() {
                                     )}
                                 </div>
 
-                                <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
+                                <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
                                     <div className="flex items-center gap-2.5 pb-2 border-b border-gray-100 dark:border-gray-800">
                                         <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
                                             <FileText className="w-4 h-4" />
@@ -1431,7 +1431,7 @@ function EventInfo() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
+                                <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
                                     <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
                                         <div className="flex items-center gap-2.5">
                                             <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
@@ -1542,7 +1542,7 @@ function EventInfo() {
 
                             <div className="lg:col-span-5 xl:col-span-4 sticky top-6 space-y-5">
 
-                                <div className="bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
+                                <div className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
                                     <div className="px-5 py-3.5 bg-gray-50 dark:bg-gray-900/70 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <Eye className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -1615,7 +1615,7 @@ function EventInfo() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white dark:bg-gray-950 rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
+                                <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
                                     <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                                         Readiness Checklist
                                     </h4>
@@ -1645,7 +1645,7 @@ function EventInfo() {
                                     </div>
                                 </div>
 
-                                <div className="bg-white dark:bg-gray-950 rounded-2xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col gap-2.5">
+                                <div className="bg-white dark:bg-black rounded-2xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col gap-2.5">
                                     <button
                                         type="submit"
                                         disabled={saving}
@@ -1682,7 +1682,7 @@ function EventInfo() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.1 }}
-                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                            className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2020,7 +2020,7 @@ function EventInfo() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.2 }}
-                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                            className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
 
                             {(() => {
@@ -2317,7 +2317,7 @@ function EventInfo() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.3 }}
-                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                            className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
 
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -2546,7 +2546,7 @@ function EventInfo() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.15 }}
-                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                            className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
 
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -2635,7 +2635,7 @@ function EventInfo() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.25 }}
-                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                            className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
 
                             <div className="flex items-center justify-between mb-4">
@@ -2736,7 +2736,7 @@ function EventInfo() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.35 }}
-                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                            className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
 
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -2857,7 +2857,7 @@ function EventInfo() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.45 }}
-                            className="bg-white dark:bg-gray-950 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
+                            className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
 
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -2916,7 +2916,7 @@ function EventInfo() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 15 }}
                             transition={{ duration: 0.25, ease: 'easeOut' }}
-                            className="relative w-full max-w-lg bg-white dark:bg-gray-950 rounded-2xl p-6 sm:p-7 border border-gray-200 dark:border-gray-800 shadow-2xl z-10 overflow-hidden my-8"
+                            className="relative w-full max-w-lg bg-white dark:bg-black rounded-2xl p-6 sm:p-7 border border-gray-200 dark:border-gray-800 shadow-2xl z-10 overflow-hidden my-8"
                         >
                             <div className="flex items-center justify-between pb-4 mb-5 border-b border-gray-200 dark:border-gray-800">
                                 <div>

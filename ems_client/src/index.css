@@ -7,6 +7,10 @@
   --font-heading: "Playfair Display", "Cinzel Decorative", Georgia, serif;
   --font-fancy: "Cinzel Decorative", "Playfair Display", Georgia, serif;
   --font-serif: "Playfair Display", Georgia, serif;
+  --color-gray-950: #000000;
+  --color-zinc-950: #000000;
+  --color-slate-950: #000000;
+  --color-neutral-950: #000000;
 }
 
 @variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
@@ -22,6 +26,14 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     @apply transition-colors duration-300;
+  }
+
+  html.dark, html[data-theme="dark"],
+  body.dark, body[data-theme="dark"],
+  [data-theme="dark"] body,
+  .dark body {
+    background-color: #000000 !important;
+    color: #ffffff;
   }
 
   /* Main Headings & Titles - High-End Luxury Fancy Serif */
@@ -106,3 +118,20 @@ html.theme-transitioning *::after {
               box-shadow 850ms cubic-bezier(0.22, 1, 0.36, 1) !important;
   transition-delay: 0s !important;
 }
+
+/* ── STRICT BLACK BACKGROUND ENFORCEMENT IN DARK MODE ── */
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html.dark,
+[data-theme="dark"] {
+  background-color: #000000 !important;
+}
+
+.dark body,
+[data-theme="dark"] body {
+  background-color: #000000 !important;
+}
+

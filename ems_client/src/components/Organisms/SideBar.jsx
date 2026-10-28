@@ -277,7 +277,7 @@ const SidebarContent = ({
                     className={`relative z-10 text-xs font-semibold px-2 py-0.5 rounded-full ${
                       isCurrentActive
                         ? 'bg-white text-emerald-700'
-                        : 'bg-white dark:bg-[#0F1729] text-emerald-700 dark:text-emerald-500'
+                        : 'bg-white dark:bg-black text-emerald-700 dark:text-emerald-500'
                     }`}
                   >
                     {item.badge}

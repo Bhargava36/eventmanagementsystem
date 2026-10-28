@@ -286,7 +286,7 @@ function UserProfile() {
       variants={containerVariants}
       initial="hidden"
       animate="show"
-      className="min-h-screen w-full bg-slate-50/80 dark:bg-[#060709] text-slate-900 dark:text-white transition-colors duration-200 p-4 sm:p-6 lg:p-8"
+      className="min-h-screen w-full bg-slate-50/80 dark:bg-black text-slate-900 dark:text-white transition-colors duration-200 p-4 sm:p-6 lg:p-8"
     >
       <div className="max-w-7xl mx-auto space-y-6">
 
