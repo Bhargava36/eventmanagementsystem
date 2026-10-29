@@ -50,6 +50,7 @@ import { renderCardSide } from '../services/idCardRenderer';
 import BulkGenerationModal from './BulkGenerationModal';
 import FontPickerModal from './FontPickerModal';
 import FigmaFontPicker from './FigmaFontPicker';
+import ThemeToggle from '@/components/Organisms/ThemeToggler';
 import {
   FONTS_CATALOG,
   FONT_CATEGORIES,
@@ -223,6 +224,7 @@ export default function IdCardDesigner({
   onBack,
   initialTemplateId = null,
   initialCardType = 'id_card',
+  lockCardType = false,
   onSaveTemplate = null
 }) {
   const [event, setEvent] = useState(null);
@@ -238,6 +240,8 @@ export default function IdCardDesigner({
   const [previewMode, setPreviewMode] = useState(false);
   const [sampleParticipants, setSampleParticipants] = useState([]);
   const [sampleIndex, setSampleIndex] = useState(0);
+  const [sampleTeams, setSampleTeams] = useState([]);
+  const [sampleTeamIndex, setSampleTeamIndex] = useState(0);
   const [aspectRatioLocked, setAspectRatioLocked] = useState(false);
   const [logoUrlInput, setLogoUrlInput] = useState('');
 
@@ -290,6 +294,14 @@ export default function IdCardDesigner({
         setSampleParticipants(list);
       })
       .catch((e) => console.error(e));
+
+    fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/teams`)
+      .then((r) => r.json())
+      .then((d) => {
+        const list = Array.isArray(d.teams) ? d.teams : [];
+        setSampleTeams(list);
+      })
+      .catch((e) => console.error('Error fetching sample teams:', e));
 
     fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/templates?cardType=${encodeURIComponent(cardType)}`)
       .then((r) => r.json())
@@ -394,7 +406,11 @@ export default function IdCardDesigner({
     if (!canvas) return;
 
     const currentCfg = cardConfig || DEFAULT_CARD_CONFIG;
-    const sample = cardType === 'team_card' ? {
+    const activeRealTeam = sampleTeams.length > 0
+      ? sampleTeams[sampleTeamIndex % sampleTeams.length]
+      : null;
+
+    const sample = cardType === 'team_card' ? (activeRealTeam || {
       TeamId: '104',
       TeamName: 'CyberSentinels',
       LeaderName: 'Alex Rivers',
@@ -409,7 +425,7 @@ export default function IdCardDesigner({
         { UserName: 'David Chen', Role: 'Member', Branch: 'IT', RollNumber: '21A51A1210' },
         { UserName: 'Aisha Patel', Role: 'Member', Branch: 'ECE', RollNumber: '21A51A0415' }
       ]
-    } : (sampleParticipants.length > 0 ? sampleParticipants[sampleIndex] : {
+    }) : (sampleParticipants.length > 0 ? sampleParticipants[sampleIndex] : {
       ParticipantName: 'Alex Carter',
       IdCardNumber: `EV${eventId || 22}-U101`,
       College: 'AITAM Institute of Tech',
@@ -426,7 +442,7 @@ export default function IdCardDesigner({
       showSafeMargin: showSafeMargin && !previewMode,
       previewMode
     });
-  }, [cardConfig, orientation, cardSizeId, previewMode, sampleIndex, sampleParticipants, event, showSafeMargin, cardWidth, cardHeight, cardType]);
+  }, [cardConfig, orientation, cardSizeId, previewMode, sampleIndex, sampleParticipants, sampleTeams, sampleTeamIndex, event, showSafeMargin, cardWidth, cardHeight, cardType]);
 
   const safeConfig = cardConfig || DEFAULT_CARD_CONFIG;
   const elements = safeConfig.elements || [];
@@ -1094,17 +1110,17 @@ export default function IdCardDesigner({
   }, [selectedElementId, selectedElement, cardConfig, historyStep]);
 
   return (
-    <div className="flex flex-col h-full min-h-[680px] w-full bg-[#0a0d0b] text-slate-100 select-none overflow-hidden font-sans">
+    <div className="flex flex-col h-full min-h-[680px] w-full bg-slate-100 dark:bg-[#0a0d0b] text-slate-900 dark:text-slate-100 select-none overflow-hidden font-sans">
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 1. TOP TOOLBAR (Figma Style, Front-Side Focused)              */}
       {/* ══════════════════════════════════════════════════════════════ */}
-      <header className="h-14 border-b border-zinc-800 bg-[#111613] px-4 flex items-center justify-between gap-3 shrink-0 z-30">
+      <header className="h-14 border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#111613] px-4 flex items-center justify-between gap-3 shrink-0 z-30 shadow-xs">
         <div className="flex items-center gap-3">
           {onBack && (
             <button
               type="button"
               onClick={onBack}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 transition cursor-pointer"
               title="Return to Studio"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -1114,8 +1130,8 @@ export default function IdCardDesigner({
           <div className="flex items-center gap-2">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
               cardType === 'team_card'
-                ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-400'
-                : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
+                ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400'
+                : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
             }`}>
               {cardType === 'team_card' ? <Users className="h-4 w-4" /> : <IdCard className="h-4 w-4" />}
             </div>
@@ -1124,45 +1140,56 @@ export default function IdCardDesigner({
                 type="text"
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
-                className="bg-transparent text-sm font-extrabold text-white hover:bg-zinc-800/60 focus:bg-zinc-800 px-2 py-0.5 rounded-md outline-none transition w-44 sm:w-56"
+                className="bg-transparent text-sm font-extrabold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-zinc-800/60 focus:bg-slate-100 dark:focus:bg-zinc-800 px-2 py-0.5 rounded-md outline-none transition w-44 sm:w-56"
               />
             </div>
           </div>
 
-          {/* Segmented Card Type Switcher */}
-          <div className="hidden md:flex items-center bg-zinc-950 border border-zinc-800 rounded-xl p-1 gap-1 shadow-inner">
-            <button
-              type="button"
-              onClick={() => handleSwitchCardType('id_card')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                cardType === 'id_card'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <IdCard className="h-3.5 w-3.5" />
-              <span>Participant ID</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchCardType('team_card')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                cardType === 'team_card'
-                  ? 'bg-cyan-600 text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              <Users className="h-3.5 w-3.5" />
-              <span>Team Display Card</span>
-            </button>
-          </div>
+          {/* Studio Badge or Segmented Card Type Switcher */}
+          {lockCardType ? (
+            <div className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black border shadow-inner ${
+              cardType === 'team_card'
+                ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-600 dark:text-cyan-400'
+                : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+            }`}>
+              {cardType === 'team_card' ? <Users className="h-3.5 w-3.5" /> : <IdCard className="h-3.5 w-3.5" />}
+              <span>{cardType === 'team_card' ? 'Team Card & Placard Studio' : 'Participant ID Badge Studio'}</span>
+            </div>
+          ) : (
+            <div className="hidden md:flex items-center bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl p-1 gap-1 shadow-inner">
+              <button
+                type="button"
+                onClick={() => handleSwitchCardType('id_card')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  cardType === 'id_card'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                }`}
+              >
+                <IdCard className="h-3.5 w-3.5" />
+                <span>Participant ID</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSwitchCardType('team_card')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  cardType === 'team_card'
+                    ? 'bg-cyan-600 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+                }`}
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span>Team Display Card</span>
+              </button>
+            </div>
+          )}
 
-          <div className="hidden sm:flex items-center gap-1 pl-3 border-l border-zinc-800">
+          <div className="hidden sm:flex items-center gap-1 pl-3 border-l border-slate-200 dark:border-zinc-800">
             <button
               type="button"
               onClick={handleUndo}
               disabled={historyStep <= 0}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 disabled:opacity-30 cursor-pointer"
               title="Undo (Ctrl+Z)"
             >
               <Undo2 className="h-4 w-4" />
@@ -1171,7 +1198,7 @@ export default function IdCardDesigner({
               type="button"
               onClick={handleRedo}
               disabled={historyStep >= history.length - 1}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 disabled:opacity-30 cursor-pointer"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 disabled:opacity-30 cursor-pointer"
               title="Redo (Ctrl+Y)"
             >
               <Redo2 className="h-4 w-4" />
@@ -1182,8 +1209,8 @@ export default function IdCardDesigner({
         {/* Center: Card Size Selector & Orientation */}
         <div className="flex items-center gap-2">
           {/* Card Size Selector Dropdown */}
-          <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-xl px-2.5 py-1 shadow-xs">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl px-2.5 py-1 shadow-xs">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
               {cardType === 'team_card' ? 'Placard Size:' : 'Badge Size:'}
             </span>
             <select
@@ -1195,10 +1222,10 @@ export default function IdCardDesigner({
                 setCardConfig(nextCfg);
                 recordHistory(nextCfg);
               }}
-              className="bg-transparent text-xs font-bold text-white outline-none cursor-pointer"
+              className="bg-transparent text-xs font-bold text-slate-800 dark:text-white outline-none cursor-pointer"
             >
               {activeSizes.map((sz) => (
-                <option key={sz.id} value={sz.id} className="bg-zinc-950 text-white py-1">
+                <option key={sz.id} value={sz.id} className="bg-white dark:bg-zinc-950 text-slate-900 dark:text-white py-1">
                   {sz.name} ({sz.dimensions})
                 </option>
               ))}
@@ -1208,23 +1235,25 @@ export default function IdCardDesigner({
           <button
             type="button"
             onClick={() => setOrientation(prev => prev === 'portrait' ? 'landscape' : 'portrait')}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 transition cursor-pointer"
             title="Toggle Orientation (Portrait / Landscape)"
           >
-            <Maximize2 className={`h-3.5 w-3.5 ${cardType === 'team_card' ? 'text-cyan-400' : 'text-emerald-400'}`} />
+            <Maximize2 className={`h-3.5 w-3.5 ${cardType === 'team_card' ? 'text-cyan-500 dark:text-cyan-400' : 'text-emerald-500 dark:text-emerald-400'}`} />
             <span className="capitalize font-bold">{orientation}</span>
           </button>
         </div>
 
-        {/* Right actions: Preview, Save, Generate / Export */}
+        {/* Right actions: ThemeToggle, Preview, Save, Generate / Export */}
         <div className="flex items-center gap-2">
+          <ThemeToggle />
+
           <button
             type="button"
             onClick={() => setPreviewMode(!previewMode)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
               previewMode
-                ? (cardType === 'team_card' ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400' : 'bg-emerald-500/20 border-emerald-500 text-emerald-400')
-                : 'border-zinc-800 text-zinc-300 hover:bg-zinc-800'
+                ? (cardType === 'team_card' ? 'bg-cyan-500/20 border-cyan-500 text-cyan-600 dark:text-cyan-400' : 'bg-emerald-500/20 border-emerald-500 text-emerald-600 dark:text-emerald-400')
+                : 'border-slate-300 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
             }`}
           >
             <Eye className="h-3.5 w-3.5" />
@@ -1235,9 +1264,9 @@ export default function IdCardDesigner({
             type="button"
             onClick={handleSaveTemplate}
             disabled={saving}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white border border-zinc-700 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-bold text-slate-800 dark:text-white border border-slate-300 dark:border-zinc-700 transition cursor-pointer"
           >
-            {saving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : saveSuccess ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Save className="h-3.5 w-3.5" />}
+            {saving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : saveSuccess ? <Check className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" /> : <Save className="h-3.5 w-3.5" />}
             <span>{saving ? 'Saving...' : saveSuccess ? 'Saved' : 'Save'}</span>
           </button>
 
@@ -1275,10 +1304,10 @@ export default function IdCardDesigner({
       {/* ══════════════════════════════════════════════════════════════ */}
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT SIDEBAR: Tools, Dynamic Fields, Background & Assets */}
-        <aside className="w-80 border-r border-zinc-800/80 bg-[#0d0f11] flex flex-col shrink-0 shadow-lg">
+        <aside className="w-80 border-r border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-[#0d0f11] flex flex-col shrink-0 shadow-lg text-slate-800 dark:text-slate-100">
           {/* Segmented Icon Dock Tabs */}
-          <div className="p-2.5 border-b border-zinc-800/80 bg-[#090b0d]">
-            <div className="grid grid-cols-5 gap-1 p-1 rounded-xl bg-zinc-950 border border-zinc-800/70 shadow-inner">
+          <div className="p-2.5 border-b border-slate-200 dark:border-zinc-800/80 bg-slate-50 dark:bg-[#090b0d]">
+            <div className="grid grid-cols-5 gap-1 p-1 rounded-xl bg-slate-200/60 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/70 shadow-inner">
               {[
                 { id: 'background', label: 'Backdrop', icon: Palette },
                 { id: 'uploads', label: 'Logos', icon: FileImage },
@@ -1296,7 +1325,7 @@ export default function IdCardDesigner({
                     className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-emerald-600 text-white font-bold shadow-md scale-102'
-                        : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
+                        : 'text-slate-500 hover:text-slate-900 hover:bg-white/80 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-900/60'
                     }`}
                   >
                     <Icon className="h-4 w-4 mb-1" />
@@ -1760,23 +1789,23 @@ export default function IdCardDesigner({
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* CENTER: INTERACTIVE CANVAS ARTBOARD                           */}
         {/* ══════════════════════════════════════════════════════════════ */}
-        <main className="flex-1 flex flex-col items-center justify-center relative overflow-auto bg-[#0a0d0e] bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px] p-8">
-          <div className="absolute top-4 left-4 z-20 flex items-center gap-1 p-1 rounded-xl bg-zinc-900/90 border border-zinc-800 backdrop-blur-md shadow-lg">
+        <main className="flex-1 flex flex-col items-center justify-center relative overflow-auto bg-slate-100 dark:bg-[#0a0d0e] bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px] p-8">
+          <div className="absolute top-4 left-4 z-20 flex items-center gap-1 p-1 rounded-xl bg-white/95 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 backdrop-blur-md shadow-lg">
             <button
               type="button"
               onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 transition cursor-pointer"
               title="Zoom Out"
             >
               <ZoomOut className="h-4 w-4" />
             </button>
-            <span className="text-xs font-mono font-bold text-zinc-300 px-1.5">
+            <span className="text-xs font-mono font-bold text-slate-700 dark:text-zinc-300 px-1.5">
               {Math.round(zoom * 100)}%
             </span>
             <button
               type="button"
               onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 transition cursor-pointer"
               title="Zoom In"
             >
               <ZoomIn className="h-4 w-4" />
@@ -1785,7 +1814,7 @@ export default function IdCardDesigner({
               type="button"
               onClick={() => setShowSafeMargin(!showSafeMargin)}
               className={`p-1.5 rounded-lg transition cursor-pointer ${
-                showSafeMargin ? 'text-rose-400 bg-rose-500/15' : 'text-zinc-500 hover:text-white'
+                showSafeMargin ? 'text-rose-500 bg-rose-500/15' : 'text-slate-400 hover:text-slate-800 dark:text-zinc-500 dark:hover:text-white'
               }`}
               title="Toggle Safe Print Margins (3mm bleed)"
             >
@@ -1793,31 +1822,68 @@ export default function IdCardDesigner({
             </button>
           </div>
 
-          {previewMode && sampleParticipants.length > 0 && (
-            <div className="absolute top-4 right-4 z-20 flex items-center gap-2 p-2 rounded-2xl bg-zinc-900/90 border border-emerald-500/30 backdrop-blur-md shadow-lg">
-              <span className="text-xs text-zinc-400 font-semibold pl-1">
-                Sample ({sampleIndex + 1}/{sampleParticipants.length}):
-              </span>
-              <span className="text-xs font-bold text-emerald-400 max-w-[140px] truncate">
-                {sampleParticipants[sampleIndex]?.ParticipantName}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setSampleIndex((i) => (i > 0 ? i - 1 : sampleParticipants.length - 1))}
-                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSampleIndex((i) => (i < sampleParticipants.length - 1 ? i + 1 : 0))}
-                  className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer"
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
+          {/* Top-Right Sample Switcher (Teams or Participants) */}
+          {cardType === 'team_card' ? (
+            sampleTeams.length > 0 && (
+              <div className="absolute top-4 right-4 z-20 flex items-center gap-2 p-2 rounded-2xl bg-white/95 dark:bg-zinc-900/90 border border-cyan-500/30 backdrop-blur-md shadow-lg text-slate-800 dark:text-slate-100">
+                <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold pl-1">
+                  Team ({sampleTeamIndex + 1}/{sampleTeams.length}):
+                </span>
+                <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 max-w-[170px] truncate" title={sampleTeams[sampleTeamIndex]?.TeamName}>
+                  {sampleTeams[sampleTeamIndex]?.TeamName}
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 font-mono font-bold">
+                  {sampleTeams[sampleTeamIndex]?.members?.length || 0} Members
+                </span>
+                <div className="flex items-center gap-1 pl-1">
+                  <button
+                    type="button"
+                    onClick={() => setSampleTeamIndex((i) => (i > 0 ? i - 1 : sampleTeams.length - 1))}
+                    className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 cursor-pointer"
+                    title="Previous Team"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSampleTeamIndex((i) => (i < sampleTeams.length - 1 ? i + 1 : 0))}
+                    className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 cursor-pointer"
+                    title="Next Team"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
-            </div>
+            )
+          ) : (
+            previewMode && sampleParticipants.length > 0 && (
+              <div className="absolute top-4 right-4 z-20 flex items-center gap-2 p-2 rounded-2xl bg-white/95 dark:bg-zinc-900/90 border border-emerald-500/30 backdrop-blur-md shadow-lg text-slate-800 dark:text-slate-100">
+                <span className="text-xs text-slate-500 dark:text-zinc-400 font-semibold pl-1">
+                  Sample ({sampleIndex + 1}/{sampleParticipants.length}):
+                </span>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 max-w-[140px] truncate">
+                  {sampleParticipants[sampleIndex]?.ParticipantName}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSampleIndex((i) => (i > 0 ? i - 1 : sampleParticipants.length - 1))}
+                    className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 cursor-pointer"
+                    title="Previous Participant"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSampleIndex((i) => (i < sampleParticipants.length - 1 ? i + 1 : 0))}
+                    className="p-1 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 cursor-pointer"
+                    title="Next Participant"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )
           )}
 
           {/* Central Artboard */}
@@ -1935,16 +2001,16 @@ export default function IdCardDesigner({
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* RIGHT SIDEBAR: PROPERTIES INSPECTOR                           */}
         {/* ══════════════════════════════════════════════════════════════ */}
-        <aside className="w-80 border-l border-zinc-800/80 bg-[#0d0f11] flex flex-col shrink-0 overflow-y-auto p-4 space-y-4 shadow-lg">
+        <aside className="w-80 border-l border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-[#0d0f11] flex flex-col shrink-0 overflow-y-auto p-4 space-y-4 shadow-lg text-slate-800 dark:text-slate-100">
           {selectedElement ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-zinc-800">
                 <div>
-                  <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                  <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
                     {selectedElement.type} Element
                   </h4>
                   {selectedElement.dynamicField && (
-                    <span className="text-[10px] text-emerald-400 font-mono font-bold">
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
                       Bound: {selectedElement.dynamicField}
                     </span>
                   )}
@@ -1953,7 +2019,7 @@ export default function IdCardDesigner({
                   <button
                     type="button"
                     onClick={duplicateSelectedElement}
-                    className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800"
+                    className="p-1 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 cursor-pointer"
                     title="Duplicate"
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -1961,7 +2027,7 @@ export default function IdCardDesigner({
                   <button
                     type="button"
                     onClick={deleteSelectedElement}
-                    className="p-1 rounded text-rose-400 hover:text-rose-300 hover:bg-zinc-800"
+                    className="p-1 rounded text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-zinc-800 cursor-pointer"
                     title="Delete"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -1970,13 +2036,13 @@ export default function IdCardDesigner({
               </div>
 
               <div>
-                <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1">
+                <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-zinc-500 block mb-1">
                   Bind Dynamic Field
                 </label>
                 <select
                   value={selectedElement.dynamicField || ''}
                   onChange={(e) => updateSelectedElement({ dynamicField: e.target.value || null })}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-semibold text-white outline-none focus:border-emerald-500"
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-800 dark:text-white outline-none focus:border-emerald-500"
                 >
                   <option value="">Static (No dynamic binding)</option>
                   {activeDynamicChips.map((f) => (
@@ -2485,14 +2551,16 @@ export default function IdCardDesigner({
           ) : (
             /* Artboard Settings (when no element is selected) */
             <div className="space-y-4">
-              <h4 className="text-xs font-black text-white uppercase tracking-wider pb-2 border-b border-zinc-800">
-                ID Card Artboard
+              <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider pb-2 border-b border-slate-200 dark:border-zinc-800">
+                {cardType === 'team_card' ? 'Team Placard Artboard' : 'ID Card Artboard'}
               </h4>
 
               <div>
-                <p className="text-[11px] text-zinc-400 font-semibold mb-1.5">Card Size & Format</p>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-semibold mb-1.5">
+                  {cardType === 'team_card' ? 'Placard Size & Format' : 'Card Size & Format'}
+                </p>
                 <div className="space-y-1.5 mb-2">
-                  {CARD_SIZES.map((sz) => {
+                  {activeSizes.map((sz) => {
                     const isSel = sz.id === cardSizeId;
                     return (
                       <button
@@ -2506,15 +2574,19 @@ export default function IdCardDesigner({
                         }}
                         className={`w-full p-2 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
                           isSel
-                            ? 'bg-emerald-500/15 border-emerald-500 text-white font-bold shadow-xs'
-                            : 'bg-zinc-900/60 border-zinc-800/80 text-zinc-400 hover:text-white'
+                            ? (cardType === 'team_card'
+                                ? 'bg-cyan-500/15 border-cyan-500 text-cyan-700 dark:text-cyan-400 font-bold shadow-xs'
+                                : 'bg-emerald-500/15 border-emerald-500 text-emerald-700 dark:text-emerald-400 font-bold shadow-xs')
+                            : 'bg-slate-50 dark:bg-zinc-900/60 border-slate-200 dark:border-zinc-800/80 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-850'
                         }`}
                       >
                         <div>
-                          <p className="text-xs">{sz.name}</p>
-                          <p className="text-[10px] text-zinc-500">{sz.badge} • {sz.dimensions}</p>
+                          <p className="text-xs font-bold">{sz.name}</p>
+                          <p className="text-[10px] text-slate-400 dark:text-zinc-500">{sz.badge} • {sz.dimensions}</p>
                         </div>
-                        {isSel && <Check className="h-4 w-4 text-emerald-400" />}
+                        {isSel && (
+                          <Check className={`h-4 w-4 ${cardType === 'team_card' ? 'text-cyan-500 dark:text-cyan-400' : 'text-emerald-500 dark:text-emerald-400'}`} />
+                        )}
                       </button>
                     );
                   })}

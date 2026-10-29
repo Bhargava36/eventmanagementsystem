@@ -1,14 +1,14 @@
-const feedbackService = require('../feedback/feedbackService');
+const feedbackService = require('./feedbackService');
 
 const createFeedback = (req, res) => {
     const { name, eventName, category, rating, comments } = req.body;
-    if (!name?.trim() || !eventName?.trim() || !category?.trim() || rating === undefined || rating === null ) {
+    if (!name?.trim() || !eventName?.trim() || !category?.trim() || rating === undefined || rating === null) {
         return res.status(400).json({
             message: 'Please provide all required feedback fields'
         });
     }
     const numericRating = Number(rating);
-    if ( !Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5 ) {
+    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
         return res.status(400).json({
             message: 'Rating must be an integer between 1 and 5'
         });
@@ -102,7 +102,6 @@ const getFeedbackById = (req, res) => {
         });
     });
 };
-
 
 module.exports = {
     createFeedback,

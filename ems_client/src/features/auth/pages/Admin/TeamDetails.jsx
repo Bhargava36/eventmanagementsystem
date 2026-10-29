@@ -564,7 +564,7 @@ function TeamDetails() {
 
                                         return (
                                             <tr
-                                                key={member.UserId || member.TeamMemberId || i}
+                                                key={member.UserId ? `user-${member.UserId}` : member.TeamMemberId ? `tm-${member.TeamMemberId}` : `member-${i}`}
                                                 className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors"
                                             >
                                                 <td className="py-3 sm:py-4">
@@ -689,7 +689,7 @@ function TeamDetails() {
                                 </button>
                             </div>
 
-                            <TeamCardCanvas team={team} event={team} />
+                            <TeamCardCanvas team={team} event={team} eventId={team?.EventId} />
                         </motion.div>
                     </div>
                 )}
@@ -734,11 +734,11 @@ function TeamDetails() {
                             {/* Member Switcher Tabs */}
                             {members.length > 1 && (
                                 <div className="mb-3 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                                    {members.map((m) => {
+                                    {members.map((m, mIdx) => {
                                         const isCurrent = (m.UserId && m.UserId === selectedMemberForId.UserId) || m.UserName === selectedMemberForId.UserName;
                                         return (
                                             <button
-                                                key={m.UserId || m.UserName}
+                                                key={m.UserId ? `user-tab-${m.UserId}` : m.TeamMemberId ? `tm-tab-${m.TeamMemberId}` : m.UserName ? `name-tab-${m.UserName}` : `member-tab-${mIdx}`}
                                                 type="button"
                                                 onClick={() => setSelectedMemberForId(m)}
                                                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer ${

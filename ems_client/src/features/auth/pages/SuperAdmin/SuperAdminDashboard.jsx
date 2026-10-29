@@ -15,6 +15,7 @@ import {
 
 import { motion } from 'framer-motion';
 import useTheme from '../../../../Hooks/useTheme';
+import SuperAdminAnalytics from './components/SuperAdminAnalytics';
 
 function getThemeStyles(hex = '#10B981', isDark = false) {
   let c = String(hex || '#10B981').replace('#', '').trim();
@@ -564,6 +565,24 @@ function SuperAdminDashboard() {
             );
           })}
         </motion.div>
+        
+        {/* Graphical Analytics & Performance Insights */}
+        <motion.div
+          initial={{ opacity: 0, y: 25 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ amount: 0.1 }}
+          transition={{ duration: 0.45 }}
+        >
+          <SuperAdminAnalytics
+            events={events}
+            recentRegistrations={recentRegistrations}
+            totalMembers={membersCount}
+            totalUsers={usersCount}
+            totalTeams={teamsCount}
+            totalEvents={eventsCount}
+            isDark={isDark}
+          />
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -945,9 +964,7 @@ function SuperAdminDashboard() {
                       </td>
 
                       <td className="py-3 text-gray-600 dark:text-gray-300">
-                        <td className="py-3 text-gray-600 dark:text-gray-300">
-                          {registration.EventName || registration.eventName || '—'}
-                        </td>
+                        {registration.EventName || registration.eventName || '—'}
                       </td>
 
                       <td className="py-3 text-gray-600 dark:text-gray-300 hidden sm:table-cell">
@@ -991,32 +1008,19 @@ function SuperAdminDashboard() {
             className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm"
           >
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                Recent Activities
-              </h2>
-
-              <button className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-500 hover:underline">
-                View All
-              </button>
-            </div>
-
-            <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm">
-
-              <div className="flex items-center justify-between mb-5">
-
-                <div>
-                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                    Recent Activities
-                  </h2>
-
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Latest team registrations across events
-                  </p>
-                </div>
-
-                <Activity className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
-
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  Recent Activities
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Latest team registrations across events
+                </p>
               </div>
+
+              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 shrink-0">
+                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 dark:text-emerald-500" />
+              </div>
+            </div>
 
               {recentActivities.length === 0 ? (
                 <div className="py-10 text-center">
@@ -1091,9 +1095,6 @@ function SuperAdminDashboard() {
 
                 </div>
               )}
-
-            </div>
-
           </motion.div>
         </div>
       </div>

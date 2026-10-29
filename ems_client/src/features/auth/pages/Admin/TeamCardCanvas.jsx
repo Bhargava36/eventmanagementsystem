@@ -5,6 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Download, Printer, FileText, Palette } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { renderCardSide } from "@/features/id_card/services/idCardRenderer";
+import { TEAM_CARD_SIZES } from "@/features/id_card/components/IdCardDesigner";
 
 const hexToRgb = (hex, fallback = { r: 0, g: 229, b: 255 }) => {
   if (!hex || typeof hex !== "string") return fallback;
@@ -47,17 +48,18 @@ const BASE_W = 1200;
 const BASE_H = 750;
 const RENDER_SCALE = 2;
 
-export default function TeamCardCanvas({ team, event }) {
+export default function TeamCardCanvas({ team, event, eventId: propEventId }) {
   const navigate = useNavigate();
   const canvasRef = useRef(null);
   const qrRef = useRef(null);
   const [usingCustomTemplate, setUsingCustomTemplate] = useState(false);
+  const [dimensions, setDimensions] = useState({ width: 750, height: 475 });
 
   const teamId = team?.Id || team?.TeamId || "";
   const teamName = team?.TeamName || "Team";
   const members = Array.isArray(team?.members) ? team.members : [];
   const eventName = event?.EventName || team?.EventName || "AVISHKAAR";
-  const eventId = event?.Id || team?.EventId || team?.eventId || "";
+  const eventId = propEventId || team?.EventId || team?.eventId || (event?.EventId) || (event?.Id && event.Id !== (team?.Id || team?.TeamId) ? event.Id : "") || "";
 
   // Dynamic Event Colors from Admin Settings
   const primaryColor = event?.PrimaryColor || team?.PrimaryColor || "#00E5FF";
@@ -409,47 +411,62 @@ export default function TeamCardCanvas({ team, event }) {
       // Check if a custom visual Team Card template exists for this event
       if (eventId) {
         try {
-          const res = await fetch(`${API_BASE_URL}/api/id-cards/events/${eventId}/templates?cardType=team_card`, { credentials: "include" });
+          const res = await fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/templates?cardType=team_card`);
           if (res.ok) {
             const data = await res.json();
             const templates = data?.templates || [];
-            const activeTpl = templates.find((t) => t.IsDefault) || templates[0];
+            const activeTpl = templates.find((t) => t.IsActive) || templates[0];
+            let frontConfig = activeTpl?.FrontConfig;
+            if (typeof frontConfig === 'string') {
+              try {
+                frontConfig = JSON.parse(frontConfig);
+              } catch (e) {
+                console.error("Error parsing FrontConfig:", e);
+              }
+            }
 
-            if (activeTpl?.FrontConfig?.elements?.length > 0 && canvasRef.current) {
+            if (frontConfig && typeof frontConfig === 'object' && Array.isArray(frontConfig.elements) && canvasRef.current) {
               setUsingCustomTemplate(true);
               const teamData = {
-                team_name: teamName,
-                team_id: teamId,
+                ...team,
+                TeamName: teamName,
+                TeamId: teamId,
                 placement: placement,
                 direction: direction,
                 problem_statement: team?.ProblemStatement || team?.ProblemStatementText || "",
                 ps_domain: team?.Domain || team?.Category || "",
                 members_count: members.length,
-                team_lead_name: members[0]?.Name || members[0]?.FullName || "",
-                team_lead_photo: members[0]?.ProfilePhoto || members[0]?.PhotoUrl || "",
+                members: members.map((m, idx) => ({
+                  UserName: m?.UserName || m?.Name || m?.FullName || (idx === 0 ? "Team Lead" : `Member ${idx + 1}`),
+                  MemberName: m?.UserName || m?.Name || m?.FullName || "",
+                  Role: m?.Role || (idx === 0 ? "Team Leader" : "Member"),
+                  Photo: m?.Photo || m?.ProfilePhoto || m?.PhotoUrl || "",
+                  College: m?.College || m?.MemberCollege || team?.College || "",
+                  RollNumber: m?.RollNumber || m?.RollNo || ""
+                })),
                 event_name: eventName,
                 public_team_url: publicTeamUrl,
-                ...team,
               };
 
-              members.forEach((m, idx) => {
-                const i = idx + 1;
-                teamData[`member_${i}_name`] = m?.Name || m?.FullName || "";
-                teamData[`member_${i}_role`] = m?.Role || (idx === 0 ? "Team Lead" : `Member ${i}`);
-                teamData[`member_${i}_roll`] = m?.RollNumber || m?.RollNo || "";
-                teamData[`member_${i}_photo`] = m?.ProfilePhoto || m?.PhotoUrl || "";
-              });
+              const orientation = activeTpl?.Orientation || frontConfig?.orientation || 'landscape';
+              const matchedSize = (TEAM_CARD_SIZES || []).find(s => s.id === (frontConfig?.cardSizeId || activeTpl?.CardSizeId)) || { landscape: { width: 750, height: 475 }, portrait: { width: 475, height: 750 } };
+              const sizeObj = matchedSize[orientation] || matchedSize.landscape || { width: 750, height: 475 };
+              const cardWidth = sizeObj.width;
+              const cardHeight = sizeObj.height;
+              setDimensions({ width: cardWidth, height: cardHeight });
 
-              await renderCardSide({
-                canvas: canvasRef.current,
-                config: activeTpl.FrontConfig,
-                orientation: activeTpl.Orientation || "horizontal",
-                cardWidth: activeTpl.CardWidth || 150,
-                cardHeight: activeTpl.CardHeight || 95,
-                unit: activeTpl.Unit || "mm",
-                participant: teamData,
-                dpi: 300,
-              });
+              await renderCardSide(
+                canvasRef.current,
+                frontConfig,
+                teamData,
+                event || team || {},
+                {
+                  scale: 2,
+                  cardWidth,
+                  cardHeight,
+                  previewMode: true
+                }
+              );
               return;
             }
           }
@@ -459,6 +476,7 @@ export default function TeamCardCanvas({ team, event }) {
       }
 
       setUsingCustomTemplate(false);
+      setDimensions({ width: BASE_W, height: BASE_H });
       await drawBuiltInTeamCard();
     };
 
@@ -474,23 +492,26 @@ export default function TeamCardCanvas({ team, event }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const isLandscape = dimensions.width >= dimensions.height;
+    const wMm = isLandscape ? 240 : 150;
+    const hMm = isLandscape ? 150 : 240;
+
     try {
       const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
-      // Landscape PDF with 1200:750 aspect ratio (240mm × 150mm)
       const pdf = new jsPDF({
-        orientation: "landscape",
+        orientation: isLandscape ? "landscape" : "portrait",
         unit: "mm",
-        format: [240, 150],
+        format: [wMm, hMm],
       });
 
-      pdf.addImage(dataUrl, "JPEG", 0, 0, 240, 150, undefined, 'FAST');
+      pdf.addImage(dataUrl, "JPEG", 0, 0, wMm, hMm, undefined, 'FAST');
       pdf.save(`${teamName.replace(/\s+/g, "_")}_TeamCard.pdf`);
     } catch (err) {
       console.error("PDF generation failed:", err);
       try {
         const pngUrl = canvas.toDataURL("image/png");
-        const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [240, 150] });
-        pdf.addImage(pngUrl, "PNG", 0, 0, 240, 150);
+        const pdf = new jsPDF({ orientation: isLandscape ? "landscape" : "portrait", unit: "mm", format: [wMm, hMm] });
+        pdf.addImage(pngUrl, "PNG", 0, 0, wMm, hMm);
         pdf.save(`${teamName.replace(/\s+/g, "_")}_TeamCard.pdf`);
       } catch (err2) {
         console.error("Fallback PDF also failed:", err2);
@@ -596,8 +617,9 @@ export default function TeamCardCanvas({ team, event }) {
 
       <canvas
         ref={canvasRef}
-        className="mx-auto h-auto w-full max-w-[540px] aspect-[1200/750] rounded-xl border shadow-2xl"
+        className="mx-auto h-auto w-full max-w-[540px] rounded-xl border shadow-2xl"
         style={{
+          aspectRatio: `${dimensions.width} / ${dimensions.height}`,
           borderColor: `rgba(${r}, ${g}, ${b}, 0.35)`,
           boxShadow: `0 20px 40px rgba(${r}, ${g}, ${b}, 0.15)`
         }}

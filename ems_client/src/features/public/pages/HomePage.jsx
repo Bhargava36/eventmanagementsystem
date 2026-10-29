@@ -10,6 +10,7 @@ import TechTracksBentoSection from '../components/home/TechTracksBentoSection';
 import LogisticsAutomationSection from '../components/home/LogisticsAutomationSection';
 import OrganizerCtaSection from '../components/home/OrganizerCtaSection';
 import HomeFaqSection from '../components/home/HomeFaqSection';
+import PlatformTestimonialsSection from '../components/home/PlatformTestimonialsSection';
 import ParallaxStoryBackdrop from '../components/home/ParallaxStoryBackdrop';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -66,7 +67,10 @@ export default function HomePage() {
       {/* 6. Command Center: Interactive Three.js 3D Globe for Organizers */}
       <OrganizerCtaSection />
 
-      {/* 7. Knowledge Base: Transparent Operations FAQ */}
+      {/* 7. Community Voices: Real Crafter Testimonials & Reviews */}
+      <PlatformTestimonialsSection />
+
+      {/* 8. Knowledge Base: Transparent Operations FAQ */}
       <HomeFaqSection />
     </div>
   );

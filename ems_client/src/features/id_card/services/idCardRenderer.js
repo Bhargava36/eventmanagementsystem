@@ -53,25 +53,26 @@ export const replaceDynamicPlaceholders = (text, participant = {}, event = {}) =
   const psTitle = participant.ProblemStatement || participant.ProblemTitle || participant.psTitle || 'AI Automated Campus Optimization';
   const psDomain = participant.Category || participant.Domain || participant.psDomain || 'Software & AI';
   const members = Array.isArray(participant.members) ? participant.members : [];
-  const membersCount = members.length || participant.TeamSize || 4;
+  const hasRealMembers = members.length > 0;
+  const membersCount = hasRealMembers ? members.length : (participant.TeamSize || 4);
 
   const lead = members.find(m => (m.Role || '').toLowerCase().includes('lead')) || members[0] || {};
   const otherMembers = members.filter(m => m !== lead);
   const member1 = lead;
-  const member2 = otherMembers[0] || members[1] || {};
-  const member3 = otherMembers[1] || members[2] || {};
-  const member4 = otherMembers[2] || members[3] || {};
+  const member2 = otherMembers[0] || (members.length > 1 ? members[1] : {});
+  const member3 = otherMembers[1] || (members.length > 2 ? members[2] : {});
+  const member4 = otherMembers[2] || (members.length > 3 ? members[3] : {});
 
-  const teamLeadName = lead.UserName || lead.MemberName || participant.LeaderName || 'Alex Rivers';
+  const teamLeadName = lead.UserName || lead.MemberName || participant.LeaderName || (hasRealMembers ? '' : 'Alex Rivers');
   const m1Name = member1.UserName || member1.MemberName || teamLeadName;
-  const m2Name = member2.UserName || member2.MemberName || 'Priya Sharma';
-  const m3Name = member3.UserName || member3.MemberName || 'David Chen';
-  const m4Name = member4.UserName || member4.MemberName || 'Aisha Patel';
+  const m2Name = member2.UserName || member2.MemberName || (hasRealMembers ? '' : 'Priya Sharma');
+  const m3Name = member3.UserName || member3.MemberName || (hasRealMembers ? '' : 'David Chen');
+  const m4Name = member4.UserName || member4.MemberName || (hasRealMembers ? '' : 'Aisha Patel');
 
   const m1Role = member1.Role || 'TEAM LEADER';
-  const m2Role = member2.Role || 'MEMBER';
-  const m3Role = member3.Role || 'MEMBER';
-  const m4Role = member4.Role || 'MEMBER';
+  const m2Role = member2.Role || (hasRealMembers ? (member2.UserName ? 'MEMBER' : '') : 'MEMBER');
+  const m3Role = member3.Role || (hasRealMembers ? (member3.UserName ? 'MEMBER' : '') : 'MEMBER');
+  const m4Role = member4.Role || (hasRealMembers ? (member4.UserName ? 'MEMBER' : '') : 'MEMBER');
 
   const m1Roll = member1.RollNumber || member1.RollNo || '21A51A0501';
   const m2Roll = member2.RollNumber || member2.RollNo || '21A51A4205';
@@ -270,18 +271,49 @@ export const renderCardSide = async (
   const elements = Array.isArray(sideConfig.elements) ? [...sideConfig.elements] : [];
   elements.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
+  const isTeamCard = Array.isArray(participant?.members) || Boolean(participant?.TeamId && participant?.TeamName);
+  const actualMemberCount = (Array.isArray(participant?.members) && participant.members.length > 0)
+    ? participant.members.length
+    : (isTeamCard ? Number(participant.TeamSize || 4) : 0);
+
   // 3. Render each element
   for (const elem of elements) {
     if (elem.hidden) continue;
 
+    // Check dynamic visibility for member-specific elements on team cards
+    if (isTeamCard && actualMemberCount > 0) {
+      const isM4 = elem.id?.includes('member-4') || elem.dynamicField?.includes('member_4');
+      const isM3 = elem.id?.includes('member-3') || elem.dynamicField?.includes('member_3');
+      const isM2 = elem.id?.includes('member-2') || elem.dynamicField?.includes('member_2');
+
+      if (actualMemberCount < 4 && isM4) continue;
+      if (actualMemberCount < 3 && isM3) continue;
+      if (actualMemberCount < 2 && isM2) continue;
+    }
+
     ctx.save();
 
-    const x = Number(elem.x) || 0;
+    let x = Number(elem.x) || 0;
     const y = Number(elem.y) || 0;
     const w = Number(elem.width) || 100;
     const h = Number(elem.height) || 40;
     const rotation = (Number(elem.rotation) || 0) * (Math.PI / 180);
     const opacity = elem.opacity !== undefined ? Number(elem.opacity) : 1;
+
+    // Dynamically center team member cards if the team has 1, 2, or 3 members
+    if (isTeamCard && actualMemberCount > 0 && actualMemberCount < 4) {
+      const isM1 = elem.id?.includes('member-1') || elem.dynamicField?.includes('member_1') || elem.dynamicField === 'team_lead_photo';
+      const isM2 = elem.id?.includes('member-2') || elem.dynamicField?.includes('member_2');
+      const isM3 = elem.id?.includes('member-3') || elem.dynamicField?.includes('member_3');
+
+      if (actualMemberCount === 2 && (isM1 || isM2)) {
+        x = x + 174;
+      } else if (actualMemberCount === 3 && (isM1 || isM2 || isM3)) {
+        x = x + 87;
+      } else if (actualMemberCount === 1 && isM1) {
+        x = x + 260;
+      }
+    }
 
     ctx.globalAlpha = opacity;
 

@@ -41,6 +41,7 @@ const NotificationPage = lazy(() => import('../features/auth/pages/SuperAdmin/No
 const EventsDashboard = lazy(() => import('../features/auth/pages/SuperAdmin/EventsDashboard'));
 const SuperAdminProfile = lazy(() => import('../features/auth/pages/SuperAdmin/SuperAdminProfile'));
 const EventInfo = lazy(() => import('../features/auth/pages/SuperAdmin/EventInfo'));
+const AllUsersPage = lazy(() => import('../features/auth/pages/SuperAdmin/AllUsersPage'));
 
 // Admin Pages
 const AdminSidebar = lazy(() => import('../components/Organisms/AdminSidebar'));
@@ -58,6 +59,7 @@ const AccomodationRedirectPage = lazy(() => import('../features/auth/pages/Admin
 const FoodRedirectionPage = lazy(() => import('../features/auth/pages/Admin/FoodRedirectionPage'));
 const IdRedirectionPage = lazy(() => import('../features/auth/pages/Admin/IdRedirectionPage'));
 const IdDesignerPage = lazy(() => import('../features/auth/pages/Admin/IdDesignerPage'));
+const TeamCardDesignerPage = lazy(() => import('../features/auth/pages/Admin/TeamCardDesignerPage'));
 const Evaluators = lazy(() => import('../features/auth/pages/Admin/Evaluators'));
 const AdminResultsPage = lazy(() => import('../features/auth/pages/Admin/AdminResultsPage'));
 const EventBroadcastEmailer = lazy(() => import('../features/auth/pages/Admin/EventBroadcastEmailer'));
@@ -163,6 +165,7 @@ function App() {
                 <Route path="feedback" element={<FeedbackDashboard />} />
                 <Route path="notification" element={<NotificationPage />} />
                 <Route path="events" element={<EventsDashboard />} />
+                <Route path="users" element={<AllUsersPage />} />
                 <Route path="profile" element={<SuperAdminProfile />} />
                 <Route path="eventinfo/:id" element={<EventInfo />} />
                 <Route path="profile/:id" element={<SuperAdminProfile />} />
@@ -186,8 +189,8 @@ function App() {
                 <Route path="id-card" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdRedirectionPage /> </AdminModeRoute>} />
                 <Route path="id-card-designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage /> </AdminModeRoute>} />
                 <Route path="id-card/designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage /> </AdminModeRoute>} />
-                <Route path="team-card-designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage defaultCardType="team_card" /> </AdminModeRoute>} />
-                <Route path="team-card/designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage defaultCardType="team_card" /> </AdminModeRoute>} />
+                <Route path="team-card-designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <TeamCardDesignerPage /> </AdminModeRoute>} />
+                <Route path="team-card/designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <TeamCardDesignerPage /> </AdminModeRoute>} />
                 <Route path="evaluators" element={<Evaluators />} />
                 <Route path="broadcast-emailer" element={<EventBroadcastEmailer />} />
                 <Route path="physical-results" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AdminResultsPage track="Physical" /> </AdminModeRoute>} />

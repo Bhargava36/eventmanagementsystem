@@ -16,7 +16,8 @@ import {
   CircleUserRound,
   PanelLeftClose,
   PanelLeftOpen,
-  CircleX
+  CircleX,
+  Users
 } from 'lucide-react';
 
 const logoElement = (
@@ -113,6 +114,7 @@ const SidebarContent = ({
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
     { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: totalEvents, dot: false },
+    { name: 'Users', icon: Users, path: '/sidebar/users', badge: null },
     { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: null},
     { name: 'Feedback', icon: MessageCircleQuestion, path: '/sidebar/feedback', badge: null },
     { name: 'Profile', icon: CircleUserRound, path: profilePath, badge: null },

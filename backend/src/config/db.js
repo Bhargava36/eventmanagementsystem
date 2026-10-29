@@ -625,8 +625,19 @@ const migrationQueries = [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
     `ALTER TABLE feedback ADD COLUMN IF NOT EXISTS EventId INT NULL`,
-    `ALTER TABLE feedback ADD COLUMN IF NOT EXISTS AdminId INT NULL`
+    `ALTER TABLE feedback ADD COLUMN IF NOT EXISTS AdminId INT NULL`,
 
+    `CREATE TABLE IF NOT EXISTS platform_feedback (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        UserId INT NULL,
+        UserName VARCHAR(100) NOT NULL,
+        UserEmail VARCHAR(150) NULL,
+        Rating TINYINT NOT NULL,
+        Category VARCHAR(100) DEFAULT 'General Experience',
+        Comments TEXT NOT NULL,
+        Status VARCHAR(20) DEFAULT 'approved',
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 
 let isMigrating = false;

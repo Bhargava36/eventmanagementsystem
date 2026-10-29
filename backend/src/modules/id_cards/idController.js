@@ -162,6 +162,33 @@ const getParticipants = (req, res) => {
 };
 
 /**
+ * Get all registered teams with their members for team card designer
+ */
+const getTeams = (req, res) => {
+    const EventId = Number(req.params.eventId);
+    if (!Number.isInteger(EventId) || EventId <= 0) {
+        return res.status(400).json({
+            success: false,
+            message: "Valid Event ID is required."
+        });
+    }
+
+    idCardService.getTeamsByEvent(EventId, (err, teams) => {
+        if (err) {
+            console.error("Get teams error:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Failed to fetch event teams."
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            teams
+        });
+    });
+};
+
+/**
  * Start Batch Generation of ID cards
  */
 const startBatchGeneration = (req, res) => {
@@ -344,6 +371,7 @@ module.exports = {
     setDefaultTemplate,
     uploadAsset,
     getParticipants,
+    getTeams,
     startBatchGeneration,
     getBatchStatus,
     verifyParticipantId,

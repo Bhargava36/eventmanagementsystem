@@ -2,7 +2,7 @@ import React from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import IdCardDesigner from '@/features/id_card/components/IdCardDesigner';
 
-export default function IdDesignerPage({ defaultCardType = 'id_card' }) {
+export default function IdDesignerPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -16,19 +16,15 @@ export default function IdDesignerPage({ defaultCardType = 'id_card' }) {
 
   const eventId = searchParams.get('eventId')?.trim() || getAssignedEventId();
   const templateId = searchParams.get('templateId')?.trim() || null;
-  const cardType = searchParams.get('cardType')?.trim() || searchParams.get('type')?.trim() || defaultCardType;
 
   return (
     <IdCardDesigner
       eventId={eventId}
       initialTemplateId={templateId}
-      initialCardType={cardType}
+      initialCardType="id_card"
+      lockCardType={true}
       onBack={() => {
-        if (cardType === 'team_card') {
-          navigate(`/admin/physical-event?eventId=${encodeURIComponent(eventId)}`);
-        } else {
-          navigate(`/admin/id-card?eventId=${encodeURIComponent(eventId)}`);
-        }
+        navigate(`/admin/id-card?eventId=${encodeURIComponent(eventId)}`);
       }}
     />
   );

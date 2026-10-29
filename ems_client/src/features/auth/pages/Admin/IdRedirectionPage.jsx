@@ -1170,6 +1170,8 @@ export default function IdRedirectionPage() {
           <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-2xl h-[calc(100vh-140px)] min-h-[680px]">
             <IdCardDesigner
               eventId={eventId}
+              initialCardType="id_card"
+              lockCardType={true}
               onBack={() => {
                 setActiveView("id-cards");
                 loadData();

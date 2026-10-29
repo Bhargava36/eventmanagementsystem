@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import useAuth from '../../../../Hooks/useAuth';
 import ByteEmptyState from '../../../../components/Molecules/ByteEmptyState';
+import UserPlatformFeedbackCard from './components/UserPlatformFeedbackCard';
 import {
   Calendar,
   Users,
@@ -249,6 +250,11 @@ export default function UserDashboard() {
               })}
             </div>
           )}
+        </motion.section>
+
+        {/* ── PLATFORM EXPERIENCE FEEDBACK ── */}
+        <motion.section {...fadeUp(0.16)}>
+          <UserPlatformFeedbackCard user={user} />
         </motion.section>
 
         {/* ── QUICK LINKS ── */}

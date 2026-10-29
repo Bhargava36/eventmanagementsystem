@@ -1505,6 +1505,77 @@ const getParticipantsByEvent = (EventId, callback) => {
 };
 
 /**
+ * Get all registered teams with their members for an event
+ */
+const getTeamsByEvent = (EventId, callback) => {
+    const query = `
+        SELECT 
+            t.Id AS TeamId,
+            t.TeamName,
+            t.College,
+            t.State,
+            t.Tech_Stack,
+            t.TeamSize,
+            ps.Title AS ProblemStatement,
+            ps.Category AS ProblemCategory,
+            u.UserName AS LeaderName,
+            u.Email AS LeaderEmail,
+            tm.UserId,
+            COALESCE(NULLIF(tm.MemberName, ''), u2.UserName, 'Member') AS UserName,
+            COALESCE(NULLIF(tm.MemberEmail, ''), u2.Email, '') AS Email,
+            COALESCE(NULLIF(tm.Role, ''), CASE WHEN t.TeamLeadUserId = tm.UserId THEN 'Team Leader' ELSE 'Member' END) AS Role,
+            COALESCE(NULLIF(tm.MemberCollege, ''), u2.College, t.College, '') AS MemberCollege,
+            COALESCE(tm.Photo, u2.Photo, '') AS Photo
+        FROM registered_teams t
+        LEFT JOIN users u ON t.TeamLeadUserId = u.Id
+        LEFT JOIN registered_team_members tm ON tm.TeamId = t.Id
+        LEFT JOIN users u2 ON u2.Id = tm.UserId
+        LEFT JOIN problem_statements ps ON ps.Id = t.ProblemStatementId
+        WHERE t.EventId = ?
+        ORDER BY t.Id, CASE WHEN LOWER(COALESCE(tm.Role, '')) LIKE '%lead%' OR t.TeamLeadUserId = tm.UserId THEN 1 ELSE 2 END, tm.Id
+    `;
+
+    db.query(query, [EventId], (err, rows) => {
+        if (err) {
+            console.error("Get teams error:", err);
+            return callback(err, null);
+        }
+
+        const teamsMap = {};
+        (rows || []).forEach((r, idx) => {
+            if (!teamsMap[r.TeamId]) {
+                teamsMap[r.TeamId] = {
+                    TeamId: r.TeamId,
+                    TeamName: r.TeamName,
+                    College: r.College,
+                    State: r.State,
+                    LeaderName: r.LeaderName,
+                    LeaderEmail: r.LeaderEmail,
+                    TeamSize: r.TeamSize,
+                    ProblemStatement: r.ProblemStatement || r.Tech_Stack || 'Campus Innovation Challenge',
+                    Category: r.ProblemCategory || 'Software & AI',
+                    Placement: `Desk ${r.TeamId}`,
+                    Direction: 'Main Arena',
+                    members: []
+                };
+            }
+            if (r.UserId || r.UserName) {
+                teamsMap[r.TeamId].members.push({
+                    UserId: r.UserId,
+                    UserName: r.UserName,
+                    Email: r.Email,
+                    Role: r.Role,
+                    College: r.MemberCollege,
+                    Photo: r.Photo
+                });
+            }
+        });
+
+        return callback(null, Object.values(teamsMap));
+    });
+};
+
+/**
  * Start or update batch generation and assign secure unique tokens
  */
 const startBatchGeneration = (EventId, { templateId = null, participantIds = null }, callback) => {
@@ -1797,6 +1868,7 @@ module.exports = {
     deleteTemplate,
     setDefaultTemplate,
     getParticipantsByEvent,
+    getTeamsByEvent,
     startBatchGeneration,
     getBatchStatus,
     verifyParticipantId,

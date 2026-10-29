@@ -46,9 +46,10 @@ const loginUser = (Email, callback) => {
 
 const getAllUsers = (callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.CreatedAt, u.Photo, r.RoleName 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.CreatedAt, u.Photo, r.RoleName, e.EventName 
         FROM users u 
         JOIN roles r ON u.RoleId = r.Id 
+        LEFT JOIN events e ON u.EventId = e.Id
         ORDER BY u.CreatedAt DESC
     `;
     db.query(query, (err, result) => {

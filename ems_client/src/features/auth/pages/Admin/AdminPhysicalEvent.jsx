@@ -37,6 +37,7 @@ import {
   Palette
 } from 'lucide-react';
 import { getThemeIcon } from '@/components/Molecules/PhysicalHackathonThemesSection';
+import { isSoloTeamSize } from '@/lib/utils';
 
 const readApiResponse = async (response, fallbackMessage) => {
   const body = await response.text();
@@ -1568,11 +1569,30 @@ function AdminPhysicalEvent() {
 
                   <button
                     type="button"
-                    onClick={() => navigate(`/admin/team-card-designer?eventId=${encodeURIComponent(eventId)}`)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 dark:bg-cyan-950/40 dark:hover:bg-cyan-900/40 px-4 py-2.5 text-xs sm:text-sm font-bold text-cyan-600 dark:text-cyan-300 shadow-xs transition cursor-pointer"
+                    onClick={() => {
+                      if (!isSoloTeamSize(eventDetails?.TeamSize)) {
+                        navigate(`/admin/team-card-designer?eventId=${encodeURIComponent(eventId)}`);
+                      }
+                    }}
+                    disabled={isSoloTeamSize(eventDetails?.TeamSize)}
+                    title={
+                      !isSoloTeamSize(eventDetails?.TeamSize)
+                        ? 'Open Visual Team Card Designer'
+                        : 'Team Card Designer is disabled because this is an Individual event'
+                    }
+                    className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs sm:text-sm font-bold shadow-xs transition ${
+                      !isSoloTeamSize(eventDetails?.TeamSize)
+                        ? 'border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 dark:bg-cyan-950/40 dark:hover:bg-cyan-900/40 text-cyan-600 dark:text-cyan-300 cursor-pointer'
+                        : 'border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-850 text-slate-400 dark:text-zinc-600 cursor-not-allowed opacity-60'
+                    }`}
                   >
-                    <Palette className="h-4 w-4 text-cyan-500" />
+                    <Palette className={`h-4 w-4 ${!isSoloTeamSize(eventDetails?.TeamSize) ? 'text-cyan-500' : 'text-slate-400 dark:text-zinc-600'}`} />
                     <span>Team Card Designer</span>
+                    {isSoloTeamSize(eventDetails?.TeamSize) && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-500 font-normal">
+                        Team Events Only
+                      </span>
+                    )}
                   </button>
 
                   <button

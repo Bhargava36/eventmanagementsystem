@@ -20,6 +20,7 @@ router.post("/events/:eventId/batches/start", idCardController.startBatchGenerat
 router.get("/events/:eventId/batches/:batchId/status", idCardController.getBatchStatus);
 router.post("/events/:eventId/generate", idCardController.generateIdCards);
 router.get("/events/:eventId/participants", idCardController.getParticipants);
+router.get("/events/:eventId/teams", idCardController.getTeams);
 
 // QR Verification (Supports token or query params)
 router.get("/verify", idCardController.verifyParticipantId);

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Calendar, MessageSquare, Send, Star } from 'lucide-react';
+import { Calendar, MessageSquare, Send, Star, Award } from 'lucide-react';
+import { apiUrl } from '../../../../lib/api';
 
 export default function UserFeedback() {
   const [formData, setFormData] = useState({
@@ -12,28 +13,48 @@ export default function UserFeedback() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({...prevData, [name]: value,}));
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
-  const handleRating = (rating) => { setFormData((prevData) => ({...prevData, rating,})); };
+
+  const handleRating = (rating) => {
+    setFormData((prevData) => ({ ...prevData, rating }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
     setMessageType('');
-    if (!formData.name.trim() || !formData.eventName.trim() || !formData.category.trim()) {
-      setMessage('Please fill in all required fields.');
+
+    if (!formData.name.trim()) {
+      setMessage('Please enter your name.');
       setMessageType('error');
       return;
     }
+
+    if (!formData.eventName.trim()) {
+      setMessage('Please enter the event name.');
+      setMessageType('error');
+      return;
+    }
+
+    if (!formData.category.trim()) {
+      setMessage('Please select or enter an event category.');
+      setMessageType('error');
+      return;
+    }
+
     if (formData.rating < 1 || formData.rating > 5) {
       setMessage('Please select a star rating from 1 to 5.');
       setMessageType('error');
       return;
     }
+
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/feedback', {
+      const response = await fetch(apiUrl('/api/feedback'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,11 +67,13 @@ export default function UserFeedback() {
           comments: formData.comments.trim(),
         }),
       });
+
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to submit feedback.');
+        throw new Error(data.message || 'Failed to submit event feedback.');
       }
-      setMessage(data.message || 'Feedback submitted successfully!');
+
+      setMessage('Thank you! Your event feedback has been submitted directly to the event organizers.');
       setMessageType('success');
       setFormData({
         name: '',
@@ -60,32 +83,40 @@ export default function UserFeedback() {
         comments: '',
       });
     } catch (error) {
-      console.error('Feedback submission error:', error);
-      setMessage(error.message || 'Unable to submit feedback. Please try again.');
+      console.error('Event feedback submission error:', error);
+      setMessage(error.message || 'Unable to submit feedback. Please verify the event name.');
       setMessageType('error');
     } finally {
       setLoading(false);
     }
   };
 
+  const eventCategories = [
+    'Event Organization',
+    'Judging & Mentorship',
+    'Facilities & Venue',
+    'Problem Statements',
+    'Overall Event Rating',
+  ];
+
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 p-4 md:p-6 lg:p-10 font-sans transition-colors duration-200">
-      <div className="w-full max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center gap-4 mb-6">
+      <div className="w-full max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center gap-4 mb-2">
           <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-            <MessageSquare className="h-8 w-8" strokeWidth={2} />
+            <Award className="h-8 w-8" strokeWidth={2} />
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                Event Feedback
+                Event Experience Feedback
               </h1>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold border uppercase tracking-wider border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
-                Participant
+                For Event Admins
               </span>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-              Share your experience with an event you registered for.
+              Share your experience and feedback for hackathons and competitions with their organizers.
             </p>
           </div>
         </div>
@@ -96,10 +127,10 @@ export default function UserFeedback() {
               <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <div>
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                  Tell us how it went
+                  Event Review Form
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                  Your feedback helps organizers make future events even better.
+                  Your feedback helps hackathon organizers improve future rounds and logistics.
                 </p>
               </div>
             </div>
@@ -110,7 +141,7 @@ export default function UserFeedback() {
               <div className="grid gap-5 sm:grid-cols-2">
                 <label className="block space-y-2">
                   <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                    Name <span className="text-red-500">*</span>
+                    Your Name <span className="text-red-500">*</span>
                   </span>
 
                   <input
@@ -138,16 +169,33 @@ export default function UserFeedback() {
                     onChange={handleChange}
                     required
                     maxLength={255}
-                    placeholder="Enter event name"
+                    placeholder="Enter registered event name"
                     className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
                   />
                 </label>
               </div>
 
-              <label className="block space-y-2">
+              <div className="space-y-2">
                 <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                  Feedback Category <span className="text-red-500">*</span>
+                  Event Category <span className="text-red-500">*</span>
                 </span>
+
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {eventCategories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, category: cat }))}
+                      className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
+                        formData.category === cat
+                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold'
+                          : 'border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 hover:border-slate-300 dark:hover:border-zinc-700'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
 
                 <input
                   type="text"
@@ -156,18 +204,14 @@ export default function UserFeedback() {
                   onChange={handleChange}
                   required
                   maxLength={100}
-                  placeholder="e.g. Event Organization, Technical Issues"
+                  placeholder="e.g. Event Organization, Mentorship"
                   className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
                 />
-
-                <span className="block text-xs text-slate-500 dark:text-zinc-500">
-                  Enter the category related to your feedback.
-                </span>
-              </label>
+              </div>
 
               <fieldset className="space-y-3">
                 <legend className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                  5 Star Rating <span className="text-red-500">*</span>
+                  Event Rating <span className="text-red-500">*</span>
                 </legend>
 
                 <div className="flex flex-wrap items-center gap-1">
@@ -191,9 +235,7 @@ export default function UserFeedback() {
                   ))}
 
                   <span className="ml-2 text-xs font-semibold text-slate-500 dark:text-zinc-400">
-                    {formData.rating > 0
-                      ? `${formData.rating}/5 Stars`
-                      : 'Select a rating'}
+                    {formData.rating > 0 ? `${formData.rating}/5 Stars` : 'Select a rating'}
                   </span>
                 </div>
               </fieldset>
@@ -210,9 +252,9 @@ export default function UserFeedback() {
                   name="comments"
                   value={formData.comments}
                   onChange={handleChange}
-                  rows={5}
+                  rows={4}
                   maxLength={2000}
-                  placeholder="Tell us what you liked or what could be improved..."
+                  placeholder="Tell event organizers what you liked or what could be improved..."
                   className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 resize-y"
                 />
 
@@ -242,7 +284,7 @@ export default function UserFeedback() {
                   className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Send className="h-3.5 w-3.5" />
-                  {loading ? 'Submitting...' : 'Submit Feedback'}
+                  {loading ? 'Submitting...' : 'Submit Event Feedback'}
                 </button>
               </div>
             </form>

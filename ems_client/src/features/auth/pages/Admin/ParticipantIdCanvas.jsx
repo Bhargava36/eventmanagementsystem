@@ -1,8 +1,10 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from '@/lib/api';
 import { QRCodeSVG } from "qrcode.react";
 import { Printer, Download, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
+import { renderCardSide } from "@/features/id_card/services/idCardRenderer";
+import { CARD_SIZES } from "@/features/id_card/components/IdCardDesigner";
 
 const getValue = (obj, ...keys) => {
   for (const key of keys) {
@@ -56,11 +58,20 @@ const RENDER_SCALE = 2;
 export default function ParticipantIdCanvas({
   participant,
   event,
-  eventId,
+  eventId: propEventId,
   cardNumber,
 }) {
   const canvasRef = useRef(null);
   const qrRef = useRef(null);
+  const [usingCustomTemplate, setUsingCustomTemplate] = useState(false);
+  const [dimensions, setDimensions] = useState({ width: 380, height: 600 });
+
+  const eventId =
+    propEventId ||
+    event?.EventId ||
+    participant?.EventId ||
+    (event?.Id && event.Id !== (participant?.UserId || participant?.Id) ? event.Id : "") ||
+    "";
 
   const name =
     getValue(
@@ -129,7 +140,7 @@ export default function ParticipantIdCanvas({
   useEffect(() => {
     let cancelled = false;
 
-    const drawCard = async () => {
+    const drawBuiltInCard = async () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -400,7 +411,82 @@ export default function ParticipantIdCanvas({
       ctx.restore(); // Restore scale
     };
 
-    drawCard();
+    const drawIdCard = async () => {
+      if (cancelled) return;
+
+      if (eventId) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/templates?cardType=id_card`);
+          if (res.ok) {
+            const data = await res.json();
+            const templates = data?.templates || [];
+            const activeTpl = templates.find((t) => t.IsActive) || templates[0];
+            let frontConfig = activeTpl?.FrontConfig;
+            if (typeof frontConfig === 'string') {
+              try {
+                frontConfig = JSON.parse(frontConfig);
+              } catch (e) {
+                console.error("Error parsing ID Card FrontConfig:", e);
+              }
+            }
+
+            if (frontConfig && typeof frontConfig === 'object' && Array.isArray(frontConfig.elements) && canvasRef.current) {
+              setUsingCustomTemplate(true);
+              const participantData = {
+                ...participant,
+                ParticipantName: name,
+                UserName: name,
+                FullName: name,
+                name: name,
+                College: college,
+                CollegeName: college,
+                TeamName: team,
+                teamName: team,
+                IdCardNumber: cardNumber,
+                UserId: userId,
+                photo: photo,
+                Photo: photo,
+                ProfileImage: photo,
+                qr_code: verificationUrl,
+                event_name: eventName,
+                EventName: eventName,
+                event_date: event?.EventDate || event?.Date || '2026',
+                department: participant?.Department || participant?.Branch || 'Engineering & Technology'
+              };
+
+              const orientation = activeTpl?.Orientation || frontConfig?.orientation || 'portrait';
+              const matchedSize = (CARD_SIZES || []).find(s => s.id === (frontConfig?.cardSizeId || activeTpl?.CardSizeId)) || { portrait: { width: 380, height: 600 }, landscape: { width: 600, height: 380 } };
+              const sizeObj = matchedSize[orientation] || matchedSize.portrait || { width: 380, height: 600 };
+              const cardWidth = sizeObj.width;
+              const cardHeight = sizeObj.height;
+              setDimensions({ width: cardWidth, height: cardHeight });
+
+              await renderCardSide(
+                canvasRef.current,
+                frontConfig,
+                participantData,
+                event || participant || {},
+                {
+                  scale: 2,
+                  cardWidth,
+                  cardHeight,
+                  previewMode: true
+                }
+              );
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn("Failed to load custom ID card template, using built-in design:", err);
+        }
+      }
+
+      setUsingCustomTemplate(false);
+      setDimensions({ width: BASE_W, height: BASE_H });
+      await drawBuiltInCard();
+    };
+
+    drawIdCard();
 
     return () => {
       cancelled = true;
@@ -409,6 +495,9 @@ export default function ParticipantIdCanvas({
     name,
     college,
     team,
+    userId,
+    eventId,
+    event,
     primaryColor,
     secondaryColor,
     r,
@@ -421,28 +510,38 @@ export default function ParticipantIdCanvas({
     customBackgroundUrl,
   ]);
 
-  // Direct PDF Download (ISO 216 Standard A6: 105 mm × 148 mm)
+  // Direct PDF Download (Responsive to portrait / landscape template)
   const downloadPdf = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     try {
       const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      const isLandscape = dimensions.width > dimensions.height;
+      const pdfW = isLandscape ? 148 : 105;
+      const pdfH = isLandscape ? 105 : 148;
       const pdf = new jsPDF({
-        orientation: "portrait",
+        orientation: isLandscape ? "landscape" : "portrait",
         unit: "mm",
-        format: "a6", // 105mm × 148mm
+        format: [pdfW, pdfH],
       });
 
-      pdf.addImage(dataUrl, "JPEG", 0, 0, 105, 148, undefined, 'FAST');
+      pdf.addImage(dataUrl, "JPEG", 0, 0, pdfW, pdfH, undefined, 'FAST');
       pdf.save(`${name.replace(/\s+/g, "_")}_IDCard.pdf`);
     } catch (err) {
       console.error("PDF generation error:", err);
       try {
         // Fallback: try raw PNG
         const pngUrl = canvas.toDataURL("image/png");
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a6" });
-        pdf.addImage(pngUrl, "PNG", 0, 0, 105, 148);
+        const isLandscape = dimensions.width > dimensions.height;
+        const pdfW = isLandscape ? 148 : 105;
+        const pdfH = isLandscape ? 105 : 148;
+        const pdf = new jsPDF({
+          orientation: isLandscape ? "landscape" : "portrait",
+          unit: "mm",
+          format: [pdfW, pdfH]
+        });
+        pdf.addImage(pngUrl, "PNG", 0, 0, pdfW, pdfH);
         pdf.save(`${name.replace(/\s+/g, "_")}_IDCard.pdf`);
       } catch (err2) {
         console.error("Fallback PDF also failed:", err2);
@@ -518,22 +617,28 @@ export default function ParticipantIdCanvas({
         <QRCodeSVG value={verificationUrl} size={180} level="M" />
       </div>
 
-      {/* A6 Dimension Badge */}
+      {/* Dimension & Custom Template Badge */}
       <div className="mb-2 flex items-center justify-between text-[11px] font-semibold text-slate-400">
         <span className="inline-flex items-center gap-1" style={{ color: primaryColor }}>
           <FileText className="h-3 w-3" />
-          <span>A6 Participant Pass</span>
+          <span>Participant ID Pass</span>
+          {usingCustomTemplate && (
+            <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              Custom Designed
+            </span>
+          )}
         </span>
         <span className="font-mono text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-0.5 rounded-md">
-          105 × 148 mm (300 DPI)
+          {usingCustomTemplate ? 'Designer Template' : '105 × 148 mm (300 DPI)'}
         </span>
       </div>
 
       <canvas
         ref={canvasRef}
-        aria-label={`Official A6 ID Pass for ${name}`}
-        className="mx-auto h-auto w-full max-w-[340px] aspect-[105/148] rounded-2xl border shadow-2xl"
+        aria-label={`Official ID Pass for ${name}`}
+        className="mx-auto h-auto w-full max-w-[340px] rounded-2xl border shadow-2xl"
         style={{
+          aspectRatio: `${dimensions.width} / ${dimensions.height}`,
           borderColor: `rgba(${r}, ${g}, ${b}, 0.35)`,
           boxShadow: `0 20px 40px rgba(${r}, ${g}, ${b}, 0.15)`
         }}
