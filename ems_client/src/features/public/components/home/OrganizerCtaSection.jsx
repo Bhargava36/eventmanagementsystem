@@ -1,399 +1,501 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import * as THREE from 'three';
-import { animate } from 'animejs';
-import gsap from 'gsap';
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import { motion, useInView } from "framer-motion";
 import {
-  Building2,
   Check,
   ArrowRight,
+  Sparkles,
+  QrCode,
+  ScanLine,
+  Sliders,
+  Radio,
   ShieldCheck,
-  Cpu,
-  Globe2,
+  Zap,
+  Building2,
   Users2,
-  Layers,
-} from 'lucide-react';
+  Clock,
+  Send,
+  Lock,
+  ChevronRight,
+  TrendingUp,
+} from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function OrganizerCtaSection() {
-  const mountRef = useRef(null);
   const containerRef = useRef(null);
+  const isInView = useInView(containerRef, { once: true, margin: "-60px" });
 
-  // Stats refs for Anime.js counter animations
-  const stat1Ref = useRef(null);
-  const stat2Ref = useRef(null);
-  const stat3Ref = useRef(null);
-  const statValues = useRef({ hackathons: 0, universities: 0, builders: 0 });
-
-  // 1. Three.js Interactive 3D Ayojan Network Sphere
-  useEffect(() => {
-    const container = mountRef.current;
-    if (!container) return;
-
-    const width = container.clientWidth || 450;
-    const height = container.clientHeight || 450;
-
-    // Scene, Camera, Renderer
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.z = 7.5;
-
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
-
-    // Group for mouse rotation
-    const globeGroup = new THREE.Group();
-    scene.add(globeGroup);
-
-    // Core Wireframe Icosahedron (Ayojan Network Core)
-    const icoGeometry = new THREE.IcosahedronGeometry(2.3, 2);
-    const icoMaterial = new THREE.MeshBasicMaterial({
-      color: 0x10b981,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.22,
-    });
-    const icoMesh = new THREE.Mesh(icoGeometry, icoMaterial);
-    globeGroup.add(icoMesh);
-
-    // Inner Glowing Core Sphere
-    const innerGeo = new THREE.SphereGeometry(1.4, 16, 16);
-    const innerMat = new THREE.MeshBasicMaterial({
-      color: 0x059669,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.35,
-    });
-    const innerSphere = new THREE.Mesh(innerGeo, innerMat);
-    globeGroup.add(innerSphere);
-
-    // Outer Orbital Ring 1
-    const ringGeo1 = new THREE.TorusGeometry(3.1, 0.015, 16, 100);
-    const ringMat1 = new THREE.MeshBasicMaterial({
-      color: 0x34d399,
-      transparent: true,
-      opacity: 0.45,
-    });
-    const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
-    ring1.rotation.x = Math.PI / 3;
-    ring1.rotation.y = Math.PI / 6;
-    globeGroup.add(ring1);
-
-    // Outer Orbital Ring 2
-    const ringGeo2 = new THREE.TorusGeometry(3.3, 0.012, 16, 100);
-    const ringMat2 = new THREE.MeshBasicMaterial({
-      color: 0x059669,
-      transparent: true,
-      opacity: 0.3,
-    });
-    const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
-    ring2.rotation.x = -Math.PI / 4;
-    ring2.rotation.y = Math.PI / 3;
-    globeGroup.add(ring2);
-
-    // Network Node Vertices (Points representing Hackathon Hubs)
-    const nodeCount = 50;
-    const nodePositions = new Float32Array(nodeCount * 3);
-    for (let i = 0; i < nodeCount; i++) {
-      const phi = Math.acos(-1 + (2 * i) / nodeCount);
-      const theta = Math.sqrt(nodeCount * Math.PI) * phi;
-      const radius = 2.3;
-      nodePositions[i * 3] = radius * Math.cos(theta) * Math.sin(phi);
-      nodePositions[i * 3 + 1] = radius * Math.sin(theta) * Math.sin(phi);
-      nodePositions[i * 3 + 2] = radius * Math.cos(phi);
-    }
-    const nodeGeometry = new THREE.BufferGeometry();
-    nodeGeometry.setAttribute('position', new THREE.BufferAttribute(nodePositions, 3));
-    const nodeMaterial = new THREE.PointsMaterial({
-      color: 0x6ee7b7,
-      size: 0.12,
-      transparent: true,
-      opacity: 0.9,
-    });
-    const nodePoints = new THREE.Points(nodeGeometry, nodeMaterial);
-    globeGroup.add(nodePoints);
-
-    // Floating Data Packets orbiting around
-    const particleCount = 40;
-    const particlePositions = new Float32Array(particleCount * 3);
-    for (let i = 0; i < particleCount; i++) {
-      const r = 2.8 + Math.random() * 0.8;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.random() * Math.PI;
-      particlePositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-      particlePositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      particlePositions[i * 3 + 2] = r * Math.cos(phi);
-    }
-    const particleGeo = new THREE.BufferGeometry();
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    const particleMat = new THREE.PointsMaterial({
-      color: 0x10b981,
-      size: 0.08,
-      transparent: true,
-      opacity: 0.7,
-    });
-    const particles = new THREE.Points(particleGeo, particleMat);
-    globeGroup.add(particles);
-
-    // Mouse Interaction
-    let targetRotX = 0;
-    let targetRotY = 0;
-    const handleMouseMove = (e) => {
-      const rect = container.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
-      targetRotY = x * 0.8;
-      targetRotX = -y * 0.6;
-    };
-    container.addEventListener('mousemove', handleMouseMove);
-
-    // Animation Loop
-    let animationFrameId;
-
-    const animateScene = () => {
-      animationFrameId = requestAnimationFrame(animateScene);
-
-      // Idle Rotation
-      globeGroup.rotation.y += 0.004;
-      ring1.rotation.z += 0.005;
-      ring2.rotation.z -= 0.004;
-      innerSphere.rotation.y -= 0.006;
-
-      // Smooth mouse follow interpolation
-      globeGroup.rotation.x += (targetRotX - globeGroup.rotation.x) * 0.05;
-      globeGroup.rotation.y += (targetRotY * 0.5 - (globeGroup.rotation.y % (Math.PI * 2))) * 0.02;
-
-      renderer.render(scene, camera);
-    };
-    animateScene();
-
-    // Resize Handler
-    const handleResize = () => {
-      if (!container) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      container.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', handleResize);
-      renderer.dispose();
-      icoGeometry.dispose();
-      icoMaterial.dispose();
-      innerGeo.dispose();
-      innerMat.dispose();
-      ringGeo1.dispose();
-      ringMat1.dispose();
-      ringGeo2.dispose();
-      ringMat2.dispose();
-      nodeGeometry.dispose();
-      nodeMaterial.dispose();
-      particleGeo.dispose();
-      particleMat.dispose();
-      if (container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
-      }
-    };
-  }, []);
-
-  // 2. Anime.js Stats Ticker Animation Function
-  const triggerStats = () => {
-    statValues.current = { hackathons: 0, universities: 0, builders: 0 };
-    try {
-      animate(statValues.current, {
-        hackathons: 250,
-        universities: 48,
-        builders: 15400,
-        duration: 2000,
-        ease: 'outExpo',
-        onUpdate: () => {
-          if (stat1Ref.current) stat1Ref.current.innerText = `${Math.floor(statValues.current.hackathons)}+`;
-          if (stat2Ref.current) stat2Ref.current.innerText = `${Math.floor(statValues.current.universities)}`;
-          if (stat3Ref.current) stat3Ref.current.innerText = `${Math.floor(statValues.current.builders).toLocaleString()}+`;
-        },
-      });
-    } catch (e) {
-      if (stat1Ref.current) stat1Ref.current.innerText = '250+';
-      if (stat2Ref.current) stat2Ref.current.innerText = '48';
-      if (stat3Ref.current) stat3Ref.current.innerText = '15,400+';
-    }
+  // Mouse tracking for ambient laser glow
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+  const handleMouseMove = (e) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setMousePos({ x, y });
   };
 
+  // Station 1: Turnstile Gate Scan Simulator State
+  const [scanCount, setScanCount] = useState(148);
+  const [isScanning, setIsScanning] = useState(false);
+  const [recentPass, setRecentPass] = useState({
+    name: "Arjun Verma",
+    roll: "22A91A0582",
+    track: "AI & Neural Systems",
+    status: "PASS_VERIFIED",
+  });
+
+  const triggerScan = () => {
+    if (isScanning) return;
+    setIsScanning(true);
+    const mockNames = [
+      { name: "Sneha Reddy", roll: "22A91A05F4", track: "Fullstack Cloud" },
+      { name: "Rohit Nair", roll: "22A91A0512", track: "Cybersecurity" },
+      { name: "Pooja Sharma", roll: "22A91A0599", track: "FinTech & Web3" },
+      { name: "Kiran Kumar", roll: "22A91A0536", track: "Open Innovation" },
+    ];
+    const picked = mockNames[Math.floor(Math.random() * mockNames.length)];
+    setTimeout(() => {
+      setScanCount((prev) => prev + 1);
+      setRecentPass({ ...picked, status: "PASS_VERIFIED" });
+      setIsScanning(false);
+    }, 450);
+  };
+
+  // Station 2: Live Jury Rubric Interactive Sliders State
+  const [scores, setScores] = useState({
+    tech: 94,
+    ux: 90,
+    impact: 95,
+  });
+  const compositeScore = (
+    (scores.tech * 0.4 + scores.ux * 0.3 + scores.impact * 0.3)
+  ).toFixed(1);
+
+  // Station 3: Emergency Dispatch & Broadcast Simulator State
+  const [dispatchLog, setDispatchLog] = useState([
+    {
+      id: 1,
+      title: "Round 2 Shortlist Published",
+      time: "2m ago",
+      channel: "SMS + Push + Portal",
+    },
+    {
+      id: 2,
+      title: "Mentorship Lab 03 Doors Open",
+      time: "8m ago",
+      channel: "Digital Displays",
+    },
+    {
+      id: 3,
+      title: "Hostel Meal Tokens Activated",
+      time: "24m ago",
+      channel: "Turnstile Badge",
+    },
+  ]);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+
+  const triggerBroadcast = () => {
+    if (isBroadcasting) return;
+    setIsBroadcasting(true);
+    setTimeout(() => {
+      setDispatchLog((prev) => [
+        {
+          id: Date.now(),
+          title: "Flash Notice: Jury Evaluation Commenced",
+          time: "Just now",
+          channel: "Omni-Channel Broadcast",
+        },
+        ...prev.slice(0, 2),
+      ]);
+      setIsBroadcasting(false);
+    }, 500);
+  };
+
+  // Database Stats
+  const [stats, setStats] = useState({
+    eventsCount: 6,
+    collegesCount: 4,
+    buildersCount: 44,
+  });
+
   useEffect(() => {
-    triggerStats();
-  }, []);
-
-  // 3. GSAP ScrollTrigger Scroll-Reveal & Button Hover
-  const btnPrimaryRef = useRef(null);
-  const btnSecondaryRef = useRef(null);
-  const leftColRef = useRef(null);
-  const rightColRef = useRef(null);
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Left column reveal (re-triggers whenever on screen)
-      if (leftColRef.current) {
-        gsap.from(leftColRef.current, {
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: 'top 88%',
-            end: 'bottom 12%',
-            toggleActions: 'play reverse play reverse',
-            onEnter: triggerStats,
-            onEnterBack: triggerStats,
-          },
-          y: 40,
-          opacity: 0,
-          duration: 0.85,
-          ease: 'power3.out',
-        });
+    let isMounted = true;
+    const fetchStats = async () => {
+      const endpoints = [
+        `${API_BASE_URL}/api/events/public-stats`,
+        "/api/events/public-stats",
+      ];
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.stats && isMounted) {
+              setStats({
+                eventsCount: Math.max(1, Number(data.stats.eventsCount || 6)),
+                collegesCount: Math.max(1, Number(data.stats.collegesCount || 4)),
+                buildersCount: Math.max(1, Number(data.stats.buildersCount || 44)),
+              });
+              return;
+            }
+          }
+        } catch {}
       }
-
-      // Right 3D globe reveal (re-triggers whenever on screen)
-      if (rightColRef.current) {
-        gsap.from(rightColRef.current, {
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: 'top 88%',
-            end: 'bottom 12%',
-            toggleActions: 'play reverse play reverse',
-          },
-          scale: 0.9,
-          opacity: 0,
-          duration: 1,
-          ease: 'power3.out',
-        });
-      }
-    }, containerRef);
-
-    const btn1 = btnPrimaryRef.current;
-    const btn2 = btnSecondaryRef.current;
-    if (!btn1 || !btn2) return () => ctx.revert();
-
-    const onEnter1 = () => gsap.to(btn1, { scale: 1.03, duration: 0.25, ease: 'power2.out' });
-    const onLeave1 = () => gsap.to(btn1, { scale: 1, duration: 0.25, ease: 'power2.out' });
-    const onEnter2 = () => gsap.to(btn2, { scale: 1.03, duration: 0.25, ease: 'power2.out' });
-    const onLeave2 = () => gsap.to(btn2, { scale: 1, duration: 0.25, ease: 'power2.out' });
-
-    btn1.addEventListener('mouseenter', onEnter1);
-    btn1.addEventListener('mouseleave', onLeave1);
-    btn2.addEventListener('mouseenter', onEnter2);
-    btn2.addEventListener('mouseleave', onLeave2);
-
+    };
+    fetchStats();
     return () => {
-      ctx.revert();
-      btn1.removeEventListener('mouseenter', onEnter1);
-      btn1.removeEventListener('mouseleave', onLeave1);
-      btn2.removeEventListener('mouseenter', onEnter2);
-      btn2.removeEventListener('mouseleave', onLeave2);
+      isMounted = false;
     };
   }, []);
 
   return (
-    <section id="command" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20">
-      <div
-        ref={containerRef}
-        className="rounded-3xl bg-slate-950 dark:bg-black border border-slate-200 dark:border-zinc-800 p-8 sm:p-12 lg:p-16 overflow-hidden relative shadow-2xl"
-      >
-        {/* Subtle Ambient Background Glow */}
-        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+    <section
+      id="command"
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      className="relative w-full py-24 sm:py-32 overflow-hidden bg-white dark:bg-black text-slate-900 dark:text-white transition-colors duration-300"
+    >
+      {/* ======================================================== */}
+      {/* 1. EDGE-TO-EDGE AMBIENT HORIZON & GLOWING MATRIX         */}
+      {/* ======================================================== */}
+      
+      {/* Top 100% Width Laser Horizon Accent Line */}
+     
+      {/* Interactive Cursor Spotlight (spans edge to edge across entire screen) */}
+      {/* <div
+        className="pointer-events-none absolute -inset-px transition-opacity duration-500 opacity-60 dark:opacity-80"
+        style={{
+          background: `radial-gradient(1000px circle at ${mousePos.x}% ${mousePos.y}%, rgba(16, 185, 129, 0.12), transparent 45%)`,
+        }}
+      /> */}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center relative z-10">
-          {/* Left Column: Text & Actions with ScrollReveal */}
-          <div ref={leftColRef} className="lg:col-span-6 space-y-6">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight">
-              Host Your Hackathon on AYOJAN.
-            </h2>
+      {/* Subtle Perspective Cyber Grid Background */}
+      {/* <div
+        className="absolute inset-0 pointer-events-none opacity-[0.035] dark:opacity-[0.06]"
+        style={{
+          backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
+          backgroundSize: "48px 48px",
+        }}
+      /> */}
 
-            <p className="text-sm sm:text-base text-zinc-300 leading-relaxed font-normal">
-              An enterprise-grade operating system designed for student chapters, university departments, and tech communities. Organize registrations, coordinate campus stays, and streamline jury scoring with confidence.
-            </p>
+      {/* Ambient Radial Depth Lights */}
+      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-emerald-500/15 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/3 -right-32 w-96 h-96 bg-teal-500/15 rounded-full blur-[140px] pointer-events-none" />
 
-            <ul className="space-y-3 pt-2 text-xs sm:text-sm text-zinc-300">
-              {[
-                'Configurable registration windows and team quotas',
-                'Integrated food coupons and hostel room allocations',
-                'Transparent multi-round jury scoring criteria',
-                'No platform fee for verified university student clubs',
-              ].map((feature, i) => (
-                <li key={i} className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                    <Check className="w-3 h-3 stroke-[2.5]" />
-                  </div>
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
+      {/* ======================================================== */}
+      {/* 2. CENTER STAGE: MONUMENTAL CINEMATIC HERO CTA           */}
+      {/* ======================================================== */}
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
+        
+        {/* Pulsing Command Badge */}
+        
+        {/* Grand Headline */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-[4rem] font-black tracking-tight leading-[1.08] text-slate-900 dark:text-white"
+        >
+          Scale Your Next Event <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-400 dark:from-emerald-400 dark:via-teal-300 dark:to-emerald-200">
+            From Concept to Crowds.
+          </span>
+        </motion.h2>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
-              <Link
-                ref={btnPrimaryRef}
-                to="/admin/register"
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm shadow-md shadow-emerald-600/30 transition-all text-center cursor-pointer"
-              >
-                Register as Organizer
-              </Link>
-              <Link
-                ref={btnSecondaryRef}
-                to="/admin/login"
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-200 font-semibold text-xs sm:text-sm border border-zinc-700 transition-all text-center cursor-pointer"
-              >
-                Organizer Sign In
-              </Link>
-            </div>
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-zinc-300 max-w-3xl mx-auto leading-relaxed font-normal"
+        >
+          The authoritative operating system engineered for university chapters, tech clubs, and enterprise hosts. Automate participant registrations, issue NFC-compatible gate passes, coordinate hostel lodging, and execute multi-round jury scoring on one unified bridge.
+        </motion.p>
 
-            {/* Anime.js Animated Platform Telemetry */}
-            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-zinc-800/80">
-              <div>
-                <span
-                  ref={stat1Ref}
-                  className="block font-mono text-xl sm:text-2xl font-bold text-emerald-400"
-                >
-                  250+
-                </span>
-                <span className="text-[11px] text-zinc-400">Events Powered</span>
-              </div>
-              <div>
-                <span
-                  ref={stat2Ref}
-                  className="block font-mono text-xl sm:text-2xl font-bold text-white"
-                >
-                  48
-                </span>
-                <span className="text-[11px] text-zinc-400">Host Campuses</span>
-              </div>
-              <div>
-                <span
-                  ref={stat3Ref}
-                  className="block font-mono text-xl sm:text-2xl font-bold text-emerald-400"
-                >
-                  15,000+
-                </span>
-                <span className="text-[11px] text-zinc-400">Active Crafters</span>
-              </div>
-            </div>
+        {/* High-Impact Conversion Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-3"
+        >
+          <Link
+            to="/admin/register"
+            className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm tracking-wide shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2.5 group"
+          >
+            <span>Create Your First Event</span>
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+
+          <Link
+            to="/admin/login"
+            className="w-full sm:w-auto px-8 py-4 rounded-full border border-slate-300 dark:border-white/20 bg-white/80 dark:bg-white/5 hover:bg-slate-200/70 dark:hover:bg-white/10 text-slate-800 dark:text-white font-semibold text-sm tracking-wide backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 shadow-sm"
+          >
+            Organizer Portal Sign In
+          </Link>
+        </motion.div>
+
+        {/* Key Operational Badges */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="flex flex-wrap items-center justify-center gap-6 pt-2 text-xs font-medium text-slate-600 dark:text-zinc-400"
+        >
+          <div className="flex items-center gap-1.5">
+            <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
+            <span>100% Free for Student Chapters</span>
           </div>
-
-          {/* Right Column: Three.js Interactive 3D Ayojan Network Cluster with ScrollReveal */}
-          <div ref={rightColRef} className="lg:col-span-6 relative flex flex-col items-center justify-center">
-            <div className="relative w-full aspect-square max-w-[460px] flex items-center justify-center">
-              {/* Three.js Canvas Container */}
-              <div
-                ref={mountRef}
-                className="w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-center"
-              />
-            </div>
+          <div className="flex items-center gap-1.5">
+            <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
+            <span>Instant Digital ID Badge Generator</span>
           </div>
-        </div>
+          <div className="flex items-center gap-1.5">
+            <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
+            <span>Zero-Variance Rubric Consensus</span>
+          </div>
+        </motion.div>
+
       </div>
+
+      {/* ======================================================== */}
+      {/* 3. FULL-WIDTH PANORAMIC 3-STATION INTERACTIVE COCKPIT    */}
+      {/* ======================================================== */}
+      <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20">
+        
+        {/* Terminal Header Bar */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-300 dark:border-white/10 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block" />
+              <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
+              <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
+            </div>
+            
+          </div>
+          
+        </div>
+
+        {/* 3 Full-Width Side-by-Side Interactive Terminals */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+          
+          {/* -------------------------------------------------------- */}
+          {/* TERMINAL 01: Turnstile Gate QR Scanner Simulation        */}
+          {/* -------------------------------------------------------- */}
+          <div className="rounded-2xl bg-white/95 dark:bg-[#070c14]/90 border border-slate-200 dark:border-white/10 p-6 shadow-xl backdrop-blur-md flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 transition-colors duration-300">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ScanLine className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="font-bold text-sm text-slate-900 dark:text-white">
+                    Station 01: Turnstile Scanner
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                  GATE B-02
+                </span>
+              </div>
+
+              {/* Simulated ID Card with Laser Scanner */}
+              <div className="relative rounded-xl bg-slate-50 dark:bg-black/70 border border-slate-200 dark:border-white/10 p-4 overflow-hidden">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/10 text-[10px] font-mono text-slate-500 dark:text-zinc-400">
+                  <span>TOKEN ID #8921-AYO</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    {recentPass.status}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4 py-3">
+                  <div className="relative w-16 h-16 rounded-lg bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+                    <QrCode className="w-full h-full text-slate-800 dark:text-white opacity-85" />
+                    {/* Laser Scanner Beam */}
+                    <motion.div
+                      animate={{ y: [-24, 24] }}
+                      transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                      className="absolute inset-x-0 h-0.5 bg-emerald-500 shadow-[0_0_8px_#10b981]"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <div className="font-bold text-sm text-slate-900 dark:text-white">
+                      {recentPass.name}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
+                      {recentPass.roll}
+                    </div>
+                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded inline-block">
+                      {recentPass.track}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-white/10 text-[11px] font-mono text-slate-500 dark:text-zinc-400">
+                  <span>Throughput: 0.14s</span>
+                  <span className="font-bold text-slate-800 dark:text-white">
+                    {scanCount} Passed
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-2">
+              <button
+                onClick={triggerScan}
+                disabled={isScanning}
+                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide transition-all shadow-md shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>{isScanning ? "Verifying Token..." : "Simulate Live Gate Check-in"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* -------------------------------------------------------- */}
+          {/* TERMINAL 02: Interactive Jury Rubric Consensus Engine    */}
+          {/* -------------------------------------------------------- */}
+          <div className="rounded-2xl bg-white/95 dark:bg-[#070c14]/90 border border-slate-200 dark:border-white/10 p-6 shadow-xl backdrop-blur-md flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 transition-colors duration-300">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sliders className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="font-bold text-sm text-slate-900 dark:text-white">
+                    Station 02: Jury Consensus
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400 block">
+                    Composite
+                  </span>
+                  <span className="text-base font-mono font-black text-emerald-600 dark:text-emerald-400">
+                    {compositeScore}/100
+                  </span>
+                </div>
+              </div>
+
+              {/* Interactive Scoring Sliders */}
+              <div className="space-y-3 rounded-xl bg-slate-50 dark:bg-black/70 border border-slate-200 dark:border-white/10 p-4">
+                {/* Criterion 1: Technical Rigor */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-slate-700 dark:text-zinc-300">Technical Rigor (40%)</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{scores.tech}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="50"
+                    max="100"
+                    value={scores.tech}
+                    onChange={(e) => setScores({ ...scores, tech: Number(e.target.value) })}
+                    className="w-full accent-emerald-500 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-lg cursor-pointer"
+                  />
+                </div>
+
+                {/* Criterion 2: Architecture & UX */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-slate-700 dark:text-zinc-300">Architecture &amp; UX (30%)</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{scores.ux}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="50"
+                    max="100"
+                    value={scores.ux}
+                    onChange={(e) => setScores({ ...scores, ux: Number(e.target.value) })}
+                    className="w-full accent-teal-500 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-lg cursor-pointer"
+                  />
+                </div>
+
+                {/* Criterion 3: Practical Impact */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span className="text-slate-700 dark:text-zinc-300">Practical Feasibility (30%)</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{scores.impact}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="50"
+                    max="100"
+                    value={scores.impact}
+                    onChange={(e) => setScores({ ...scores, impact: Number(e.target.value) })}
+                    className="w-full accent-emerald-500 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-lg cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 mt-2 flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-zinc-400 border-t border-slate-200 dark:border-white/10">
+              <span className="flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-emerald-500" />
+                Blind Jury Sealed
+              </span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                Hash: #9A2C-VERIFIED
+              </span>
+            </div>
+          </div>
+
+          {/* -------------------------------------------------------- */}
+          {/* TERMINAL 03: Omni-Channel Live Emergency Broadcast Dispatch */}
+          {/* -------------------------------------------------------- */}
+          <div className="rounded-2xl bg-white/95 dark:bg-[#070c14]/90 border border-slate-200 dark:border-white/10 p-6 shadow-xl backdrop-blur-md flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 transition-colors duration-300">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Radio className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="font-bold text-sm text-slate-900 dark:text-white">
+                    Station 03: Event Announcer
+                  </span>
+                </div>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+              </div>
+
+              {/* Simulated Live Broadcast Queue */}
+              <div className="space-y-2.5 rounded-xl bg-slate-50 dark:bg-black/70 border border-slate-200 dark:border-white/10 p-3.5">
+                {dispatchLog.map((log) => (
+                  <div
+                    key={log.id}
+                    className="p-2.5 rounded-lg bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-white/5 space-y-1 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-slate-900 dark:text-white truncate">
+                        {log.title}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono shrink-0 ml-2">
+                        {log.time}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
+                      Target: {log.channel}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-4 mt-2">
+              <button
+                onClick={triggerBroadcast}
+                disabled={isBroadcasting}
+                className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black font-bold text-xs tracking-wide transition-all hover:bg-slate-800 dark:hover:bg-zinc-200 shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <Send className="w-3.5 h-3.5" />
+                <span>{isBroadcasting ? "Transmitting..." : "Send Test Flash Broadcast"}</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* ======================================================== */}
+      {/* 4. EDGE-TO-EDGE 100% WIDTH CONTINUOUS TELEMETRY TICKER    */}
+      {/* ======================================================== */}
+      
+
     </section>
   );
 }

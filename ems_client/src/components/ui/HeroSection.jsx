@@ -4,52 +4,9 @@ import React, { useState, useEffect, Suspense } from "react";
 import Spline from "@splinetool/react-spline";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { API_BASE_URL } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-// Animated counter for live platform stats
-const AnimatedNumber = ({ value = 0, suffix = "", duration = 1200 }) => {
-  const [displayValue, setDisplayValue] = useState(0);
-
-  useEffect(() => {
-    let start = 0;
-    const end = parseInt(value, 10);
-    if (isNaN(end) || end === 0) {
-      setDisplayValue(0);
-      return;
-    }
-    const totalSteps = 40;
-    const stepDuration = duration / totalSteps;
-    let step = 0;
-
-    const timer = setInterval(() => {
-      step++;
-      const current = Math.min(Math.round((end * step) / totalSteps), end);
-      setDisplayValue(current);
-      if (step >= totalSteps) {
-        clearInterval(timer);
-      }
-    }, stepDuration);
-
-    return () => clearInterval(timer);
-  }, [value, duration]);
-
-  return (
-    <span>
-      {displayValue.toLocaleString()}
-      {suffix}
-    </span>
-  );
-};
-
 export const HeroSection = ({ className }) => {
-  const [stats, setStats] = useState({
-    eventsCount: null,
-    buildersCount: null,
-    totalPrizeMoney: null,
-    freePercentage: 100,
-  });
-  const [loadingStats, setLoadingStats] = useState(true);
   const [splineLoaded, setSplineLoaded] = useState(false);
   const splineAppRef = React.useRef(null);
 
@@ -133,55 +90,6 @@ export const HeroSection = ({ className }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, [adjustZoomFor4K]);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchPlatformStats = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/events/public-stats`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.stats && isMounted) {
-            setStats({
-              eventsCount: Number(data.stats.eventsCount ?? 0),
-              buildersCount: Number(data.stats.buildersCount ?? 0),
-              totalPrizeMoney: Number(data.stats.totalPrizeMoney ?? 0),
-              freePercentage: 100,
-            });
-            setLoadingStats(false);
-            return;
-          }
-        }
-      } catch {
-        // Fallback retry
-      }
-
-      try {
-        const res2 = await fetch("/api/events/public-stats");
-        if (res2.ok) {
-          const data2 = await res2.json();
-          if (data2?.stats && isMounted) {
-            setStats({
-              eventsCount: Number(data2.stats.eventsCount ?? 0),
-              buildersCount: Number(data2.stats.buildersCount ?? 0),
-              totalPrizeMoney: Number(data2.stats.totalPrizeMoney ?? 0),
-              freePercentage: 100,
-            });
-            setLoadingStats(false);
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn("Realtime platform stats fallback:", err);
-      } finally {
-        if (isMounted) setLoadingStats(false);
-      }
-    };
-
-    fetchPlatformStats();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   return (
     <section
@@ -241,7 +149,7 @@ export const HeroSection = ({ className }) => {
           className="space-y-2 max-w-xl mx-auto"
         >
           <p className="text-xs sm:text-base text-zinc-600 dark:text-zinc-300 font-normal leading-relaxed px-4">
-            Where crafters connect, hackathons scale, and bold ideas take flight.
+            Where crafters connect, events scale, and bold ideas take flight.
           </p>
         </motion.div>
 
@@ -272,75 +180,6 @@ export const HeroSection = ({ className }) => {
           </Link>
         </motion.div>
 
-        {/* Live Platform Telemetry Strip Card */}
-        {/* Solid backdrop completely covers any watermark behind it */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-5 sm:mt-8 py-3 px-3 sm:py-3.5 sm:px-6 rounded-2xl bg-white/90 dark:bg-[#070b10]/95 border border-zinc-200/80 dark:border-white/10 shadow-xl backdrop-blur-xl w-full max-w-2xl grid grid-cols-4 gap-2 sm:gap-6 text-center pointer-events-auto"
-        >
-          <div>
-            <div className="text-base sm:text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">
-              {loadingStats ? (
-                <span className="opacity-30 animate-pulse">—</span>
-              ) : (
-                <>
-                  <AnimatedNumber value={stats.eventsCount ?? 0} duration={1200} />+
-                </>
-              )}
-            </div>
-            <div className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium truncate">
-              Competitions
-            </div>
-          </div>
-
-          <div>
-            <div className="text-base sm:text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">
-              {loadingStats ? (
-                <span className="opacity-30 animate-pulse">—</span>
-              ) : (
-                <>
-                  <AnimatedNumber value={stats.buildersCount ?? 0} duration={1200} />+
-                </>
-              )}
-            </div>
-            <div className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium truncate">
-              Builders
-            </div>
-          </div>
-
-          <div>
-            <div className="text-base sm:text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">
-              {loadingStats ? (
-                <span className="opacity-30 animate-pulse">—</span>
-              ) : (
-                (() => {
-                  const amt = stats.totalPrizeMoney ?? 0;
-                  if (amt >= 100000) return `₹${(amt / 100000).toFixed(1)}L+`;
-                  if (amt >= 1000) return `₹${(amt / 1000).toFixed(0)}K+`;
-                  return amt > 0 ? `₹${amt}` : "₹2.5L+";
-                })()
-              )}
-            </div>
-            <div className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium truncate">
-              Prizes
-            </div>
-          </div>
-
-          <div>
-            <div className="text-base sm:text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">
-              {loadingStats ? (
-                <span className="opacity-30 animate-pulse">—</span>
-              ) : (
-                <AnimatedNumber value={stats.freePercentage ?? 100} suffix="%" duration={1200} />
-              )}
-            </div>
-            <div className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium truncate">
-              Free Access
-            </div>
-          </div>
-        </motion.div>
 
       </div>
     </section>

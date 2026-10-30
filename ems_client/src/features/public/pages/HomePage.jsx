@@ -8,6 +8,7 @@ import FeaturedHackathonsSection from '../components/home/FeaturedHackathonsSect
 import HowItWorksSection from '../components/home/HowItWorksSection';
 import TechTracksBentoSection from '../components/home/TechTracksBentoSection';
 import LogisticsAutomationSection from '../components/home/LogisticsAutomationSection';
+import PlatformStatsSection from '../components/home/PlatformStatsSection';
 import OrganizerCtaSection from '../components/home/OrganizerCtaSection';
 import HomeFaqSection from '../components/home/HomeFaqSection';
 import PlatformTestimonialsSection from '../components/home/PlatformTestimonialsSection';
@@ -59,19 +60,22 @@ export default function HomePage() {
       <HowItWorksSection />
 
       {/* 4. Domain Mastery: 3D Perspective Bento Grid */}
-      <TechTracksBentoSection />
+      {/* <TechTracksBentoSection /> */}
 
       {/* 5. Physical & Virtual Operational Infrastructure with Live Simulators */}
       <LogisticsAutomationSection />
 
-      {/* 6. Command Center: Interactive Three.js 3D Globe for Organizers */}
-      <OrganizerCtaSection />
+      {/* 6. Proven Track Record: Real-world Platform Metrics & Growth */}
+      <PlatformStatsSection />
 
       {/* 7. Community Voices: Real Crafter Testimonials & Reviews */}
       <PlatformTestimonialsSection />
 
       {/* 8. Knowledge Base: Transparent Operations FAQ */}
       <HomeFaqSection />
+
+      {/* 7. Command Center: Interactive Three.js 3D Globe for Organizers */}
+      <OrganizerCtaSection />
     </div>
   );
 }

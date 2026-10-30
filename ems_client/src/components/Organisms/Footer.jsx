@@ -47,7 +47,7 @@ export function Footer() {
    */
   const footerNavigation = {
     platform: [
-      { name: "Flagship Hackathons", href: "/events" },
+      { name: "Flagship Events", href: "/events" },
       { name: "Squad Formation & Codes", href: "/user/login" },
       { name: "Round Problem Statements", href: "/events" },
       { name: "Live Evaluation Leaderboard", href: "/evaluator/login" },
@@ -84,7 +84,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="relative z-20 bg-white dark:bg-black text-zinc-900 dark:text-white border-t border-zinc-200 dark:border-white/10 overflow-hidden select-none transition-colors duration-300">
+    <footer className="relative z-20 bg-white dark:bg-black text-zinc-900 dark:text-white  overflow-hidden select-none transition-colors duration-300">
       
       {/* Top subtle emerald hairline accent */}
       <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/30 dark:via-emerald-500/40 to-transparent" />
@@ -216,7 +216,7 @@ export function Footer() {
         {/* 2. MASSIVE BRAND WATERMARK: [ 4 DOTS LOGO + AYOJAN ]    */}
         {/* Exact Navbar Typography & Logo Style — Scaled Up         */}
         {/* ======================================================== */}
-        <div className="relative my-8 sm:my-14 overflow-hidden flex items-center justify-center">
+        <div className="relative my-8 sm:my-14  flex items-center justify-center">
           
           <div className="flex items-center justify-center gap-3 sm:gap-6 md:gap-8 h-32  z-10">
             {/* Scaled AYOJAN 4-Dot Brand Logo (Exact Navbar Match) */}
@@ -228,7 +228,7 @@ export function Footer() {
             </div>
 
             {/* AYOJAN Text in exact Navbar Typography & Style */}
-            <h5 className="text-3xl sm:text-6xl md:text-8xl lg:text-[105px] font-bold text-gray-700 dark:text-white tracking-widest whitespace-nowrap leading-none hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-300">
+            <h5 className="text-3xl sm:text-6xl md:text-8xl  lg:text-[155px] font-bold text-gray-700 dark:text-white tracking-widest whitespace-nowrap leading-none hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-300">
               AYOJAN
             </h5>
           </div>

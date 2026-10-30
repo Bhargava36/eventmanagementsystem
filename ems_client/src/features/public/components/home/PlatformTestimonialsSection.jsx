@@ -87,30 +87,49 @@ export default function PlatformTestimonialsSection() {
   const isMobile = windowWidth < 640;
   const isTablet = windowWidth >= 640 && windowWidth < 1024;
 
-  // Fetch live reviews if available
+  // Fetch live reviews directly from database
   useEffect(() => {
+    let isMounted = true;
     const fetchLiveFeedback = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/platform-feedback/testimonials?limit=9`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.testimonials) && data.testimonials.length >= 5) {
-            const formatted = data.testimonials.slice(0, 5).map((item, idx) => ({
-              id: item.Id || `live-${idx}`,
-              name: item.UserName || DEFAULT_TESTIMONIALS[idx].name,
-              role: item.Category || DEFAULT_TESTIMONIALS[idx].role,
-              quote: item.Comments || DEFAULT_TESTIMONIALS[idx].quote,
-              rating: Number(item.Rating) || 5,
-              avatar: DEFAULT_TESTIMONIALS[idx].avatar,
-            }));
-            setTestimonials(formatted);
+      const endpoints = [
+        `${API_BASE_URL}/api/platform-feedback/testimonials?limit=12`,
+        `/api/platform-feedback/testimonials?limit=12`,
+        `${API_BASE_URL}/api/feedback`,
+        `/api/feedback`,
+      ];
+
+      for (const url of endpoints) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const data = await res.json();
+            const rawList = data.testimonials || data.feedback || (Array.isArray(data) ? data : null);
+            if (Array.isArray(rawList) && rawList.length > 0 && isMounted) {
+              const formatted = rawList.map((item, idx) => ({
+                id: item.Id || `db-review-${idx}`,
+                name: item.UserName || `Builder #${idx + 1}`,
+                role: item.Category || (item.EventName ? `Participant (${item.EventName})` : 'Event Participant'),
+                quote: item.Comments || 'Great platform for collegiate innovation.',
+                rating: Number(item.Rating) || 5,
+                avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.UserName || 'AY')}&backgroundColor=10b981,059669,047857`,
+              }));
+
+              if (formatted.length >= 3) {
+                setTestimonials(formatted);
+                setActiveIndex(Math.min(2, Math.floor(formatted.length / 2)));
+                return;
+              }
+            }
           }
+        } catch {
+          // Fall through to next endpoint
         }
-      } catch {
-        // Keep defaults
       }
     };
     fetchLiveFeedback();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handlePrev = useCallback(() => {

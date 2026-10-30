@@ -18,7 +18,7 @@ const STEPS = [
     side: 'left',
     title: 'Find a Challenge',
     description:
-      'Browse verified virtual and on-campus hackathons. Filter by tech stacks, domains, prize pools, and schedules.',
+      'Browse verified virtual and on-campus events. Filter by tech stacks, domains, prize pools, and schedules.',
     icon: Search,
     detail: '50+ Tracks Available',
     gradient: 'from-emerald-500/10 to-teal-500/5',
@@ -149,7 +149,7 @@ export default function HowItWorksSection() {
                 {/* 3D Campus / Hackathon Arena Image */}
                 <img
                   src="/assets/hero/ayojan-campus-3d.jpg"
-                  alt="AYOJAN Hackathon Arena"
+                  alt="AYOJAN Event Arena"
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
 

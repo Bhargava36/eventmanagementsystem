@@ -7,19 +7,19 @@ import gsap from 'gsap';
 const FAQS = [
   {
     q: 'Who is eligible to participate in AYOJAN competitions?',
-    a: 'AYOJAN hackathons are open to students, developers, designers, and innovators globally. Each competition details whether participation is virtual (open globally online) or on-campus (in-person attendance).',
+    a: 'AYOJAN events are open to students, developers, designers, and innovators globally. Each competition details whether participation is virtual (open globally online) or on-campus (in-person attendance).',
   },
   {
-    q: 'Are hackathons on AYOJAN completely free for students?',
+    q: 'Are events on AYOJAN completely free for students?',
     a: 'Yes, 100%. All student registrations, squad submissions, and participation are free. We never charge entry fees to participate, access mentors, or receive bounty rewards.',
   },
   {
     q: 'Can I register as an individual crafter without an existing team?',
-    a: 'Yes. Solo hackers can sign up and participate individually, or take advantage of squad codes and open squad listings on the event page to team up with fellow participants before hacking starts.',
+    a: 'Yes. Solo innovators can sign up and participate individually, or take advantage of squad codes and open squad listings on the event page to team up with fellow participants before competition starts.',
   },
   {
     q: 'How are meals, accommodation, and campus logistics handled?',
-    a: 'For physical on-campus hackathons that offer meals and lodging, registered attendees receive automated Digital ID Passes, cafeteria food tokens, and hostel block room allocations within their dashboard.',
+    a: 'For physical on-campus events that offer meals and lodging, registered attendees receive automated Digital ID Passes, cafeteria food tokens, and hostel block room allocations within their dashboard.',
   },
   {
     q: 'How does multi-round judging and prize disbursement work?',
@@ -111,7 +111,7 @@ export default function HomeFaqSection() {
               Frequently Asked Questions.
             </h2>
             <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 font-normal leading-relaxed">
-              Everything you need to know about squad creation, campus stays, evaluations, and hosting hackathons.
+              Everything you need to know about squad creation, campus stays, evaluations, and hosting events.
             </p>
           </div>
 

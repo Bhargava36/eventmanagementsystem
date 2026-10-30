@@ -155,7 +155,7 @@ export default function FeaturedHackathonsSection() {
             </span>
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
-            Flagship Hackathons &amp; Events
+            Flagship Events
           </h2>
           <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 font-normal leading-relaxed">
             Curated high-stakes challenges designed for student squads, solo developers, and university chapters.

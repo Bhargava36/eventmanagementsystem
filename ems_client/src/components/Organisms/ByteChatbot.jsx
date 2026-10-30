@@ -31,7 +31,7 @@ function ByteChatbot() {
   const initialGreeting = {
     id: 1,
     sender: 'byte',
-    text: "Beep boop! 🤖 I'm Byte, your event guide. Ask me anything about hackathons, team rules, registration, or schedules!",
+    text: "Beep boop! 🤖 I'm Byte, your event guide. Ask me anything about events, team rules, registration, or schedules!",
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     suggestions: [
       'How to register?',
@@ -66,7 +66,7 @@ function ByteChatbot() {
 
     if (text.includes('event') || text.includes('hackathon') || text.includes('compet') || text.includes('challenge')) {
       return {
-        text: "We host competitive hackathons, coding challenges, and innovation competitions! You can filter by Virtual or On-Campus tracks.",
+        text: "We host competitive coding challenges, innovation competitions, and technical events! You can filter by Virtual or On-Campus tracks.",
         action: { label: 'Explore Events', path: '/events' }
       };
     }
@@ -80,7 +80,7 @@ function ByteChatbot() {
 
     if (text.includes('team') || text.includes('size') || text.includes('member') || text.includes('leader')) {
       return {
-        text: "Team rules depend on the specific event. Most hackathons support 2 to 4 members. Team leaders generate an invite code that teammates use to join!",
+        text: "Team rules depend on the specific event. Most events support 2 to 4 members. Team leaders generate an invite code that teammates use to join!",
         action: { label: 'Check Events Schedule', path: '/events' }
       };
     }
@@ -108,7 +108,7 @@ function ByteChatbot() {
 
     return {
       text: "Beep! I'm still learning every detail of the campus, but I can help you find events, understand team formation, or direct you to student login.",
-      action: { label: 'Explore Active Hackathons', path: '/events' }
+      action: { label: 'Explore Active Events', path: '/events' }
     };
   };
 

@@ -279,7 +279,7 @@ function ExploreEvents() {
             </h1>
 
             <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 leading-relaxed font-normal">
-              Discover technical hackathons, coding challenges, and innovation competitions. Connect with teams and build solutions.
+              Discover technical events, coding challenges, and innovation competitions. Connect with teams and build solutions.
             </p>
 
             <div className="pt-2 flex flex-wrap items-center gap-4 sm:gap-5 text-xs text-slate-500 dark:text-zinc-400 font-mono">

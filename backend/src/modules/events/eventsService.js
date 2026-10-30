@@ -527,7 +527,19 @@ const getPublicPlatformStats = (callback) => {
             (SELECT COUNT(*) FROM events) AS eventCount,
             (SELECT COUNT(*) FROM users) AS userCount,
             (SELECT COUNT(*) FROM registered_teams) AS teamCount,
-            (SELECT COUNT(*) FROM registered_team_members) AS memberCount
+            (SELECT COUNT(*) FROM registered_team_members) AS memberCount,
+            (SELECT COUNT(DISTINCT College) FROM (
+                SELECT College FROM users WHERE College IS NOT NULL AND TRIM(College) != ''
+                UNION
+                SELECT College FROM registered_teams WHERE College IS NOT NULL AND TRIM(College) != ''
+                UNION
+                SELECT MemberCollege AS College FROM registered_team_members WHERE MemberCollege IS NOT NULL AND TRIM(MemberCollege) != ''
+            ) AS distinct_colleges) AS collegeCount,
+            (SELECT ROUND(COALESCE((COUNT(CASE WHEN Rating >= 4 THEN 1 END) / NULLIF(COUNT(*), 0)) * 100, 98)) FROM (
+                SELECT Rating FROM platform_feedback WHERE Status = 'approved'
+                UNION ALL
+                SELECT Rating FROM feedback
+            ) AS all_ratings) AS satisfactionRate
     `;
 
     db.query(query, (err, countResults) => {
@@ -568,11 +580,16 @@ const getPublicPlatformStats = (callback) => {
             }
 
             return callback(null, {
-                eventsCount: counts.eventCount || 0,
+                eventsCount: Number(counts.eventCount || 0),
                 eventsFormatted: `${counts.eventCount || 0}+`,
                 buildersCount: totalBuilders,
                 buildersFormatted: totalBuilders > 0 ? `${totalBuilders}+` : '0+',
-                teamsCount: counts.teamCount || 0,
+                teamsCount: Number(counts.teamCount || 0),
+                teamsFormatted: `${counts.teamCount || 0}+`,
+                collegesCount: Number(counts.collegeCount || 0),
+                collegesFormatted: `${counts.collegeCount || 0}+`,
+                satisfactionRate: Number(counts.satisfactionRate || 98),
+                satisfactionFormatted: `${counts.satisfactionRate || 98}%`,
                 totalPrizeMoney: totalPrize,
                 prizesFormatted: prizeFormatted,
                 freeForStudents: '100%'

@@ -280,7 +280,7 @@ export default function TechTracksBentoSection() {
             Competitions by Technology Track
           </h2>
           <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 font-normal leading-relaxed">
-            Find technical hackathons focused on the domains, languages, and frameworks you want to build with.
+            Find technical events focused on the domains, languages, and frameworks you want to build with.
           </p>
         </div>
 
