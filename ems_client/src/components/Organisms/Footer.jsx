@@ -1,20 +1,9 @@
-
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import {
-  ArrowUp,
-  Mail,
-  Check,
-  Bell,
-  ShieldCheck,
-  Globe,
-  Layers,
-  ExternalLink,
-} from "lucide-react";
+import { Check } from "lucide-react";
 
-// Social SVG Icons
+// Social SVG Icons (Clean minimal monochrome style)
 const GithubIcon = ({ className }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24">
     <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
@@ -52,103 +41,73 @@ export function Footer() {
     }
   };
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
-
-  const logoElement = (
-    <div className="relative w-5 h-5 flex items-center justify-center">
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-emerald-500 top-0 left-1/2 transform -translate-x-1/2 opacity-90" />
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-90" />
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-emerald-600 dark:bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-90" />
-      <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-emerald-500 bottom-0 left-1/2 transform -translate-x-1/2 opacity-90" />
-    </div>
-  );
-
+  /**
+   * 100% Authentic AYOJAN Navigation Structure
+   * Modeled after LangChain's four-column layout.
+   */
   const footerNavigation = {
-    events: [
-      { name: "Explore Events", href: "/events" },
-      { name: "Hackathons", href: "/events" },
-      { name: "Tech Fests", href: "/events" },
-      { name: "Workshops", href: "/events" },
+    platform: [
+      { name: "Flagship Hackathons", href: "/events" },
+      { name: "Squad Formation & Codes", href: "/user/login" },
+      { name: "Round Problem Statements", href: "/events" },
+      { name: "Live Evaluation Leaderboard", href: "/evaluator/login" },
+      { name: "Digital ID & Pass Designer", href: "/id-designer" },
+      { name: "Pass QR Verification", href: "/verify-id" },
+      { name: "Campus Accommodation Desk", href: "/events" },
+      { name: "Food & Turnstile Scanning", href: "/events" },
     ],
     portals: [
-      { name: "Participant Portal", href: "/user/login" },
-      { name: "Organizer Portal", href: "/admin/login" },
-      { name: "Jury Portal", href: "/evaluator/login" },
-      { name: "Test Accounts", href: "/test-credentials" },
+      { name: "Participant Dashboard", href: "/user/login" },
+      { name: "Squad Workspace (My Teams)", href: "/user/login" },
+      { name: "Organizer Command Center", href: "/admin/login" },
+      { name: "Jury & Evaluator Portal", href: "/evaluator/login" },
+      { name: "SuperAdmin Governance", href: "/super-admin/dashboard" },
+      { name: "Test Accounts & Sandboxes", href: "/test-credentials" },
+      { name: "Automated Certificate Engine", href: "/policies" },
+      { name: "Broadcast Announcer", href: "/admin/login" },
+    ],
+    ecosystem: [
+      { name: "About AYOJAN EMS", href: "/events" },
+      { name: "AITAM Tekkali Chapter", href: "/policies" },
+      { name: "Competition Guidelines", href: "/policies" },
+      { name: "Platform Rules of Conduct", href: "/terms" },
+      { name: "Student Data Privacy", href: "/privacy" },
+      { name: "Crafter Reviews & Feedback", href: "/#testimonials" },
+      { name: "Frequently Asked Questions", href: "/#faq" },
     ],
     social: [
-      { name: "GitHub", href: "https://github.com", icon: GithubIcon },
-      { name: "Twitter / X", href: "https://twitter.com", icon: TwitterIcon },
       { name: "LinkedIn", href: "https://linkedin.com", icon: LinkedinIcon },
+      { name: "Twitter / X", href: "https://twitter.com", icon: TwitterIcon },
+      { name: "GitHub", href: "https://github.com", icon: GithubIcon },
       { name: "Discord", href: "https://discord.com", icon: DiscordIcon },
     ],
   };
 
   return (
-    <motion.footer 
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="relative z-20 border-t border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/90 backdrop-blur-md transition-colors duration-300"
-    >
-      {/* Decorative top ambient glow line */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-gray-400 dark:via-white/30 to-transparent" />
+    <footer className="relative z-20 bg-white dark:bg-black text-zinc-900 dark:text-white border-t border-zinc-200 dark:border-white/10 overflow-hidden select-none transition-colors duration-300">
+      
+      {/* Top subtle emerald hairline accent */}
+      <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/30 dark:via-emerald-500/40 to-transparent" />
 
-      <div className="max-w-7xl mx-auto px-6 pt-16 pb-12 lg:px-8">
-        {/* 4 Clean, Balanced Columns */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 pb-14 border-b border-gray-200 dark:border-white/10">
-          {/* Column 1: Brand */}
-          <div className="space-y-4">
-            <Link to="/" className="flex items-center gap-2.5">
-              {logoElement}
-              <span className="font-bold text-lg tracking-wider text-gray-900 dark:text-white">
-                AYOJAN
-              </span>
-            </Link>
-
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-relaxed max-w-sm">
-              All-in-one event management platform for college hackathons, competitions, and technical symposia.
-            </p>
-
-            {/* Social Links */}
-            <div className="flex items-center space-x-2.5 pt-1">
-              {footerNavigation.social.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <motion.a
-                    key={item.name}
-                    href={item.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-2 rounded-full border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:text-white hover:border-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-600 dark:hover:border-emerald-600 transition-colors"
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.95 }}
-                    aria-label={item.name}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </motion.a>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Column 2: Events */}
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white mb-4">
-              Events
+      {/* Main Container */}
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-14 sm:pt-16 pb-8">
+        
+        {/* ======================================================== */}
+        {/* 1. TOP 4 COLUMNS (LangChain Layout Structure)            */}
+        {/* ======================================================== */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10 pb-12 sm:pb-16">
+          
+          {/* Column 1: Platform (3 cols) */}
+          <div className="lg:col-span-3 pt-3 border-t border-zinc-200 dark:border-white/10">
+            <h3 className="text-sm font-semibold tracking-wide text-emerald-600 dark:text-emerald-400 font-sans mb-3.5">
+              Platform
             </h3>
-            <ul className="space-y-3 text-xs sm:text-sm">
-              {footerNavigation.events.map((item) => (
+            <ul className="space-y-2">
+              {footerNavigation.platform.map((item) => (
                 <li key={item.name}>
                   <Link
                     to={item.href}
-                    className="text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-200"
+                    className="text-xs text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors duration-150 block leading-relaxed"
                   >
                     {item.name}
                   </Link>
@@ -157,17 +116,17 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: Portals */}
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white mb-4">
-              Portals
+          {/* Column 2: Portals & Access (3 cols) */}
+          <div className="lg:col-span-3 pt-3 border-t border-zinc-200 dark:border-white/10">
+            <h3 className="text-sm font-semibold tracking-wide text-emerald-600 dark:text-emerald-400 font-sans mb-3.5">
+              Portals &amp; Access
             </h3>
-            <ul className="space-y-3 text-xs sm:text-sm">
+            <ul className="space-y-2">
               {footerNavigation.portals.map((item) => (
                 <li key={item.name}>
                   <Link
                     to={item.href}
-                    className="text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-200"
+                    className="text-xs text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors duration-150 block leading-relaxed"
                   >
                     {item.name}
                   </Link>
@@ -176,35 +135,67 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Column 4: Stay Updated */}
-          <div className="space-y-3.5">
-            <div className="flex items-center gap-2">
-              <Bell className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-900 dark:text-white">
-                Stay Updated
-              </h3>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-              Get updates about new hackathons and competitions straight to your inbox.
-            </p>
+          {/* Column 3: Ecosystem (2 cols) */}
+          <div className="lg:col-span-2 pt-3 border-t border-zinc-200 dark:border-white/10">
+            <h3 className="text-sm font-semibold tracking-wide text-emerald-600 dark:text-emerald-400 font-sans mb-3.5">
+              Ecosystem
+            </h3>
+            <ul className="space-y-2">
+              {footerNavigation.ecosystem.map((item) => (
+                <li key={item.name}>
+                  <Link
+                    to={item.href}
+                    className="text-xs text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-colors duration-150 block leading-relaxed"
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-            <form onSubmit={handleSubscribe} className="space-y-2">
-              <div className="relative flex items-center">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full text-xs bg-gray-50 dark:bg-white/5 text-gray-900 dark:text-white border border-gray-300 dark:border-white/10 rounded-full py-2.5 pl-4 pr-11 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors"
-                  required
-                />
+          {/* Column 4: Newsletter Box (4 cols) */}
+          <div className="lg:col-span-4 pt-3 border-t border-zinc-200 dark:border-white/10 space-y-3.5">
+            <h3 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-white leading-snug">
+              Sign up for our newsletter to stay up to date
+            </h3>
+
+            <form onSubmit={handleSubscribe} className="space-y-3 max-w-sm">
+              <input
+                type="email"
+                placeholder="Your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full text-xs bg-zinc-100 dark:bg-[#0b1017] text-zinc-900 dark:text-white border border-zinc-300 dark:border-white/15 rounded-md px-3.5 py-2.5 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-500 transition-colors placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+                required
+              />
+
+              <div className="flex items-center justify-between gap-4">
                 <button
                   type="submit"
-                  className="absolute right-1 top-1 text-white w-7 h-7 flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-sm"
-                  aria-label="Subscribe"
+                  className="px-4 py-2 rounded-md bg-black text-white hover:bg-emerald-600 dark:bg-white dark:text-black dark:hover:bg-emerald-400 dark:hover:text-black text-xs font-semibold tracking-wide transition-all duration-150 cursor-pointer shadow-sm active:scale-95"
                 >
-                  <Mail className="w-3.5 h-3.5" />
+                  Subscribe
                 </button>
+
+                {/* Social icons next to button */}
+                <div className="flex items-center gap-3">
+                  {footerNavigation.social.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <a
+                        key={item.name}
+                        href={item.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-zinc-500 hover:text-emerald-600 dark:text-zinc-400 dark:hover:text-emerald-400 transition-colors p-1"
+                        aria-label={item.name}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                      </a>
+                    );
+                  })}
+                </div>
               </div>
 
               {subscribed && (
@@ -213,47 +204,72 @@ export function Footer() {
                   animate={{ opacity: 1, y: 0 }}
                   className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-medium pt-1"
                 >
-                  <Check className="w-3.5 h-3.5" /> Subscribed successfully!
+                  <Check className="w-3.5 h-3.5" /> Subscribed to AYOJAN announcements!
                 </motion.p>
               )}
             </form>
           </div>
+
         </div>
 
+        {/* ======================================================== */}
+        {/* 2. MASSIVE BRAND WATERMARK: [ 4 DOTS LOGO + AYOJAN ]    */}
+        {/* Exact Navbar Typography & Logo Style — Scaled Up         */}
+        {/* ======================================================== */}
+        <div className="relative my-8 sm:my-14 overflow-hidden flex items-center justify-center">
+          
+          <div className="flex items-center justify-center gap-3 sm:gap-6 md:gap-8 h-32  z-10">
+            {/* Scaled AYOJAN 4-Dot Brand Logo (Exact Navbar Match) */}
+            <div className="relative w-8 h-8 sm:w-14 sm:h-14 md:w-20 md:h-20 lg:w-24 lg:h-24 flex items-center justify-center shrink-0">
+              <span className="absolute w-2 h-2 sm:w-3.5 sm:h-3.5 md:w-7 md:h-7 rounded-full bg-gray-600 dark:bg-emerald-600 top-0 left-1/2 transform -translate-x-1/2 opacity-90 transition-colors" />
+              <span className="absolute w-2 h-2 sm:w-3.5 sm:h-3.5 md:w-7 md:h-7 rounded-full bg-emerald-600 dark:bg-gray-200 left-0 top-1/2 transform -translate-y-1/2 opacity-90 transition-colors" />
+              <span className="absolute w-2 h-2 sm:w-3.5 sm:h-3.5 md:w-7 md:h-7 rounded-full bg-emerald-600 dark:bg-gray-200 right-0 top-1/2 transform -translate-y-1/2 opacity-90 transition-colors" />
+              <span className="absolute w-2 h-2 sm:w-3.5 sm:h-3.5 md:w-7 md:h-7 rounded-full bg-gray-600 dark:bg-emerald-600 bottom-0 left-1/2 transform -translate-x-1/2 opacity-90 transition-colors" />
+            </div>
 
-        {/* Bottom copyright bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500 dark:text-gray-400">
-          <p>© {new Date().getFullYear()} Ayojan Event Management Platform. Built for student crafters &amp; organizers.</p>
+            {/* AYOJAN Text in exact Navbar Typography & Style */}
+            <h5 className="text-3xl sm:text-6xl md:text-8xl lg:text-[105px] font-bold text-gray-700 dark:text-white tracking-widest whitespace-nowrap leading-none hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors duration-300">
+              AYOJAN
+            </h5>
+          </div>
+        </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-            <Link to="/events" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-              Competitions
+        {/* ======================================================== */}
+        {/* 3. BOTTOM BAR: SYSTEM STATUS & LEGAL LINKS               */}
+        {/* ======================================================== */}
+        <div className="pt-6 border-t border-zinc-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-zinc-600 dark:text-zinc-400">
+          
+          {/* Operational Status (Matching LangChain's "● All systems operational") */}
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-zinc-600 dark:text-zinc-400">
+              All systems operational
+            </span>
+          </div>
+
+          {/* Legal Links */}
+          <div className="flex items-center gap-6 text-xs text-zinc-600 dark:text-zinc-400">
+            <Link to="/privacy" className="hover:text-black dark:hover:text-white transition-colors">
+              Privacy policy
             </Link>
-            <Link to="/terms" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-              Terms of Service
+            <Link to="/terms" className="hover:text-black dark:hover:text-white transition-colors">
+              Terms of service
             </Link>
-            <Link to="/privacy" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-              Privacy Notice
-            </Link>
-            <Link to="/policies" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+            <Link to="/policies" className="hover:text-black dark:hover:text-white transition-colors">
               Policies
             </Link>
-            <Link to="/test-credentials" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+            <Link to="/test-credentials" className="hover:text-black dark:hover:text-white transition-colors">
               Demo Access
             </Link>
           </div>
 
-          <button
-            onClick={scrollToTop}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:text-emerald-600 dark:hover:text-emerald-600 hover:border-gray-400 dark:hover:border-white/30 transition-all duration-200"
-          >
-            <span>Back to top</span>
-            <ArrowUp className="w-3 h-3" />
-          </button>
         </div>
+
       </div>
-    </motion.footer>
+
+    </footer>
   );
 }
 
 export default Footer;
+

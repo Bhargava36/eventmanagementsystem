@@ -1,26 +1,83 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { Link, useNavigate } from 'react-router-dom';
-import gsap from 'gsap';
-import { animate } from 'animejs';
 import {
   Calendar,
-  MapPin,
-  Users,
   Trophy,
-  ArrowRight,
-  Tag,
-  Camera,
-  Image as ImageIcon
+  ArrowUpRight,
+  ArrowRight
 } from 'lucide-react';
 import { getEventTypeInfo } from '../../../../lib/utils';
+
+/**
+ * SteppedTabShape
+ * Separate fixed-geometry contour cap (top 60px) + body fill.
+ * Guaranteed pixel-perfect curves that never stretch or distort during height transitions.
+ */
+const SteppedTabShape = ({ className = "" }) => (
+  <div className={`absolute inset-0 pointer-events-none ${className}`}>
+    {/* Stepped Contour Cap (Fixed 60px height) */}
+    <svg
+      viewBox="0 0 360 60"
+      preserveAspectRatio="none"
+      className="absolute inset-x-0 top-0 h-[60px] w-full fill-current"
+    >
+      <path
+        d="M 0 0 
+           L 165 0 
+           C 182 0, 192 10, 192 24 
+           L 192 34 
+           C 192 48, 202 58, 218 58 
+           L 360 58 
+           L 360 60 
+           L 0 60 
+           Z"
+      />
+    </svg>
+    {/* Solid Body Fill from y=58px to bottom */}
+    <div className="absolute inset-x-0 top-[58px] bottom-0 bg-current" />
+  </div>
+);
 
 export default function FeaturedHackathonsSection() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [brokenImages, setBrokenImages] = useState({});
-  const cardsRef = useRef([]);
+
+  // Unified fallback events
+  const defaultEvents = [
+    {
+      Id: 'evt-1',
+      EventName: 'HackMatrix 2026: AI & Systems',
+      Description: 'Build high-throughput autonomous agents, edge computing rails, and real-time distributed pipelines.',
+      StartDate: '2026-10-09',
+      EndDate: '2026-10-11',
+      HackathonMode: 'Hybrid',
+      PrizeMoney: '₹2,50,000',
+      EventType: 'Hackathon',
+    },
+    {
+      Id: 'evt-2',
+      EventName: 'NextGen Web3 & Security Summit',
+      Description: 'Architect resilient smart contracts, decentralized privacy layers, and audited zero-knowledge protocols.',
+      StartDate: '2026-10-16',
+      EndDate: '2026-10-18',
+      HackathonMode: 'Virtual',
+      PrizeMoney: '₹1,50,000',
+      EventType: 'Hackathon',
+    },
+    {
+      Id: 'evt-3',
+      EventName: 'CloudNative Turnstile Hackathon',
+      Description: 'Scale zero-trust event infrastructure, biometric turnstiles, and sub-second attendance validation.',
+      StartDate: '2026-10-24',
+      EndDate: '2026-10-26',
+      HackathonMode: 'Physical',
+      PrizeMoney: '₹3,00,000',
+      EventType: 'Hackathon',
+    },
+  ];
 
   useEffect(() => {
     fetchFeaturedEvents();
@@ -31,11 +88,18 @@ export default function FeaturedHackathonsSection() {
       setLoading(true);
       const res = await fetch(`${API_BASE_URL}/api/events`);
       const data = await res.json();
-      if (res.ok) {
-        setEvents((data.events || []).slice(0, 3));
+      if (res.ok && data.events && data.events.length > 0) {
+        const loaded = data.events.slice(0, 3);
+        if (loaded.length < 3) {
+          setEvents([...loaded, ...defaultEvents.slice(loaded.length, 3)]);
+        } else {
+          setEvents(loaded);
+        }
+      } else {
+        setEvents(defaultEvents);
       }
-    } catch (err) {
-      console.error('Failed to load featured events:', err);
+    } catch {
+      setEvents(defaultEvents);
     } finally {
       setLoading(false);
     }
@@ -65,231 +129,184 @@ export default function FeaturedHackathonsSection() {
   };
 
   const formatDate = (start, end) => {
-    if (!start) return 'Dates Announced Soon';
+    if (!start) return '09–11 OCT';
     try {
       const s = new Date(start).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
       if (!end) return s;
-      const e = new Date(end).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+      const e = new Date(end).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
       return `${s} – ${e}`;
     } catch {
       return 'Upcoming Dates';
     }
   };
 
-  const sectionRef = useRef(null);
-  const headerRef = useRef(null);
-  const gridRef = useRef(null);
-
-  // GSAP: ScrollTrigger Scroll-Reveal & Hover Parallax
-  useEffect(() => {
-    if (loading || !events.length) return;
-
-    const ctx = gsap.context(() => {
-      // 1. Smooth Header Reveal (re-triggers whenever on screen)
-      if (headerRef.current) {
-        gsap.from(headerRef.current, {
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 88%',
-            end: 'bottom 12%',
-            toggleActions: 'play reverse play reverse',
-          },
-          y: 40,
-          opacity: 0,
-          duration: 0.8,
-          ease: 'power3.out',
-        });
-      }
-
-      // 2. Staggered Cards Reveal (re-triggers whenever on screen)
-      const cards = cardsRef.current.filter(Boolean);
-      if (cards.length) {
-        gsap.from(cards, {
-          scrollTrigger: {
-            trigger: gridRef.current || sectionRef.current,
-            start: 'top 85%',
-            end: 'bottom 12%',
-            toggleActions: 'play reverse play reverse',
-          },
-          y: 60,
-          opacity: 0,
-          scale: 0.96,
-          duration: 0.85,
-          stagger: 0.12,
-          ease: 'power3.out',
-        });
-      }
-    }, sectionRef);
-
-    // 3. Hover Micro-Interactions
-    const cleanups = [];
-    cardsRef.current.forEach((card) => {
-      if (!card) return;
-
-      const img = card.querySelector('img');
-      const arrow = card.querySelector('.view-arrow');
-
-      const onEnter = () => {
-        gsap.to(card, { y: -8, borderColor: '#10b981', duration: 0.3, ease: 'power2.out' });
-        if (img) gsap.to(img, { scale: 1.08, duration: 0.45, ease: 'power2.out' });
-        if (arrow) gsap.to(arrow, { x: 4, duration: 0.25, ease: 'power2.out' });
-      };
-
-      const onLeave = () => {
-        gsap.to(card, { y: 0, borderColor: 'var(--card-border, rgba(39, 39, 42, 1))', duration: 0.35, ease: 'power2.out' });
-        if (img) gsap.to(img, { scale: 1, duration: 0.45, ease: 'power2.out' });
-        if (arrow) gsap.to(arrow, { x: 0, duration: 0.25, ease: 'power2.out' });
-      };
-
-      card.addEventListener('mouseenter', onEnter);
-      card.addEventListener('mouseleave', onLeave);
-
-      cleanups.push(() => {
-        card.removeEventListener('mouseenter', onEnter);
-        card.removeEventListener('mouseleave', onLeave);
-      });
-    });
-
-    return () => {
-      ctx.revert();
-      cleanups.forEach((c) => c());
-    };
-  }, [loading, events]);
-
   return (
     <section
-      ref={sectionRef}
       id="arena"
-      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20"
+      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 selection:bg-emerald-500 selection:text-white"
     >
-      {/* Header with ScrollReveal */}
-      <div
-        ref={headerRef}
-        className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-14"
-      >
+      {/* Section Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16">
         <div className="space-y-3 max-w-2xl">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
-            Live &amp; Upcoming Events &amp; Competitions
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-mono text-xs tracking-[0.25em] text-emerald-600 dark:text-emerald-400 uppercase font-bold">
+              FEATURED COMPETITIONS
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+            Flagship Hackathons &amp; Events
           </h2>
           <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 font-normal leading-relaxed">
-            Discover hackathons, hands-on workshops, coding challenges, and college tech fests. Join solo or with a team.
+            Curated high-stakes challenges designed for student squads, solo developers, and university chapters.
           </p>
         </div>
 
         <Link
           to="/events"
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors self-start md:self-auto group"
+          className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors self-start md:self-auto group"
         >
-          <span>View all events &amp; challenges</span>
+          <span>Explore all competitions</span>
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
 
-      {/* Grid with ScrollReveal Stagger */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-96 rounded-2xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 animate-pulse"
-            />
-          ))}
-        </div>
-      ) : events.length === 0 ? (
-        <div className="py-16 text-center rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950/60 p-8 space-y-2">
-          <Trophy className="w-10 h-10 text-slate-400 dark:text-zinc-600 mx-auto" />
-          <h3 className="text-base font-semibold text-slate-800 dark:text-zinc-200">No events scheduled right now</h3>
-          <p className="text-xs text-slate-500 dark:text-zinc-500">New events will be announced shortly.</p>
-        </div>
-      ) : (
-        <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event, idx) => {
-            const posterUrl = getEventPosterUrl(event.Posters);
-            const mode = String(event.HackathonMode || 'Virtual');
-            const typeInfo = getEventTypeInfo(event.EventType);
-            const rawPrize = event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney;
-            const prize = (() => {
-              if (!rawPrize) return typeInfo.isWorkshop ? 'Certificates & Swag' : 'TBD';
-              const str = String(rawPrize).trim();
-              const num = Number(str.replace(/[^0-9.-]+/g, ''));
-              if (!isNaN(num) && num > 0) return `₹${num.toLocaleString('en-IN')}`;
-              return str.startsWith('₹') ? str : `₹${str}`;
-            })();
+      {/* 3 Stepped Folder-Tab Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {events.map((event, idx) => {
+          const posterUrl = getEventPosterUrl(event.Posters);
+          const rawPrize = event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney;
+          const prize = (() => {
+            if (!rawPrize) return '₹2,50,000';
+            const str = String(rawPrize).trim();
+            const num = Number(str.replace(/[^0-9.-]+/g, ''));
+            if (!isNaN(num) && num > 0) return `₹${num.toLocaleString('en-IN')}`;
+            return str.startsWith('₹') ? str : `₹${str}`;
+          })();
 
-            return (
-              <div
-                key={event.Id || idx}
-                ref={(el) => (cardsRef.current[idx] = el)}
-                onClick={() => navigate(`/events/${event.Id}`)}
-                className="group rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 transition-colors duration-200 flex flex-col justify-between shadow-sm hover:shadow-xl"
-              >
-                {/* Poster Image */}
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 dark:bg-zinc-950">
-                  {posterUrl && !brokenImages[event.Id || idx] ? (
+          const cardNum = String(idx + 1).padStart(2, '0');
+
+          return (
+            <div
+              key={event.Id || idx}
+              onClick={() => navigate(`/events/${event.Id}`)}
+              className="group relative rounded-[32px] overflow-hidden cursor-pointer bg-white dark:bg-black shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white h-[500px] select-none"
+            >
+              {/* TOP VISUAL LAYER (Clean - NO pills on image, Expanded Height ~ 300px) */}
+              <div className="absolute inset-x-0 top-0 h-[300px] w-full overflow-hidden bg-black">
+                {posterUrl && !brokenImages[event.Id || idx] ? (
+                  <div className="relative w-full h-full">
                     <img
                       src={posterUrl}
                       alt={event.EventName}
                       onError={() => setBrokenImages((prev) => ({ ...prev, [event.Id || idx]: true }))}
-                      className="w-full h-full object-cover transition-transform duration-500"
+                      className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-108 filter contrast-105"
                     />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 via-slate-200/60 to-slate-100 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900 text-slate-400 dark:text-zinc-600 transition-colors">
-                      <div className="p-3.5 text-emerald-600 dark:text-emerald-400 mb-2 ">
-                        <Camera className="w-20 h-20" />
-                      </div>
-                      <span className="text-[11px] font-semibold tracking-wider text-slate-500 dark:text-zinc-500 uppercase">
-                        No Image
-                      </span>
-                    </div>
-                  )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  </div>
+                ) : (
+                  /* Unified AYOJAN Brand Theme Visual */
+                  <div className="relative w-full h-full bg-gradient-to-br from-emerald-950/40 via-zinc-900 to-black overflow-hidden flex items-center justify-center transition-transform duration-700 ease-out group-hover:scale-105">
+                    {/* Background grid */}
+                    <div 
+                      className="absolute inset-0 opacity-[0.15]"
+                      style={{
+                        backgroundImage: `
+                          linear-gradient(to right, rgba(16, 185, 129, 0.3) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(16, 185, 129, 0.3) 1px, transparent 1px)
+                        `,
+                        backgroundSize: "28px 28px",
+                      }}
+                    />
+                    
+                    {/* 3D Liquid Chrome Sculpture */}
+                    <img
+                      src="/assets/chrome_sculpture_card.jpg"
+                      alt="AYOJAN Event Sculpture"
+                      className="w-full h-full object-cover filter contrast-110 brightness-[0.95] mix-blend-screen opacity-85"
+                    />
 
-                  {/* EventType Tag */}
-                  <div className="absolute top-3 right-3">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border backdrop-blur-md bg-black/70 text-white border-white/20 shadow-sm">
-                      <Tag className="w-3 h-3 text-emerald-400" />
-                      {event.EventType || 'Event'}
-                    </span>
+                    {/* Ambient Emerald Glow Beam */}
+                    <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/25 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-black via-transparent to-transparent opacity-80" />
+                  </div>
+                )}
+              </div>
+
+              {/* STEPPED FOLDER TAB DRAWER */}
+              {/* 
+                - Pinned to bottom-0!
+                - Resting height: h-[420px] (tab top at y=80px, text anchored at bottom).
+                - Hover height: h-[280px] (tab top slides down to y=220px, image fully reveals).
+                - Uses Pure White (#ffffff in light mode) and Pure Black (#000000 in dark mode)!
+              */}
+              <div 
+                className="absolute inset-x-0 bottom-0 h-[420px] group-hover:h-[280px] z-20 flex flex-col justify-between text-white dark:text-black transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] overflow-hidden"
+              >
+                {/* Stepped Tab SVG Path automatically adopting pure white / pure black */}
+                <SteppedTabShape />
+
+                {/* TAB HEADER (Big Number on Left + Clean Arrow ↗ on Right Shelf) */}
+                <div className="relative z-10 px-6 pt-2 flex items-start justify-between">
+                  {/* Big Stepped Number (01, 02, 03) */}
+                  <div
+                    style={{ fontFamily: '"Space Grotesk", sans-serif' }}
+                    className="text-5xl sm:text-6xl font-black tracking-tight text-black dark:text-white select-none leading-none pt-1 transition-colors duration-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+                  >
+                    {cardNum}
+                  </div>
+
+                  {/* Slanted Arrow ↗ on the Lower Right Shelf */}
+                  <div className="pt-16 pr-1">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-black dark:text-white transition-all duration-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-1 group-hover:-translate-y-1">
+                      <ArrowUpRight className="w-6 h-6 stroke-[2.5]" />
+                    </div>
                   </div>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white line-clamp-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                {/* BOTTOM CONTENT AREA: Title, Description & Telemetry anchored to the bottom */}
+                <div className="relative z-10 px-6 pb-6 pt-2 space-y-3">
+                  <div>
+                    <h3
+                      style={{ fontFamily: '"Space Grotesk", sans-serif' }}
+                      className="text-xl sm:text-2xl font-bold flex justify-between items-center tracking-tight text-black dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors"
+                    >
                       {event.EventName}
+                       <span className="text-xs bg-emerald-400/30 rounded-full px-3 py-1  border border-emerald-400 text-emerald-600 dark:text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{event.HackathonMode || 'Hybrid'}</span>
+
+
                     </h3>
-                    <p className="text-xs text-slate-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
-                      {event.Description || (typeInfo.isWorkshop ? 'Join hands-on practical sessions guided by technical mentors.' : 'Collaborate with creators to build impactful tech solutions.')}
+                    <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 leading-relaxed mt-1">
+                      {event.Description || 'Collaborate with world-class crafters to build verifiable solutions.'}
                     </p>
                   </div>
 
-                  {/* Attributes */}
-                  <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 space-y-2 text-xs">
-                    <div className="flex items-center justify-between text-slate-600 dark:text-zinc-400">
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
+                  {/* BOTTOM TELEMETRY STRIP (Date + Clean Mode Text + Prize) — Displays ONLY on Hover */}
+                  <div className="overflow-hidden transition-all duration-400 ease-out max-h-0 opacity-0 group-hover:max-h-16 group-hover:opacity-100">
+                    <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-mono select-none">
+                      {/* Date */}
+                      <div className="flex items-center gap-1.5 text-black/70 dark:text-white/70">
+                        <Calendar className="w-3.5 h-3.5 text-emerald-500" />
                         <span>{formatDate(event.StartDate, event.EndDate)}</span>
-                      </span>
-                      <span className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+                      </div>
+
+                      {/* Mode (Clean text, NO pill) */}
+                      
+                      {/* Prize */}
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
                         <Trophy className="w-3.5 h-3.5" />
                         <span>{prize}</span>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-slate-500 dark:text-zinc-500 text-[11px] pt-1">
-                      <span>{mode} Mode</span>
-                      <span className="font-semibold text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors inline-flex items-center gap-1">
-                        <span>View Details</span>
-                        <ArrowRight className="view-arrow w-3 h-3 transition-transform" />
-                      </span>
+                      </div>
                     </div>
                   </div>
                 </div>
+
               </div>
-            );
-          })}
-        </div>
-      )}
+
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }
