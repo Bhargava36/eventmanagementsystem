@@ -844,7 +844,7 @@ function UserProfile() {
                 </Link>
 
                 <Link
-                  to="/user/problem-statements"
+                  to="/user/feedback"
                   className="group p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 hover:border-emerald-500/50 shadow-sm transition-all hover:shadow-md flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3.5">
@@ -853,10 +853,10 @@ function UserProfile() {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                        Problem Statements
+                        Feedback
                       </h4>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Curated hackathon challenges
+                        Share your thoughts and suggestions
                       </p>
                     </div>
                   </div>

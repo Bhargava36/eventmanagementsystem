@@ -8,6 +8,7 @@ router.post('/', evaluatorController.createEvaluator);
 router.put('/:id', evaluatorController.updateEvaluator);
 router.delete('/:id', evaluatorController.deleteEvaluator);
 router.post('/login', evaluatorController.evaluatorLogin);
+router.get("/", evaluatorController.getAllEvaluators);
 
 // Rounds routes
 router.get('/event/:eventId/rounds', evaluatorController.getEvaluationRounds);

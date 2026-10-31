@@ -32,6 +32,7 @@ export default function AllUsersPage() {
   const isDark = theme === 'dark';
 
   const [users, setUsers] = useState([]);
+  const [evaluators, setEvaluators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -66,9 +67,28 @@ export default function AllUsersPage() {
       setLoading(false);
     }
   };
+  const fetchEvaluators = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/evaluators/`);
+      const data = await response.json();
+      console.log('Fetched evaluators:', data);
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch evaluators');
+      }
+      setEvaluators(Array.isArray(data.evaluators) ? data.evaluators : Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Fetch evaluators error:', err);
+      setError(err.message || 'Unable to connect to the server.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchUsers();
+    fetchEvaluators();
   }, []);
 
   // Reset to first page on search or filter change
@@ -89,19 +109,23 @@ export default function AllUsersPage() {
     const total = users.length;
     let regularUsers = 0;
     let admins = 0;
-    let evaluators = 0;
     let superAdmins = 0;
 
     users.forEach((u) => {
       const r = String(u.RoleName || '').toLowerCase();
       if (r === 'admin' || r === 'organizer') admins += 1;
-      else if (r === 'evaluator' || r === 'judge') evaluators += 1;
       else if (r === 'super_admin' || r === 'superadmin') superAdmins += 1;
       else regularUsers += 1;
     });
 
-    return { total, regularUsers, admins, evaluators, superAdmins };
+    return { total, regularUsers, admins, superAdmins };
   }, [users]);
+
+  const totalEvaluators = useMemo(() => {
+    let evaluatorsCount = 0;
+    evaluatorsCount = evaluators.length;
+    return evaluatorsCount;
+  }, [evaluators]);
 
   // Filtering & Sorting
   const filteredUsers = useMemo(() => {
@@ -348,7 +372,7 @@ export default function AllUsersPage() {
               </div>
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-3">
-              {stats.evaluators.toLocaleString()}
+              {totalEvaluators.toLocaleString()}
             </p>
             <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Judges & Reviewers</p>
           </motion.div>
@@ -379,7 +403,7 @@ export default function AllUsersPage() {
 
             {/* Role Filter Selector */}
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-zinc-900 rounded-xl border border-gray-200/80 dark:border-zinc-800 text-xs">
+              <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-zinc-900 rounded-xl border border-gray-200/80 dark:border-zinc-800 text-xs sm:scrolling-touch overflow-x-auto sm: scrolling-smooth">
                 {[
                   { id: 'ALL', label: 'All Roles' },
                   { id: 'user', label: 'Participants' },

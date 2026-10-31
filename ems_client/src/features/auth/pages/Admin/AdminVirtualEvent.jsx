@@ -1736,10 +1736,10 @@ export default function AdminVirtualEvent() {
         {/* TAB 5: PUBLISH WORKFLOW & SELECTION SETTINGS */}
         {/* ============================================================ */}
         {activeTab === 'settings' && (
-          <div className="p-6 space-y-6 max-w-3xl">
+          <div className="p-6 space-y-6 max-w-3xl ">
             {/* Step 1: Themes Publishing */}
             <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between sm:flex-row flex-col gap-3">
                 <div className="flex items-center gap-2.5">
                   <span className="flex items-center justify-center h-6 w-6 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 font-black text-xs border border-emerald-500/20">
                     1
@@ -1770,7 +1770,7 @@ export default function AdminVirtualEvent() {
 
             {/* Step 2: Problem Statements Publishing */}
             <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between sm:flex-row flex-col gap-3">
                 <div className="flex items-center gap-2.5">
                   <span className="flex items-center justify-center h-6 w-6 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 font-black text-xs border border-emerald-500/20">
                     2

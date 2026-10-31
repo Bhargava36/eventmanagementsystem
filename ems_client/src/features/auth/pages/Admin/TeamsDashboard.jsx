@@ -331,7 +331,7 @@ function TeamsDashboard() {
             </div>
 
             <div className="relative pt-2">
-                <div className="flex items-end gap-2 px-4 sm:px-6 relative z-10 -mb-px">
+                <div className="flex items-end gap-2 px-4 sm:px-6 relative z-10 -mb-px sm: scrolling-touch overflow-x-auto sm:scrolling-smooth">
                     {tabs.map((tab) => {
                         const isActive = activeTab === tab.id;
                         const Icon = tab.icon;
