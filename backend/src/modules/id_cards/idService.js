@@ -1516,8 +1516,8 @@ const getTeamsByEvent = (EventId, callback) => {
             t.State,
             t.Tech_Stack,
             t.TeamSize,
-            ps.Title AS ProblemStatement,
-            ps.Category AS ProblemCategory,
+            COALESCE(eps.Title, pps.Title, '') AS ProblemStatement,
+            COALESCE(eps.Category, pps.Category, 'Software') AS ProblemCategory,
             u.UserName AS LeaderName,
             u.Email AS LeaderEmail,
             tm.UserId,
@@ -1530,7 +1530,9 @@ const getTeamsByEvent = (EventId, callback) => {
         LEFT JOIN users u ON t.TeamLeadUserId = u.Id
         LEFT JOIN registered_team_members tm ON tm.TeamId = t.Id
         LEFT JOIN users u2 ON u2.Id = tm.UserId
-        LEFT JOIN problem_statements ps ON ps.Id = t.ProblemStatementId
+        LEFT JOIN problem_statement_selections pss ON pss.TeamId = t.Id AND pss.EventId = t.EventId
+        LEFT JOIN event_problem_statements eps ON eps.Id = pss.ProblemStatementId
+        LEFT JOIN participant_problem_statements pps ON pps.TeamId = t.Id AND pps.EventId = t.EventId
         WHERE t.EventId = ?
         ORDER BY t.Id, CASE WHEN LOWER(COALESCE(tm.Role, '')) LIKE '%lead%' OR t.TeamLeadUserId = tm.UserId THEN 1 ELSE 2 END, tm.Id
     `;

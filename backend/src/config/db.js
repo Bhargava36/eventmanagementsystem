@@ -27,7 +27,7 @@ const migrationQueries = [
         (1, 'super_admin', 'Super Administrator'),
         (2, 'admin', 'Event Organizer / Admin'),
         (3, 'user', 'Participant / Student'),
-        (4, 'evaluator', 'Evaluator / Judge')
+        (4, 'evaluator', 'Event Evaluator / Judge')
     ON DUPLICATE KEY UPDATE RoleName = VALUES(RoleName), Description = VALUES(Description)`,
 
     `CREATE TABLE IF NOT EXISTS events (
@@ -123,12 +123,7 @@ const migrationQueries = [
         FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
 
-    `CREATE TABLE IF NOT EXISTS problem_statements (
-        Id INT AUTO_INCREMENT PRIMARY KEY,
-        ProblemCode VARCHAR(50) NOT NULL UNIQUE,
-        ProblemStatement TEXT NOT NULL,
-        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `DROP TABLE IF EXISTS problem_statements`,
 
     `CREATE TABLE IF NOT EXISTS event_prizes (
         Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -364,19 +359,23 @@ const migrationQueries = [
     `CREATE TABLE IF NOT EXISTS evaluators (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     EventId INT NOT NULL,
+    RoleId INT NOT NULL DEFAULT 4,
     Name VARCHAR(255) NOT NULL,
     Email VARCHAR(255) NOT NULL,
     Username VARCHAR(255) NOT NULL,
     Password VARCHAR(255) NOT NULL,
-    PlainTextPassword VARCHAR(255),
+    PlainTextPassword VARCHAR(255) NULL,
     Track ENUM('Physical', 'Virtual') NOT NULL DEFAULT 'Physical',
     College VARCHAR(255),
     Role VARCHAR(100) DEFAULT 'Technical Evaluator',
+    EventRole VARCHAR(100) DEFAULT 'Technical Evaluator',
     Status ENUM('Active', 'Inactive') DEFAULT 'Active',
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_evaluator_event (EventId),
-    FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    INDEX idx_evaluator_role (RoleId),
+    FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+    FOREIGN KEY (RoleId) REFERENCES roles(Id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `CREATE TABLE IF NOT EXISTS evaluation_rounds (
     Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -638,7 +637,14 @@ const migrationQueries = [
         Comments TEXT NOT NULL,
         Status VARCHAR(20) DEFAULT 'approved',
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE evaluators ADD COLUMN IF NOT EXISTS RoleId INT NOT NULL DEFAULT 4`,
+    `ALTER TABLE evaluators ADD COLUMN IF NOT EXISTS EventRole VARCHAR(100) DEFAULT 'Technical Evaluator'`,
+    `UPDATE evaluators SET EventRole = Role WHERE EventRole IS NULL OR EventRole = 'Technical Evaluator'`,
+    `UPDATE evaluators SET RoleId = 4 WHERE RoleId IS NULL OR RoleId = 0`,
+    `ALTER TABLE evaluators MODIFY COLUMN PlainTextPassword VARCHAR(255) NULL DEFAULT NULL`,
+    `UPDATE evaluators SET PlainTextPassword = NULL WHERE PlainTextPassword IS NOT NULL`
 ];
 
 let isMigrating = false;

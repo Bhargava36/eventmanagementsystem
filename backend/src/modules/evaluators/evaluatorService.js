@@ -4,7 +4,27 @@ const bcrypt = require('bcrypt');
 
 const getAllEvaluators = (callback) => {
     const query = `
-        SELECT * from evaluators
+        SELECT 
+            e.Id,
+            e.EventId,
+            e.RoleId,
+            COALESCE(r.RoleName, 'evaluator') AS RoleName,
+            e.Name AS UserName,
+            e.Name,
+            e.Email,
+            e.Username,
+            e.Track,
+            e.College,
+            e.Role,
+            COALESCE(e.EventRole, e.Role, 'Technical Evaluator') AS EventRole,
+            e.Status,
+            e.CreatedAt,
+            e.UpdatedAt,
+            ev.EventName
+        FROM evaluators e
+        LEFT JOIN roles r ON e.RoleId = r.Id
+        LEFT JOIN events ev ON e.EventId = ev.Id
+        ORDER BY e.CreatedAt DESC
     `;
     db.query(query, (err, result) => {
         if (err) {
@@ -17,18 +37,34 @@ const getAllEvaluators = (callback) => {
 
 const getEvaluatorsByEvent = (eventId, track, callback) => {
     let query = `
-        SELECT Id, EventId, Name, Email, Username, PlainTextPassword, Track, College, Role, Status, CreatedAt, UpdatedAt 
-        FROM evaluators 
-        WHERE EventId = ?
+        SELECT 
+            e.Id, 
+            e.EventId, 
+            e.RoleId,
+            COALESCE(r.RoleName, 'evaluator') AS RoleName,
+            COALESCE(r.RoleName, 'evaluator') AS SystemRole,
+            e.Name, 
+            e.Email, 
+            e.Username, 
+            e.Track, 
+            e.College, 
+            e.Role, 
+            COALESCE(e.EventRole, e.Role, 'Technical Evaluator') AS EventRole, 
+            e.Status, 
+            e.CreatedAt, 
+            e.UpdatedAt 
+        FROM evaluators e
+        LEFT JOIN roles r ON e.RoleId = r.Id
+        WHERE e.EventId = ?
     `;
     const params = [eventId];
 
     if (track) {
-        query += ` AND Track = ?`;
+        query += ` AND e.Track = ?`;
         params.push(track);
     }
 
-    query += ` ORDER BY CreatedAt DESC`;
+    query += ` ORDER BY e.CreatedAt DESC`;
 
     db.query(query, params, (err, rows) => {
         if (err) return callback(err, null);
@@ -46,7 +82,7 @@ const getEvaluatorsByEvent = (eventId, track, callback) => {
 };
 
 const createEvaluator = async (data, callback) => {
-    const { EventId, Name, Email, Username, Password, Track, College, Role } = data;
+    const { EventId, Name, Email, Username, Password, Track, College, Role, EventRole } = data;
 
     if (!EventId || !Name || !Email || !Password) {
         const error = new Error('EventId, Name, Email and Password are required');
@@ -56,6 +92,7 @@ const createEvaluator = async (data, callback) => {
 
     const cleanUsername = (Username || Email).trim();
     const cleanTrack = Track === 'Virtual' ? 'Virtual' : 'Physical';
+    const cleanEventRole = (EventRole || Role || 'Technical Evaluator').trim();
 
     // Check if evaluator already exists for this event and track with same email or username
     const checkSql = `SELECT Id FROM evaluators WHERE EventId = ? AND Track = ? AND (LOWER(Email) = LOWER(?) OR LOWER(Username) = LOWER(?)) LIMIT 1`;
@@ -71,8 +108,8 @@ const createEvaluator = async (data, callback) => {
             const hashedPassword = await bcrypt.hash(Password, 10);
             const insertSql = `
                 INSERT INTO evaluators 
-                (EventId, Name, Email, Username, Password, PlainTextPassword, Track, College, Role, Status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')
+                (EventId, RoleId, Name, Email, Username, Password, PlainTextPassword, Track, College, Role, EventRole, Status)
+                VALUES (?, 4, ?, ?, ?, ?, NULL, ?, ?, ?, ?, 'Active')
             `;
             const params = [
                 EventId,
@@ -80,10 +117,10 @@ const createEvaluator = async (data, callback) => {
                 Email.trim(),
                 cleanUsername,
                 hashedPassword,
-                Password, // saved for easy admin sharing/display
                 cleanTrack,
                 College ? College.trim() : null,
-                Role ? Role.trim() : 'Technical Evaluator'
+                cleanEventRole,
+                cleanEventRole
             ];
 
             db.query(insertSql, params, (insErr, result) => {
@@ -91,14 +128,18 @@ const createEvaluator = async (data, callback) => {
                 callback(null, {
                     id: result.insertId,
                     EventId,
+                    RoleId: 4,
+                    RoleName: 'evaluator',
+                    SystemRole: 'evaluator',
                     Name: Name.trim(),
                     Email: Email.trim(),
                     Username: cleanUsername,
-                    PlainTextPassword: Password,
                     Track: cleanTrack,
                     College: College ? College.trim() : null,
-                    Role: Role ? Role.trim() : 'Technical Evaluator',
-                    Status: 'Active'
+                    Role: cleanEventRole,
+                    EventRole: cleanEventRole,
+                    Status: 'Active',
+                    temporaryPassword: Password
                 });
             });
         } catch (hashErr) {
@@ -108,7 +149,7 @@ const createEvaluator = async (data, callback) => {
 };
 
 const updateEvaluator = async (id, data, callback) => {
-    const { Name, Email, Username, Password, Track, College, Role, Status } = data;
+    const { Name, Email, Username, Password, Track, College, Role, EventRole, Status } = data;
 
     let updateFields = [];
     let params = [];
@@ -118,14 +159,18 @@ const updateEvaluator = async (id, data, callback) => {
     if (Username !== undefined) { updateFields.push('Username = ?'); params.push(Username.trim()); }
     if (Track !== undefined) { updateFields.push('Track = ?'); params.push(Track); }
     if (College !== undefined) { updateFields.push('College = ?'); params.push(College ? College.trim() : null); }
-    if (Role !== undefined) { updateFields.push('Role = ?'); params.push(Role ? Role.trim() : 'Technical Evaluator'); }
+    const targetRole = EventRole !== undefined ? EventRole : Role;
+    if (targetRole !== undefined) {
+        updateFields.push('Role = ?'); params.push(targetRole ? targetRole.trim() : 'Technical Evaluator');
+        updateFields.push('EventRole = ?'); params.push(targetRole ? targetRole.trim() : 'Technical Evaluator');
+    }
     if (Status !== undefined) { updateFields.push('Status = ?'); params.push(Status); }
 
     if (Password) {
         try {
             const hashedPassword = await bcrypt.hash(Password, 10);
             updateFields.push('Password = ?'); params.push(hashedPassword);
-            updateFields.push('PlainTextPassword = ?'); params.push(Password);
+            updateFields.push('PlainTextPassword = NULL');
         } catch (hErr) {
             return callback(hErr, null);
         }
@@ -363,13 +408,13 @@ const evaluatorLogin = (username, password, callback) => {
     const sql = `
         SELECT
             e.*,
-            ev.EventName,
-            r.RoleName
+            COALESCE(r.RoleName, 'evaluator') AS RoleName,
+            ev.EventName
         FROM evaluators e
+        LEFT JOIN roles r
+            ON e.RoleId = r.Id
         INNER JOIN events ev
             ON e.EventId = ev.Id
-        INNER JOIN roles r
-            ON LOWER(r.RoleName) = 'evaluator'
         WHERE
             (
                 LOWER(e.Username) = LOWER(?)
@@ -429,8 +474,8 @@ const getTeamsForEvaluation = (eventId, track, callback) => {
             COALESCE(er.Status, 'approved') AS RegistrationStatus,
             u.UserName AS TeamLeadName,
             u.Email AS TeamLeadEmail,
-            COALESCE(eps.Title, ps.ProblemStatement) AS ProblemStatementTitle,
-            COALESCE(eps.ProblemCode, ps.ProblemCode) AS ProblemCode,
+            COALESCE(eps.Title, pps.Title, '') AS ProblemStatementTitle,
+            COALESCE(eps.ProblemCode, 'CUSTOM') AS ProblemCode,
             hps.GithubRepoUrl,
             hps.LiveDemoUrl,
             hps.DrivePptUrl,
@@ -440,9 +485,9 @@ const getTeamsForEvaluation = (eventId, track, callback) => {
         FROM registered_teams t
         LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
         LEFT JOIN users u ON t.TeamLeadUserId = u.Id
-        LEFT JOIN problem_statements ps ON COALESCE(er.ProblemStatementId, t.ProblemStatementId) = ps.Id
         LEFT JOIN problem_statement_selections pss ON pss.EventId = t.EventId AND pss.TeamId = t.Id
         LEFT JOIN event_problem_statements eps ON eps.Id = pss.ProblemStatementId
+        LEFT JOIN participant_problem_statements pps ON pps.EventId = t.EventId AND pps.TeamId = t.Id
         LEFT JOIN hackathon_project_submissions hps ON hps.EventId = t.EventId AND hps.TeamId = t.Id
         WHERE t.EventId = ?
     `;

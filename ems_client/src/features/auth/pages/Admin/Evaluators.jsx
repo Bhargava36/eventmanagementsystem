@@ -495,7 +495,7 @@ function Evaluators() {
   };
 
   const copyCredentialsPackage = (creds) => {
-    const payload = `=== EVENT EVALUATOR CREDENTIALS ===\nEvent: ${storedAdmin?.EventName || 'Event ID #' + eventId}\nTrack: ${creds.track}\nEvaluator: ${creds.name}\nUsername: ${creds.username || creds.email}\nEmail: ${creds.email}\nPassword: ${creds.password || creds.plainPassword || '(As set during creation)'}\nRole: ${creds.role}\nNote: Access is strictly restricted to this event.`;
+    const payload = `=== EVENT EVALUATOR CREDENTIALS ===\nEvent: ${storedAdmin?.EventName || 'Event ID #' + eventId}\nTrack: ${creds.track}\nEvaluator: ${creds.name}\nUsername: ${creds.username || creds.email}\nEmail: ${creds.email}\nPassword: ${creds.password || '(Encrypted securely - use password set during creation)'}\nRole: ${creds.role}\nNote: Access is strictly restricted to this event.`;
     copyToClipboard(payload);
   };
 
@@ -803,9 +803,9 @@ function Evaluators() {
                                       name: evaluator.Name,
                                       email: evaluator.Email,
                                       username: evaluator.Username || evaluator.Email,
-                                      password: evaluator.PlainTextPassword,
+                                      password: evaluator.temporaryPassword || null,
                                       track: evaluator.Track,
-                                      role: evaluator.Role
+                                      role: evaluator.EventRole || evaluator.Role
                                     })}
                                     className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 transition-colors"
                                   >
@@ -1320,7 +1320,7 @@ function Evaluators() {
               <div className="flex justify-between items-center py-1">
                 <span className="text-slate-400 font-sans">Password</span>
                 <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-950/30 px-2 py-0.5 rounded">
-                  {credentialsModal.password || '(Stored securely)'}
+                  {credentialsModal.password || '•••••••• (Encrypted securely)'}
                 </span>
               </div>
             </div>

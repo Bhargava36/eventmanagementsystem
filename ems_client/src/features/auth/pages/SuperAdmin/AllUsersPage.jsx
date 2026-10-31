@@ -68,22 +68,21 @@ export default function AllUsersPage() {
     }
   };
   const fetchEvaluators = async () => {
-    setLoading(true);
-    setError('');
     try {
       const response = await fetch(`${API_BASE_URL}/api/evaluators/`);
       const data = await response.json();
-      console.log('Fetched evaluators:', data);
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch evaluators');
       }
       setEvaluators(Array.isArray(data.evaluators) ? data.evaluators : Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Fetch evaluators error:', err);
-      setError(err.message || 'Unable to connect to the server.');
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const refreshAll = () => {
+    fetchUsers();
+    fetchEvaluators();
   };
 
   useEffect(() => {
@@ -104,32 +103,93 @@ export default function AllUsersPage() {
     setTimeout(() => setCopiedText(''), 2000);
   };
 
+  // Unified directory: combine users + evaluators seamlessly
+  const allDirectoryUsers = useMemo(() => {
+    // Map evaluators from evaluators table
+    const evaluatorEmailMap = new Map();
+    (evaluators || []).forEach((ev) => {
+      const email = String(ev.Email || '').toLowerCase().trim();
+      const item = {
+        Id: `eval_${ev.Id}`,
+        originalId: ev.Id,
+        isEvaluator: true,
+        UserName: ev.Name || ev.UserName || 'Evaluator',
+        Name: ev.Name || ev.UserName,
+        Email: ev.Email || '',
+        Mobile: ev.Mobile || ev.Phone || '',
+        Gender: ev.Gender || null,
+        College: ev.College || '',
+        Location: ev.Location || ev.Track || '',
+        State: ev.State || '',
+        RoleId: ev.RoleId || 4,
+        RoleName: 'evaluator',
+        RoleDisplay: ev.EventRole || ev.Role || 'Evaluator',
+        EventId: ev.EventId,
+        EventName: ev.EventName || (ev.EventId ? `Event #${ev.EventId}` : 'Assigned Event'),
+        Track: ev.Track,
+        Status: ev.Status || 'Active',
+        CreatedAt: ev.CreatedAt,
+        Photo: ev.Photo || null
+      };
+      if (email) {
+        evaluatorEmailMap.set(email, item);
+      }
+    });
+
+    // Process users table:
+    // If a user in users table is an evaluator and also exists in evaluators table, merge the rich evaluator data.
+    const processedUsers = (users || []).map((u) => {
+      const email = String(u.Email || '').toLowerCase().trim();
+      const isUserEval = String(u.RoleName || '').toLowerCase() === 'evaluator' || u.RoleId === 4;
+      if (isUserEval && evaluatorEmailMap.has(email)) {
+        const evData = evaluatorEmailMap.get(email);
+        evaluatorEmailMap.delete(email); // consumed
+        return {
+          ...u,
+          ...evData,
+          Id: u.Id || evData.Id,
+          UserName: u.UserName || evData.UserName,
+          RoleName: 'evaluator',
+          RoleDisplay: evData.RoleDisplay || 'Evaluator',
+          EventName: evData.EventName || u.EventName,
+          College: evData.College || u.College
+        };
+      }
+      return u;
+    });
+
+    // Remaining evaluators from evaluators table that were not in users table
+    const remainingEvaluators = Array.from(evaluatorEmailMap.values());
+
+    return [...processedUsers, ...remainingEvaluators];
+  }, [users, evaluators]);
+
   // KPI Calculations
   const stats = useMemo(() => {
-    const total = users.length;
     let regularUsers = 0;
     let admins = 0;
     let superAdmins = 0;
+    let evalCount = 0;
 
-    users.forEach((u) => {
+    allDirectoryUsers.forEach((u) => {
       const r = String(u.RoleName || '').toLowerCase();
       if (r === 'admin' || r === 'organizer') admins += 1;
       else if (r === 'super_admin' || r === 'superadmin') superAdmins += 1;
+      else if (r === 'evaluator' || r === 'judge') evalCount += 1;
       else regularUsers += 1;
     });
 
-    return { total, regularUsers, admins, superAdmins };
-  }, [users]);
+    const totalEvaluators = Math.max(evalCount, (evaluators || []).length);
+    const total = regularUsers + admins + superAdmins + totalEvaluators;
 
-  const totalEvaluators = useMemo(() => {
-    let evaluatorsCount = 0;
-    evaluatorsCount = evaluators.length;
-    return evaluatorsCount;
-  }, [evaluators]);
+    return { total, regularUsers, admins, superAdmins, totalEvaluators };
+  }, [allDirectoryUsers, evaluators]);
+
+  const totalEvaluators = stats.totalEvaluators;
 
   // Filtering & Sorting
   const filteredUsers = useMemo(() => {
-    return users
+    return allDirectoryUsers
       .filter((u) => {
         const matchesRole =
           roleFilter === 'ALL' ||
@@ -147,6 +207,7 @@ export default function AllUsersPage() {
         const location = String(u.Location || '').toLowerCase();
         const event = String(u.EventName || '').toLowerCase();
         const role = String(u.RoleName || '').toLowerCase();
+        const roleDisplay = String(u.RoleDisplay || '').toLowerCase();
 
         return (
           name.includes(q) ||
@@ -155,7 +216,8 @@ export default function AllUsersPage() {
           college.includes(q) ||
           location.includes(q) ||
           event.includes(q) ||
-          role.includes(q)
+          role.includes(q) ||
+          roleDisplay.includes(q)
         );
       })
       .sort((a, b) => {
@@ -173,7 +235,7 @@ export default function AllUsersPage() {
         }
         return 0;
       });
-  }, [users, search, roleFilter, sortBy]);
+  }, [allDirectoryUsers, search, roleFilter, sortBy]);
 
   // Pagination Slice
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
@@ -183,7 +245,7 @@ export default function AllUsersPage() {
   }, [filteredUsers, currentPage, pageSize]);
 
   // Role Badge Helper
-  const getRoleBadge = (roleName) => {
+  const getRoleBadge = (roleName, roleDisplay) => {
     const r = String(roleName || 'user').toLowerCase();
     switch (r) {
       case 'admin':
@@ -195,7 +257,7 @@ export default function AllUsersPage() {
       case 'evaluator':
       case 'judge':
         return {
-          label: 'Evaluator',
+          label: roleDisplay || 'Evaluator',
           classes: 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400 border-purple-200 dark:border-purple-500/30',
         };
       case 'super_admin':
@@ -286,7 +348,7 @@ export default function AllUsersPage() {
             </button>
 
             <button
-              onClick={fetchUsers}
+              onClick={refreshAll}
               disabled={loading}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-gray-700 dark:text-gray-200 text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-800 shadow-sm transition-all disabled:opacity-50"
             >
@@ -522,7 +584,7 @@ export default function AllUsersPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/70">
                   {paginatedUsers.map((u, idx) => {
-                    const badge = getRoleBadge(u.RoleName);
+                    const badge = getRoleBadge(u.RoleName, u.RoleDisplay);
                     const initials = u.UserName ? u.UserName.substring(0, 2).toUpperCase() : 'U';
 
                     return (
@@ -621,7 +683,7 @@ export default function AllUsersPage() {
           /* Cards Grid View */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedUsers.map((u, idx) => {
-              const badge = getRoleBadge(u.RoleName);
+              const badge = getRoleBadge(u.RoleName, u.RoleDisplay);
               const initials = u.UserName ? u.UserName.substring(0, 2).toUpperCase() : 'U';
 
               return (
@@ -778,8 +840,8 @@ export default function AllUsersPage() {
                       {selectedUser.UserName}
                     </h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getRoleBadge(selectedUser.RoleName).classes}`}>
-                        {getRoleBadge(selectedUser.RoleName).label}
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getRoleBadge(selectedUser.RoleName, selectedUser.RoleDisplay).classes}`}>
+                        {getRoleBadge(selectedUser.RoleName, selectedUser.RoleDisplay).label}
                       </span>
                       <span className="text-xs text-gray-400">ID #{selectedUser.Id}</span>
                     </div>

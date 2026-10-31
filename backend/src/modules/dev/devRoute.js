@@ -57,13 +57,15 @@ router.get('/accounts', (req, res) => {
   const evalQuery = `
     SELECT 
       ev.Id,
+      ev.RoleId,
+      COALESCE(r.RoleName, 'evaluator') AS RoleName,
       ev.Name AS UserName,
       ev.Username,
       ev.Email,
-      ev.PlainTextPassword,
       ev.Track,
       ev.College,
       ev.Role AS EvaluatorRole,
+      COALESCE(ev.EventRole, ev.Role, 'Technical Evaluator') AS EventRole,
       ev.Status,
       ev.EventId,
       ev.CreatedAt,
@@ -74,6 +76,7 @@ router.get('/accounts', (req, res) => {
       e.StartDate AS EventStartDate,
       e.EndDate AS EventEndDate
     FROM evaluators ev
+    LEFT JOIN roles r ON ev.RoleId = r.Id
     LEFT JOIN events e ON ev.EventId = e.Id
     ORDER BY ev.Id ASC
   `;
@@ -112,9 +115,10 @@ router.get('/accounts', (req, res) => {
           Id: `eval_${ev.Id}`,
           evaluatorId: ev.Id,
           isEvaluator: true,
+          RoleId: ev.RoleId || 4,
           RoleName: 'evaluator',
-          RoleDisplay: ev.EvaluatorRole || 'Jury / Evaluator',
-          testPassword: ev.PlainTextPassword || 'Eval@2026',
+          RoleDisplay: ev.EventRole || ev.EvaluatorRole || 'Jury / Evaluator',
+          testPassword: '•••••••• (Encrypted - Reset below)',
           portalPath: '/evaluator/login',
           dashboardPath: '/evaluator/dashboard'
         };
@@ -148,9 +152,9 @@ router.post('/reset-password', async (req, res) => {
     if (isEvaluator || (typeof userId === 'string' && userId.startsWith('eval_'))) {
       const cleanId = typeof userId === 'string' && userId.startsWith('eval_') ? userId.replace('eval_', '') : userId;
       const q = cleanId
-        ? 'UPDATE evaluators SET Password = ?, PlainTextPassword = ? WHERE Id = ?'
-        : 'UPDATE evaluators SET Password = ?, PlainTextPassword = ? WHERE LOWER(Email) = LOWER(?) OR LOWER(Username) = LOWER(?)';
-      const params = cleanId ? [hashedPassword, newPassword, cleanId] : [hashedPassword, newPassword, email.trim(), email.trim()];
+        ? 'UPDATE evaluators SET Password = ?, PlainTextPassword = NULL WHERE Id = ?'
+        : 'UPDATE evaluators SET Password = ?, PlainTextPassword = NULL WHERE LOWER(Email) = LOWER(?) OR LOWER(Username) = LOWER(?)';
+      const params = cleanId ? [hashedPassword, cleanId] : [hashedPassword, email.trim(), email.trim()];
 
       db.query(q, params, (err) => {
         if (err) return res.status(500).json({ success: false, message: 'Failed to reset evaluator password', error: err });

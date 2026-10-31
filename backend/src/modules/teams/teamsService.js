@@ -729,13 +729,16 @@ const getPublicTeamInfo = (teamId, callback) => {
             e.PhysicalResultsPublished, e.VirtualResultsPublished,
             COALESCE(er.ParticipationMode, 'Physical') AS ParticipationMode, 
             COALESCE(er.Status, 'approved') AS RegistrationStatus,
-            ps.Id AS ProblemStatementId,
-            ps.ProblemCode,
-            ps.ProblemStatement
+            COALESCE(eps.Id, pps.Id) AS ProblemStatementId,
+            COALESCE(eps.ProblemCode, 'CUSTOM') AS ProblemCode,
+            COALESCE(eps.Title, pps.Title) AS ProblemStatement,
+            COALESCE(eps.Title, pps.Title) AS ProblemStatementTitle
         FROM registered_teams t 
         INNER JOIN events e ON t.EventId = e.Id 
         LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId 
-        LEFT JOIN problem_statements ps ON COALESCE(er.ProblemStatementId, t.ProblemStatementId) = ps.Id
+        LEFT JOIN problem_statement_selections pss ON pss.TeamId = t.Id AND pss.EventId = t.EventId
+        LEFT JOIN event_problem_statements eps ON eps.Id = pss.ProblemStatementId
+        LEFT JOIN participant_problem_statements pps ON pps.TeamId = t.Id AND pps.EventId = t.EventId
         WHERE t.Id = ? 
         LIMIT 1
     `;
