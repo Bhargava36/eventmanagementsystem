@@ -1,6 +1,20 @@
 const db = require('../../config/db');
 const bcrypt = require('bcrypt');
 
+
+const getAllEvaluators = (callback) => {
+    const query = `
+        SELECT * from evaluators
+    `;
+    db.query(query, (err, result) => {
+        if (err) {
+            return callback(err, null);
+        }
+
+        return callback(null, result);
+    });
+};
+
 const getEvaluatorsByEvent = (eventId, track, callback) => {
     let query = `
         SELECT Id, EventId, Name, Email, Username, PlainTextPassword, Track, College, Role, Status, CreatedAt, UpdatedAt 
@@ -345,35 +359,60 @@ const deleteEvaluationQuestion = (id, callback) => {
 
 const evaluatorLogin = (username, password, callback) => {
     const cleanUsername = username.trim();
+
     const sql = `
-        SELECT e.*, ev.EventName 
-        FROM evaluators e 
-        INNER JOIN events ev ON e.EventId = ev.Id 
-        WHERE (LOWER(e.Username) = LOWER(?) OR LOWER(e.Email) = LOWER(?)) 
-          AND e.Status = 'Active' 
+        SELECT
+            e.*,
+            ev.EventName,
+            r.RoleName
+        FROM evaluators e
+        INNER JOIN events ev
+            ON e.EventId = ev.Id
+        INNER JOIN roles r
+            ON LOWER(r.RoleName) = 'evaluator'
+        WHERE
+            (
+                LOWER(e.Username) = LOWER(?)
+                OR LOWER(e.Email) = LOWER(?)
+            )
+            AND e.Status = 'Active'
         LIMIT 1
     `;
 
     db.query(sql, [cleanUsername, cleanUsername], async (err, rows) => {
-        if (err) return callback(err, null);
+        if (err) {
+            return callback(err, null);
+        }
+
         if (!rows || rows.length === 0) {
-            const error = new Error('Invalid evaluator credentials or account is inactive');
+            const error = new Error(
+                'Invalid evaluator credentials or account is inactive'
+            );
             error.status = 401;
             return callback(error, null);
         }
 
-        const evaluator = rows[0];
-        const isMatch = await bcrypt.compare(password, evaluator.Password);
+        try {
+            const evaluator = rows[0];
 
-        if (!isMatch) {
-            const error = new Error('Invalid evaluator credentials');
-            error.status = 401;
+            const isMatch = await bcrypt.compare(
+                password,
+                evaluator.Password
+            );
+
+            if (!isMatch) {
+                const error = new Error('Invalid evaluator credentials');
+                error.status = 401;
+                return callback(error, null);
+            }
+
+            delete evaluator.Password;
+            delete evaluator.PlainTextPassword;
+
+            return callback(null, evaluator);
+        } catch (error) {
             return callback(error, null);
         }
-
-        delete evaluator.Password;
-        delete evaluator.PlainTextPassword;
-        callback(null, evaluator);
     });
 };
 
@@ -758,8 +797,8 @@ const getTeamPublishedResults = (teamId, callback) => {
 
         const team = teamRows[0];
         const track = team.ParticipationMode === 'Virtual' ? 'Virtual' : 'Physical';
-        const isOverallPublished = track === 'Virtual' 
-            ? Boolean(team.VirtualResultsPublished) 
+        const isOverallPublished = track === 'Virtual'
+            ? Boolean(team.VirtualResultsPublished)
             : Boolean(team.PhysicalResultsPublished);
 
         // Count total registrations for this event & track
@@ -852,7 +891,7 @@ const getTeamPublishedResults = (teamId, callback) => {
                                 let parsed = [];
                                 try {
                                     parsed = typeof sub.ScoresData === 'string' ? JSON.parse(sub.ScoresData) : (sub.ScoresData || []);
-                                } catch(e) {}
+                                } catch (e) { }
                                 return {
                                     evaluatorName: sub.EvaluatorName,
                                     evaluatorRole: sub.EvaluatorRole,
@@ -947,6 +986,7 @@ const getTeamPublishedResults = (teamId, callback) => {
 
 module.exports = {
     getEvaluatorsByEvent,
+    getAllEvaluators,
     createEvaluator,
     updateEvaluator,
     deleteEvaluator,

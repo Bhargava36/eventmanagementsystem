@@ -144,7 +144,7 @@ export function Navbar() {
                        ${isOpen ? 'max-h-[1000px] opacity-100 pt-4' : 'max-h-0 opacity-0 pt-0 pointer-events-none'}`}>
         <nav className="flex flex-col items-center space-y-4 text-base w-full">
           {navLinksData.map((link) => (
-            <Link key={link.href} to={link.href} className="text-gray-200 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-700 transition-colors w-full text-center">
+            <Link key={link.href} to={link.href} className="text-gray-600 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-700 transition-colors w-full text-center">
               {link.label}
             </Link>
           ))}

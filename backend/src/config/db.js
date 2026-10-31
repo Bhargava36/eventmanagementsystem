@@ -26,7 +26,8 @@ const migrationQueries = [
     `INSERT INTO roles (Id, RoleName, Description) VALUES
         (1, 'super_admin', 'Super Administrator'),
         (2, 'admin', 'Event Organizer / Admin'),
-        (3, 'user', 'Participant / Student')
+        (3, 'user', 'Participant / Student'),
+        (4, 'evaluator', 'Evaluator / Judge')
     ON DUPLICATE KEY UPDATE RoleName = VALUES(RoleName), Description = VALUES(Description)`,
 
     `CREATE TABLE IF NOT EXISTS events (

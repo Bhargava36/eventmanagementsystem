@@ -19,6 +19,20 @@ const getEvaluatorsByEvent = (req, res) => {
     });
 };
 
+const getAllEvaluators = (req, res) => {
+    evaluatorService.getAllEvaluators((err, evaluators) => {
+        if (err) {
+            return res.status(500).json({
+                message: err.message
+            });
+        }
+
+        res.status(200).json({
+            evaluators
+        });
+    });
+};
+
 const createEvaluator = (req, res) => {
     evaluatorService.createEvaluator(req.body, (err, result) => {
         if (err) {
@@ -181,8 +195,11 @@ const deleteEvaluationQuestion = (req, res) => {
 
 const evaluatorLogin = (req, res) => {
     const { username, password } = req.body;
+
     if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
+        return res.status(400).json({
+            message: 'Username and password are required'
+        });
     }
 
     evaluatorService.evaluatorLogin(username, password, (err, result) => {
@@ -203,6 +220,7 @@ const evaluatorLogin = (req, res) => {
                 EventName: result.EventName,
                 Track: result.Track,
                 Role: result.Role,
+                RoleName: result.RoleName,
                 College: result.College,
                 role: 'evaluator'
             },
@@ -212,11 +230,19 @@ const evaluatorLogin = (req, res) => {
             }
         );
 
-        res.status(200).json({
+        return res.status(200).json({
             message: 'Evaluator authenticated successfully',
             token,
-            evaluator: result,
-            user: result,
+            evaluator: {
+                ...result,
+                RoleName: result.RoleName,
+                role: 'evaluator'
+            },
+            user: {
+                ...result,
+                RoleName: result.RoleName,
+                role: 'evaluator'
+            },
             role: 'evaluator'
         });
     });
@@ -357,6 +383,7 @@ const getTeamPublishedResults = (req, res) => {
 
 module.exports = {
     getEvaluatorsByEvent,
+    getAllEvaluators,
     createEvaluator,
     updateEvaluator,
     deleteEvaluator,
