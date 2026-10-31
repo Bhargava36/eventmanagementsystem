@@ -98,7 +98,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10 pb-12 sm:pb-16">
           
           {/* Column 1: Platform (3 cols) */}
-          <div className="lg:col-span-3 pt-3 border-t border-zinc-200 dark:border-white/10">
+          <div className="lg:col-span-3 pt-3 ">
             <h3 className="text-sm font-semibold tracking-wide text-emerald-600 dark:text-emerald-400 font-sans mb-3.5">
               Platform
             </h3>
@@ -117,7 +117,7 @@ export function Footer() {
           </div>
 
           {/* Column 2: Portals & Access (3 cols) */}
-          <div className="lg:col-span-3 pt-3 border-t border-zinc-200 dark:border-white/10">
+          <div className="lg:col-span-3 pt-3 ">
             <h3 className="text-sm font-semibold tracking-wide text-emerald-600 dark:text-emerald-400 font-sans mb-3.5">
               Portals &amp; Access
             </h3>
@@ -136,7 +136,7 @@ export function Footer() {
           </div>
 
           {/* Column 3: Ecosystem (2 cols) */}
-          <div className="lg:col-span-2 pt-3 border-t border-zinc-200 dark:border-white/10">
+          <div className="lg:col-span-2 pt-3 ">
             <h3 className="text-sm font-semibold tracking-wide text-emerald-600 dark:text-emerald-400 font-sans mb-3.5">
               Ecosystem
             </h3>
@@ -155,7 +155,7 @@ export function Footer() {
           </div>
 
           {/* Column 4: Newsletter Box (4 cols) */}
-          <div className="lg:col-span-4 pt-3 border-t border-zinc-200 dark:border-white/10 space-y-3.5">
+          <div className="lg:col-span-4 pt-3  space-y-3.5">
             <h3 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-white leading-snug">
               Sign up for our newsletter to stay up to date
             </h3>

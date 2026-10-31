@@ -69,14 +69,13 @@ export default function HowItWorksSection() {
 
       {/* Section Header */}
       <motion.div
-        initial={{ opacity: 0, y: 25 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
+        initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
+        whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        viewport={{ once: false, amount: 0.25 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         className="text-center max-w-3xl mx-auto mb-14 sm:mb-20 space-y-4"
       >
         
-
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
           From Registration to the Victory Podium
         </h2>
@@ -96,11 +95,15 @@ export default function HowItWorksSection() {
             return (
               <motion.div
                 key={step.num}
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.6, delay: idx * 0.15, ease: 'easeOut' }}
-                whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                initial={{ opacity: 0, x: -45, scale: 0.94, filter: 'blur(6px)' }}
+                whileInView={{ opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
+                viewport={{ once: false, amount: 0.2 }}
+                transition={{
+                  duration: 0.75,
+                  delay: idx * 0.18,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                whileHover={{ y: -6, scale: 1.015, transition: { duration: 0.2 } }}
                 className="group relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-colors duration-200"
               >
                 <div className="flex items-start justify-between mb-4">
@@ -108,7 +111,7 @@ export default function HowItWorksSection() {
                     <IconComp className="w-9 h-9" />
                   </div>
 
-                  <span className="font-mono absolute top-1 right-4 text-8xl font-black text-slate-300/30 dark:text-zinc-700/60 group-hover:text-emerald-600/40 dark:group-hover:text-emerald-400/50 transition-colors">
+                  <span className="font-mono absolute top-1 right-4 text-8xl font-black text-slate-300/30 dark:text-zinc-700/60 group-hover:text-emerald-600/40 dark:group-hover:text-emerald-400/50 transition-colors select-none pointer-events-none">
                     {step.num}
                   </span>
                 </div>
@@ -133,10 +136,10 @@ export default function HowItWorksSection() {
 
         {/* Center Column: The Focal Arched Frame with Image */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.92, y: 20 }}
-          whileInView={{ opacity: 1, scale: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.7, ease: 'easeOut' }}
+          initial={{ opacity: 0, scale: 0.88, y: 35, filter: 'blur(8px)' }}
+          whileInView={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="lg:col-span-4 flex justify-center order-1 lg:order-2 my-2 lg:my-0"
         >
           <div className="relative w-full max-w-[340px] sm:max-w-[370px]">
@@ -183,11 +186,15 @@ export default function HowItWorksSection() {
             return (
               <motion.div
                 key={step.num}
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.6, delay: idx * 0.15, ease: 'easeOut' }}
-                whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                initial={{ opacity: 0, x: 45, scale: 0.94, filter: 'blur(6px)' }}
+                whileInView={{ opacity: 1, x: 0, scale: 1, filter: 'blur(0px)' }}
+                viewport={{ once: false, amount: 0.2 }}
+                transition={{
+                  duration: 0.75,
+                  delay: idx * 0.18,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                whileHover={{ y: -6, scale: 1.015, transition: { duration: 0.2 } }}
                 className="group relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl hover:border-emerald-500/50 transition-colors duration-200"
               >
                 <div className="flex items-start justify-between mb-4">
@@ -195,7 +202,7 @@ export default function HowItWorksSection() {
                     <IconComp className="w-9 h-9" />
                   </div>
 
-                  <span className="font-mono absolute top-1 right-4 text-8xl font-black text-slate-300/30 dark:text-zinc-700/60 group-hover:text-emerald-600/50 dark:group-hover:text-emerald-400/50 transition-colors">
+                  <span className="font-mono absolute top-1 right-4 text-8xl font-black text-slate-300/30 dark:text-zinc-700/60 group-hover:text-emerald-600/50 dark:group-hover:text-emerald-400/50 transition-colors select-none pointer-events-none">
                     {step.num}
                   </span>
                 </div>

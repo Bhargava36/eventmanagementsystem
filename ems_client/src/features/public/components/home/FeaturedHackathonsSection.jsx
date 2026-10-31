@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -145,15 +146,15 @@ export default function FeaturedHackathonsSection() {
       id="arena"
       className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 selection:bg-emerald-500 selection:text-white"
     >
-      {/* Section Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16">
+      {/* Section Header with Staggered Scroll Reveal */}
+      <motion.div
+        initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
+        whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        viewport={{ once: false, amount: 0.25 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16"
+      >
         <div className="space-y-3 max-w-2xl">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-mono text-xs tracking-[0.25em] text-emerald-600 dark:text-emerald-400 uppercase font-bold">
-              FEATURED COMPETITIONS
-            </span>
-          </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
             Flagship Events
           </h2>
@@ -162,16 +163,23 @@ export default function FeaturedHackathonsSection() {
           </p>
         </div>
 
-        <Link
-          to="/events"
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors self-start md:self-auto group"
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: false, amount: 0.25 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
         >
-          <span>Explore all competitions</span>
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-        </Link>
-      </div>
+          <Link
+            to="/events"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors self-start md:self-auto group"
+          >
+            <span>Explore all competitions</span>
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </motion.div>
+      </motion.div>
 
-      {/* 3 Stepped Folder-Tab Cards */}
+      {/* 3 Stepped Folder-Tab Cards with Cascading Scroll Reveals */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {events.map((event, idx) => {
           const posterUrl = getEventPosterUrl(event.Posters);
@@ -187,10 +195,19 @@ export default function FeaturedHackathonsSection() {
           const cardNum = String(idx + 1).padStart(2, '0');
 
           return (
-            <div
+            <motion.div
               key={event.Id || idx}
+              initial={{ opacity: 0, y: 55, scale: 0.94, filter: 'blur(8px)' }}
+              whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              viewport={{ once: false, amount: 0.15 }}
+              transition={{
+                duration: 0.85,
+                delay: idx * 0.16,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              whileHover={{ y: -8, transition: { duration: 0.25 } }}
               onClick={() => navigate(`/events/${event.Id}`)}
-              className="group relative rounded-[32px] overflow-hidden cursor-pointer bg-white dark:bg-black shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white h-[500px] select-none"
+              className="group relative rounded-[32px] overflow-hidden cursor-pointer bg-white dark:bg-black shadow-md hover:shadow-2xl transition-shadow duration-500 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white h-[500px] select-none"
             >
               {/* TOP VISUAL LAYER (Clean - NO pills on image, Expanded Height ~ 300px) */}
               <div className="absolute inset-x-0 top-0 h-[300px] w-full overflow-hidden bg-black">
@@ -303,7 +320,7 @@ export default function FeaturedHackathonsSection() {
 
               </div>
 
-            </div>
+            </motion.div>
           );
         })}
       </div>

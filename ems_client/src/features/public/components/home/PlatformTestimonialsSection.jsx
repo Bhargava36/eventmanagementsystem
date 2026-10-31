@@ -282,8 +282,13 @@ export default function PlatformTestimonialsSection() {
       <div className="max-w-7xl mx-auto relative z-10 space-y-10 sm:space-y-14">
         
         {/* ===================== HEADER SECTION ===================== */}
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-
+        <motion.div
+          initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
+          whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          viewport={{ once: false, amount: 0.25 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center max-w-2xl mx-auto space-y-3"
+        >
           {/* Main Heading */}
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-black dark:text-white tracking-tight leading-tight">
             Loved by Builders,<br />
@@ -296,10 +301,14 @@ export default function PlatformTestimonialsSection() {
           <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
             See what our users say about their experience, growth, and the impact we've made in their journey.
           </p>
-        </div>
+        </motion.div>
 
         {/* ===================== 3D CAROUSEL STAGE ===================== */}
-        <div 
+        <motion.div 
+          initial={{ opacity: 0, y: 60, scale: 0.94, filter: 'blur(8px)' }}
+          whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+          viewport={{ once: false, amount: 0.15 }}
+          transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="relative min-h-[420px] sm:min-h-[460px] flex items-center justify-center py-4 select-none"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -456,7 +465,7 @@ export default function PlatformTestimonialsSection() {
           >
             <ChevronRight className="w-5 h-5 stroke-[2.5]" />
           </button>
-        </div>
+        </motion.div>
 
         {/* Navigation & Pagination Controls (Prominently visible on Mobile and Desktop) */}
         <div className="flex items-center justify-center gap-4 pt-2 relative z-30">

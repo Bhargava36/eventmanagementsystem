@@ -46,35 +46,35 @@ export default function HomeFaqSection() {
   // GSAP ScrollTrigger Scroll-Reveal & Support Card Hover
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Sidebar reveal (re-triggers whenever on screen)
+      // Sidebar reveal (smooth entrance when entering view)
       if (sidebarRef.current) {
         gsap.from(sidebarRef.current, {
           scrollTrigger: {
             trigger: sectionRef.current,
-            start: 'top 88%',
-            end: 'bottom 12%',
+            start: 'top 85%',
             toggleActions: 'play reverse play reverse',
           },
           y: 40,
           opacity: 0,
-          duration: 0.8,
+          filter: 'blur(8px)',
+          duration: 0.85,
           ease: 'power3.out',
         });
       }
 
-      // FAQ Rows Stagger reveal (re-triggers whenever on screen)
+      // FAQ Rows Stagger reveal (smooth entrance when entering view)
       const items = faqListRef.current?.children;
       if (items && items.length) {
         gsap.from(items, {
           scrollTrigger: {
             trigger: faqListRef.current,
             start: 'top 85%',
-            end: 'bottom 12%',
             toggleActions: 'play reverse play reverse',
           },
           y: 35,
           opacity: 0,
-          duration: 0.7,
+          filter: 'blur(6px)',
+          duration: 0.75,
           stagger: 0.08,
           ease: 'power3.out',
         });

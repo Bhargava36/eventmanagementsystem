@@ -10,7 +10,7 @@ import { API_BASE_URL } from "@/lib/api";
 const Counter = ({ end = 0, prefix = "", suffix = "", duration = 1500 }) => {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const isInView = useInView(ref, { once: false, margin: "-50px" });
 
   useEffect(() => {
     if (!isInView) return;
@@ -51,7 +51,7 @@ const Counter = ({ end = 0, prefix = "", suffix = "", duration = 1500 }) => {
 
 export default function PlatformStatsSection() {
   const sectionRef = useRef(null);
-  const isSectionInView = useInView(sectionRef, { once: true, margin: "-80px" });
+  const isSectionInView = useInView(sectionRef, { once: false, margin: "-80px" });
 
   // Live database metrics with realistic platform baseline
   const [liveStats, setLiveStats] = useState({
@@ -139,9 +139,9 @@ export default function PlatformStatsSection() {
             <div>
               {/* Main Heading */}
               <motion.h2
-                initial={{ opacity: 0, y: 20 }}
-                animate={isSectionInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, y: 25, filter: 'blur(8px)' }}
+                animate={isSectionInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
+                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                 className="text-3xl sm:text-4xl lg:text-5xl font-normal tracking-tight text-neutral-900 dark:text-white leading-[1.12]"
               >
                 Proven Track <br className="hidden sm:inline" />
@@ -262,9 +262,9 @@ export default function PlatformStatsSection() {
             
             {/* 1. Huge Top Metric (Platform Hackathon Prize Pool from DB) */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isSectionInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, y: 30, filter: 'blur(8px)' }}
+              animate={isSectionInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
+              transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
             >
               <div className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-normal tracking-tight text-neutral-900 dark:text-white leading-none">
                 {liveStats.totalPrizeFormatted}
@@ -279,9 +279,9 @@ export default function PlatformStatsSection() {
               
               {/* Stat 1: Live Competitions Hosted */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={isSectionInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: 0.25 }}
+                initial={{ opacity: 0, y: 25, scale: 0.95, filter: 'blur(6px)' }}
+                animate={isSectionInView ? { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' } : {}}
+                transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="text-3xl sm:text-4xl lg:text-5xl font-normal tracking-tight text-neutral-900 dark:text-white leading-none">
                   <Counter end={liveStats.eventsCount} suffix="+" duration={1400} />
@@ -293,9 +293,9 @@ export default function PlatformStatsSection() {
 
               {/* Stat 2: Registered Teams */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={isSectionInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: 0.35 }}
+                initial={{ opacity: 0, y: 25, scale: 0.95, filter: 'blur(6px)' }}
+                animate={isSectionInView ? { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' } : {}}
+                transition={{ duration: 0.7, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="text-3xl sm:text-4xl lg:text-5xl font-normal tracking-tight text-neutral-900 dark:text-white leading-none">
                   <Counter end={liveStats.teamsCount} suffix="+" duration={1400} />
@@ -307,9 +307,9 @@ export default function PlatformStatsSection() {
 
               {/* Stat 3: Builders & Student Innovators */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={isSectionInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: 0.45 }}
+                initial={{ opacity: 0, y: 25, scale: 0.95, filter: 'blur(6px)' }}
+                animate={isSectionInView ? { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' } : {}}
+                transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="text-3xl sm:text-4xl lg:text-5xl font-normal tracking-tight text-neutral-900 dark:text-white leading-none">
                   <Counter end={liveStats.buildersCount} suffix="+" duration={1400} />
@@ -321,9 +321,9 @@ export default function PlatformStatsSection() {
 
               {/* Stat 4: Participating Universities & Colleges */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={isSectionInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.6, delay: 0.55 }}
+                initial={{ opacity: 0, y: 25, scale: 0.95, filter: 'blur(6px)' }}
+                animate={isSectionInView ? { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' } : {}}
+                transition={{ duration: 0.7, delay: 0.55, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="text-3xl sm:text-4xl lg:text-5xl font-normal tracking-tight text-neutral-900 dark:text-white leading-none">
                   ~<Counter end={liveStats.collegesCount} suffix="+" duration={1400} />

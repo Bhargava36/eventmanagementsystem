@@ -141,11 +141,12 @@ export const HeroSection = ({ className }) => {
       {/* ======================================================== */}
       <div className="relative z-20 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 sm:pb-12 flex flex-col items-center text-center pointer-events-none mt-auto">
         
-        {/* Subtitle / Value Proposition */}
+        {/* Subtitle / Value Proposition with Cinematic Blur Reveal */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="space-y-2 max-w-xl mx-auto"
         >
           <p className="text-xs sm:text-base text-zinc-600 dark:text-zinc-300 font-normal leading-relaxed px-4">
@@ -155,9 +156,10 @@ export const HeroSection = ({ className }) => {
 
         {/* Primary Action Buttons (Clickable) */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.45 }}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
           className="flex items-center justify-center gap-2.5 sm:gap-4 pt-3 sm:pt-4 pointer-events-auto"
         >
           {/* Explore Hackathons */}

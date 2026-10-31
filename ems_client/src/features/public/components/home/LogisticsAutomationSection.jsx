@@ -211,8 +211,14 @@ export default function LogisticsAutomationSection() {
       {/* Background Subtle Dot Pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:32px_32px] opacity-[0.03] dark:opacity-[0.05] pointer-events-none" />
 
-      {/* Header Container */}
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 mb-8 sm:mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+      {/* Header Container with Staggered Scroll Reveal */}
+      <motion.div
+        initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
+        whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        viewport={{ once: false, amount: 0.25 }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 mb-8 sm:mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6"
+      >
         <div className="max-w-2xl space-y-3">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight font-serif md:font-sans">
             Campus & Virtual Event Infrastructure
@@ -222,29 +228,39 @@ export default function LogisticsAutomationSection() {
           </p>
         </div>
 
-        {/* Navigation Controls */}
-        <div className="flex items-center gap-3">
+        {/* Navigation Controls with Spring Reveal */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: false, amount: 0.25 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="flex items-center gap-3"
+        >
           <button
             onClick={() => scrollStep(-1)}
             aria-label="Scroll left"
-            className="w-10 h-10 rounded-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black flex items-center justify-center text-slate-700 dark:text-zinc-300 hover:border-emerald-500 hover:text-emerald-500 transition-colors shadow-sm"
+            className="w-10 h-10 rounded-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black flex items-center justify-center text-slate-700 dark:text-zinc-300 hover:border-emerald-500 hover:text-emerald-500 transition-colors shadow-sm active:scale-95"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => scrollStep(1)}
             aria-label="Scroll right"
-            className="w-10 h-10 rounded-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black flex items-center justify-center text-slate-700 dark:text-zinc-300 hover:border-emerald-500 hover:text-emerald-500 transition-colors shadow-sm"
+            className="w-10 h-10 rounded-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black flex items-center justify-center text-slate-700 dark:text-zinc-300 hover:border-emerald-500 hover:text-emerald-500 transition-colors shadow-sm active:scale-95"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
       {/* ======================================================== */}
       {/* 3D CYLINDRICAL CURVED CAROUSEL CONTAINER (CoverFlow Arc) */}
       {/* ======================================================== */}
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 50, scale: 0.96, filter: 'blur(8px)' }}
+        whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+        viewport={{ once: false, amount: 0.15 }}
+        transition={{ duration: 0.85, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
         ref={containerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -487,7 +503,7 @@ export default function LogisticsAutomationSection() {
             );
           })}
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
