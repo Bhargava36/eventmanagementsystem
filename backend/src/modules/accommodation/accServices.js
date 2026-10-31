@@ -16,8 +16,7 @@ const createBlock = async ({ EventId = null, BlockName, Gender, Description = ""
 };
 
 const getAllBlocks = async (eventId = null) => {
-    const [rows] = await db.promise().query(
-        `SELECT
+    let query = `SELECT
             b.Id,
             b.EventId,
             b.BlockName,
@@ -29,12 +28,17 @@ const getAllBlocks = async (eventId = null) => {
             COALESCE(SUM(r.Capacity), 0) AS TotalCapacity,
             COALESCE(SUM(r.Occupied), 0) AS TotalOccupied
         FROM accommodation_blocks b
-        LEFT JOIN Accommodation r ON r.BlockId = b.Id
-        WHERE (? IS NULL OR b.EventId = ? OR b.EventId IS NULL)
-        GROUP BY b.Id
-        ORDER BY b.Gender ASC, b.BlockName ASC`,
-        [eventId, eventId]
-    );
+        LEFT JOIN Accommodation r ON r.BlockId = b.Id`;
+    const params = [];
+
+    if (eventId) {
+        query += ` WHERE b.EventId = ?`;
+        params.push(Number(eventId));
+    }
+
+    query += ` GROUP BY b.Id ORDER BY b.Gender ASC, b.BlockName ASC`;
+
+    const [rows] = await db.promise().query(query, params);
     return rows;
 };
 
@@ -123,20 +127,24 @@ const getRoomAssignments = (roomIds, callback) => {
 };
 
 const createRoom = async (roomData) => {
-    const { BlockId = null, room_num, Type, Gender, Capacity, Occupied = 0, UserId = null, Status = "Available" } = roomData;
+    let { EventId = null, BlockId = null, room_num, Type, Gender, Capacity, Occupied = 0, UserId = null, Status = "Available" } = roomData;
     let roomGender = Gender;
 
     if (BlockId) {
-        const [blockRows] = await db.promise().query(`SELECT Gender FROM accommodation_blocks WHERE Id = ?`, [BlockId]);
+        const [blockRows] = await db.promise().query(`SELECT EventId, Gender FROM accommodation_blocks WHERE Id = ?`, [BlockId]);
         if (blockRows[0]) {
             roomGender = blockRows[0].Gender;
+            if (!EventId && blockRows[0].EventId) {
+                EventId = blockRows[0].EventId;
+            }
         }
     }
 
-    const query = `INSERT INTO Accommodation (BlockId, room_num, Type, Gender, Capacity, Occupied, UserId, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-    const [result] = await db.promise().query(query, [BlockId, room_num.trim(), Type, roomGender, Capacity, Occupied, UserId, Status]);
+    const query = `INSERT INTO Accommodation (EventId, BlockId, room_num, Type, Gender, Capacity, Occupied, UserId, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const [result] = await db.promise().query(query, [EventId ? Number(EventId) : null, BlockId, room_num.trim(), Type, roomGender, Capacity, Occupied, UserId, Status]);
     return {
         Id: result.insertId,
+        EventId: EventId ? Number(EventId) : null,
         BlockId,
         room_num: room_num.trim(),
         Type,
@@ -148,12 +156,23 @@ const createRoom = async (roomData) => {
     };
 };
 
-const getAllRooms = async (callback) => {
+const getAllRooms = async (eventIdOrCallback, maybeCallback) => {
+    let eventId = null;
+    let callback = null;
+
+    if (typeof eventIdOrCallback === "function") {
+        callback = eventIdOrCallback;
+    } else {
+        eventId = eventIdOrCallback ? Number(eventIdOrCallback) : null;
+        if (typeof maybeCallback === "function") {
+            callback = maybeCallback;
+        }
+    }
+
     try {
-        const [roomsPromise, assignmentsPromise] = await Promise.all([
-            db.promise().query(
-                `SELECT
+        let roomsQuery = `SELECT
                     r.Id,
+                    r.EventId,
                     r.BlockId,
                     b.BlockName,
                     b.Gender AS BlockGender,
@@ -167,11 +186,15 @@ const getAllRooms = async (callback) => {
                     r.CreatedAt,
                     r.UpdatedAt
                 FROM Accommodation r
-                LEFT JOIN accommodation_blocks b ON b.Id = r.BlockId
-                ORDER BY r.Gender ASC, r.room_num ASC`
-            ),
-            db.promise().query(
-                `SELECT
+                LEFT JOIN accommodation_blocks b ON b.Id = r.BlockId`;
+        const roomsParams = [];
+        if (eventId) {
+            roomsQuery += ` WHERE (r.EventId = ? OR (r.EventId IS NULL AND b.EventId = ?))`;
+            roomsParams.push(eventId, eventId);
+        }
+        roomsQuery += ` ORDER BY r.Gender ASC, r.room_num ASC`;
+
+        let assignmentsQuery = `SELECT
                     allocation.Id AS AllocationId,
                     allocation.RoomId,
                     allocation.EventId,
@@ -186,9 +209,17 @@ const getAllRooms = async (callback) => {
                     team.TeamName
                 FROM accommodation_allocations allocation
                 INNER JOIN users user ON user.Id = allocation.UserId
-                LEFT JOIN registered_teams team ON team.Id = allocation.TeamId
-                ORDER BY allocation.CreatedAt DESC, user.UserName ASC`
-            )
+                LEFT JOIN registered_teams team ON team.Id = allocation.TeamId`;
+        const assignmentsParams = [];
+        if (eventId) {
+            assignmentsQuery += ` WHERE allocation.EventId = ?`;
+            assignmentsParams.push(eventId);
+        }
+        assignmentsQuery += ` ORDER BY allocation.CreatedAt DESC, user.UserName ASC`;
+
+        const [roomsPromise, assignmentsPromise] = await Promise.all([
+            db.promise().query(roomsQuery, roomsParams),
+            db.promise().query(assignmentsQuery, assignmentsParams)
         ]);
 
         const rooms = roomsPromise[0] || [];
@@ -222,6 +253,7 @@ const getRoomById = (id, callback) => {
     const query = `
         SELECT
             r.Id,
+            r.EventId,
             r.BlockId,
             b.BlockName,
             b.Gender AS BlockGender,
@@ -268,6 +300,7 @@ const allocateStudents = async (roomId, eventId, studentIds) => {
         const [rooms] = await connection.query(
             `SELECT
                 r.Id,
+                r.EventId,
                 r.BlockId,
                 r.Gender,
                 r.Capacity,
@@ -285,6 +318,12 @@ const allocateStudents = async (roomId, eventId, studentIds) => {
         if (!room) {
             const error = new Error("Accommodation room not found.");
             error.status = 404;
+            throw error;
+        }
+
+        if (room.EventId && Number(room.EventId) !== Number(eventId)) {
+            const error = new Error("This accommodation room does not belong to the selected event.");
+            error.status = 400;
             throw error;
         }
 
@@ -469,18 +508,27 @@ const deallocateStudent = async (roomId, userId) => {
 };
 
 const updateRoom = async (id, roomData) => {
-    const { BlockId = null, room_num, Type, Gender, Capacity, Occupied = 0, UserId = null, Status = "Available" } = roomData;
+    let { EventId = null, BlockId = null, room_num, Type, Gender, Capacity, Occupied = 0, UserId = null, Status = "Available" } = roomData;
     let roomGender = Gender;
 
     if (BlockId) {
-        const [blockRows] = await db.promise().query(`SELECT Gender FROM accommodation_blocks WHERE Id = ?`, [BlockId]);
+        const [blockRows] = await db.promise().query(`SELECT EventId, Gender FROM accommodation_blocks WHERE Id = ?`, [BlockId]);
         if (blockRows[0]) {
             roomGender = blockRows[0].Gender;
+            if (!EventId && blockRows[0].EventId) {
+                EventId = blockRows[0].EventId;
+            }
         }
     }
 
-    const query = `UPDATE Accommodation SET BlockId = ?, room_num = ?, Type = ?, Gender = ?, Capacity = ?, Occupied = ?, UserId = ?, Status = ? WHERE Id = ?`;
-    const [result] = await db.promise().query(query, [BlockId, room_num.trim(), Type, roomGender, Capacity, Occupied, UserId, Status, id]);
+    const query = EventId
+        ? `UPDATE Accommodation SET EventId = ?, BlockId = ?, room_num = ?, Type = ?, Gender = ?, Capacity = ?, Occupied = ?, UserId = ?, Status = ? WHERE Id = ?`
+        : `UPDATE Accommodation SET BlockId = ?, room_num = ?, Type = ?, Gender = ?, Capacity = ?, Occupied = ?, UserId = ?, Status = ? WHERE Id = ?`;
+    const params = EventId
+        ? [Number(EventId), BlockId, room_num.trim(), Type, roomGender, Capacity, Occupied, UserId, Status, id]
+        : [BlockId, room_num.trim(), Type, roomGender, Capacity, Occupied, UserId, Status, id];
+
+    const [result] = await db.promise().query(query, params);
     if (result.affectedRows === 0) {
         return null;
     }

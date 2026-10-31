@@ -176,7 +176,7 @@ function AccomodationRedirectPage() {
 
       const [blocksRes, roomsRes, eventRes, requestsRes, bookingsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/accommodation/blocks${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`),
-        fetch(`${API_BASE_URL}/api/accommodation`),
+        fetch(`${API_BASE_URL}/api/accommodation${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`),
         eventId ? fetch(`${API_BASE_URL}/api/events/${encodeURIComponent(eventId)}`) : Promise.resolve(null),
         eventId ? fetch(`${API_BASE_URL}/api/physical-services/events/${encodeURIComponent(eventId)}/accommodation-participants`) : Promise.resolve(null),
         eventId ? fetch(`${API_BASE_URL}/api/physical-services/events/${encodeURIComponent(eventId)}/facility-bookings`) : Promise.resolve(null),
@@ -401,6 +401,7 @@ function AccomodationRedirectPage() {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          EventId: eventId ? Number(eventId) : null,
           BlockId: roomForm.BlockId ? Number(roomForm.BlockId) : null,
           room_num: roomForm.roomNumber.trim(),
           Type: roomForm.roomType.trim(),
@@ -472,7 +473,7 @@ function AccomodationRedirectPage() {
       await fetchData();
 
       // Refresh inspected room
-      const refreshedRooms = await fetch(`${API_BASE_URL}/api/accommodation`).then((r) => r.json());
+      const refreshedRooms = await fetch(`${API_BASE_URL}/api/accommodation${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`).then((r) => r.json());
       if (Array.isArray(refreshedRooms.data)) {
         const updated = refreshedRooms.data.find((r) => r.Id === roomId);
         if (updated) setInspectingRoom(updated);
@@ -563,7 +564,7 @@ function AccomodationRedirectPage() {
 
       // If we were inspecting, refresh inspected room
       if (inspectingRoom?.Id === allocatingRoom.Id) {
-        const refreshedRooms = await fetch(`${API_BASE_URL}/api/accommodation`).then((r) => r.json());
+        const refreshedRooms = await fetch(`${API_BASE_URL}/api/accommodation${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`).then((r) => r.json());
         if (Array.isArray(refreshedRooms.data)) {
           const updated = refreshedRooms.data.find((r) => r.Id === allocatingRoom.Id);
           if (updated) setInspectingRoom(updated);

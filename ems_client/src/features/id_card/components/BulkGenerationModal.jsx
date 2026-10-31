@@ -41,6 +41,7 @@ export default function BulkGenerationModal({
   const [errorMsg, setErrorMsg] = useState('');
   const [previewParticipant, setPreviewParticipant] = useState(null);
   const [activeTemplate, setActiveTemplate] = useState(template);
+  const [batchResult, setBatchResult] = useState(null);
 
   useEffect(() => {
     if (template) setActiveTemplate(template);
@@ -444,9 +445,9 @@ export default function BulkGenerationModal({
                 </div>
 
                 <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-zinc-800">
-                  {participants.slice(0, 50).map((p) => (
+                  {participants.slice(0, 50).map((p, idx) => (
                     <div
-                      key={p.UserId || p.IdCardNumber}
+                      key={p.CardId || p.Id || (p.UserId ? `u-${p.UserId}` : null) || (p.IdCardNumber ? `c-${p.IdCardNumber}` : null) || `p-${idx}-${p.MemberEmail || p.ParticipantName || 'participant'}`}
                       className="py-2 flex items-center justify-between gap-3 text-xs"
                     >
                       <div className="min-w-0">

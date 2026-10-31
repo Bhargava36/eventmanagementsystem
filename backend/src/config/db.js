@@ -269,8 +269,9 @@ const migrationQueries = [
 
     `CREATE TABLE IF NOT EXISTS Accommodation (
     Id INT AUTO_INCREMENT PRIMARY KEY,
+    EventId INT NULL,
     BlockId INT NULL,
-    room_num VARCHAR(20) NOT NULL UNIQUE,
+    room_num VARCHAR(20) NOT NULL,
     Type VARCHAR(50) NOT NULL,
     Gender ENUM('Girls', 'Boys') NOT NULL,
     Capacity INT NOT NULL,
@@ -282,9 +283,12 @@ const migrationQueries = [
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_accommodation_gender (Gender),
     INDEX idx_accommodation_status (Status),
-    INDEX idx_accommodation_block (BlockId)
+    INDEX idx_accommodation_block (BlockId),
+    INDEX idx_accommodation_event (EventId),
+    UNIQUE KEY unique_event_room (EventId, room_num)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `ALTER TABLE Accommodation ADD COLUMN IF NOT EXISTS BlockId INT NULL`,
+    `ALTER TABLE Accommodation ADD COLUMN IF NOT EXISTS EventId INT NULL`,
 
     `CREATE TABLE IF NOT EXISTS accommodation_allocations (
     Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -644,7 +648,14 @@ const migrationQueries = [
     `UPDATE evaluators SET EventRole = Role WHERE EventRole IS NULL OR EventRole = 'Technical Evaluator'`,
     `UPDATE evaluators SET RoleId = 4 WHERE RoleId IS NULL OR RoleId = 0`,
     `ALTER TABLE evaluators MODIFY COLUMN PlainTextPassword VARCHAR(255) NULL DEFAULT NULL`,
-    `UPDATE evaluators SET PlainTextPassword = NULL WHERE PlainTextPassword IS NOT NULL`
+    `UPDATE evaluators SET PlainTextPassword = NULL WHERE PlainTextPassword IS NOT NULL`,
+
+    `ALTER TABLE Accommodation ADD COLUMN IF NOT EXISTS EventId INT NULL`,
+    `ALTER TABLE Accommodation ADD INDEX IF NOT EXISTS idx_accommodation_event (EventId)`,
+    `ALTER TABLE Accommodation DROP INDEX IF EXISTS room_num`,
+    `ALTER TABLE Accommodation ADD UNIQUE KEY IF NOT EXISTS unique_event_room (EventId, room_num)`,
+    `UPDATE Accommodation r INNER JOIN accommodation_blocks b ON r.BlockId = b.Id SET r.EventId = b.EventId WHERE r.EventId IS NULL AND b.EventId IS NOT NULL`,
+    `UPDATE Accommodation r INNER JOIN accommodation_allocations a ON r.Id = a.RoomId SET r.EventId = a.EventId WHERE r.EventId IS NULL`
 ];
 
 let isMigrating = false;

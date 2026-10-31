@@ -128,7 +128,7 @@ const removeBlock = async (req, res) => {
 
 // Rooms Controllers
 const addAccommodation = async (req, res) => {
-    const { BlockId = null, room_num, Type, Gender, Capacity, Occupied = 0, UserId = null, Status = "Available" } = req.body;
+    const { EventId, BlockId = null, room_num, Type, Gender, Capacity, Occupied = 0, UserId = null, Status = "Available" } = req.body;
     if (!room_num || !Type || Capacity == null) {
         return res.status(400).json({
             success: false,
@@ -151,6 +151,7 @@ const addAccommodation = async (req, res) => {
 
     try {
         const roomData = {
+            EventId: EventId ? Number(EventId) : (req.query.eventId ? Number(req.query.eventId) : null),
             BlockId: BlockId ? Number(BlockId) : null,
             room_num: room_num.trim(),
             Type,
@@ -171,7 +172,7 @@ const addAccommodation = async (req, res) => {
         if (err.code === "ER_DUP_ENTRY") {
             return res.status(409).json({
                 success: false,
-                message: "Room number already exists."
+                message: "Room number already exists for this event."
             });
         }
         return res.status(500).json({
@@ -182,7 +183,8 @@ const addAccommodation = async (req, res) => {
 };
 
 const getAllAccommodation = (req, res) => {
-    accServices.getAllRooms((err, result) => {
+    const eventId = req.query.eventId ? Number(req.query.eventId) : null;
+    accServices.getAllRooms(eventId, (err, result) => {
         if (err) {
             console.error("Get accommodation error:", err);
             return res.status(500).json({
@@ -282,7 +284,7 @@ const deallocateStudent = async (req, res) => {
 
 const editAccommodation = async (req, res) => {
     const { id } = req.params;
-    const { BlockId = null, room_num, Type, Gender, Capacity, Occupied, UserId = null, Status } = req.body;
+    const { EventId, BlockId = null, room_num, Type, Gender, Capacity, Occupied, UserId = null, Status } = req.body;
 
     if (!room_num || !Type || Capacity == null || Occupied == null || !Status) {
         return res.status(400).json({
@@ -293,6 +295,7 @@ const editAccommodation = async (req, res) => {
 
     try {
         const roomData = {
+            EventId: EventId ? Number(EventId) : (req.query.eventId ? Number(req.query.eventId) : null),
             BlockId: BlockId ? Number(BlockId) : null,
             room_num: room_num.trim(),
             Type,

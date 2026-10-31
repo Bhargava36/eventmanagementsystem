@@ -527,7 +527,7 @@ function AdminPhysicalEvent() {
         setRoomCountsLoading(true);
 
         const response = await fetch(
-          `${API_BASE_URL}/api/accommodation`
+          `${API_BASE_URL}/api/accommodation?eventId=${encodeURIComponent(eventId)}`
         );
 
         if (!response.ok) {
@@ -552,7 +552,7 @@ function AdminPhysicalEvent() {
             room.eventId ??
             room.event_id;
 
-          return roomEventId == null ||
+          return roomEventId != null &&
             String(roomEventId) === String(eventId);
         });
 
