@@ -21,7 +21,7 @@ import {
     X,
     Eye,
     ExternalLink,
-    Palette
+    Palette,
 } from 'lucide-react';
 import TeamCardCanvas from './TeamCardCanvas';
 import ParticipantIdCanvas from './ParticipantIdCanvas';
@@ -37,6 +37,7 @@ function TeamDetails() {
 
     // Modals
     const [showTeamCardModal, setShowTeamCardModal] = useState(false);
+    const [showProblemDetailsModal, setShowProblemDetailsModal] = useState(false);
     const [selectedMemberForId, setSelectedMemberForId] = useState(null);
 
     useEffect(() => {
@@ -371,36 +372,27 @@ function TeamDetails() {
                         )}
 
                         {problemStatement && (
-                            <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm pt-2 border-t border-slate-100 dark:border-zinc-800">
-                                <Lightbulb className="w-4 h-4 text-amber-500 mt-0.5" />
+                            <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm pt-2">
+                                <Lightbulb className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
                                 <span className="text-gray-500 dark:text-gray-400">Problem Statement</span>
                                 <div className="space-y-1">
                                     <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
-                                        {problemStatement.code && (
-                                            <span className="font-mono text-xs text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded font-black">
-                                                {problemStatement.code}
-                                            </span>
-                                        )}
-                                        <span>{problemStatement.title}</span>
+                                        <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400">
+                                            ID: {problemStatement.code ??'Not available'}
+                                        </span>
+                                        <span>{problemStatement.title || 'Untitled problem statement'}</span>
                                     </div>
-                                    {problemStatement.theme && (
-                                        <span className="text-xs text-slate-500 dark:text-zinc-400 block">
-                                            Theme: <strong className="text-slate-700 dark:text-zinc-300">{problemStatement.theme}</strong> ({problemStatement.type})
-                                        </span>
-                                    )}
-                                    {problemStatement.techStack && (
-                                        <span className="text-xs text-slate-500 dark:text-zinc-400 block">
-                                            Tech Stack: {problemStatement.techStack}
-                                        </span>
-                                    )}
-                                    {problemStatement.description && (
-                                        <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line pt-1">
-                                            {problemStatement.description}
-                                        </p>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowProblemDetailsModal(true)}
+                                        className="text-xs text-slate-500 dark:text-zinc-400 block hover:text-emerald-600 dark:hover:text-emerald-400 transition font-medium cursor-pointer"
+                                    >
+                                        View Details
+                                    </button>
                                 </div>
                             </div>
                         )}
+
 
                         <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                             <Users className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
@@ -652,6 +644,75 @@ function TeamDetails() {
                     </div>
                 </div>
             </div>
+
+            <AnimatePresence>
+                {showProblemDetailsModal && problemStatement && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 backdrop-blur-sm p-3 sm:p-5"
+                        onClick={() => setShowProblemDetailsModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="problem-statement-modal-title"
+                            className="my-auto w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-5 text-gray-900 shadow-2xl dark:border-zinc-800 dark:bg-slate-950 dark:text-white"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <div className="mb-5 flex items-start justify-between gap-4 border-b border-gray-200 pb-4 dark:border-zinc-800">
+                                <div className="min-w-0">
+                                    <div className="mb-2 flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                                        <Lightbulb className="h-4 w-4 shrink-0" />
+                                        <span className="text-xs font-semibold uppercase tracking-wide">
+                                            Problem Statement
+                                        </span>
+                                    </div>
+                                    <h2
+                                        id="problem-statement-modal-title"
+                                        className="text-lg font-bold text-gray-900 dark:text-white"
+                                    >
+                                        {problemStatement.title || 'Untitled problem statement'}
+                                    </h2>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowProblemDetailsModal(false)}
+                                    aria-label="Close problem statement details"
+                                    className="shrink-0 rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white"
+                                >
+                                    <X className="h-5 w-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <span className="block whitespace-pre-wrap break-words text-xs text-slate-500 dark:text-zinc-400">
+                                        Description: <strong className="font-medium text-slate-700 dark:text-zinc-300">
+                                            {problemStatement.description || 'No description available.'}
+                                        </strong>
+                                    </span>
+                                </div>
+
+                                <div className="space-y-2 border-t border-gray-200 pt-4 dark:border-zinc-800">
+                                    {problemStatement.theme && (
+                                        <span className="block text-xs text-slate-500 dark:text-zinc-400">
+                                            Theme: <strong className="text-slate-700 dark:text-zinc-300">{problemStatement.theme}</strong>
+                                            {problemStatement.type && ` (${problemStatement.type})`}
+                                        </span>
+                                    )}
+                                    {problemStatement.techStack && (
+                                        <span className="block whitespace-pre-wrap break-words text-xs text-slate-500 dark:text-zinc-400">
+                                            Tech Stack: {problemStatement.techStack}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* MODAL 1: TEAM CARD DOWNLOAD & PREVIEW (LANDSCAPE CYBER FORMAT) */}
             <AnimatePresence>

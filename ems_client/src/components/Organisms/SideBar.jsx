@@ -294,7 +294,7 @@ const SidebarContent = ({
       {/* Fixed Footer */}
       <div className="mt-auto shrink-0 pt-3 ">
         <ThemeToggle variant="sidebar" canShowText={canShowText} />
-
+        <div className="border-t border-gray-200 dark:border-[#1A2440] my-3"></div>
         <button
           onClick={handleLogout}
           title={!isMobile && collapsed ? 'Logout' : ''}

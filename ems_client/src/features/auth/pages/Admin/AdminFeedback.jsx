@@ -24,14 +24,8 @@ const renderStars = (rating) => (
 );
 
 const getStoredAdminId = () => {
-  const possibleKeys = ['userId', 'UserId', 'id', 'Id', 'adminId', 'AdminId'];
-  for (const key of possibleKeys) {
-    const value = localStorage.getItem(key);
-    if (value && value !== 'null' && value !== 'undefined') {
-      return value;
-    }
-  }
-  const possibleUserKeys = ['user', 'admin', 'loggedInUser', 'currentUser'];
+  
+  const possibleUserKeys = ['admin'];
   for (const key of possibleUserKeys) {
     const value = localStorage.getItem(key);
     if (!value) continue;
