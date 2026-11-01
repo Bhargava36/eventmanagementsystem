@@ -10,7 +10,7 @@ import { API_BASE_URL } from "@/lib/api";
 const Counter = ({ end = 0, prefix = "", suffix = "", duration = 1500 }) => {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: false, margin: "-50px" });
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
 
   useEffect(() => {
     if (!isInView) return;
@@ -51,7 +51,7 @@ const Counter = ({ end = 0, prefix = "", suffix = "", duration = 1500 }) => {
 
 export default function PlatformStatsSection() {
   const sectionRef = useRef(null);
-  const isSectionInView = useInView(sectionRef, { once: false, margin: "-80px" });
+  const isSectionInView = useInView(sectionRef, { once: true, margin: "-80px" });
 
   // Live database metrics with realistic platform baseline
   const [liveStats, setLiveStats] = useState({

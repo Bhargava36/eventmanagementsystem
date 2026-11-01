@@ -17,6 +17,7 @@ export default function ParallaxStoryBackdrop() {
         gsap.to(layer1Ref.current, {
           y: -140,
           ease: 'none',
+          force3D: true,
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top top',
@@ -31,6 +32,7 @@ export default function ParallaxStoryBackdrop() {
         gsap.to(layer2Ref.current, {
           y: -280,
           ease: 'none',
+          force3D: true,
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top top',
@@ -46,6 +48,7 @@ export default function ParallaxStoryBackdrop() {
           y: -420,
           rotate: 45,
           ease: 'none',
+          force3D: true,
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top top',
@@ -67,7 +70,7 @@ export default function ParallaxStoryBackdrop() {
       {/* Parallax Layer 1: Faint Coordinates */}
       <div
         ref={layer1Ref}
-        className="absolute inset-0 flex flex-col justify-between py-40 px-12 text-slate-300/40 dark:text-zinc-800/40 font-mono text-[10px] space-y-96"
+        className="absolute inset-0 flex flex-col justify-between py-40 px-12 text-slate-300/40 dark:text-zinc-800/40 font-mono text-[10px] space-y-96 transform-gpu will-change-transform"
       >
         <div className="flex justify-between">
           <span>// LAT 17.6868° N • LON 83.2185° E</span>
@@ -85,13 +88,13 @@ export default function ParallaxStoryBackdrop() {
       </div>
 
       {/* Parallax Layer 2: Ambient Glowing Energy Nodes */}
-      <div ref={layer2Ref} className="absolute inset-0">
-        <div className="absolute top-1/4 -left-20 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl" />
-        <div className="absolute top-2/3 -right-20 w-96 h-96 rounded-full bg-emerald-500/5 blur-3xl" />
+      <div ref={layer2Ref} className="absolute inset-0 transform-gpu will-change-transform">
+        <div className="absolute top-1/4 -left-20 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl transform-gpu" />
+        <div className="absolute top-2/3 -right-20 w-96 h-96 rounded-full bg-emerald-500/5 blur-3xl transform-gpu" />
       </div>
 
       {/* Parallax Layer 3: Faint Geometric Axis */}
-      <div ref={layer3Ref} className="absolute right-10 top-1/2 opacity-20 dark:opacity-10">
+      <div ref={layer3Ref} className="absolute right-10 top-1/2 opacity-20 dark:opacity-10 transform-gpu will-change-transform">
         <svg width="240" height="240" viewBox="0 0 240 240" fill="none">
           <circle cx="120" cy="120" r="100" stroke="#10b981" strokeWidth="1" strokeDasharray="4 8" />
           <circle cx="120" cy="120" r="60" stroke="#10b981" strokeWidth="1" />

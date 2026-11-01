@@ -1,14 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useRef, useCallback } from "react";
 import Spline from "@splinetool/react-spline";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export const HeroSection = ({ className }) => {
+  const heroRef = useRef(null);
+  const isHeroInView = useInView(heroRef, { margin: "250px" });
   const [splineLoaded, setSplineLoaded] = useState(false);
-  const splineAppRef = React.useRef(null);
+  const splineAppRef = useRef(null);
 
   // Responsive Zoom Tuning for 4K-exported scenes:
   // Dynamically scales the camera zoom so the 4K design fits flawlessly on mobile
@@ -93,6 +95,7 @@ export const HeroSection = ({ className }) => {
 
   return (
     <section
+      ref={heroRef}
       className={cn(
         "relative w-full min-h-[92vh] sm:min-h-screen bg-white dark:bg-black overflow-hidden flex flex-col justify-between transition-colors duration-300 select-none",
         className
@@ -102,7 +105,10 @@ export const HeroSection = ({ className }) => {
       {/* 1. 3D SPLINE SCENE CANVAS (SMOOTH BOTTOM-TO-TOP MOTION)  */}
       {/* User's custom scene: https://prod.spline.design/7EOAAK0Mc7k1gp0O/scene.splinecode */}
       {/* ======================================================== */}
-      <div className="absolute inset-0 w-full h-full z-0 flex items-center justify-center transform-gpu overflow-hidden">
+      <div 
+        className="absolute inset-0 w-full h-full z-0 flex items-center justify-center transform-gpu overflow-hidden"
+        style={{ visibility: isHeroInView ? "visible" : "hidden" }}
+      >
         <Suspense fallback={null}>
           <motion.div
             initial={{ opacity: 0, y: 100, scale: 0.94 }}

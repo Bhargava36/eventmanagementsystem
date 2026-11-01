@@ -152,42 +152,21 @@ export default function PlatformTestimonialsSection() {
     };
   }, []);
 
-  const AUTOPLAY_DURATION = 6000; // 6 seconds per testimonial
-  const [progress, setProgress] = useState(0);
-
-  const selectTestimonial = useCallback((idx) => {
-    setActiveIndex(idx);
-    setProgress(0);
-  }, []);
-
   const handlePrev = useCallback(() => {
     setActiveIndex((prev) => (prev === 0 ? total - 1 : prev - 1));
-    setProgress(0);
   }, [total]);
 
   const handleNext = useCallback(() => {
     setActiveIndex((prev) => (prev === total - 1 ? 0 : prev + 1));
-    setProgress(0);
   }, [total]);
 
-  // Live timer interval driving both the animated countdown bar and automatic advancement
+  // Gentle 6s slide rotation when not hovered
   useEffect(() => {
     if (isPaused) return;
-
-    const intervalStep = 50; // update every 50ms for fluid progress
-    const step = (intervalStep / AUTOPLAY_DURATION) * 100;
-
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          handleNext();
-          return 0;
-        }
-        return prev + step;
-      });
-    }, intervalStep);
-
-    return () => clearInterval(interval);
+    const timer = setInterval(() => {
+      handleNext();
+    }, 6000);
+    return () => clearInterval(timer);
   }, [isPaused, handleNext]);
 
   // Touch swipe support for mobile
@@ -423,7 +402,7 @@ export default function PlatformTestimonialsSection() {
                   key={item.id}
                   onClick={() => {
                     if (!isCenter) {
-                      selectTestimonial(idx);
+                      setActiveIndex(idx);
                     }
                   }}
                   animate={{
@@ -526,26 +505,36 @@ export default function PlatformTestimonialsSection() {
           </motion.div>
         </motion.div>
 
-        {/* Pagination Indicators with Active Live Countdown Progress Bar */}
+        {/* Pagination Indicators with Active Live Countdown Progress Bar (Composited GPU Animation) */}
         <div className="flex items-center justify-center pt-5 relative z-40">
+          <style>{`
+            @keyframes testimonialProgressFill {
+              0% { width: 0%; }
+              100% { width: 100%; }
+            }
+          `}</style>
           <div className="flex items-center gap-2">
             {testimonials.map((_, idx) => {
               const isActive = idx === activeIndex;
               return (
                 <button
                   key={idx}
-                  onClick={() => selectTestimonial(idx)}
+                  onClick={() => setActiveIndex(idx)}
                   aria-label={`Go to testimonial ${idx + 1}`}
                   className={`relative h-2.5 rounded-full transition-all duration-300 overflow-hidden cursor-pointer ${
                     isActive
-                      ? 'w-5 sm:w-8 bg-zinc-200 dark:bg-zinc-800 ring-1 ring-emerald-500/40'
+                      ? 'w-7 sm:w-10 bg-zinc-200 dark:bg-zinc-800 ring-1 ring-emerald-500/40'
                       : 'w-2.5 sm:w-3 bg-zinc-300 dark:bg-zinc-700 hover:bg-zinc-400'
                   }`}
                 >
                   {isActive && (
                     <div
-                      className="absolute left-0 top-0 bottom-0 bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-75 ease-linear"
-                      style={{ width: `${progress}%` }}
+                      key={`progress-fill-${activeIndex}`}
+                      className="absolute left-0 top-0 bottom-0 bg-emerald-500 dark:bg-emerald-400 rounded-full"
+                      style={{
+                        animation: 'testimonialProgressFill 6000ms linear forwards',
+                        animationPlayState: isPaused ? 'paused' : 'running',
+                      }}
                     />
                   )}
                 </button>

@@ -25,10 +25,11 @@ export default function HomePage() {
   // Lenis Smooth Scroll Integration with GSAP ScrollTrigger
   useEffect(() => {
     const lenis = new Lenis({
-      duration: 1.15,
+      duration: 0.85,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
-      wheelMultiplier: 1.1,
+      wheelMultiplier: 1.0,
+      touchMultiplier: 1.2,
     });
 
     lenis.on('scroll', ScrollTrigger.update);
@@ -37,9 +38,16 @@ export default function HomePage() {
       lenis.raf(time * 1000);
     };
     gsap.ticker.add(tickerCb);
-    gsap.ticker.lagSmoothing(0);
+    // Smooth lag compensation (max 500ms lag smoothed over 33ms steps)
+    gsap.ticker.lagSmoothing(500, 33);
+
+    // Initial trigger recalibration
+    const refreshTimer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 200);
 
     return () => {
+      clearTimeout(refreshTimer);
       gsap.ticker.remove(tickerCb);
       lenis.destroy();
     };

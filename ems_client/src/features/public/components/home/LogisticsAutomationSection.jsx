@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import {
   QrCode,
   Utensils,
@@ -78,10 +78,11 @@ const INFRASTRUCTURE_CARDS = [
 export default function LogisticsAutomationSection() {
   const containerRef = useRef(null);
   const trackRef = useRef(null);
+  const cardRefs = useRef([]);
   const animFrameId = useRef(null);
+  const isInView = useInView(containerRef, { margin: "150px" });
 
   // Position and scrolling state
-  const [scrollPos, setScrollPos] = useState(0);
   const scrollPosRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -91,8 +92,7 @@ export default function LogisticsAutomationSection() {
   const lastDragTime = useRef(0);
   const lastDragX = useRef(0);
 
-  // Responsive card measurements:
-  // Tight gap (10px) so cards sit side-by-side like the reference image
+  // Responsive card measurements
   const [containerWidth, setContainerWidth] = useState(1200);
   const cardWidth = 320;
   const cardGap = 16;
@@ -101,11 +101,36 @@ export default function LogisticsAutomationSection() {
   // Triplicate cards so the 3D loop repeats infinitely without seam
   const loopCards = [...INFRASTRUCTURE_CARDS, ...INFRASTRUCTURE_CARDS, ...INFRASTRUCTURE_CARDS];
 
+  // Direct GPU Transform updater - 0 React Re-renders!
+  const updateCardTransforms = useCallback((pos) => {
+    const containerCenter = containerWidth / 2;
+    for (let idx = 0; idx < loopCards.length; idx++) {
+      const el = cardRefs.current[idx];
+      if (!el) continue;
+
+      const cardX = idx * (cardWidth + cardGap) - pos;
+      const cardCenter = cardX + cardWidth / 2;
+      const dist = cardCenter - containerCenter;
+      const norm = dist / (containerWidth * 0.45);
+      const clampedNorm = Math.max(-1.8, Math.min(1.8, norm));
+
+      const rotateY = clampedNorm * -20;
+      const translateZ = -Math.pow(Math.abs(clampedNorm), 1.6) * 75;
+      const scale = Math.max(0.84, 1 - Math.abs(clampedNorm) * 0.05);
+      const opacity = Math.max(0.5, 1 - Math.abs(clampedNorm) * 0.2);
+
+      el.style.transform = `translateX(${-pos}px) perspective(1300px) rotateY(${rotateY}deg) translateZ(${translateZ}px) scale(${scale})`;
+      el.style.opacity = opacity;
+      el.style.zIndex = Math.round(100 - Math.abs(clampedNorm) * 20);
+    }
+  }, [containerWidth, singleSetWidth, cardWidth, cardGap, loopCards.length]);
+
   // Measure container dimensions
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
-        setContainerWidth(containerRef.current.clientWidth);
+        const w = containerRef.current.clientWidth;
+        setContainerWidth(w);
       }
     };
     updateWidth();
@@ -113,8 +138,15 @@ export default function LogisticsAutomationSection() {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  // Continuous silky smooth auto-scroll loop
+  // Update layout once containerWidth is known
   useEffect(() => {
+    updateCardTransforms(scrollPosRef.current);
+  }, [containerWidth, updateCardTransforms]);
+
+  // Continuous silky smooth auto-scroll loop (Pauses when offscreen!)
+  useEffect(() => {
+    if (!isInView) return;
+
     const baseSpeed = 0.8;
 
     const animateLoop = () => {
@@ -135,14 +167,14 @@ export default function LogisticsAutomationSection() {
           scrollPosRef.current += singleSetWidth;
         }
 
-        setScrollPos(scrollPosRef.current);
+        updateCardTransforms(scrollPosRef.current);
       }
       animFrameId.current = requestAnimationFrame(animateLoop);
     };
 
     animFrameId.current = requestAnimationFrame(animateLoop);
     return () => cancelAnimationFrame(animFrameId.current);
-  }, [isDragging, isHovered, singleSetWidth]);
+  }, [isInView, isDragging, isHovered, singleSetWidth, updateCardTransforms]);
 
   // Mouse Drag / Touch Swipe Handlers (Hand cursor dragging like reference image)
   const handleMouseDown = (e) => {
@@ -177,9 +209,9 @@ export default function LogisticsAutomationSection() {
         dragStartScroll.current += singleSetWidth;
       }
 
-      setScrollPos(scrollPosRef.current);
+      updateCardTransforms(scrollPosRef.current);
     },
-    [isDragging, singleSetWidth]
+    [isDragging, singleSetWidth, updateCardTransforms]
   );
 
   const handleMouseUp = () => {
@@ -192,7 +224,7 @@ export default function LogisticsAutomationSection() {
     scrollPosRef.current += direction * shift;
     if (scrollPosRef.current >= singleSetWidth) scrollPosRef.current -= singleSetWidth;
     if (scrollPosRef.current < 0) scrollPosRef.current += singleSetWidth;
-    setScrollPos(scrollPosRef.current);
+    updateCardTransforms(scrollPosRef.current);
   };
 
   return (
@@ -283,37 +315,18 @@ export default function LogisticsAutomationSection() {
           }}
         >
           {loopCards.map((card, idx) => {
-            // Absolute X position of this card in the infinite track
-            const cardX = idx * (cardWidth + cardGap) - scrollPos;
-            const cardCenter = cardX + cardWidth / 2;
-            const containerCenter = containerWidth / 2;
-
-            // Distance from center of screen (-1 to +1 normalized)
-            const dist = cardCenter - containerCenter;
-            const norm = dist / (containerWidth * 0.45);
-            const clampedNorm = Math.max(-1.8, Math.min(1.8, norm));
-
-            // Cylindrical Arc Math:
-            // Tight side-by-side spacing with smooth curved rotation
-            const rotateY = clampedNorm * -20;
-            const translateZ = -Math.pow(Math.abs(clampedNorm), 1.6) * 75;
-            const scale = Math.max(0.84, 1 - Math.abs(clampedNorm) * 0.05);
-            const opacity = Math.max(0.5, 1 - Math.abs(clampedNorm) * 0.2);
-
             const IconComponent = card.icon;
 
             return (
               <div
                 key={`${card.id}-${idx}`}
+                ref={(el) => (cardRefs.current[idx] = el)}
                 className="absolute shrink-0 select-none transition-shadow duration-300"
                 style={{
                   width: `${cardWidth}px`,
                   height: "440px",
                   left: `${idx * (cardWidth + cardGap)}px`,
-                  transform: `translateX(${-scrollPos}px) perspective(1300px) rotateY(${rotateY}deg) translateZ(${translateZ}px) scale(${scale})`,
                   transformStyle: "preserve-3d",
-                  opacity,
-                  zIndex: Math.round(100 - Math.abs(clampedNorm) * 20),
                   willChange: "transform, opacity",
                 }}
               >
