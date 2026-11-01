@@ -129,7 +129,7 @@ export default function PlatformStatsSection() {
       ref={sectionRef}
       className="relative w-full bg-white dark:bg-black text-neutral-900 dark:text-white transition-colors duration-300 py-20 sm:py-28 lg:py-32 overflow-hidden border-t border-neutral-100 dark:border-white/5"
     >
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+      <div className=" w-full md:max-w-[80%] mx-auto px-6 sm:px-10 lg:px-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           
           {/* ========================================================= */}

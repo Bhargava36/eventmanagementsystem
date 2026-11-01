@@ -1,7 +1,7 @@
 const platformFeedbackService = require('./platformFeedbackService');
 
 const createFeedback = (req, res) => {
-    const { userId, userName, userEmail, rating, category, comments } = req.body;
+    const { userId, userName, userEmail, userPhoto, rating, category, comments } = req.body;
 
     if (!userName?.trim() || rating === undefined || rating === null || !comments?.trim()) {
         return res.status(400).json({
@@ -20,6 +20,7 @@ const createFeedback = (req, res) => {
         UserId: userId ? Number(userId) : null,
         UserName: userName.trim(),
         UserEmail: userEmail?.trim() || null,
+        UserPhoto: userPhoto?.trim() || null,
         Rating: numRating,
         Category: category?.trim() || 'General Experience',
         Comments: comments.trim()

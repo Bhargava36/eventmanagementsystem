@@ -31,7 +31,22 @@ const createFeedback = (feedbackData, callback) => {
 };
 
 const getAllFeedback = (callback) => {
-    const query = `SELECT f.Id, f.UserName, f.EventName, f.Category, f.Rating, f.Comments, f.EventId, f.AdminId, f.CreatedAt FROM feedback f ORDER BY f.CreatedAt DESC`;
+    const query = `
+        SELECT 
+            f.Id, 
+            f.UserName, 
+            f.EventName, 
+            f.Category, 
+            f.Rating, 
+            f.Comments, 
+            f.EventId, 
+            f.AdminId, 
+            f.CreatedAt,
+            u.Photo AS UserPhoto
+        FROM feedback f 
+        LEFT JOIN users u ON LOWER(TRIM(u.UserName)) = LOWER(TRIM(f.UserName))
+        ORDER BY f.CreatedAt DESC
+    `;
     db.query(query, (err, results) => {
         if (err) {
             return callback(err, null);

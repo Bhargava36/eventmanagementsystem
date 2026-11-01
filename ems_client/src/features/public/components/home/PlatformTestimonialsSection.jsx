@@ -10,6 +10,21 @@ import { API_BASE_URL } from '@/lib/api';
 
 
 
+const resolveAvatarUrl = (photo, name) => {
+  if (photo && typeof photo === 'string' && photo.trim().length > 0) {
+    let trimmed = photo.trim();
+    if (trimmed.startsWith('http://localhost:3000') && API_BASE_URL !== 'http://localhost:3000') {
+      trimmed = trimmed.replace('http://localhost:3000', API_BASE_URL);
+    }
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:')) {
+      return trimmed;
+    }
+    const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    return `${API_BASE_URL}${cleanPath}`;
+  }
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || 'AY')}&backgroundColor=10b981,059669,047857`;
+};
+
 /**
  * 5 Testimonials styled exclusively with Emerald, Pure White & Black
  */
@@ -105,14 +120,19 @@ export default function PlatformTestimonialsSection() {
             const data = await res.json();
             const rawList = data.testimonials || data.feedback || (Array.isArray(data) ? data : null);
             if (Array.isArray(rawList) && rawList.length > 0 && isMounted) {
-              const formatted = rawList.map((item, idx) => ({
-                id: item.Id || `db-review-${idx}`,
-                name: item.UserName || `Builder #${idx + 1}`,
-                role: item.Category || (item.EventName ? `Participant (${item.EventName})` : 'Event Participant'),
-                quote: item.Comments || 'Great platform for collegiate innovation.',
-                rating: Number(item.Rating) || 5,
-                avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.UserName || 'AY')}&backgroundColor=10b981,059669,047857`,
-              }));
+              const formatted = rawList.map((item, idx) => {
+                const photoSrc = item.UserPhoto || item.Photo || item.photo;
+                const hasPhoto = Boolean(photoSrc && typeof photoSrc === 'string' && photoSrc.trim().length > 0);
+                return {
+                  id: item.Id || `db-review-${idx}`,
+                  name: item.UserName || `Builder #${idx + 1}`,
+                  role: item.Category || (item.EventName ? `Participant (${item.EventName})` : 'Event Participant'),
+                  quote: item.Comments || 'Great platform for collegiate innovation.',
+                  rating: Number(item.Rating) || 5,
+                  avatar: resolveAvatarUrl(photoSrc, item.UserName),
+                  hasPhoto,
+                };
+              });
 
               if (formatted.length >= 3) {
                 setTestimonials(formatted);
@@ -132,20 +152,41 @@ export default function PlatformTestimonialsSection() {
     };
   }, []);
 
+  const AUTOPLAY_DURATION = 6000; // 6 seconds per testimonial
+  const [progress, setProgress] = useState(0);
+
+  const selectTestimonial = useCallback((idx) => {
+    setActiveIndex(idx);
+    setProgress(0);
+  }, []);
+
   const handlePrev = useCallback(() => {
     setActiveIndex((prev) => (prev === 0 ? total - 1 : prev - 1));
+    setProgress(0);
   }, [total]);
 
   const handleNext = useCallback(() => {
     setActiveIndex((prev) => (prev === total - 1 ? 0 : prev + 1));
+    setProgress(0);
   }, [total]);
 
-  // Gentle auto-rotation every 6 seconds when not hovered
+  // Live timer interval driving both the animated countdown bar and automatic advancement
   useEffect(() => {
     if (isPaused) return;
+
+    const intervalStep = 50; // update every 50ms for fluid progress
+    const step = (intervalStep / AUTOPLAY_DURATION) * 100;
+
     const interval = setInterval(() => {
-      handleNext();
-    }, 6500);
+      setProgress((prev) => {
+        if (prev >= 100) {
+          handleNext();
+          return 0;
+        }
+        return prev + step;
+      });
+    }, intervalStep);
+
     return () => clearInterval(interval);
   }, [isPaused, handleNext]);
 
@@ -179,92 +220,101 @@ export default function PlatformTestimonialsSection() {
   };
 
   /**
-   * 3D Cylindrical arc transform calculation
+   * 3D Cylindrical arc transform calculation (Full-Width Responsive Spread)
    */
   const getCardTransform = (idx) => {
     let diff = idx - activeIndex;
     if (diff > total / 2) diff -= total;
     if (diff < -total / 2) diff += total;
 
-    const nearX = isMobile ? 140 : isTablet ? 210 : 270;
-    const farX = isMobile ? 250 : isTablet ? 380 : 490;
+    // Dynamically scale distances according to windowWidth so cards fill the entire screen
+    const screenHalf = windowWidth / 2;
+    const nearX = isMobile ? 150 : isTablet ? 260 : Math.min(screenHalf * 0.44, 450);
+    const farX = isMobile ? 280 : isTablet ? 490 : Math.min(screenHalf * 0.84, 860);
+    const extremeX = isMobile ? 400 : isTablet ? 680 : Math.min(screenHalf * 1.2, 1250);
 
     if (diff === 0) {
       // CENTER HERO CARD: Swoops forward in 3D space with high Z-depth
       return {
         x: 0,
         y: isMobile ? -6 : -16,
-        z: isMobile ? 80 : 150,
+        z: isMobile ? 80 : 160,
         scale: isMobile ? 1.02 : 1.08,
         rotateY: 0,
         rotateZ: 0,
         zIndex: 40,
         opacity: 1,
         blur: 'blur(0px)',
+        pointerEvents: 'auto',
       };
     } else if (diff === -1) {
       // NEAR LEFT
       return {
         x: -nearX,
-        y: isMobile ? 4 : 6,
+        y: isMobile ? 4 : 8,
         z: isMobile ? -20 : -40,
-        scale: isMobile ? 0.85 : 0.88,
-        rotateY: isMobile ? 24 : 32,
+        scale: isMobile ? 0.86 : 0.9,
+        rotateY: isMobile ? 22 : 28,
         rotateZ: 2,
         zIndex: 25,
-        opacity: 0.9,
-        blur: 'blur(0.3px)',
+        opacity: 0.92,
+        blur: 'blur(0px)',
+        pointerEvents: 'auto',
       };
     } else if (diff === 1) {
       // NEAR RIGHT
       return {
         x: nearX,
-        y: isMobile ? 4 : 6,
+        y: isMobile ? 4 : 8,
         z: isMobile ? -20 : -40,
-        scale: isMobile ? 0.85 : 0.88,
-        rotateY: isMobile ? -24 : -32,
+        scale: isMobile ? 0.86 : 0.9,
+        rotateY: isMobile ? -22 : -28,
         rotateZ: -2,
         zIndex: 25,
-        opacity: 0.9,
-        blur: 'blur(0.3px)',
+        opacity: 0.92,
+        blur: 'blur(0px)',
+        pointerEvents: 'auto',
       };
     } else if (diff === -2) {
-      // FAR LEFT
+      // FAR LEFT (Spreads toward left screen edge)
       return {
         x: -farX,
         y: isMobile ? 12 : 20,
-        z: isMobile ? -80 : -170,
-        scale: isMobile ? 0.7 : 0.74,
-        rotateY: isMobile ? 40 : 50,
+        z: isMobile ? -80 : -160,
+        scale: isMobile ? 0.72 : 0.78,
+        rotateY: isMobile ? 36 : 42,
         rotateZ: 3.5,
-        zIndex: 10,
-        opacity: isMobile ? 0.35 : 0.65,
-        blur: 'blur(1px)',
+        zIndex: 15,
+        opacity: isMobile ? 0.35 : 0.75,
+        blur: 'blur(0.5px)',
+        pointerEvents: 'auto',
       };
     } else if (diff === 2) {
-      // FAR RIGHT
+      // FAR RIGHT (Spreads toward right screen edge)
       return {
         x: farX,
         y: isMobile ? 12 : 20,
-        z: isMobile ? -80 : -170,
-        scale: isMobile ? 0.7 : 0.74,
-        rotateY: isMobile ? -40 : -50,
+        z: isMobile ? -80 : -160,
+        scale: isMobile ? 0.72 : 0.78,
+        rotateY: isMobile ? -36 : -42,
         rotateZ: -3.5,
-        zIndex: 10,
-        opacity: isMobile ? 0.35 : 0.65,
-        blur: 'blur(1px)',
+        zIndex: 15,
+        opacity: isMobile ? 0.35 : 0.75,
+        blur: 'blur(0.5px)',
+        pointerEvents: 'auto',
       };
     } else {
       return {
-        x: diff < 0 ? -farX * 1.3 : farX * 1.3,
+        x: diff < 0 ? -extremeX : extremeX,
         y: 35,
         z: -320,
-        scale: 0.55,
-        rotateY: diff < 0 ? 60 : -60,
+        scale: 0.6,
+        rotateY: diff < 0 ? 55 : -55,
         rotateZ: 0,
         zIndex: 5,
         opacity: 0,
         blur: 'blur(4px)',
+        pointerEvents: 'none',
       };
     }
   };
@@ -274,14 +324,13 @@ export default function PlatformTestimonialsSection() {
       id="testimonials"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={handleMouseLeave}
-      className="relative py-20 sm:py-28 px-4 sm:px-6 lg:px-8 overflow-hidden bg-white dark:bg-black select-none border-t border-zinc-200/80 dark:border-zinc-800/80"
+      className="relative py-20 sm:py-28 overflow-hidden bg-white dark:bg-black select-none border-t border-zinc-200/80 dark:border-zinc-800/80"
     >
-      {/* Delicate, soft Emerald Ambient Glow (Toned down) */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[650px] h-[280px] bg-emerald-500/[0.04] dark:bg-emerald-500/[0.05] rounded-full blur-[100px] pointer-events-none" />
+      {/* Soft Emerald Ambient Glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] sm:w-[1200px] h-[350px] bg-emerald-500/[0.04] dark:bg-emerald-500/[0.05] rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto relative z-10 space-y-10 sm:space-y-14">
-        
-        {/* ===================== HEADER SECTION ===================== */}
+      {/* ===================== HEADER SECTION ===================== */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-12 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
           whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -302,30 +351,60 @@ export default function PlatformTestimonialsSection() {
             See what our users say about their experience, growth, and the impact we've made in their journey.
           </p>
         </motion.div>
+      </div>
 
-        {/* ===================== 3D CAROUSEL STAGE ===================== */}
+      {/* ===================== FULL-WIDTH 3D CAROUSEL STAGE ===================== */}
+      <div className="relative w-full overflow-hidden">
+        {/* Soft edge fade masks for seamless full-bleed depth */}
+        <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 sm:w-32 lg:w-48 bg-gradient-to-r from-white dark:from-black to-transparent z-30" />
+        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 sm:w-32 lg:w-48 bg-gradient-to-l from-white dark:from-black to-transparent z-30" />
+
+        {/* Floating Left Navigation Arrow Button (Middle) */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handlePrev();
+          }}
+          aria-label="Previous Testimonial"
+          className="absolute left-2 sm:left-4 lg:left-8 top-1/2 -translate-y-1/2 z-50 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/90 dark:bg-zinc-900/90 shadow-xl hover:shadow-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 hover:text-emerald-500 hover:border-emerald-500 transition-all hover:scale-110 active:scale-95 cursor-pointer backdrop-blur-md"
+        >
+          <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+        </button>
+
+        {/* Floating Right Navigation Arrow Button (Middle) */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleNext();
+          }}
+          aria-label="Next Testimonial"
+          className="absolute right-2 sm:right-4 lg:right-8 top-1/2 -translate-y-1/2 z-50 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/90 dark:bg-zinc-900/90 shadow-xl hover:shadow-2xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 hover:text-emerald-500 hover:border-emerald-500 transition-all hover:scale-110 active:scale-95 cursor-pointer backdrop-blur-md"
+        >
+          <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+        </button>
+
         <motion.div 
           initial={{ opacity: 0, y: 60, scale: 0.94, filter: 'blur(8px)' }}
           whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
           viewport={{ once: false, amount: 0.15 }}
           transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-          className="relative min-h-[420px] sm:min-h-[460px] flex items-center justify-center py-4 select-none"
+          className="relative w-full min-h-[440px] sm:min-h-[480px] flex items-center justify-center py-4 select-none"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          style={{ perspective: '1400px', transformStyle: 'preserve-3d' }}
+          style={{ perspective: '1600px', transformStyle: 'preserve-3d' }}
         >
-          {/* Subtle Ground Ring (Delicate and non-intrusive) */}
+          {/* Subtle Ground Ring (Full width) */}
           <div 
-            className="absolute -bottom-2 w-[750px] max-w-[95vw] h-[150px] rounded-[100%] border border-zinc-200 dark:border-zinc-800/80 pointer-events-none"
+            className="absolute -bottom-2 w-[1200px] lg:w-[1600px] max-w-[98vw] h-[160px] rounded-[100%] border border-zinc-200 dark:border-zinc-800/80 pointer-events-none"
             style={{
               transform: 'rotateX(72deg)',
-              background: 'radial-gradient(circle, rgba(16,185,129,0.02) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(16,185,129,0.025) 0%, transparent 70%)',
             }}
           />
 
-          {/* 3D Carousel Cards Container with dynamic cursor parallax */}
+          {/* 3D Carousel Cards Container with dynamic cursor parallax (Spans full width) */}
           <motion.div 
             animate={{
               rotateX: mouseTilt.x,
@@ -333,7 +412,7 @@ export default function PlatformTestimonialsSection() {
             }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
             style={{ transformStyle: 'preserve-3d' }}
-            className="relative w-full max-w-[980px] h-[370px] sm:h-[390px] flex items-center justify-center"
+            className="relative w-full h-[380px] sm:h-[410px] flex items-center justify-center"
           >
             {testimonials.map((item, idx) => {
               const transform = getCardTransform(idx);
@@ -343,7 +422,9 @@ export default function PlatformTestimonialsSection() {
                 <motion.div
                   key={item.id}
                   onClick={() => {
-                    setActiveIndex(idx);
+                    if (!isCenter) {
+                      selectTestimonial(idx);
+                    }
                   }}
                   animate={{
                     x: transform.x,
@@ -364,26 +445,14 @@ export default function PlatformTestimonialsSection() {
                   style={{
                     filter: transform.blur,
                     transformStyle: 'preserve-3d',
+                    pointerEvents: transform.pointerEvents,
                   }}
-                  className={`absolute w-[290px] sm:w-[360px] md:w-[380px] h-[320px] sm:h-[340px] rounded-[28px] p-6 sm:p-7 flex flex-col justify-between cursor-pointer transition-colors duration-300 overflow-hidden select-none ${
+                  className={`absolute w-[300px] sm:w-[380px] md:w-[420px] h-[330px] sm:h-[350px] rounded-[28px] p-7 sm:p-8 flex flex-col justify-between transition-colors duration-300 overflow-hidden select-none ${
                     isCenter
-                      ? 'bg-white dark:bg-black border-2 border-emerald-500/40 dark:border-emerald-500/30 shadow-xl shadow-emerald-500/5 dark:shadow-black'
-                      : 'bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 shadow-md hover:border-zinc-400 dark:hover:border-zinc-700'
+                      ? 'bg-white dark:bg-black border-2 border-emerald-500/40 dark:border-emerald-500/30 shadow-2xl shadow-emerald-500/10 dark:shadow-black cursor-default'
+                      : 'bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 shadow-md hover:border-emerald-500/60 dark:hover:border-emerald-500/50 hover:shadow-xl cursor-pointer hover:scale-[1.01]'
                   }`}
                 >
-                  {/* Dedicated full-card click target for non-center cards */}
-                  {!isCenter && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveIndex(idx);
-                      }}
-                      className="absolute inset-0 w-full h-full z-30 cursor-pointer bg-transparent focus:outline-none"
-                      aria-label={`Select testimonial by ${item.name}`}
-                    />
-                  )}
-
                   {/* Top Bar: Decorative Quote Icon & 5 Gold Stars */}
                   <div className="relative z-20 flex items-center justify-between">
                     {/* Quotation Mark: Soft Clean Emerald Badge */}
@@ -409,7 +478,7 @@ export default function PlatformTestimonialsSection() {
                   {/* Testimonial Quote Text */}
                   <div className="my-auto py-2">
                     <p
-                      className={`leading-relaxed ${
+                      className={`leading-relaxed line-clamp-4 ${
                         isCenter
                           ? 'text-zinc-900 dark:text-white text-[14px] sm:text-[15px] font-medium'
                           : 'text-zinc-600 dark:text-zinc-400 text-xs sm:text-sm font-normal'
@@ -419,13 +488,29 @@ export default function PlatformTestimonialsSection() {
                     </p>
                   </div>
 
-                  {/* Customer Avatar & Bio */}
+                  {/* Customer Avatar & Bio (With User Photo Support & Fallback) */}
                   <div className="flex items-center gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-900">
-                    <img
-                      src={item.avatar}
-                      alt={item.name}
-                      className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover ring-2 ring-zinc-100 dark:ring-zinc-800 shadow-xs shrink-0"
-                    />
+                    <div className="relative shrink-0">
+                      <img
+                        src={item.avatar}
+                        alt={item.name}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(item.name || 'AY')}&backgroundColor=10b981,059669,047857`;
+                        }}
+                        className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full object-cover shadow-xs shrink-0 bg-zinc-100 dark:bg-zinc-800 transition-all ${
+                          item.hasPhoto
+                            ? 'ring-2 ring-emerald-500/60 dark:ring-emerald-400/70'
+                            : 'ring-2 ring-zinc-200 dark:ring-zinc-800'
+                        }`}
+                      />
+                      {item.hasPhoto && (
+                        <span
+                          className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-zinc-950 rounded-full shadow-xs"
+                          title="Verified User Profile"
+                        />
+                      )}
+                    </div>
                     <div className="min-w-0">
                       <h4 className="text-xs sm:text-sm font-bold text-black dark:text-white leading-tight truncate">
                         {item.name}
@@ -439,69 +524,34 @@ export default function PlatformTestimonialsSection() {
               );
             })}
           </motion.div>
-
-          {/* Desktop Floating Left Navigation Arrow Button (z-50) */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePrev();
-            }}
-            aria-label="Previous Testimonial"
-            style={{ transform: 'translateZ(200px)' }}
-            className="hidden md:flex absolute left-4 lg:left-8 z-50 w-11 h-11 rounded-full bg-white dark:bg-black shadow-lg hover:shadow-xl border border-zinc-200 dark:border-zinc-800 items-center justify-center text-black dark:text-white hover:text-emerald-500 hover:border-emerald-500 transition-all hover:scale-110 active:scale-95 cursor-pointer"
-          >
-            <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
-          </button>
-
-          {/* Desktop Floating Right Navigation Arrow Button (z-50) */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleNext();
-            }}
-            aria-label="Next Testimonial"
-            style={{ transform: 'translateZ(200px)' }}
-            className="hidden md:flex absolute right-4 lg:right-8 z-50 w-11 h-11 rounded-full bg-white dark:bg-black shadow-lg hover:shadow-xl border border-zinc-200 dark:border-zinc-800 items-center justify-center text-black dark:text-white hover:text-emerald-500 hover:border-emerald-500 transition-all hover:scale-110 active:scale-95 cursor-pointer"
-          >
-            <ChevronRight className="w-5 h-5 stroke-[2.5]" />
-          </button>
         </motion.div>
 
-        {/* Navigation & Pagination Controls (Prominently visible on Mobile and Desktop) */}
-        <div className="flex items-center justify-center gap-4 pt-2 relative z-30">
-          {/* Mobile & Tablet Left Arrow Button */}
-          <button
-            onClick={handlePrev}
-            aria-label="Previous Testimonial"
-            className="md:hidden w-9 h-9 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-center text-zinc-700 dark:text-zinc-200 active:scale-90 transition-transform"
-          >
-            <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
-          </button>
-
-          {/* Pagination Indicators */}
+        {/* Pagination Indicators with Active Live Countdown Progress Bar */}
+        <div className="flex items-center justify-center pt-5 relative z-40">
           <div className="flex items-center gap-2">
-            {testimonials.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveIndex(idx)}
-                aria-label={`Go to slide ${idx + 1}`}
-                className={`h-2 transition-all duration-300 rounded-full ${
-                  idx === activeIndex
-                    ? 'w-6 bg-emerald-500 dark:bg-emerald-400 shadow-xs'
-                    : 'w-2 bg-zinc-300 dark:bg-zinc-700 hover:bg-zinc-400'
-                }`}
-              />
-            ))}
+            {testimonials.map((_, idx) => {
+              const isActive = idx === activeIndex;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => selectTestimonial(idx)}
+                  aria-label={`Go to testimonial ${idx + 1}`}
+                  className={`relative h-2.5 rounded-full transition-all duration-300 overflow-hidden cursor-pointer ${
+                    isActive
+                      ? 'w-5 sm:w-8 bg-zinc-200 dark:bg-zinc-800 ring-1 ring-emerald-500/40'
+                      : 'w-2.5 sm:w-3 bg-zinc-300 dark:bg-zinc-700 hover:bg-zinc-400'
+                  }`}
+                >
+                  {isActive && (
+                    <div
+                      className="absolute left-0 top-0 bottom-0 bg-emerald-500 dark:bg-emerald-400 rounded-full transition-all duration-75 ease-linear"
+                      style={{ width: `${progress}%` }}
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
-
-          {/* Mobile & Tablet Right Arrow Button */}
-          <button
-            onClick={handleNext}
-            aria-label="Next Testimonial"
-            className="md:hidden w-9 h-9 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-center text-zinc-700 dark:text-zinc-200 active:scale-90 transition-transform"
-          >
-            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
-          </button>
         </div>
 
       </div>

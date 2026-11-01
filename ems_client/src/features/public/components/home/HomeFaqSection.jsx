@@ -101,7 +101,7 @@ export default function HomeFaqSection() {
     <section
       ref={sectionRef}
       id="faq"
-      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20"
+      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 w-full md:max-w-[80%] mx-auto scroll-mt-20"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
         {/* Left Column: Sticky Title & Direct Support Box with ScrollReveal */}

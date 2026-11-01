@@ -36,6 +36,7 @@ export default function UserPlatformFeedbackCard({ user }) {
           userId: user?.Id || user?.id,
           userName: user?.UserName || user?.name || 'EMS Innovator',
           userEmail: user?.Email || user?.email || '',
+          userPhoto: user?.Photo || user?.photo || '',
           rating,
           category,
           comments: comments.trim(),

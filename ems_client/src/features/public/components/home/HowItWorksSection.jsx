@@ -62,7 +62,7 @@ export default function HowItWorksSection() {
   return (
     <section
       id="blueprint"
-      className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative scroll-mt-20 overflow-hidden"
+      className="py-24 sm:py-32 px-4 sm:px-6 lg:px-8  w-full md:max-w-[80%] mx-auto relative scroll-mt-20 overflow-hidden"
     >
       {/* Ambient Radial Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -z-10" />

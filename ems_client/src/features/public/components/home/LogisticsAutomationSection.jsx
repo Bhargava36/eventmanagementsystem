@@ -12,74 +12,66 @@ import {
   Award,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
-  ScanLine,
+  ArrowUpRight,
 } from "lucide-react";
 
-// The 7 Official Campus & Virtual Event Infrastructure Capabilities (Theme-native normal cards)
+// The 7 Official Campus & Virtual Event Infrastructure Capabilities (Clean & Spacious)
 const INFRASTRUCTURE_CARDS = [
   {
     id: "card-1",
-    tag: "LIVE SCAN",
+    num: "01",
+    category: "Access & Security",
     title: "Automated Digital Passes",
-    desc: "Encrypted QR badges with offline-capable verification at campus checkpoints and security gates.",
+    desc: "Encrypted QR credentials with instant offline verification for high-throughput campus security gates and admission checkpoints.",
     icon: QrCode,
-    badgeText: "LIVE SCAN",
-    previewType: "qr",
   },
   {
     id: "card-2",
-    tag: "FOOD TOKENS",
+    num: "02",
+    category: "Dining Operations",
     title: "Cafeteria Meal Tokens",
-    desc: "Single-tap digital food coupons preventing queue congestion and duplicate claims in dining halls.",
+    desc: "Single-tap digital vouchers preventing queue congestion, duplicate meal redemptions, and dining hall bottlenecks.",
     icon: Utensils,
-    badgeText: "FOOD TOKENS",
-    previewType: "meal",
   },
   {
     id: "card-3",
-    tag: "BLOCK ALLOCATION",
+    num: "03",
+    category: "Hostel & Housing",
     title: "Hostel & Bed Allocations",
-    desc: "Intelligent squad-based room grouping, gender-segregated dorms, and instant key issuance tracking.",
+    desc: "Intelligent squad-based room allocation, gender-segregated blocks, and digital warden key issuance manifests.",
     icon: Hotel,
-    badgeText: "BLOCK ALLOCATION",
-    previewType: "hostel",
   },
   {
     id: "card-4",
-    tag: "JURY RUBRICS",
-    title: "Multi-Round Scoring",
-    desc: "Weighted scoring rubrics, blind judging parameters, and automated live bounty leaderboards.",
+    num: "04",
+    category: "Evaluation Matrix",
+    title: "Multi-Round Scoring Engine",
+    desc: "Dynamic weighted rubrics, anonymous blind judging parameters, and automated live leaderboard recalculations.",
     icon: Scale,
-    badgeText: "JURY RUBRICS",
-    previewType: "rubric",
   },
   {
     id: "card-5",
-    tag: "ASSET DESK",
+    num: "05",
+    category: "Lab & Hardware",
     title: "Hardware & IoT Inventory",
-    desc: "Automated microcontroller and sensor checkout with QR tracking and return management.",
+    desc: "Automated microcontroller, sensor, and hardware tool checkout with QR asset binding and liability tracking.",
     icon: Cpu,
-    badgeText: "HARDWARE DESK",
-    previewType: "hardware",
   },
   {
     id: "card-6",
-    tag: "LIVE BROADCAST",
+    num: "06",
+    category: "Push Dispatch",
     title: "Instant Push Broadcasts",
-    desc: "One-click multi-channel dispatch sending SMS, email, and live in-app alerts to participants.",
+    desc: "High-priority multi-channel announcement engine reaching all participants instantly across web, email, and mobile.",
     icon: Radio,
-    badgeText: "DISPATCH",
-    previewType: "broadcast",
   },
   {
     id: "card-7",
-    tag: "CREDENTIALS",
+    num: "07",
+    category: "Credential Registry",
     title: "Automated Certificate Engine",
-    desc: "Instant cryptographic digital certificates with verifiable badge generation for every attendee.",
+    desc: "Instant cryptographic digital certificates with verifiable credentials and public authenticity proof records.",
     icon: Award,
-    badgeText: "CERTIFICATES",
-    previewType: "certificate",
   },
 ];
 
@@ -102,8 +94,8 @@ export default function LogisticsAutomationSection() {
   // Responsive card measurements:
   // Tight gap (10px) so cards sit side-by-side like the reference image
   const [containerWidth, setContainerWidth] = useState(1200);
-  const cardWidth = 285;
-  const cardGap = 10;
+  const cardWidth = 320;
+  const cardGap = 16;
   const singleSetWidth = INFRASTRUCTURE_CARDS.length * (cardWidth + cardGap);
 
   // Triplicate cards so the 3D loop repeats infinitely without seam
@@ -325,178 +317,35 @@ export default function LogisticsAutomationSection() {
                   willChange: "transform, opacity",
                 }}
               >
-                {/* CARD BODY: Normal Theme Card (White in Light Mode, Black in Dark Mode - NO artificial colors) */}
+                {/* CARD BODY: Ultra-Spacious, Clean, Uncongested Modern Card (Zero Pills) */}
                 <div
-                  className="w-full h-full rounded-2xl p-6 sm:p-7 flex flex-col justify-between overflow-hidden relative bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl dark:shadow-none hover:border-emerald-500 dark:hover:border-emerald-500/80 transition-all duration-300 group"
+                  className="w-full h-full rounded-2xl p-8 sm:p-9 flex flex-col justify-between overflow-hidden relative bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl dark:shadow-none hover:border-emerald-500/80 dark:hover:border-emerald-500/70 transition-all duration-300 group"
                 >
-                  {/* TOP: Header & Capability Icon */}
-                  <div className="space-y-4">
+                  {/* TOP & MIDDLE: Icon, Index, Title, and Description */}
+                  <div>
                     <div className="flex items-center justify-between">
-                      <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-900 dark:text-white flex items-center justify-center shrink-0 border border-slate-200/50 dark:border-zinc-800">
-                        <IconComponent className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-zinc-800 group-hover:border-emerald-500/50 group-hover:bg-emerald-500/10 transition-colors">
+                        <IconComponent className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                       </div>
-                      <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold tracking-wider uppercase">
-                        {card.badgeText}
+                      <span className="font-mono text-sm font-semibold text-slate-400 dark:text-zinc-600 tracking-widest">
+                        {card.num}
                       </span>
                     </div>
 
-                    {/* Normal Theme Micro-Simulator Box */}
-                    <div className="h-28 w-full rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 p-3 flex flex-col justify-between overflow-hidden">
-                      {card.previewType === "qr" && (
-                        <div className="h-full flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-lg bg-slate-200 dark:bg-zinc-800/60 flex items-center justify-center text-slate-700 dark:text-zinc-400">
-                                <ScanLine className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                              </div>
-                              <span className="text-[11px] font-bold text-slate-800 dark:text-zinc-200">
-                                #HKH-9281
-                              </span>
-                            </div>
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          </div>
-                          {/* Animated Scan Line */}
-                          <div className="relative w-full h-1 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                            <motion.div
-                              animate={{ x: ["-100%", "200%"] }}
-                              transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-                              className="w-1/2 h-full bg-emerald-500 rounded-full"
-                            />
-                          </div>
-                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                            Fast-Track Gate 1 Verified
-                          </div>
-                        </div>
-                      )}
-
-                      {card.previewType === "meal" && (
-                        <div className="h-full flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <div className="text-[11px] font-semibold text-slate-800 dark:text-zinc-200">
-                              Midnight Fuel Pass
-                            </div>
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-bold">
-                              VALID
-                            </span>
-                          </div>
-                          <div className="flex gap-1.5">
-                            <span className="px-2 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-[10px] text-slate-700 dark:text-zinc-300">
-                              Breakfast ✓
-                            </span>
-                            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold">
-                              Lunch ●
-                            </span>
-                            <span className="px-2 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-[10px] text-slate-500 dark:text-zinc-400">
-                              Dinner
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-500 dark:text-zinc-400">
-                            Breakfast • Lunch • Dinner
-                          </div>
-                        </div>
-                      )}
-
-                      {card.previewType === "hostel" && (
-                        <div className="h-full flex flex-col justify-between">
-                          <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-zinc-400">
-                            <span>Block B (Wing 3)</span>
-                            <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">92% Filled</span>
-                          </div>
-                          <div className="grid grid-cols-8 gap-1.5 py-1">
-                            {[...Array(8)].map((_, i) => (
-                              <div
-                                key={i}
-                                className={`h-2.5 rounded-sm ${
-                                  i < 7 ? "bg-emerald-500" : "bg-slate-200 dark:bg-zinc-800"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
-                            Squad Rooms Auto-Paired
-                          </div>
-                        </div>
-                      )}
-
-                      {card.previewType === "rubric" && (
-                        <div className="h-full flex flex-col justify-between">
-                          <div className="flex items-center justify-between text-[10px] text-slate-700 dark:text-zinc-300">
-                            <span>Architecture</span>
-                            <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">98%</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                            <div className="w-[98%] h-full bg-emerald-500 rounded-full" />
-                          </div>
-                          <div className="flex items-center justify-between text-[10px] text-slate-700 dark:text-zinc-300">
-                            <span>Innovation</span>
-                            <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">94%</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {card.previewType === "hardware" && (
-                        <div className="h-full flex flex-col justify-between">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="font-semibold text-slate-800 dark:text-zinc-200">ESP32 & Sensors</span>
-                            <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-bold">ACTIVE</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-2 py-0.5 rounded bg-slate-200/70 dark:bg-zinc-800 text-[10px] text-slate-700 dark:text-zinc-300">
-                              Checked Out: 24
-                            </span>
-                            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-medium">
-                              Stock: 12
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
-                            Digital Liability Receipt Active
-                          </div>
-                        </div>
-                      )}
-
-                      {card.previewType === "broadcast" && (
-                        <div className="h-full flex flex-col justify-between">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="font-semibold text-slate-800 dark:text-zinc-200">Campus Alert</span>
-                            <span className="animate-pulse w-2 h-2 rounded-full bg-emerald-500" />
-                          </div>
-                          <div className="p-1.5 rounded bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-[10px] text-slate-700 dark:text-zinc-300 truncate">
-                            "Pitch Round in Main Auditorium in 10 mins"
-                          </div>
-                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                            100% Delivery • 450 Nodes
-                          </div>
-                        </div>
-                      )}
-
-                      {card.previewType === "certificate" && (
-                        <div className="h-full flex flex-col justify-between">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="font-semibold text-slate-800 dark:text-zinc-200">Verifiable Badge</span>
-                            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">SHA-256</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            <span className="text-[10px] text-slate-700 dark:text-zinc-300 font-medium">
-                              Merit of Excellence
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono truncate">
-                            Hash: 0x8f2a...c941
-                          </div>
-                        </div>
-                      )}
+                    <div className="pt-8 space-y-3.5">
+                      <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors tracking-tight leading-snug">
+                        {card.title}
+                      </h3>
+                      <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed font-normal">
+                        {card.desc}
+                      </p>
                     </div>
                   </div>
 
-                  {/* BOTTOM: Normal Card Typography */}
-                  <div className="space-y-1.5 pt-4">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                      {card.title}
-                    </h3>
-                    <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed font-normal line-clamp-3">
-                      {card.desc}
-                    </p>
+                  {/* BOTTOM: Minimal Category & Subtle Hover Arrow (Zero Pills) */}
+                  <div className="pt-6 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-between text-xs font-medium text-slate-500 dark:text-zinc-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                    <span className="tracking-wide">{card.category}</span>
+                    <ArrowUpRight className="w-4 h-4 text-slate-400 dark:text-zinc-500 group-hover:text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
                   </div>
                 </div>
               </div>

@@ -262,7 +262,7 @@ export default function OrganizerCtaSection() {
       {/* ======================================================== */}
       {/* 3. FULL-WIDTH PANORAMIC 3-STATION INTERACTIVE COCKPIT    */}
       {/* ======================================================== */}
-      <div className="relative z-10 w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20">
+      <div className="relative z-10  w-full md:max-w-[80%] mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20">
         
         {/* Terminal Header Bar with Animated Node Status */}
         <motion.div
