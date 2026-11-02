@@ -1419,7 +1419,7 @@ function AdminPhysicalEvent() {
                   </div>
                 </div>
 
-                <button
+                {/* <button
                   type="button"
                   onClick={handleFoodRedirect}
                   disabled={!isEnabled(foodEnabled)}
@@ -1428,7 +1428,7 @@ function AdminPhysicalEvent() {
                   <Utensils className="h-4 w-4" />
                   <span>{isEnabled(foodEnabled) ? 'Manage Food Distribution' : 'Food Disabled'}</span>
                   <ArrowRight className="h-4 w-4" />
-                </button>
+                </button> */}
               </div>
 
               {/* KPI Cards Grid */}
