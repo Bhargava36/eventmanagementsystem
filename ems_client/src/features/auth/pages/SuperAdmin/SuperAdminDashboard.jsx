@@ -599,10 +599,10 @@ function SuperAdminDashboard() {
               Events Overview
             </h2>
 
-            <button className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-500 flex items-center gap-1 hover:underline">
+            {/* <button className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-500 flex items-center gap-1 hover:underline">
               View All
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </button> */}
           </div>
 
           {events.length === 0 ? (
@@ -911,9 +911,9 @@ function SuperAdminDashboard() {
                 Recent Registrations
               </h2>
 
-              <button className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-500 hover:underline">
+              {/* <button className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-500 hover:underline">
                 View All
-              </button>
+              </button> */}
             </div>
 
             <div className="overflow-x-auto">

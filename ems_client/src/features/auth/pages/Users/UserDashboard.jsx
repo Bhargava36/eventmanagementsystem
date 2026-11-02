@@ -262,7 +262,7 @@ export default function UserDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
               { to: '/user/competitions',       icon: Trophy,      label: 'Competitions',       sub: 'Browse & register for events'   },
-              { to: '/user/problem-statements', icon: ScrollText,  label: 'Problem Statements', sub: 'Browse challenge tracks'        },
+              { to: '/user/feedback', icon: ScrollText,  label: 'Feedback', sub: 'Share your thoughts and suggestions'        },
               { to: '/user/teams',              icon: Users,       label: 'Team Management',    sub: 'Manage your squads'             },
               { to: '/user/profile',            icon: Award,       label: 'My Profile',         sub: 'Update credentials & skills'   },
             ].map(({ to, icon: Icon, label, sub }) => (
