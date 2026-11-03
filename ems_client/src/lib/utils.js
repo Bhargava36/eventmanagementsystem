@@ -213,7 +213,7 @@ export function getEventTypeInfo(eventType = '') {
   const isHackathon = !isWorkshop && !isSeminar && !isCodingContest && !isTechFest;
 
   let label = 'Event';
-  let badgeColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+  const badgeColor = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20';
   let participantTerm = 'Participants & Teams';
   let singleParticipantTerm = 'Participant';
   let agendaTerm = 'Event Schedule & Timelines';
@@ -222,7 +222,6 @@ export function getEventTypeInfo(eventType = '') {
 
   if (isWorkshop) {
     label = 'Workshop';
-    badgeColor = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20';
     participantTerm = 'Registered Attendees';
     singleParticipantTerm = 'Attendee';
     agendaTerm = 'Session Agenda & Hands-on Topics';
@@ -230,7 +229,6 @@ export function getEventTypeInfo(eventType = '') {
     prizeTerm = 'Perks, Certification & Swag';
   } else if (isSeminar) {
     label = 'Seminar / Conference';
-    badgeColor = 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20';
     participantTerm = 'Registered Delegates';
     singleParticipantTerm = 'Delegate';
     agendaTerm = 'Keynote Speakers & Talk Schedule';
@@ -238,7 +236,6 @@ export function getEventTypeInfo(eventType = '') {
     prizeTerm = 'Keynote Honor & Certificates';
   } else if (isCodingContest) {
     label = 'Coding Contest';
-    badgeColor = 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20';
     participantTerm = 'Contestants & Teams';
     singleParticipantTerm = 'Contestant';
     agendaTerm = 'Contest Rounds & Time Limits';
@@ -246,7 +243,6 @@ export function getEventTypeInfo(eventType = '') {
     prizeTerm = 'Prize Pool & Bounties';
   } else if (isTechFest) {
     label = 'Tech Fest';
-    badgeColor = 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20';
     participantTerm = 'Participants & Teams';
     singleParticipantTerm = 'Participant';
     agendaTerm = 'Fest Schedule & Competitions';
@@ -254,7 +250,6 @@ export function getEventTypeInfo(eventType = '') {
     prizeTerm = 'Trophies, Cash & Rewards';
   } else {
     label = 'Hackathon';
-    badgeColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
     participantTerm = 'Hacking Teams';
     singleParticipantTerm = 'Hacker';
     agendaTerm = 'Sprint Roadmap & Milestones';

@@ -5,7 +5,6 @@ import {
   Users,
   Code2,
   Trophy,
-  Sparkles,
   Zap,
   ArrowRight,
   ShieldCheck,

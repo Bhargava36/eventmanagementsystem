@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import {
   Pencil,
-  Crown,
   Shield,
   ShieldCheck,
   BadgeCheck,
@@ -20,12 +19,28 @@ import {
   KeyRound,
   ArrowRight,
   Camera,
-  Loader2
+  Loader2,
+  GraduationCap,
+  Calendar,
+  Clock,
+  BookOpen,
+  CheckCircle2,
+  MapPin,
+  ExternalLink,
+  MessageSquare,
+  FileText,
+  Sliders,
+  Send,
+  Target,
+  RefreshCw,
+  FolderGit2,
+  Radio
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useToast from '../../../../Hooks/useToast';
 import { parseJwt } from '../../../../Contexts/AuthContext';
+import { getEventTypeInfo } from '../../../../lib/utils';
 import WaveDots from '../../../../components/Atoms/WaveDots';
 
 function getStoredAdminData() {
@@ -46,14 +61,23 @@ function getStoredAdminData() {
   return null;
 }
 
-function AdminProfile() {
+export default function AdminProfile() {
   const navigate = useNavigate();
   const toast = useToast();
 
   const [profile, setProfile] = useState(() => getStoredAdminData());
-  const [eventDetails, setEventDetails] = useState(null);
+  const [activeEvent, setActiveEvent] = useState(null);
+  const [allEvents, setAllEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Event-specific live metrics
   const [teamsCount, setTeamsCount] = useState(0);
   const [registrationsCount, setRegistrationsCount] = useState(0);
+  const [sessionsCount, setSessionsCount] = useState(0);
+  const [instructorsCount, setInstructorsCount] = useState(0);
+  const [checkedInCount, setCheckedInCount] = useState(0);
+  const [feedbackCount, setFeedbackCount] = useState(0);
+
   const [showEdit, setShowEdit] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -67,8 +91,32 @@ function AdminProfile() {
     Photo: ''
   });
 
+  const activeEventId = profile?.EventId;
+  const activeTypeInfo = getEventTypeInfo(activeEvent?.EventType || profile?.EventType);
+
+  // Sync with global event updates
+  useEffect(() => {
+    const handleEventUpdated = (e) => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('admin') || '{}');
+        const updated = e?.detail ? { ...stored, ...e.detail } : stored;
+        setProfile(updated);
+      } catch (err) {
+        console.error('Error handling event updated:', err);
+      }
+    };
+
+    window.addEventListener('admin-event-updated', handleEventUpdated);
+    window.addEventListener('storage', handleEventUpdated);
+    return () => {
+      window.removeEventListener('admin-event-updated', handleEventUpdated);
+      window.removeEventListener('storage', handleEventUpdated);
+    };
+  }, []);
+
   const fetchAdminProfile = useCallback(async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
       const decoded = parseJwt(token);
 
@@ -93,31 +141,48 @@ function AdminProfile() {
       const adminData = data.events?.[0] || data.admin || data;
 
       if (adminData) {
-        setProfile(adminData);
+        // Read active stored admin to preserve active EventId selection
+        const stored = getStoredAdminData() || {};
+        const mergedAdmin = {
+          ...adminData,
+          ...stored,
+          Photo: adminData.Photo || stored.Photo || '',
+          AdminName: adminData.AdminName || stored.AdminName || '',
+          Email: adminData.Email || stored.Email || '',
+          Mobile: adminData.Mobile || stored.Mobile || '',
+          events: adminData.events || stored.events || []
+        };
+
+        setProfile(mergedAdmin);
+        setAllEvents(adminData.events || []);
         setFormData({
-          AdminName: adminData.AdminName || '',
-          Email: adminData.Email || '',
-          Mobile: adminData.Mobile || '',
-          EventId: adminData.EventId || '',
-          Photo: adminData.Photo || ''
+          AdminName: mergedAdmin.AdminName || '',
+          Email: mergedAdmin.Email || '',
+          Mobile: mergedAdmin.Mobile || '',
+          EventId: mergedAdmin.EventId || '',
+          Photo: mergedAdmin.Photo || ''
         });
 
-        const eventId = adminData.EventId;
-        if (eventId) {
+        const currentEvId = mergedAdmin.EventId;
+        if (currentEvId) {
+          // Fetch active event details
           try {
-            const eventRes = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
-            if (eventRes.ok) {
-              const eData = await eventRes.json();
-              setEventDetails(eData.event || null);
+            const evRes = await fetch(`${API_BASE_URL}/api/events/${currentEvId}`);
+            if (evRes.ok) {
+              const eData = await evRes.json();
+              const ev = eData.event || eData;
+              setActiveEvent(ev);
             }
           } catch (e) {
             console.warn('Could not fetch assigned event info:', e);
           }
 
+          // Fetch event-specific statistics
           try {
-            const [teamsRes, usersRes] = await Promise.all([
-              fetch(`${API_BASE_URL}/api/teams/event/${eventId}/count`),
-              fetch(`${API_BASE_URL}/api/event_reg/event/${eventId}/count`)
+            const [teamsRes, usersRes, feedbackRes] = await Promise.all([
+              fetch(`${API_BASE_URL}/api/teams/event/${currentEvId}/count`),
+              fetch(`${API_BASE_URL}/api/event_reg/event/${currentEvId}/count`),
+              fetch(`${API_BASE_URL}/api/feedback/event/${currentEvId}`)
             ]);
 
             if (teamsRes.ok) {
@@ -128,19 +193,81 @@ function AdminProfile() {
               const ud = await usersRes.json();
               setRegistrationsCount(ud.count || 0);
             }
+            if (feedbackRes.ok) {
+              const fd = await feedbackRes.json();
+              setFeedbackCount(fd.count || (Array.isArray(fd.feedback) ? fd.feedback.length : 0));
+            }
           } catch (e) {
             console.warn('Could not fetch event stats:', e);
+          }
+
+          // If workshop, fetch workshop extra metrics (sessions, attendance, instructors)
+          const isWs = getEventTypeInfo(mergedAdmin.EventType || activeEvent?.EventType).isWorkshop;
+          if (isWs) {
+            try {
+              const [sessRes, attRes, instRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/api/workshops/${currentEvId}/sessions`),
+                fetch(`${API_BASE_URL}/api/workshops/${currentEvId}/attendance`),
+                fetch(`${API_BASE_URL}/api/core_team/event/${currentEvId}`)
+              ]);
+
+              if (sessRes.ok) {
+                const sd = await sessRes.json();
+                setSessionsCount((sd.sessions || []).length);
+              }
+              if (attRes.ok) {
+                const ad = await attRes.json();
+                const list = ad.attendees || [];
+                const present = list.filter((a) => a.AttendanceStatus === 'checked_in').length;
+                setCheckedInCount(present);
+              }
+              if (instRes.ok) {
+                const idData = await instRes.json();
+                const members = Array.isArray(idData) ? idData : idData.team || idData.data || [];
+                setInstructorsCount(members.length);
+              }
+            } catch (wErr) {
+              console.warn('Workshop metrics fetch error:', wErr);
+            }
           }
         }
       }
     } catch (error) {
       console.error('Error fetching admin profile:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [navigate, toast]);
+  }, [navigate, toast, activeEvent?.EventType]);
 
   useEffect(() => {
     fetchAdminProfile();
-  }, [fetchAdminProfile]);
+  }, [fetchAdminProfile, activeEventId]);
+
+  // Handle Switching active event from profile
+  const handleSwitchEvent = (targetEvent) => {
+    if (!targetEvent || Number(targetEvent.Id) === Number(activeEventId)) return;
+
+    try {
+      const curAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
+      const updated = {
+        ...curAdmin,
+        EventId: targetEvent.Id,
+        EventName: targetEvent.EventName,
+        EventType: targetEvent.EventType,
+        HackathonMode: targetEvent.HackathonMode
+      };
+      localStorage.setItem('admin', JSON.stringify(updated));
+      setProfile(updated);
+      setActiveEvent(targetEvent);
+
+      window.dispatchEvent(new CustomEvent('admin-event-updated', { detail: targetEvent }));
+      window.dispatchEvent(new Event('storage'));
+      toast.success(`Active focus switched to "${targetEvent.EventName}"`);
+    } catch (err) {
+      console.error('Failed to switch active event:', err);
+      toast.error('Failed to switch event focus');
+    }
+  };
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -220,7 +347,7 @@ function AdminProfile() {
       window.dispatchEvent(new Event('admin-profile-updated'));
       window.dispatchEvent(new Event('profileUpdated'));
 
-      toast.success("Admin photo updated successfully!");
+      toast.success('Admin avatar updated successfully!');
     } catch (err) {
       console.error('Error uploading admin photo:', err);
       toast.error(err.message || 'Failed to update photo');
@@ -301,8 +428,7 @@ function AdminProfile() {
     AdminName: 'Administrator',
     Email: 'admin@ayojan.com',
     Mobile: '',
-    Id: 12,
-    createdAt: new Date().toISOString()
+    Id: 1
   };
 
   const adminName = currentAdmin.AdminName || 'Administrator';
@@ -312,33 +438,135 @@ function AdminProfile() {
         day: 'numeric',
         year: 'numeric'
       })
-    : 'Active Member';
+    : 'Active Lead';
 
+  // Personal Credential rows
   const credentialItems = [
-    { label: 'Full Name', value: currentAdmin.AdminName },
-    { label: 'Email Address', value: currentAdmin.Email, isVerified: true },
-    { label: 'Phone Number', value: currentAdmin.Mobile || 'Not provided' },
+    { label: 'Full Legal Name', value: currentAdmin.AdminName || 'Administrator', icon: User },
+    { label: 'Official Email', value: currentAdmin.Email, isVerified: true, icon: Mail },
+    { label: 'Mobile Number', value: currentAdmin.Mobile || 'Not provided', icon: Phone },
     {
-      label: 'Assigned Event',
-      value: eventDetails?.EventName || currentAdmin.EventName || (currentAdmin.EventId ? `Event #${currentAdmin.EventId}` : 'Main Hackathon Event')
+      label: 'Active Event Focus',
+      value: activeEvent?.EventName || currentAdmin.EventName || (currentAdmin.EventId ? `Event #${currentAdmin.EventId}` : 'Assigned Event'),
+      badge: activeTypeInfo.badge,
+      icon: activeTypeInfo.isWorkshop ? GraduationCap : Layers
     },
-    { label: 'Country', value: 'India' },
+    { label: 'Admin Security Scope', value: 'Level 2 • Event Administrator', isBadge: true, icon: ShieldCheck },
     {
-      label: 'Joined Date',
+      label: 'Account Created',
       value: currentAdmin.createdAt
         ? new Date(currentAdmin.createdAt).toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'long',
             year: 'numeric'
           })
-        : 'Active Member'
-    },
-    { label: 'Account Type', value: 'Event Admin', isBadge: true }
+        : 'Active Session',
+      icon: CalendarDays
+    }
   ];
 
+  // Dynamic quick action links based on active event type
+  const quickActions = activeTypeInfo.isWorkshop
+    ? [
+        {
+          title: 'Registered Attendees',
+          desc: 'Individual participant profiles & colleges',
+          path: '/admin/teams',
+          icon: GraduationCap,
+          count: `${teamsCount} Attendees`
+        },
+        {
+          title: 'Curriculum & Agenda',
+          desc: 'Session schedules, timelines & lab demos',
+          path: '/admin/workshop-sessions',
+          icon: Calendar,
+          count: `${sessionsCount} Sessions`
+        },
+        {
+          title: 'Study Materials & Kits',
+          desc: 'PDFs, slide decks, GitHub repositories',
+          path: '/admin/workshop-resources',
+          icon: BookOpen,
+          count: 'Resources'
+        },
+        {
+          title: 'Instructors & Trainers',
+          desc: 'Lead facilitators, tech leads & mentors',
+          path: '/admin/workshop-instructors',
+          icon: UsersRound,
+          count: `${instructorsCount} Instructors`
+        },
+        {
+          title: 'Attendance Tracker',
+          desc: 'Live QR check-in & verification records',
+          path: '/admin/workshop-attendance',
+          icon: Clock,
+          count: `${checkedInCount} Present`
+        },
+        {
+          title: 'Workshop Settings',
+          desc: 'Prerequisites, tools & capacity settings',
+          path: '/admin/settings',
+          icon: Sliders,
+          count: 'Configure'
+        },
+        {
+          title: 'Attendee Feedback',
+          desc: 'Course ratings & participant feedback',
+          path: '/admin/feedback',
+          icon: MessageSquare,
+          count: `${feedbackCount} Reviews`
+        }
+      ]
+    : [
+        {
+          title: 'Registered Teams',
+          desc: 'Formed squads, team rosters & colleges',
+          path: '/admin/teams',
+          icon: Users,
+          count: `${teamsCount} Squads`
+        },
+        {
+          title: 'Core Organizing Team',
+          desc: 'Event committee, coordinators & heads',
+          path: '/admin/core-team',
+          icon: UsersRound,
+          count: 'Coordinators'
+        },
+        {
+          title: 'Problem Statements & Themes',
+          desc: 'Hackathon domains, hardware & software tracks',
+          path: '/admin/physical-event',
+          icon: Target,
+          count: 'Track Hub'
+        },
+        {
+          title: 'Event Rules & Settings',
+          desc: 'Timelines, round controls & registrations',
+          path: '/admin/settings',
+          icon: Sliders,
+          count: 'Configure'
+        },
+        {
+          title: 'Broadcast Emailer',
+          desc: 'Send mass emails & announcements to teams',
+          path: '/admin/emailer',
+          icon: Send,
+          count: 'Send Mails'
+        },
+        {
+          title: 'Participant Feedback',
+          desc: 'Hackathon evaluations & venue feedback',
+          path: '/admin/feedback',
+          icon: MessageSquare,
+          count: `${feedbackCount} Reviews`
+        }
+      ];
+
   return (
-    <div className="bg-gray-50 dark:bg-black min-h-screen text-gray-900 dark:text-gray-100 transition-colors p-4 sm:p-6 md:p-8 lg:p-10 font-sans">
+    <div className="bg-slate-50 dark:bg-black min-h-screen text-slate-900 dark:text-zinc-100 transition-colors p-4 sm:p-6 md:p-8 lg:p-10 font-sans">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+        {/* Top Breadcrumb & Header */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -346,21 +574,29 @@ function AdminProfile() {
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
         >
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
               <Shield className="w-3.5 h-3.5" />
-              <span>Event Admin</span>
-              <span className="text-gray-400">•</span>
-              <span className="text-gray-500 dark:text-gray-400">Profile Settings</span>
+              <span>Event Administration</span>
+              <span className="text-slate-400 dark:text-zinc-600">•</span>
+              <span className="text-slate-500 dark:text-zinc-400">Profile &amp; Workspace</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-['Syne']">
-              Admin Profile
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+              Administrator Profile
             </h1>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-              View and manage your admin profile and event details.
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
+              Manage your administrator credentials, supervising workspace, and event operations.
             </p>
           </div>
 
-          <div>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/admin/my-events"
+              className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 transition shadow-sm flex items-center gap-2 cursor-pointer"
+            >
+              <FolderGit2 className="w-4 h-4 text-emerald-600" />
+              <span>My Events ({allEvents.length})</span>
+            </Link>
+
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -371,7 +607,7 @@ function AdminProfile() {
                   handleEditClick();
                 }
               }}
-              className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/20 flex items-center gap-2 cursor-pointer transition-all"
+              className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 flex items-center gap-2 cursor-pointer transition"
             >
               {showEdit ? (
                 <>
@@ -388,22 +624,22 @@ function AdminProfile() {
           </div>
         </motion.div>
 
+        {/* Hero Banner with Avatar & Verified Identity */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
-          className="relative overflow-hidden rounded-3xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-xl p-6 sm:p-8 lg:p-10"
+          className="relative overflow-hidden rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-xl p-6 sm:p-8 lg:p-10"
         >
           <WaveDots
             rows={8}
             cols={12}
-            className="absolute right-0 top-0 bottom-0 w-1/2 md:w-2/5 z-0"
+            className="absolute right-0 top-0 bottom-0 w-1/2 md:w-2/5 z-0 opacity-40 dark:opacity-20"
           />
-
-          <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-gradient-to-tr from-emerald-600/10 to-transparent rounded-full blur-2xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
+              {/* Avatar Uploader */}
               <div className="relative group shrink-0">
                 <input
                   type="file"
@@ -412,15 +648,15 @@ function AdminProfile() {
                   accept="image/*"
                   className="hidden"
                 />
-                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-xl shadow-emerald-700/20 border-2 border-emerald-400/40 relative overflow-hidden">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-emerald-700 text-white flex items-center justify-center font-extrabold text-3xl sm:text-4xl shadow-xl shadow-emerald-700/20 border-4 border-white dark:border-zinc-900 relative overflow-hidden">
                   {profile?.Photo ? (
                     <img src={profile.Photo} alt={adminName} className="w-full h-full object-cover" />
                   ) : (
                     <span>{adminName.charAt(0).toUpperCase()}</span>
                   )}
                   {uploadingPhoto && (
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
                     </div>
                   )}
                 </div>
@@ -428,45 +664,46 @@ function AdminProfile() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingPhoto}
-                  className="absolute -bottom-2 -right-2 bg-emerald-500 hover:bg-emerald-400 text-white p-2 rounded-xl shadow-md border-2 border-white dark:border-black transition-all hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
-                  title="Upload admin photo"
+                  className="absolute -bottom-1.5 -right-1.5 bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded-2xl shadow-lg border-2 border-white dark:border-zinc-950 transition hover:scale-110 active:scale-95 cursor-pointer flex items-center justify-center"
+                  title="Upload avatar photo"
                 >
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="space-y-2">
+              {/* Identity & Badges */}
+              <div className="space-y-2.5">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight capitalize">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight capitalize">
                     {adminName}
                   </h2>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30">
-                    <BadgeCheck className="w-3.5 h-3.5" />
-                    Verified Admin
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                    <BadgeCheck className="w-4 h-4 text-emerald-600" />
+                    Verified Administrator
                   </span>
                 </div>
 
-                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center justify-center sm:justify-start gap-1.5">
+                <p className="text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-400 flex items-center justify-center sm:justify-start gap-2">
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Event Administrator</span>
+                  <span>AYOJAN Operations Lead • Active Workspace Supervisor</span>
                 </p>
 
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-y-2 gap-x-4 pt-2 text-xs text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-zinc-800">
-                    <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span className="truncate max-w-[200px]">{currentAdmin.Email}</span>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1 text-xs text-slate-600 dark:text-zinc-400">
+                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-800">
+                    <Mail className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="truncate max-w-[220px] font-medium">{currentAdmin.Email}</span>
                   </div>
 
                   {currentAdmin.Mobile && (
-                    <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-zinc-800">
-                      <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>{currentAdmin.Mobile}</span>
+                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-800">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="font-medium">{currentAdmin.Mobile}</span>
                     </div>
                   )}
 
-                  <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-zinc-800">
-                    <CalendarDays className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                    <span>Joined {joinedDate}</span>
+                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-800">
+                    <CalendarDays className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="font-medium">Joined {joinedDate}</span>
                   </div>
                 </div>
               </div>
@@ -474,93 +711,193 @@ function AdminProfile() {
           </div>
         </motion.div>
 
+        {/* Dedicated Active Event Focus Row Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.08 }}
+          className="rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 lg:p-7 flex flex-col lg:flex-row lg:items-center justify-between gap-5"
+        >
+          <div className="flex items-start sm:items-center gap-4 min-w-0">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+              {activeTypeInfo.isWorkshop ? (
+                <GraduationCap className="w-6 h-6 sm:w-7 sm:h-7" />
+              ) : (
+                <Layers className="w-6 h-6 sm:w-7 sm:h-7" />
+              )}
+            </div>
+
+            <div className="space-y-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                  Active Event Focus
+                </span>
+                <span className="text-slate-300 dark:text-zinc-700">•</span>
+                <span className="px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                  {activeTypeInfo.label || activeTypeInfo.badge || 'Event'}
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Workspace
+                </span>
+              </div>
+
+              <h3 className="text-lg sm:text-2xl font-extrabold text-slate-900 dark:text-white truncate">
+                {activeEvent?.EventName || currentAdmin.EventName || 'Assigned Event'}
+              </h3>
+
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-slate-500 dark:text-zinc-400 pt-0.5">
+                <div className="flex items-center gap-1.5 font-medium">
+                  <Radio className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Mode: <strong className="text-slate-700 dark:text-zinc-200">{activeEvent?.HackathonMode || 'Physical'}</strong></span>
+                </div>
+
+                {activeEvent?.Location && (
+                  <>
+                    <span className="text-slate-300 dark:text-zinc-700 hidden sm:inline">•</span>
+                    <div className="flex items-center gap-1.5 font-medium truncate max-w-[240px]">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="truncate">{activeEvent.Location}</span>
+                    </div>
+                  </>
+                )}
+
+                <span className="text-slate-300 dark:text-zinc-700 hidden sm:inline">•</span>
+                <span className="font-semibold text-slate-400 dark:text-zinc-500">
+                  ID #{activeEvent?.Id || currentAdmin.EventId || 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap lg:shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-zinc-800">
+            <Link
+              to="/admin/settings"
+              className="px-4 sm:px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-md shadow-emerald-600/20 transition cursor-pointer"
+            >
+              <Sliders className="w-4 h-4" />
+              <span>Event Settings</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+
+            <Link
+              to="/admin/my-events"
+              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 font-bold text-xs sm:text-sm flex items-center gap-2 transition cursor-pointer"
+            >
+              <FolderGit2 className="w-4 h-4 text-emerald-600" />
+              <span>Switch Event</span>
+            </Link>
+          </div>
+        </motion.div>
+
+        {/* Live Metrics Grid — Dynamically tailored for Workshop vs Hackathon */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Assigned Event</span>
-              <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <Layers className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="mt-3">
-              <p className="text-lg font-bold text-gray-900 dark:text-white truncate" title={eventDetails?.EventName || currentAdmin.EventName || 'Hackathon Hub'}>
-                {eventDetails?.EventName || currentAdmin.EventName || (currentAdmin.EventId ? `Event #${currentAdmin.EventId}` : 'Main Hackathon')}
-              </p>
-              <div className="flex items-center gap-1.5 mt-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>Primary Supervision</span>
-              </div>
-            </div>
-          </div>
-
+          {/* Card 1: Registrations / Attendees */}
           <Link
             to="/admin/teams"
-            className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group cursor-pointer"
+            className="bg-white dark:bg-zinc-950 rounded-2xl p-5 border border-slate-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition group cursor-pointer flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Registered Teams</span>
-              <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                <Users className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                {activeTypeInfo.isWorkshop ? 'Registered Attendees' : 'Registered Teams'}
+              </span>
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition">
+                {activeTypeInfo.isWorkshop ? <GraduationCap className="w-4 h-4" /> : <Users className="w-4 h-4" />}
               </div>
             </div>
-            <div className="mt-3">
-              <p className="text-2xl font-extrabold text-gray-900 dark:text-white">
+            <div className="mt-4">
+              <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 {teamsCount}
               </p>
-              <div className="flex items-center justify-between mt-1 text-xs text-gray-500 dark:text-gray-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-medium transition-colors">
-                <span>Manage squads</span>
+              <div className="flex items-center justify-between mt-1 text-xs text-slate-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-semibold transition">
+                <span>{activeTypeInfo.isWorkshop ? 'Solo attendee list' : 'Squad formation roster'}</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </Link>
 
+          {/* Card 2: Attendance / Live Participants */}
           <Link
-            to="/admin/dashboard"
-            className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group cursor-pointer"
+            to={activeTypeInfo.isWorkshop ? '/admin/workshop-attendance' : '/admin/dashboard'}
+            className="bg-white dark:bg-zinc-950 rounded-2xl p-5 border border-slate-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition group cursor-pointer flex flex-col justify-between"
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Total Participants</span>
-              <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                <UsersRound className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                {activeTypeInfo.isWorkshop ? 'Live Check-ins' : 'Total Participants'}
+              </span>
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition">
+                {activeTypeInfo.isWorkshop ? <Clock className="w-4 h-4" /> : <UsersRound className="w-4 h-4" />}
               </div>
             </div>
-            <div className="mt-3">
-              <p className="text-2xl font-extrabold text-gray-900 dark:text-white">
-                {registrationsCount}
+            <div className="mt-4">
+              <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {activeTypeInfo.isWorkshop ? checkedInCount : registrationsCount}
               </p>
-              <div className="flex items-center justify-between mt-1 text-xs text-gray-500 dark:text-gray-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-medium transition-colors">
-                <span>Live registrations</span>
+              <div className="flex items-center justify-between mt-1 text-xs text-slate-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-semibold transition">
+                <span>{activeTypeInfo.isWorkshop ? 'Verified present' : 'Total registrations'}</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </Link>
 
-          <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between">
+          {/* Card 3: Curriculum Sessions / Core Team */}
+          <Link
+            to={activeTypeInfo.isWorkshop ? '/admin/workshop-sessions' : '/admin/core-team'}
+            className="bg-white dark:bg-zinc-950 rounded-2xl p-5 border border-slate-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition group cursor-pointer flex flex-col justify-between"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Security Clearance</span>
-              <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <KeyRound className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                {activeTypeInfo.isWorkshop ? 'Curriculum Sessions' : 'Organizing Team'}
+              </span>
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition">
+                {activeTypeInfo.isWorkshop ? <Calendar className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
               </div>
             </div>
-            <div className="mt-3">
-              <p className="text-xl font-bold text-gray-900 dark:text-white">
-                Event Lead
+            <div className="mt-4">
+              <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {activeTypeInfo.isWorkshop ? sessionsCount : 'Active'}
               </p>
-              <div className="flex items-center gap-1.5 mt-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span>Elevated Rights</span>
+              <div className="flex items-center justify-between mt-1 text-xs text-slate-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-semibold transition">
+                <span>{activeTypeInfo.isWorkshop ? 'Scheduled modules' : 'Committee coordinators'}</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
-          </div>
+          </Link>
+
+          {/* Card 4: Feedback Reviews */}
+          <Link
+            to="/admin/feedback"
+            className="bg-white dark:bg-zinc-950 rounded-2xl p-5 border border-slate-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/40 transition group cursor-pointer flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                Feedback Reviews
+              </span>
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition">
+                <MessageSquare className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-4">
+              <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {feedbackCount}
+              </p>
+              <div className="flex items-center justify-between mt-1 text-xs text-slate-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 font-semibold transition">
+                <span>Event ratings &amp; reviews</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </Link>
         </motion.div>
 
+        {/* Main Content: Left Column (Personal Details & Edit) + Right Column (Quick Actions & Managed Events) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
-          <div className="lg:col-span-8 space-y-6">
+          {/* Left Column: Personal Information OR Edit Profile Form */}
+          <div className="lg:col-span-7 space-y-6">
             <AnimatePresence mode="wait">
               {showEdit ? (
                 <motion.div
@@ -569,19 +906,19 @@ function AdminProfile() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.25 }}
-                  className="bg-white dark:bg-black rounded-3xl border-2 border-emerald-500/40 shadow-xl overflow-hidden p-6 sm:p-8"
+                  className="bg-white dark:bg-zinc-950 rounded-3xl border-2 border-emerald-500/40 shadow-xl overflow-hidden p-6 sm:p-8"
                 >
-                  <div className="flex items-center justify-between pb-5 mb-6 border-b border-gray-200 dark:border-gray-800">
+                  <div className="flex items-center justify-between pb-5 mb-6 border-b border-slate-100 dark:border-zinc-800">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                         <Pencil className="w-5 h-5" />
                       </div>
                       <div>
-                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white font-['Syne']">
-                          Edit Profile
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Edit Profile Details
                         </h3>
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                          Update your personal and contact details
+                        <p className="text-xs text-slate-500 dark:text-zinc-400">
+                          Update your name, contact email, and mobile number.
                         </p>
                       </div>
                     </div>
@@ -589,7 +926,7 @@ function AdminProfile() {
                       type="button"
                       disabled={saving}
                       onClick={() => setShowEdit(false)}
-                      className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-900 transition cursor-pointer"
                       title="Cancel editing"
                     >
                       <X className="w-5 h-5" />
@@ -597,12 +934,13 @@ function AdminProfile() {
                   </div>
 
                   <form onSubmit={handleSave} className="space-y-5">
-                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-zinc-800">
-                      <div className="relative w-16 h-16 rounded-xl bg-emerald-600/10 border border-emerald-500/20 overflow-hidden flex items-center justify-center shrink-0">
+                    {/* Photo Row in Form */}
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50/70 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
+                      <div className="relative w-14 h-14 rounded-2xl bg-emerald-600/10 border border-emerald-500/20 overflow-hidden flex items-center justify-center shrink-0">
                         {profile?.Photo || formData.Photo ? (
                           <img src={formData.Photo || profile.Photo} alt="Admin preview" className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{adminName.charAt(0).toUpperCase()}</span>
+                          <span className="text-lg font-bold text-emerald-600">{adminName.charAt(0).toUpperCase()}</span>
                         )}
                         {uploadingPhoto && (
                           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
@@ -611,45 +949,45 @@ function AdminProfile() {
                         )}
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Admin Avatar Photo</h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">JPG, PNG or WEBP up to 5MB</p>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">Profile Photo</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">JPG, PNG or WEBP up to 5MB</p>
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={uploadingPhoto}
-                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 transition cursor-pointer"
+                          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-white dark:bg-black text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 transition cursor-pointer"
                         >
                           <Camera className="w-3.5 h-3.5" />
-                          {uploadingPhoto ? 'Uploading...' : 'Change Photo'}
+                          {uploadingPhoto ? 'Uploading...' : 'Upload New Photo'}
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5 sm:col-span-2">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                        <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300">
                           Full Name <span className="text-rose-500">*</span>
                         </label>
                         <div className="relative">
-                          <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                           <input
                             type="text"
                             name="AdminName"
                             value={formData.AdminName}
                             onChange={(e) => setFormData({ ...formData, AdminName: e.target.value })}
                             required
-                            placeholder="e.g. John Doe"
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            placeholder="e.g. Swathi"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900 text-slate-900 dark:text-white text-xs outline-none focus:border-emerald-500 transition"
                           />
                         </div>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                          Email Address <span className="text-rose-500">*</span>
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300">
+                          Official Email <span className="text-rose-500">*</span>
                         </label>
                         <div className="relative">
-                          <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                           <input
                             type="email"
                             name="Email"
@@ -657,50 +995,35 @@ function AdminProfile() {
                             onChange={(e) => setFormData({ ...formData, Email: e.target.value })}
                             required
                             placeholder="admin@ayojan.com"
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900 text-slate-900 dark:text-white text-xs outline-none focus:border-emerald-500 transition"
                           />
                         </div>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                          Phone Number
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300">
+                          Mobile Number
                         </label>
                         <div className="relative">
-                          <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                           <input
                             type="text"
                             name="Mobile"
                             value={formData.Mobile}
                             onChange={(e) => setFormData({ ...formData, Mobile: e.target.value })}
                             placeholder="+91 98765 43210"
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5 sm:col-span-2">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                          Assigned Event (System Assigned)
-                        </label>
-                        <div className="relative">
-                          <Layers className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400" />
-                          <input
-                            type="text"
-                            disabled
-                            value={eventDetails?.EventName || currentAdmin.EventName || (currentAdmin.EventId ? `Event #${currentAdmin.EventId}` : 'Main Hackathon Event')}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800/80 bg-gray-100 dark:bg-gray-900/50 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed"
+                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900 text-slate-900 dark:text-white text-xs outline-none focus:border-emerald-500 transition"
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-800">
+                    <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-zinc-800">
                       <button
                         type="button"
                         disabled={saving}
                         onClick={() => setShowEdit(false)}
-                        className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors cursor-pointer"
+                        className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-900 transition cursor-pointer"
                       >
                         Cancel
                       </button>
@@ -708,16 +1031,16 @@ function AdminProfile() {
                       <button
                         type="submit"
                         disabled={saving}
-                        className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-60"
+                        className="px-6 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 flex items-center gap-2 cursor-pointer transition disabled:opacity-60"
                       >
                         {saving ? (
                           <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                             <span>Saving Changes...</span>
                           </>
                         ) : (
                           <>
-                            <Save className="w-4 h-4" />
+                            <Save className="w-3.5 h-3.5" />
                             <span>Save Changes</span>
                           </>
                         )}
@@ -732,125 +1055,252 @@ function AdminProfile() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.25 }}
-                  className="relative bg-white dark:bg-black rounded-3xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden"
+                  className="bg-white dark:bg-zinc-950 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden"
                 >
-                  <div className="p-5 sm:p-6 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between relative z-10">
+                  <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                        Personal Information
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                        Administrator Credentials &amp; Details
                       </h3>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-zinc-800">
-                        Verified Details
-                      </span>
-                    </div>
+                    <span className="text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      Active Account
+                    </span>
                   </div>
 
-                  <div className="divide-y divide-gray-100 dark:divide-zinc-800/80">
-                    {credentialItems.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-gray-50/80 dark:hover:bg-zinc-900/40 transition-colors"
-                      >
-                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
-                          {item.label}
-                        </span>
-
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white break-all">
-                            {item.value}
-                          </span>
-                          {item.isVerified && (
-                            <BadgeCheck className="w-4 h-4 text-emerald-500 fill-emerald-100 dark:fill-emerald-500/20" />
-                          )}
-                          {item.isBadge && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                              Active
+                  <div className="divide-y divide-slate-100 dark:divide-zinc-800/80">
+                    {credentialItems.map((item, idx) => {
+                      const Icon = item.icon;
+                      return (
+                        <div
+                          key={idx}
+                          className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50/60 dark:hover:bg-zinc-900/40 transition"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400">
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
+                              {item.label}
                             </span>
-                          )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white break-all">
+                              {item.value}
+                            </span>
+                            {item.isVerified && (
+                              <BadgeCheck className="w-4 h-4 text-emerald-500 fill-emerald-500/20" />
+                            )}
+                            {item.badge && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-md font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                {item.badge}
+                              </span>
+                            )}
+                            {item.isBadge && (
+                              <span className="text-[10px] px-2.5 py-0.5 rounded-lg font-bold bg-emerald-600 text-white shadow-sm">
+                                Verified
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* My Supervised Events Showcase */}
+            {allEvents.length > 0 && (
+              <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                        My Supervised Events
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400">
+                        Events assigned to your administration account.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    to="/admin/my-events"
+                    className="text-xs font-bold text-emerald-600 hover:underline flex items-center gap-1"
+                  >
+                    <span>View All</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {allEvents.map((ev) => {
+                    const isSelected = Number(ev.Id) === Number(activeEventId);
+                    const evType = getEventTypeInfo(ev.EventType);
+
+                    return (
+                      <div
+                        key={ev.Id}
+                        className={`p-4 rounded-2xl border transition relative flex flex-col justify-between ${
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-950/20'
+                            : 'border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/40 hover:border-emerald-500/40'
+                        }`}
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                              {evType.badge}
+                            </span>
+                            {isSelected && (
+                              <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-600 text-white shadow-sm flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Active Focus
+                              </span>
+                            )}
+                          </div>
+
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                            {ev.EventName}
+                          </h4>
+
+                          <p className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-emerald-600" />
+                            <span className="truncate">{ev.Location || 'Campus Venue'}</span>
+                          </p>
+                        </div>
+
+                        {!isSelected ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchEvent(ev)}
+                            className="mt-3 w-full py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-zinc-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-slate-700 dark:text-zinc-200 transition cursor-pointer"
+                          >
+                            Set Active Focus
+                          </button>
+                        ) : (
+                          <div className="mt-3 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>Currently Active in Portal</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="lg:col-span-4 space-y-6"
-          >
-            <div className="bg-white dark:bg-black rounded-3xl border border-gray-200 dark:border-zinc-800 shadow-sm p-6">
-              <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">
-                Quick Actions
-              </h3>
+          {/* Right Column: Tailored Quick Actions & Security */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Quick Actions Card */}
+            <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 space-y-4">
+              <div>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {activeTypeInfo.isWorkshop ? 'Workshop Management Actions' : 'Hackathon Control Actions'}
+                  </h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    {activeTypeInfo.badge}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                  Direct navigation for &ldquo;{activeEvent?.EventName || 'Active Event'}&rdquo;
+                </p>
+              </div>
 
-              <div className="space-y-3 relative z-10">
-                <Link
-                  to="/admin/teams"
-                  className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-900/70 border border-gray-200/80 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
-                      <Users className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Registered Teams</p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">View & inspect cohorts</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 group-hover:text-emerald-500 transition-all" />
-                </Link>
+              <div className="space-y-2.5 pt-1">
+                {quickActions.map((action, i) => {
+                  const Icon = action.icon;
+                  return (
+                    <Link
+                      key={i}
+                      to={action.path}
+                      className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 hover:border-emerald-500/40 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20 transition group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition shrink-0">
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {action.title}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
+                            {action.desc}
+                          </p>
+                        </div>
+                      </div>
 
-                <Link
-                  to="/admin/core-team"
-                  className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-900/70 border border-gray-200/80 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
-                      <UsersRound className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Core Team</p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Manage organizers</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 group-hover:text-emerald-500 transition-all" />
-                </Link>
-
-                <Link
-                  to="/admin/dashboard"
-                  className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-zinc-900/70 border border-gray-200/80 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
-                      <Activity className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Admin Dashboard</p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Live analytics & feeds</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 group-hover:text-emerald-500 transition-all" />
-                </Link>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
+                          {action.count}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-emerald-600 transition" />
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
-          </motion.div>
+
+            {/* Security Scope Card */}
+            <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Security &amp; Session Scope
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    Administrator access control parameters
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-1 text-xs">
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex items-center justify-between">
+                  <span className="text-slate-500 dark:text-zinc-400 font-medium">Session Status</span>
+                  <span className="inline-flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    Authenticated &amp; Live
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex items-center justify-between">
+                  <span className="text-slate-500 dark:text-zinc-400 font-medium">Role Authority</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    Event Lead (Full Controls)
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex items-center justify-between">
+                  <span className="text-slate-500 dark:text-zinc-400 font-medium">Password Recovery</span>
+                  <Link
+                    to="/forgot-password"
+                    className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                  >
+                    <span>Reset Key</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="text-center pt-4 pb-2 text-xs text-gray-400 dark:text-gray-600">
+        {/* Footer info */}
+        <div className="text-center pt-4 pb-2 text-xs text-slate-400 dark:text-zinc-600">
           <p>© 2026 AYOJAN Event Management System • Authorized Administrator Session</p>
         </div>
       </div>
-
-
     </div>
   );
 }
-
-export default AdminProfile;

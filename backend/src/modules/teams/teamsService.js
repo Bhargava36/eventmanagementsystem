@@ -521,6 +521,7 @@ const getMyTeams = (userId, callback) => {
                     registered_teams.College, 
                     registered_teams.State, 
                     events.EventName, 
+                    events.EventType, 
                     events.StartDate, 
                     events.EndDate, 
                     events.TeamSize AS EventTeamSize,

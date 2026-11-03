@@ -6,7 +6,6 @@ import { motion, useInView } from "framer-motion";
 import {
   Check,
   ArrowRight,
-  Sparkles,
   QrCode,
   ScanLine,
   Sliders,

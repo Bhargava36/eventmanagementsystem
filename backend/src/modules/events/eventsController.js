@@ -169,9 +169,16 @@ const createEvent = (req, res) => {
                 });
             }
 
+            const newEventId = result.insertId;
+            const creatorAdminId = req.body.AdminId || req.body.adminId;
+            if (creatorAdminId) {
+                const db = require('../../config/db');
+                db.query("INSERT INTO event_admins (AdminId, EventId, Role) VALUES (?, ?, 'Lead Organizer') ON DUPLICATE KEY UPDATE Role = VALUES(Role)", [creatorAdminId, newEventId], () => {});
+            }
+
             return res.status(201).json({
                 message: 'Event created successfully',
-                eventId: result.insertId
+                eventId: newEventId
             });
         }
     );

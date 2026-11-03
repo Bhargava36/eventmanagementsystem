@@ -37,7 +37,12 @@ import {
   ChevronRight,
   Layers,
   Radio,
-  Info
+  Info,
+  BookOpen,
+  GraduationCap,
+  Laptop,
+  Video,
+  Presentation
 } from 'lucide-react';
 
 
@@ -379,6 +384,7 @@ function PublicEventDetails() {
   const [gallery, setGallery] = useState([]);
   const [themes, setThemes] = useState([]);
   const [organizerStatements, setOrganizerStatements] = useState([]);
+  const [workshopSessions, setWorkshopSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -425,6 +431,16 @@ function PublicEventDetails() {
             .then((r) => r.json())
             .then((psData) => {
               if (psData?.problemStatements) setOrganizerStatements(psData.problemStatements);
+            })
+            .catch(() => {});
+        }
+
+        const isWorkshopEvent = (evData.event?.EventType || '').toLowerCase().includes('workshop');
+        if (isWorkshopEvent) {
+          fetch(`${API_BASE_URL}/api/workshops/${id}/sessions`)
+            .then((r) => r.json())
+            .then((sData) => {
+              if (sData?.sessions) setWorkshopSessions(sData.sessions);
             })
             .catch(() => {});
         }
@@ -1035,19 +1051,19 @@ function PublicEventDetails() {
                               Virtual Track
                             </span>
                             {isVirtualPaused ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                 <span>Paused</span>
                               </span>
                             ) : isVirtualRegistrationClosed ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                                 <span>Closed</span>
                               </span>
                             ) : (
                               <span
                                 style={{ backgroundColor: eventTheme.badgeBg, borderColor: eventTheme.badgeBorder, color: eventTheme.badgeText }}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold border"
                               >
                                 <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ backgroundColor: eventTheme.accent }} />
                                 <span>Live Now</span>
@@ -1117,25 +1133,25 @@ function PublicEventDetails() {
                               Physical Track
                             </span>
                             {isPhysicalPaused ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                 <span>Paused</span>
                               </span>
                             ) : isPhysicalRegistrationClosed ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                                 <span>Closed</span>
                               </span>
                             ) : (
                               <span
                                 style={{ backgroundColor: eventTheme.badgeBg, borderColor: eventTheme.badgeBorder, color: eventTheme.badgeText }}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold border"
                               >
                                 <span className="relative flex h-1.5 w-1.5">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: eventTheme.accent }} />
                                   <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ backgroundColor: eventTheme.accent }} />
                                 </span>
-                                <span>Accepting Teams</span>
+                                <span>{eventTypeInfo.isWorkshop ? 'Accepting Seats' : 'Accepting Teams'}</span>
                               </span>
                             )}
                           </div>
@@ -1253,7 +1269,7 @@ function PublicEventDetails() {
               <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
                 <FileText className="h-5 w-5" style={{ color: eventTheme.accent }} />
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                  About the Challenge
+                  {eventTypeInfo.isWorkshop ? 'About this Workshop' : 'About the Challenge'}
                 </h2>
               </div>
               <div className="text-slate-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed whitespace-pre-line space-y-3">
@@ -1261,6 +1277,145 @@ function PublicEventDetails() {
               </div>
             </div>
 
+            {eventTypeInfo.isWorkshop ? (
+              <div className="space-y-8">
+                {/* Workshop Curriculum & Modules */}
+                <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800/80">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl" style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}>
+                        <GraduationCap className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                          Workshop Curriculum & Hands-on Agenda
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Step-by-step interactive sessions, code-along labs, and live instructor demos
+                        </p>
+                      </div>
+                    </div>
+                    {workshopSessions.length > 0 && (
+                      <span className="self-start sm:self-auto px-3 py-1 rounded-lg text-xs font-bold border" style={{ backgroundColor: eventTheme.badgeBg, borderColor: eventTheme.badgeBorder, color: eventTheme.badgeText }}>
+                        {workshopSessions.length} Modules Planned
+                      </span>
+                    )}
+                  </div>
+
+                  {workshopSessions.length > 0 ? (
+                    <div className="space-y-3.5">
+                      {workshopSessions.map((session, idx) => (
+                        <motion.div
+                          key={session.id || session.SessionId || idx}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.25, delay: idx * 0.05 }}
+                          className="p-5 rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950 hover:border-emerald-500/40 transition-all group"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                              <span className="w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 mt-0.5 sm:mt-0">
+                                {idx + 1}
+                              </span>
+                              <div>
+                                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                  {session.title || session.Title || `Session ${idx + 1}`}
+                                </h4>
+                                {session.description && (
+                                  <p className="text-xs text-slate-600 dark:text-zinc-400 mt-1 leading-relaxed">
+                                    {session.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                              {session.duration && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-800 font-mono">
+                                  <Clock className="h-3 w-3" />
+                                  {session.duration}
+                                </span>
+                              )}
+                              <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                {session.speaker_name ? `By ${session.speaker_name}` : 'Hands-on Lab'}
+                              </span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/40 dark:bg-zinc-950/40">
+                      <Presentation className="h-10 w-10 mx-auto text-slate-400 dark:text-zinc-600 stroke-[1.5]" />
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                        Interactive Modules & Lab Syllabus Coming Soon
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
+                        The workshop instructors are finalizing the code-along topics, starter repositories, and module timelines. Check back shortly!
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Workshop Prerequisites & Amenities */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-4">
+                    <div className="flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                      <Laptop className="h-4 w-4" />
+                      <span>Prerequisites & Requirements</span>
+                    </div>
+                    {event.Requirements || event.PhysicalRequirements ? (
+                      <div className="text-xs sm:text-sm text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
+                        {event.Requirements || event.PhysicalRequirements}
+                      </div>
+                    ) : (
+                      <ul className="space-y-2 text-xs sm:text-sm text-slate-700 dark:text-zinc-300">
+                        <li className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          Personal Laptop with charger & administrative access
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          Modern web browser (Chrome, Edge, or Brave)
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          Code editor installed (VS Code recommended)
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          Basic curiosity and excitement to build projects!
+                        </li>
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-4">
+                    <div className="flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                      <BookOpen className="h-4 w-4" />
+                      <span>Takeaways & Learning Resources</span>
+                    </div>
+                    <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700 dark:text-zinc-300">
+                      <li className="flex items-start gap-2.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>Curated GitHub starter code & boilerplate templates</span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>Hands-on architectural slides & reference cheat sheets</span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>1-on-1 Q&A and code debugging with tech instructors</span>
+                      </li>
+                      <li className="flex items-start gap-2.5">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <span>Dedicated participant portal for live session materials</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : (
             <div className="space-y-0">
               {hasBothTracks && (
                 <div className="flex items-end gap-2 px-4 sm:px-6 relative z-10 -mb-px">
@@ -1651,6 +1806,7 @@ function PublicEventDetails() {
                 </AnimatePresence>
               </div>
             </div>
+            )}
 
             {/* Event Photo Gallery */}
             <EventGallerySection
@@ -1666,52 +1822,74 @@ function PublicEventDetails() {
               eventTheme={eventTheme}
             />
 
-            {coreTeam.length > 0 && (
+            {(coreTeam.length > 0 || eventTypeInfo.isWorkshop) && (
               <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6">
-                <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
-                  <Users className="h-5 w-5" style={{ color: eventTheme.accent }} />
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                    Organizing Committee & Leads
-                  </h2>
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800/80">
+                  <div className="flex items-center gap-2.5">
+                    <GraduationCap className="h-5 w-5" style={{ color: eventTheme.accent }} />
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                      {eventTypeInfo.isWorkshop ? 'Workshop Instructors & Tech Mentors' : 'Organizing Committee & Leads'}
+                    </h2>
+                  </div>
+                  {eventTypeInfo.isWorkshop && coreTeam.length > 0 && (
+                    <span className="px-3 py-1 rounded-lg text-xs font-bold border" style={{ backgroundColor: eventTheme.badgeBg, borderColor: eventTheme.badgeBorder, color: eventTheme.badgeText }}>
+                      {coreTeam.length} Mentors
+                    </span>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {coreTeam.map((member, idx) => (
-                    <div
-                      key={member.Id || idx}
-                      className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3.5"
-                    >
-                      {member.Photo ? (
-                        <img
-                          src={member.Photo}
-                          alt={member.Name}
-                          className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-zinc-800 shrink-0"
-                        />
-                      ) : (
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm shrink-0"
-                          style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}
-                        >
-                          {(member.Name || 'U').charAt(0).toUpperCase()}
-                        </div>
-                      )}
-
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                          {member.Name}
-                        </h4>
-                        <p className="text-xs font-semibold truncate" style={{ color: eventTheme.accent }}>
-                          {member.Role}
-                        </p>
-                        {member.Department && (
-                          <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
-                            {member.Department}
-                          </p>
+                {coreTeam.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {coreTeam.map((member, idx) => (
+                      <motion.div
+                        key={member.Id || idx}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: idx * 0.04 }}
+                        className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3.5 hover:border-emerald-500/30 transition-colors"
+                      >
+                        {member.Photo ? (
+                          <img
+                            src={member.Photo}
+                            alt={member.Name}
+                            className="w-13 h-13 rounded-xl object-cover border border-slate-200 dark:border-zinc-800 shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="w-13 h-13 rounded-xl flex items-center justify-center font-bold text-base shrink-0"
+                            style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}
+                          >
+                            {(member.Name || 'I').charAt(0).toUpperCase()}
+                          </div>
                         )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                            {member.Name}
+                          </h4>
+                          <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            {member.Role || 'Instructor'}
+                          </span>
+                          {member.Department && (
+                            <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-1">
+                              {member.Department}
+                            </p>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/40 dark:bg-zinc-950/40">
+                    <GraduationCap className="h-10 w-10 mx-auto text-emerald-500/60 stroke-[1.5]" />
+                    <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                      Workshop Instructors &amp; Mentors Announcing Soon
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
+                      The organizing department and lead trainers are finalizing the curriculum faculty and lab assistants. All instructor credentials will appear here shortly.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1724,14 +1902,14 @@ function PublicEventDetails() {
                   Participation Details
                 </span>
                 <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">
-                  Ready to Build?
+                  {eventTypeInfo.isWorkshop ? 'Ready to Learn?' : 'Ready to Build?'}
                 </h3>
               </div>
 
               <div className="space-y-3.5 text-xs text-slate-700 dark:text-zinc-300">
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                  <span className="text-slate-500 dark:text-zinc-400">Allowed Team Size</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{event.TeamSize || 'Flexible'} Members</span>
+                  <span className="text-slate-500 dark:text-zinc-400">{eventTypeInfo.isWorkshop ? 'Seat Type' : 'Allowed Team Size'}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{eventTypeInfo.isWorkshop ? 'Solo Participant (1 Seat)' : `${event.TeamSize || 'Flexible'} Members`}</span>
                 </div>
 
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
@@ -1832,7 +2010,9 @@ function PublicEventDetails() {
                 })()}
 
                 <p className="text-[11px] text-center text-slate-500 dark:text-zinc-400">
-                  Free student entry. Sign in or create an account to submit your team details.
+                  {eventTypeInfo.isWorkshop
+                    ? 'Instant seat reservation. Sign in or create an account to secure your workshop pass.'
+                    : 'Free student entry. Sign in or create an account to submit your team details.'}
                 </p>
               </div>
             </div>
@@ -1843,7 +2023,7 @@ function PublicEventDetails() {
                 <span>Host Location & Venue</span>
               </div>
               <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
-                {event.Location || 'Campus Main Auditorium & Department Innovation Lab. Directions will be shared with shortlisted teams.'}
+                {event.Location || (eventTypeInfo.isWorkshop ? 'Campus Tech Lab & Multimedia Seminar Hall. Details sent to registered participants.' : 'Campus Main Auditorium & Department Innovation Lab. Directions will be shared with shortlisted teams.')}
               </p>
             </div>
 

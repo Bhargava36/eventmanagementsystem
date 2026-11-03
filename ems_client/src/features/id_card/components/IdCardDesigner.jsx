@@ -38,7 +38,7 @@ import {
   Ratio,
   Move,
   Users,
-  Sparkles,
+  Hash,
   MapPin,
   Target,
   Code2,
@@ -170,7 +170,7 @@ export const DYNAMIC_FIELD_CHIPS = [
 
 export const TEAM_DYNAMIC_FIELD_CHIPS = [
   { id: 'team_name', label: 'Team Name', placeholder: '{{team_name}}', type: 'text', icon: Users },
-  { id: 'team_id', label: 'Team ID Badge', placeholder: 'TEAM-{{team_id}}', type: 'text', icon: Sparkles },
+  { id: 'team_id', label: 'Team ID Badge', placeholder: 'TEAM-{{team_id}}', type: 'text', icon: Hash },
   { id: 'placement', label: 'Desk / Lab Placement', placeholder: '{{placement}}', type: 'text', icon: MapPin },
   { id: 'direction', label: 'Wing / Direction', placeholder: '{{direction}}', type: 'text', icon: MapPin },
   { id: 'problem_statement', label: 'Problem Statement', placeholder: '{{problem_statement}}', type: 'text', icon: Target },

@@ -103,9 +103,32 @@ const getFeedbackById = (req, res) => {
     });
 };
 
+const getFeedbackByEvent = (req, res) => {
+    const eventId = Number(req.params.eventId);
+    if (!Number.isInteger(eventId) || eventId <= 0) {
+        return res.status(400).json({
+            message: 'Invalid event ID'
+        });
+    }
+    feedbackService.getFeedbackByEvent(eventId, (err, feedback) => {
+        if (err) {
+            console.error('Get event feedback error:', err);
+            return res.status(500).json({
+                message: 'Failed to retrieve event feedback'
+            });
+        }
+        return res.status(200).json({
+            message: 'Event feedback retrieved successfully',
+            count: feedback.length,
+            feedback
+        });
+    });
+};
+
 module.exports = {
     createFeedback,
     getAllFeedback,
     getFeedbackByAdmin,
+    getFeedbackByEvent,
     getFeedbackById
 };

@@ -211,7 +211,7 @@ function FoodRedirectionPage() {
         </div>
 
         {/* FOOD TOKEN VERIFICATION & REDEMPTION TERMINAL */}
-        <div className="rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 via-white dark:via-zinc-950 to-emerald-500/5 p-6 sm:p-8 shadow-sm space-y-5">
+        <div className="rounded-3xl border border-emerald-500/30 bg-white dark:bg-black p-6 sm:p-8 shadow-sm space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-500/20 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">

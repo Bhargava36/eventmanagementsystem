@@ -28,6 +28,7 @@ const psRoutes = require("./src/modules/problem_statements/psRoutes");
 const projectSubmissionRoutes = require("./src/modules/project_submissions/projectSubmissionRoute");
 const feedbackRoutes = require("./src/modules/feedback/feedbackRoute");
 const platformFeedbackRoutes = require("./src/modules/platform_feedback/platformFeedbackRoute");
+const workshopRoutes = require("./src/modules/workshops/workshopRoute");
 
 const app = express();
 
@@ -67,6 +68,7 @@ app.use("/api/problem-statements", psRoutes);
 app.use("/api/project-submissions", projectSubmissionRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/platform-feedback', platformFeedbackRoutes);
+app.use('/api/workshops', workshopRoutes);
 
 
 const http = require('http');

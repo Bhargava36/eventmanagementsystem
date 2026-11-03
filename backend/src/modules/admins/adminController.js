@@ -6,8 +6,8 @@ const bcrypt = require("bcrypt");
 const registerAdmin = (req, res) => {
     const { AdminName, Email, Password, Mobile, EventId } = req.body;
 
-    if (!AdminName || !Email || !Password || !Mobile || !EventId) {
-        return res.status(400).json({ message: "All fields are required" });
+    if (!AdminName || !Email || !EventId) {
+        return res.status(400).json({ message: "AdminName, Email and EventId are required" });
     }
 
     adminService.createAdmin(AdminName, Email, Password, Mobile, EventId, (err, result) => {
@@ -18,20 +18,18 @@ const registerAdmin = (req, res) => {
                 error: err
             });
         }
-        else {
-            return res.status(201).json({
-                message: "Admin Registered Successfully!"
-            });
-        }
+        return res.status(201).json({
+            message: "Admin Registered Successfully!"
+        });
     });
 };
 
 const loginAdminController = (req, res) => {
     const { Email, Password, EventName } = req.body;
 
-    if (!Email || !Password || !EventName) {
+    if (!Email || !Password) {
         return res.status(400).json({
-            message: "Email, Password and Event Name are required"
+            message: "Email and Password are required"
         });
     }
 
@@ -53,7 +51,7 @@ const loginAdminController = (req, res) => {
                 }
 
                 return res.status(401).json({
-                    message: "Invalid Email, Password or Event Name"
+                    message: "Invalid Email or Password"
                 });
             });
             return;
@@ -65,7 +63,7 @@ const loginAdminController = (req, res) => {
 
         if (!isMatch) {
             return res.status(401).json({
-                message: "Invalid Email, Password or Event Name"
+                message: "Invalid Email or Password"
             });
         }
 
@@ -85,7 +83,6 @@ const loginAdminController = (req, res) => {
             }
         );
 
-
         return res.status(200).json({
             message: "Login Successful",
             token,
@@ -98,18 +95,18 @@ const loginAdminController = (req, res) => {
                 EventId: admin.EventId,
                 EventName: admin.EventName,
                 HackathonMode: admin.HackathonMode,
+                EventType: admin.EventType || 'Hackathon',
                 Photo: admin.Photo || null,
-                role: "admin"
+                role: "admin",
+                events: admin.events || []
             }
         });
     });
 };
+
 const getAllAdmin = (req, res) => {
-
     adminService.getAllAdmin((err, result) => {
-
         if (err) {
-
             return res.status(500).json({
                 message: "Failed to get admins",
                 error: err
@@ -139,19 +136,19 @@ const getAdminById = (req, res) => {
             });
         }
 
+        const adminObj = result[0];
         return res.status(200).json({
             message: "Admin fetched successfully",
-            events: result
+            admin: adminObj,
+            events: adminObj.events || []
         });
     });
 };
 
 const getAdminByEventId = (req, res) => {
-
     const EventId = req.params.EventId;
 
     adminService.getAdminByEventId(EventId, (err, result) => {
-
         if (err) {
             return res.status(500).json({
                 message: "Failed to get admins by event",
@@ -162,6 +159,54 @@ const getAdminByEventId = (req, res) => {
         return res.status(200).json({
             message: "Admins fetched successfully",
             admins: result
+        });
+    });
+};
+
+const assignEventToAdmin = (req, res) => {
+    const { AdminId, EventId, Role } = req.body;
+
+    if (!AdminId || !EventId) {
+        return res.status(400).json({
+            message: "AdminId and EventId are required"
+        });
+    }
+
+    adminService.assignEventToAdmin(AdminId, EventId, Role || 'Organizer', (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                message: "Failed to assign event to admin",
+                error: err
+            });
+        }
+
+        return res.status(200).json({
+            message: "Event assigned to admin successfully",
+            result
+        });
+    });
+};
+
+const removeAdminFromEvent = (req, res) => {
+    const { AdminId, EventId } = req.params;
+
+    if (!AdminId || !EventId) {
+        return res.status(400).json({
+            message: "AdminId and EventId are required"
+        });
+    }
+
+    adminService.removeAdminFromEvent(AdminId, EventId, (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                message: "Failed to remove admin from event",
+                error: err
+            });
+        }
+
+        return res.status(200).json({
+            message: "Admin removed from event successfully",
+            result
         });
     });
 };
@@ -194,11 +239,9 @@ const updateAdmin = (req, res) => {
 };
 
 const deleteAdmin = (req, res) => {
-
     const id = req.params.id;
 
     adminService.deleteAdmin(id, (err, result) => {
-
         if (err) {
             return res.status(500).json({
                 message: "Admin deletion failed",
@@ -212,12 +255,38 @@ const deleteAdmin = (req, res) => {
     });
 };
 
+const switchEvent = (req, res) => {
+    const { AdminId, EventId } = req.body;
+
+    if (!AdminId || !EventId) {
+        return res.status(400).json({
+            message: "AdminId and EventId are required"
+        });
+    }
+
+    adminService.switchActiveEvent(AdminId, EventId, (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                message: "Failed to switch active event",
+                error: err
+            });
+        }
+
+        return res.status(200).json({
+            message: "Active event switched successfully"
+        });
+    });
+};
+
 module.exports = {
     registerAdmin,
     loginAdminController,
     getAllAdmin,
     getAdminById,
     getAdminByEventId,
+    assignEventToAdmin,
+    removeAdminFromEvent,
+    switchEvent,
     updateAdmin,
     deleteAdmin
 };

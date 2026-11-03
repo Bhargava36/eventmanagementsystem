@@ -42,14 +42,15 @@ import {
   Timer,
   Eye,
   EyeOff,
-  Palette
+  Palette,
+  Code
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';
 import useAuth from '../../../../Hooks/useAuth';
 import EventSponsorsManager from '../../../../components/Organisms/EventSponsorsManager';
 import EventGalleryManager from '../../../../components/Organisms/EventGalleryManager';
-import { getTrackVisibility, isSoloTeamSize, validateEventDates } from '../../../../lib/utils';
+import { getTrackVisibility, isSoloTeamSize, validateEventDates, getEventTypeInfo } from '../../../../lib/utils';
 
 export default function AdminEventSettings() {
   const navigate = useNavigate();
@@ -64,21 +65,33 @@ export default function AdminEventSettings() {
     }
   })();
 
-  const adminEventId = storedAdmin?.EventId || user?.EventId;
+  const [currentEventId, setCurrentEventId] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('admin') || '{}');
+      return stored.EventId || user?.EventId || null;
+    } catch {
+      return user?.EventId || null;
+    }
+  });
 
   const [eventsList, setEventsList] = useState([]);
-  const [selectedEventId, setSelectedEventId] = useState(adminEventId ? Number(adminEventId) : null);
+  const [selectedEventId, setSelectedEventId] = useState(currentEventId ? Number(currentEventId) : null);
   const [eventData, setEventData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAdminQr, setUploadingAdminQr] = useState(false);
   const [uploadingIdBg, setUploadingIdBg] = useState(false);
   const [uploadingTeamBg, setUploadingTeamBg] = useState(false);
-  const [activeTab, setActiveTab] = useState('physical'); // 'virtual' | 'physical' | 'general'
+  const [activeTab, setActiveTab] = useState('physical'); // 'virtual' | 'physical' | 'general' | 'workshop_config' | 'prerequisites'
 
   // Editable settings form state
   const [settingsForm, setSettingsForm] = useState({
+    EventName: '',
+    Location: '',
     Description: '',
+    Requirements: '',
+    Facilities: '',
+    Highlights: '',
     StartDate: '',
     EndDate: '',
     VirtualRegistrationOpen: 1,
@@ -111,6 +124,8 @@ export default function AdminEventSettings() {
     PhysicalPSMaxTeamsPerStatement: 5
   });
 
+  const typeInfo = getEventTypeInfo(eventData?.EventType || storedAdmin?.EventType);
+
   // Track visibility is controlled strictly by the event's configured HackathonMode.
   const {
     mode: currentMode,
@@ -141,12 +156,37 @@ export default function AdminEventSettings() {
   });
 
   useEffect(() => {
-    if (isPhysicalMode) {
+    if (typeInfo.isWorkshop) {
+      setActiveTab('workshop_config');
+    } else if (isPhysicalMode) {
       setActiveTab('physical');
     } else if (isVirtualMode || isBothMode) {
       setActiveTab('virtual');
     }
-  }, [isVirtualMode, isPhysicalMode, isBothMode]);
+  }, [typeInfo.isWorkshop, isVirtualMode, isPhysicalMode, isBothMode]);
+
+  useEffect(() => {
+    const handleEventUpdated = (e) => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('admin') || '{}');
+        const newEvId = e?.detail?.Id || stored.EventId;
+        if (newEvId) {
+          setCurrentEventId(Number(newEvId));
+          setSelectedEventId(Number(newEvId));
+          loadEventSettings(Number(newEvId));
+        }
+      } catch (err) {
+        console.error('Error handling admin-event-updated in AdminEventSettings:', err);
+      }
+    };
+
+    window.addEventListener('admin-event-updated', handleEventUpdated);
+    window.addEventListener('storage', handleEventUpdated);
+    return () => {
+      window.removeEventListener('admin-event-updated', handleEventUpdated);
+      window.removeEventListener('storage', handleEventUpdated);
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -154,8 +194,8 @@ export default function AdminEventSettings() {
     const init = async () => {
       try {
         setLoading(true);
-        if (adminEventId) {
-          const evId = Number(adminEventId);
+        if (currentEventId) {
+          const evId = Number(currentEventId);
           setSelectedEventId(evId);
           await loadEventSettings(evId);
           const res = await fetch(`${API_BASE_URL}/api/events/${evId}`);
@@ -192,10 +232,10 @@ export default function AdminEventSettings() {
     return () => {
       isMounted = false;
     };
-  }, [adminEventId]);
+  }, [currentEventId]);
 
   const loadEventSettings = async (id) => {
-    const targetId = adminEventId ? Number(adminEventId) : id;
+    const targetId = id || currentEventId;
     if (!targetId) return;
     try {
       setLoading(true);
@@ -205,6 +245,14 @@ export default function AdminEventSettings() {
       const ev = Array.isArray(data) ? data[0] : (data.event || data);
 
       setEventData(ev);
+      const evType = getEventTypeInfo(ev.EventType);
+      if (evType.isWorkshop) {
+        setActiveTab('workshop_config');
+      } else if (ev.HackathonMode === 'Physical') {
+        setActiveTab('physical');
+      } else {
+        setActiveTab('virtual');
+      }
       if (ev.HackathonMode) {
         try {
           const curAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
@@ -217,7 +265,12 @@ export default function AdminEventSettings() {
       }
       loadTimelines(targetId);
       setSettingsForm({
+        EventName: ev.EventName || '',
+        Location: ev.Location || '',
         Description: ev.Description || '',
+        Requirements: ev.Requirements || '',
+        Facilities: ev.Facilities || '',
+        Highlights: ev.Highlights || '',
         StartDate: ev.StartDate ? ev.StartDate.split('T')[0] : '',
         EndDate: ev.EndDate ? ev.EndDate.split('T')[0] : '',
         VirtualRegistrationOpen: ev.VirtualRegistrationOpen !== undefined ? (ev.VirtualRegistrationOpen ? 1 : 0) : 1,
@@ -515,21 +568,37 @@ export default function AdminEventSettings() {
     const targetEventId = adminEventId ? Number(adminEventId) : selectedEventId;
     if (!targetEventId) return;
 
-    // Validate TeamSize
-    const ts = String(settingsForm.TeamSize).trim();
-    if (!ts) {
-      toast.error('Please enter a valid Team Size (e.g. "4" or "2-4")');
-      return;
+    const payload = { ...settingsForm };
+
+    // For workshops, team size is 1 (individual attendee)
+    if (typeInfo.isWorkshop) {
+      payload.TeamSize = '1';
+      payload.RegistrationOpen = settingsForm.RegistrationOpen !== undefined ? settingsForm.RegistrationOpen : 1;
+      payload.PhysicalRegistrationOpen = payload.RegistrationOpen;
+      payload.VirtualRegistrationOpen = payload.RegistrationOpen;
+      if (!payload.RegistrationStart) {
+        payload.RegistrationStart = payload.PhysicalRegistrationStart || payload.VirtualRegistrationStart || payload.StartDate;
+      }
+      if (!payload.RegistrationEnd) {
+        payload.RegistrationEnd = payload.PhysicalRegistrationEnd || payload.VirtualRegistrationEnd || payload.EndDate;
+      }
+    } else {
+      // Validate TeamSize for hackathons
+      const ts = String(settingsForm.TeamSize).trim();
+      if (!ts) {
+        toast.error('Please enter a valid Team Size (e.g. "4" or "2-4")');
+        return;
+      }
     }
 
     // Validate Event and Registration dates
-    const regStart = settingsForm.PhysicalRegistrationStart || settingsForm.VirtualRegistrationStart || settingsForm.RegistrationStart;
-    const regEnd = settingsForm.PhysicalRegistrationEnd || settingsForm.VirtualRegistrationEnd || settingsForm.RegistrationEnd;
+    const regStart = payload.PhysicalRegistrationStart || payload.VirtualRegistrationStart || payload.RegistrationStart;
+    const regEnd = payload.PhysicalRegistrationEnd || payload.VirtualRegistrationEnd || payload.RegistrationEnd;
     const dateErr = validateEventDates({
       registrationStart: regStart,
       registrationEnd: regEnd,
-      eventStart: settingsForm.StartDate,
-      eventEnd: settingsForm.EndDate
+      eventStart: payload.StartDate,
+      eventEnd: payload.EndDate
     });
     if (dateErr) {
       toast.error(dateErr);
@@ -541,7 +610,7 @@ export default function AdminEventSettings() {
       const res = await fetch(`${API_BASE_URL}/api/events/${targetEventId}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settingsForm)
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
@@ -1070,42 +1139,70 @@ export default function AdminEventSettings() {
           {/* Seamless Navigation Tabs */}
           <div className="relative pt-2">
             <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto">
-              {[
-                {
-                  id: 'virtual',
-                  label: 'Virtual Track Settings',
-                  icon: Globe,
-                  status: settingsForm.VirtualRegistrationOpen === 1 ? 'Open' : 'Paused',
-                },
-                {
-                  id: 'physical',
-                  label: 'Physical Track Settings',
-                  icon: MapPin,
-                  status: settingsForm.PhysicalRegistrationOpen === 1 ? 'Open' : 'Paused',
-                },
-                {
-                  id: 'general',
-                  label: 'General & Policy Rules',
-                  icon: Sliders,
-                  status: null,
-                },
-                {
-                  id: 'sponsors',
-                  label: 'Sponsors & Partners',
-                  icon: Award,
-                  status: null,
-                },
-                {
-                  id: 'gallery',
-                  label: 'Event Gallery',
-                  icon: Camera,
-                  status: null,
-                },
-              ].filter((tab) => {
-                if (tab.id === 'virtual') return showVirtual;
-                if (tab.id === 'physical') return showPhysical;
-                return true;
-              }).map((tab) => {
+              {(typeInfo.isWorkshop
+                ? [
+                    {
+                      id: 'workshop_config',
+                      label: 'Workshop & Registration',
+                      icon: Sliders,
+                      status: (settingsForm.RegistrationOpen === 1 || settingsForm.PhysicalRegistrationOpen === 1) ? 'Open' : 'Paused',
+                    },
+                    {
+                      id: 'prerequisites',
+                      label: 'Prerequisites & Software',
+                      icon: FileText,
+                      status: null,
+                    },
+                    {
+                      id: 'sponsors',
+                      label: 'Sponsors & Partners',
+                      icon: Award,
+                      status: null,
+                    },
+                    {
+                      id: 'gallery',
+                      label: 'Workshop Gallery',
+                      icon: Camera,
+                      status: null,
+                    },
+                  ]
+                : [
+                    {
+                      id: 'virtual',
+                      label: 'Virtual Track Settings',
+                      icon: Globe,
+                      status: settingsForm.VirtualRegistrationOpen === 1 ? 'Open' : 'Paused',
+                    },
+                    {
+                      id: 'physical',
+                      label: 'Physical Track Settings',
+                      icon: MapPin,
+                      status: settingsForm.PhysicalRegistrationOpen === 1 ? 'Open' : 'Paused',
+                    },
+                    {
+                      id: 'general',
+                      label: 'General & Policy Rules',
+                      icon: Sliders,
+                      status: null,
+                    },
+                    {
+                      id: 'sponsors',
+                      label: 'Sponsors & Partners',
+                      icon: Award,
+                      status: null,
+                    },
+                    {
+                      id: 'gallery',
+                      label: 'Event Gallery',
+                      icon: Camera,
+                      status: null,
+                    },
+                  ].filter((tab) => {
+                    if (tab.id === 'virtual') return showVirtual;
+                    if (tab.id === 'physical') return showPhysical;
+                    return true;
+                  })
+              ).map((tab) => {
                 const isActive = activeTab === tab.id;
                 const TabIcon = tab.icon;
 
@@ -1156,6 +1253,336 @@ export default function AdminEventSettings() {
 
             {/* Main Content Area */}
             <div className="bg-white dark:bg-black rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 space-y-6 relative z-0">
+              {/* WORKSHOP CONFIG TAB */}
+              {activeTab === 'workshop_config' && (
+                <div className="space-y-6">
+                  {/* Workshop Header Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Sliders className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Workshop Controls &amp; Delivery Settings
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Configure attendee registration availability, schedule dates, online meet links, campus venue/lab, and passes.
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                      settingsForm.RegistrationOpen === 1
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                    }`}>
+                      {settingsForm.RegistrationOpen === 1 ? '● Registrations Open' : '● Registrations Paused'}
+                    </span>
+                  </div>
+
+                  {/* Workshop Registration Controls Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Workshop Registration Availability</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xl">
+                          When paused, new participants cannot register for this workshop on the public event portal.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextVal = settingsForm.RegistrationOpen === 1 ? 0 : 1;
+                          setSettingsForm((prev) => ({
+                            ...prev,
+                            RegistrationOpen: nextVal,
+                            PhysicalRegistrationOpen: nextVal,
+                            VirtualRegistrationOpen: nextVal
+                          }));
+                        }}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 shrink-0 ${
+                          settingsForm.RegistrationOpen === 1
+                            ? 'bg-white dark:bg-black hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+                        }`}
+                      >
+                        {settingsForm.RegistrationOpen === 1 ? (
+                          <>
+                            <Lock className="h-4 w-4" />
+                            <span>Pause Workshop Registrations</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="h-4 w-4" />
+                            <span>Resume / Open Registrations</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Registration Dates */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>From: Registration Start Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="RegistrationStart"
+                          value={settingsForm.RegistrationStart ? settingsForm.RegistrationStart.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>To: Registration Deadline Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="RegistrationEnd"
+                          value={settingsForm.RegistrationEnd ? settingsForm.RegistrationEnd.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Workshop Schedule & Delivery Mode Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Workshop Dates &amp; Delivery Mode</span>
+                    </h3>
+
+                    {/* Schedule Dates */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Workshop Start Date *
+                        </label>
+                        <input
+                          type="date"
+                          name="StartDate"
+                          value={settingsForm.StartDate ? settingsForm.StartDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Workshop End Date *
+                        </label>
+                        <input
+                          type="date"
+                          name="EndDate"
+                          value={settingsForm.EndDate ? settingsForm.EndDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Mode Selector */}
+                    <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-zinc-800">
+                      <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                        Workshop Delivery Format
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {[
+                          { id: 'Physical', label: 'In-Person Lab', desc: 'Conducted on campus in computer lab / hall' },
+                          { id: 'Virtual', label: 'Online Live Stream', desc: 'Conducted over Google Meet, Zoom or Teams' },
+                          { id: 'Both', label: 'Hybrid Mode', desc: 'On-campus lab attendees + Live virtual stream' }
+                        ].map((m) => {
+                          const isSel = (settingsForm.HackathonMode || 'Physical').toLowerCase() === m.id.toLowerCase();
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => setSettingsForm((prev) => ({ ...prev, HackathonMode: m.id }))}
+                              className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
+                                isSel
+                                  ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
+                                  : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-black hover:border-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-xs text-slate-900 dark:text-white">{m.label}</span>
+                                {isSel && <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                              </div>
+                              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">{m.desc}</p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Venue & Meet Link Inputs */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Campus Venue / Lab Room Name</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="Location"
+                          placeholder="e.g. CSE Dept - Lab 3, Ground Floor"
+                          value={settingsForm.Location || ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Video className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Live Meeting URL (Google Meet / Zoom)</span>
+                        </label>
+                        <input
+                          type="url"
+                          name="VirtualMeetUrl"
+                          placeholder="https://meet.google.com/abc-defg-hij"
+                          value={settingsForm.VirtualMeetUrl || ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Workshop Description Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Workshop Overview &amp; Curriculum Description</span>
+                    </h3>
+                    <textarea
+                      name="Description"
+                      rows={4}
+                      placeholder="Describe what attendees will learn in this workshop, topics covered, practical hands-on exercises, etc..."
+                      value={settingsForm.Description || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+
+                  {/* ID Card Pass Toggle */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                          Digital Attendee Pass &amp; ID Card Generation
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Allow registered attendees to download their official workshop entry pass with QR code verification.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggle('IDCardEnabled')}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer ${
+                          settingsForm.IDCardEnabled === 1
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-white dark:bg-black text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700'
+                        }`}
+                      >
+                        {settingsForm.IDCardEnabled === 1 ? '● ID Card Enabled' : 'ID Card Disabled'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* WORKSHOP PREREQUISITES TAB */}
+              {activeTab === 'prerequisites' && (
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <FileText className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Workshop Prerequisites &amp; Software Guidelines
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Set the required software packages, developer tools, hardware recommendations, and learning outcomes.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Required Software & Tools */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Code className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Required Software &amp; Tools to Pre-Install</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      List software packages, compilers, IDEs, and dependencies attendees must have ready before attending.
+                    </p>
+                    <textarea
+                      name="Requirements"
+                      rows={5}
+                      placeholder="e.g.&#10;• Python 3.11+ installed from python.org&#10;• Visual Studio Code with Python and Jupyter extensions&#10;• Git CLI configured&#10;• Google Chrome browser"
+                      value={settingsForm.Requirements || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-mono resize-y"
+                    />
+                  </div>
+
+                  {/* Hardware & Laptop Guidelines */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Laptop &amp; Equipment Guidelines</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Specify hardware requirements, chargers, or lab facilities provided by the organizers.
+                    </p>
+                    <textarea
+                      name="Facilities"
+                      rows={4}
+                      placeholder="e.g.&#10;• Bring personal laptop with charger (min 8GB RAM recommended)&#10;• High-speed Wi-Fi network credentials will be provided at the entry desk&#10;• Backup systems available in Lab 3 if required"
+                      value={settingsForm.Facilities || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+
+                  {/* Key Learning Outcomes & Takeaways */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Key Learning Outcomes &amp; Takeaways</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Highlight the skills, projects, and certifications attendees will take away.
+                    </p>
+                    <textarea
+                      name="Highlights"
+                      rows={4}
+                      placeholder="e.g.&#10;• Build and deploy 2 production-ready projects&#10;• Official Workshop Certificate of Completion&#10;• Access to downloadable code repositories & slides"
+                      value={settingsForm.Highlights || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* TAB 1: VIRTUAL TRACK SETTINGS */}
               {activeTab === 'virtual' && (
                 <div className="space-y-6">

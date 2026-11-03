@@ -45,6 +45,7 @@ const AllUsersPage = lazy(() => import('../features/auth/pages/SuperAdmin/AllUse
 
 // Admin Pages
 const AdminSidebar = lazy(() => import('../components/Organisms/AdminSidebar'));
+const MyEventsPage = lazy(() => import('../features/auth/pages/Admin/MyEventsPage'));
 const AdminLogin = lazy(() => import('../features/auth/pages/Admin/AdminLogin'));
 const AdminRegister = lazy(() => import('../features/auth/pages/Admin/AdminRegister'));
 const AdminDashboard = lazy(() => import('../features/auth/pages/Admin/AdminDashboard'));
@@ -64,6 +65,10 @@ const Evaluators = lazy(() => import('../features/auth/pages/Admin/Evaluators'))
 const AdminResultsPage = lazy(() => import('../features/auth/pages/Admin/AdminResultsPage'));
 const EventBroadcastEmailer = lazy(() => import('../features/auth/pages/Admin/EventBroadcastEmailer'));
 const AdminFeedback = lazy(() => import('../features/auth/pages/Admin/AdminFeedback'));
+const WorkshopSessionsPage = lazy(() => import('../features/auth/pages/Admin/WorkshopSessionsPage'));
+const WorkshopResourcesPage = lazy(() => import('../features/auth/pages/Admin/WorkshopResourcesPage'));
+const WorkshopAttendancePage = lazy(() => import('../features/auth/pages/Admin/WorkshopAttendancePage'));
+const WorkshopInstructorsPage = lazy(() => import('../features/auth/pages/Admin/WorkshopInstructorsPage'));
 
 // User Pages
 const UserSidebar = lazy(() => import('../components/Organisms/UserSidebar'));
@@ -175,6 +180,7 @@ function App() {
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/admin" element={<AdminSidebar />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="my-events" element={<MyEventsPage />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="virtual-event" element={<AdminModeRoute allowedModes={['virtual', 'both']}> <AdminVirtualEvent /> </AdminModeRoute>} />
                 <Route path="physical-event" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AdminPhysicalEvent /> </AdminModeRoute>} />
@@ -196,6 +202,10 @@ function App() {
                 <Route path="physical-results" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AdminResultsPage track="Physical" /> </AdminModeRoute>} />
                 <Route path="virtual-results" element={<AdminModeRoute allowedModes={['virtual', 'both']}> <AdminResultsPage track="Virtual" /> </AdminModeRoute>} />
                 <Route path="feedback" element={<AdminFeedback />} />
+                <Route path="workshop/curriculum" element={<WorkshopSessionsPage />} />
+                <Route path="workshop/resources" element={<WorkshopResourcesPage />} />
+                <Route path="workshop/attendance" element={<WorkshopAttendancePage />} />
+                <Route path="workshop/instructors" element={<WorkshopInstructorsPage />} />
               </Route>
             </Route>
 

@@ -13,10 +13,11 @@ import {
   Crown,
   ChevronRight,
   ExternalLink,
-  ScrollText,
-  Award,
   Clock,
+  GraduationCap,
+  ScrollText
 } from 'lucide-react';
+import { isSoloTeamSize } from '../../../../lib/utils';
 
 /* ── dot-pulse keyframes ── */
 const DotStyle = () => (
@@ -33,9 +34,9 @@ const DotStyle = () => (
 
 const CardDots = () => (
   <span className="flex items-center gap-[3px] shrink-0">
-    <span className="dp1 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
-    <span className="dp2 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
-    <span className="dp3 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
+    <span className="dp1 w-1.5 h-1.5 rounded-sm bg-slate-300 dark:bg-zinc-600" />
+    <span className="dp2 w-1.5 h-1.5 rounded-sm bg-slate-300 dark:bg-zinc-600" />
+    <span className="dp3 w-1.5 h-1.5 rounded-sm bg-slate-300 dark:bg-zinc-600" />
   </span>
 );
 
@@ -133,10 +134,10 @@ export default function UserDashboard() {
           <div className="flex items-center gap-2 shrink-0">
             <Link to="/user/teams"
               className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 shadow-sm transition-all">
-              <Users className="h-3.5 w-3.5" /> My Teams
+              <Users className="h-3.5 w-3.5" /> My Registrations
             </Link>
             <Link to="/user/profile"
-              className="w-9 h-9 rounded-full bg-emerald-700 dark:bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-sm hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors">
+              className="w-9 h-9 rounded-xl bg-emerald-700 dark:bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-sm hover:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors">
               {initial}
             </Link>
           </div>
@@ -145,16 +146,19 @@ export default function UserDashboard() {
         {/* ── STAT STRIP ── */}
         <motion.div {...fadeUp(0.06)} className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {[
-            { label: 'Registrations',  value: myTeams.length,   icon: <Users    className="h-4 w-4" /> },
-            { label: 'My Teams',       value: myTeams.length,   icon: <Users    className="h-4 w-4" /> },
-            { label: 'Open Events',    value: openEventsCount,  icon: <Clock    className="h-4 w-4" /> },
-            { label: 'Total Events',   value: events.length,    icon: <Calendar className="h-4 w-4" /> },
+            { label: 'My Enrolled Events', value: myTeams.length,   icon: <Users    className="h-4 w-4" /> },
+            { label: 'Workshops',          value: myTeams.filter(t => {
+                const ev = events.find(e => Number(e.Id) === Number(t.EventId));
+                return ((t.EventType || ev?.EventType || '').toLowerCase().includes('workshop'));
+              }).length, icon: <GraduationCap className="h-4 w-4" /> },
+            { label: 'Open Competitions',  value: openEventsCount,  icon: <Clock    className="h-4 w-4" /> },
+            { label: 'Total Events',       value: events.length,    icon: <Calendar className="h-4 w-4" /> },
           ].map((s, i) => (
             <motion.div
               key={i}
               {...fadeUp(0.06 + i * 0.05)}
               whileHover={{ y: -3 }}
-              className="bg-white dark:bg-zinc-950 rounded-xl p-4 sm:p-5 border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-zinc-950 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">{s.label}</span>
@@ -165,12 +169,12 @@ export default function UserDashboard() {
           ))}
         </motion.div>
 
-        {/* ── MY REGISTERED EVENTS ── */}
+        {/* ── MY REGISTERED EVENTS (Dynamic Event Type distinction) ── */}
         <motion.section {...fadeUp(0.12)} className="space-y-5">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">My Registered Events</h2>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Events you've registered for and your team details</p>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Your confirmed event registrations, workshop passes, and squad workspaces</p>
             </div>
             {myTeams.length > 0 && (
               <Link to="/user/teams"
@@ -181,20 +185,25 @@ export default function UserDashboard() {
           </div>
 
           {myTeams.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col items-center">
+            <div className="rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col items-center">
               <ByteEmptyState
                 searchTerm=""
                 hasActiveFilters={false}
                 onReset={() => {}}
                 onQuickSearch={null}
                 title="No registrations yet"
-                description="You haven't registered for any events yet. Browse the competitions below and register your team!"
+                description="You haven't registered for any events yet. Explore upcoming hackathons and workshops below!"
               />
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {myTeams.map((team, idx) => {
                 const isLead = (team.Role || '').toLowerCase().includes('lead');
+                const matchedEvent = events.find(e => Number(e.Id) === Number(team.EventId));
+                const rawType = (team.EventType || matchedEvent?.EventType || '').trim();
+                const isWorkshop = rawType.toLowerCase().includes('workshop');
+                const eventTypeBadge = rawType || 'Hackathon';
+
                 return (
                   <motion.div
                     key={team.TeamId || idx}
@@ -202,45 +211,69 @@ export default function UserDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: idx * 0.05 }}
                     whileHover={{ y: -3 }}
-                    className="bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 p-5"
+                    className="bg-white dark:bg-zinc-950 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 p-5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <StatusBadge status={team.RegistrationStatus ?? ''} />
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={team.RegistrationStatus ?? ''} />
+                        {/* Event Type Badge - Rectangular, no pill */}
+                        <span
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${
+                            isWorkshop
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                              : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
+                          }`}
+                        >
+                          {eventTypeBadge}
+                        </span>
+                      </div>
                       <CardDots />
                     </div>
 
                     <div className="space-y-1">
                       <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-                        {team.EventName || 'Hackathon Event'}
+                        {team.EventName || (isWorkshop ? 'Workshop Program' : 'Event Workspace')}
                       </h3>
-                      <p className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
-                        <Users className="h-3 w-3 shrink-0" />
-                        <span>{team.TeamName}</span>
-                        {isLead && (
-                          <span className="flex items-center gap-0.5 ml-1 text-amber-600 dark:text-amber-400 font-semibold">
-                            <Crown className="h-3 w-3" /> Lead
-                          </span>
-                        )}
-                      </p>
+
+                      {isWorkshop ? (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
+                          <GraduationCap className="h-3.5 w-3.5 shrink-0" />
+                          <span>Individual Attendee Seat ({user?.UserName || 'Enrolled'})</span>
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+                          <Users className="h-3 w-3 shrink-0" />
+                          <span>{team.TeamName || user?.UserName || 'Squad Member'}</span>
+                          {isLead && (
+                            <span className="flex items-center gap-0.5 ml-1 text-amber-600 dark:text-amber-400 font-semibold">
+                              <Crown className="h-3 w-3" /> Lead
+                            </span>
+                          )}
+                        </p>
+                      )}
                     </div>
 
                     {(team.StartDate || team.EndDate) && (
                       <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-xs text-slate-600 dark:text-zinc-400">
                         <Calendar className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                        <span className="font-medium">{fmt(team.StartDate)} – {fmt(team.EndDate)}</span>
+                        <span className="font-medium font-mono text-[11px]">{fmt(team.StartDate)} – {fmt(team.EndDate)}</span>
                       </div>
                     )}
 
                     <div className="flex items-center gap-2 pt-1 mt-auto border-t border-slate-100 dark:border-zinc-800">
                       <button
+                        type="button"
                         onClick={() => navigate(`/user/teamInfo/${team.TeamId}`)}
-                        className="flex-1 py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
+                        className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
                       >
-                        Workspace <ArrowRight className="h-3.5 w-3.5" />
+                        <span>{isWorkshop ? 'Workshop Hub' : 'Team Workspace'}</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => navigate(`/events/${team.EventId}`)}
-                        className="py-2 px-3 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900 text-slate-600 dark:text-zinc-400 text-xs font-semibold transition-colors"
+                        className="py-2 px-3 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900 text-slate-600 dark:text-zinc-400 text-xs font-semibold transition cursor-pointer"
+                        title="View Public Event Details"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                       </button>
@@ -261,23 +294,27 @@ export default function UserDashboard() {
         <motion.section {...fadeUp(0.18)} className="pt-6 border-t border-slate-200 dark:border-zinc-800">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
-              { to: '/user/competitions',       icon: Trophy,      label: 'Competitions',       sub: 'Browse & register for events'   },
+              { to: '/user/competitions',       icon: Trophy,      label: 'Competitions & Workshops', sub: 'Explore all active programs' },
               { to: '/user/problem-statements', icon: ScrollText,  label: 'Problem Statements', sub: 'Browse challenge tracks'        },
-              { to: '/user/teams',              icon: Users,       label: 'Team Management',    sub: 'Manage your squads'             },
-              { to: '/user/profile',            icon: Award,       label: 'My Profile',         sub: 'Update credentials & skills'   },
-            ].map(({ to, icon: Icon, label, sub }) => (
-              <Link key={to} to={to}
-                className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-emerald-500/50 shadow-sm hover:shadow-md flex items-center justify-between group transition-all">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">{label}</p>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400">{sub}</p>
-                  </div>
+              { to: '/user/teams',              icon: Users,       label: 'My Squads & Passes', sub: 'Manage cohorts and passes'      },
+              { to: '/user/profile',            icon: Users,       label: 'Profile Settings',   sub: 'Account & college details'      },
+            ].map((item, idx) => (
+              <Link
+                key={idx}
+                to={item.to}
+                className="group p-4 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/10 shadow-sm transition-all flex items-center gap-3.5"
+              >
+                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition shrink-0">
+                  <item.icon className="w-4 h-4" />
                 </div>
-                <ChevronRight className="h-4 w-4 text-slate-400 dark:text-zinc-600 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                    {item.label}
+                  </p>
+                  <p className="text-[11px] text-slate-400 truncate">
+                    {item.sub}
+                  </p>
+                </div>
               </Link>
             ))}
           </div>

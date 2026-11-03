@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
   Mail,
   Users,
   CheckCircle2,
-  AlertCircle,
   Clock,
   History,
   ShieldCheck,
@@ -15,37 +14,20 @@ import {
   Radio,
   FileText,
   UserCheck,
+  GraduationCap,
+  Sparkle
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import useToast from "../../../../Hooks/useToast";
+import { getEventTypeInfo } from "../../../../lib/utils";
 
 const CATEGORIES = [
-  { id: "Announcement", label: "Announcement", color: "emerald" },
-  { id: "Important Alert", label: "Important Alert", color: "rose" },
-  { id: "Schedule Update", label: "Schedule Update", color: "blue" },
-  { id: "Venue Information", label: "Venue Information", color: "teal" },
-  { id: "Emergency", label: "Emergency", color: "red" },
-];
-
-const RECIPIENT_FILTERS = [
-  {
-    id: "all",
-    label: "All Approved Participants",
-    desc: "Dispatches to every participant with an approved registration.",
-    icon: Users,
-  },
-  {
-    id: "team_leads",
-    label: "Team Leads Only",
-    desc: "Dispatches only to designated team leaders of registered squads.",
-    icon: UserCheck,
-  },
-  {
-    id: "checked_in",
-    label: "Checked-in Participants",
-    desc: "Dispatches only to participants physically checked in at venue.",
-    icon: ShieldCheck,
-  },
+  { id: "Announcement", label: "Announcement" },
+  { id: "Important Alert", label: "Important Alert" },
+  { id: "Schedule Update", label: "Schedule Update" },
+  { id: "Venue Information", label: "Venue Information" },
+  { id: "Study Materials", label: "Study Materials & Code" },
+  { id: "Emergency", label: "Emergency" },
 ];
 
 export default function EventBroadcastEmailer() {
@@ -60,6 +42,7 @@ export default function EventBroadcastEmailer() {
   });
 
   const eventId = admin?.EventId || "";
+  const typeInfo = getEventTypeInfo(admin?.EventType);
 
   const [activeTab, setActiveTab] = useState("compose"); // 'compose' | 'history'
   const [subject, setSubject] = useState("");
@@ -67,13 +50,115 @@ export default function EventBroadcastEmailer() {
   const [category, setCategory] = useState("Announcement");
   const [recipientFilter, setRecipientFilter] = useState("all");
   const [organizerName, setOrganizerName] = useState(
-    admin?.AdminName ? `${admin.AdminName} (Organizing Lead)` : "Event Organizing Team"
+    admin?.AdminName ? `${admin.AdminName} (${typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})` : "Event Organizing Team"
   );
 
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [broadcasts, setBroadcasts] = useState([]);
-  const [previewMode, setPreviewMode] = useState(false);
+
+  // Audience filters tailored for Workshop vs Hackathon
+  const recipientFilters = typeInfo.isWorkshop
+    ? [
+        {
+          id: "all",
+          label: "All Enrolled Attendees",
+          desc: "Dispatches to every participant enrolled in this workshop.",
+          icon: GraduationCap,
+        },
+        {
+          id: "checked_in",
+          label: "Checked-in Attendees Only",
+          desc: "Dispatches only to attendees physically verified at the session.",
+          icon: ShieldCheck,
+        },
+        {
+          id: "absent",
+          label: "Pending / Late Attendees",
+          desc: "Dispatches session start reminders to attendees not yet checked in.",
+          icon: Clock,
+        },
+      ]
+    : [
+        {
+          id: "all",
+          label: "All Approved Participants",
+          desc: "Dispatches to every participant in registered squads.",
+          icon: Users,
+        },
+        {
+          id: "team_leads",
+          label: "Team Leads Only",
+          desc: "Dispatches only to designated squad leads.",
+          icon: UserCheck,
+        },
+        {
+          id: "checked_in",
+          label: "Checked-in Teams",
+          desc: "Dispatches only to teams physically checked in at venue.",
+          icon: ShieldCheck,
+        },
+      ];
+
+  // Quick 1-click broadcast templates
+  const quickTemplates = typeInfo.isWorkshop
+    ? [
+        {
+          name: "Session Reminder",
+          cat: "Announcement",
+          filter: "all",
+          sub: `${admin?.EventName || "Workshop"} - Session Commencing Shortly & Lab Checklist`,
+          msg: `Hello Attendees,\n\nWe are excited to kick off today's workshop session! Please ensure you have your laptops charged and development tools pre-installed as per our guidelines.\n\nLooking forward to a great hands-on session!`,
+        },
+        {
+          name: "Materials & Slides",
+          cat: "Study Materials",
+          filter: "checked_in",
+          sub: `${admin?.EventName || "Workshop"} - Hands-On Lab Code & Slide Decks Released`,
+          msg: `Hello Workshop Participants,\n\nThe instructor has released today's session slide decks, code snippets, and exercise repositories. You can download all materials from your participant dashboard or the shared links.\n\nHappy coding!`,
+        },
+        {
+          name: "Feedback Request",
+          cat: "Announcement",
+          filter: "checked_in",
+          sub: `${admin?.EventName || "Workshop"} - Session Feedback & Evaluation`,
+          msg: `Dear Attendee,\n\nThank you for participating in today's workshop! Please take 2 minutes to provide your honest feedback and rating so we can continuously improve future sessions.`,
+        },
+      ]
+    : [
+        {
+          name: "Problem Statements Released",
+          cat: "Important Alert",
+          filter: "all",
+          sub: `${admin?.EventName || "Hackathon"} - Problem Statements & Domains Announced`,
+          msg: `Hello Teams,\n\nOfficial problem statements and track themes have now been published! Team leads must review the problem briefs and submit their domain selection before the deadline.`,
+        },
+        {
+          name: "Round 1 Evaluation",
+          cat: "Schedule Update",
+          filter: "checked_in",
+          sub: `${admin?.EventName || "Hackathon"} - Round 1 Jury Review Timetable`,
+          msg: `Hello Participants,\n\nRound 1 judging commences in 30 minutes. All teams must have their working prototypes and presentation slide decks ready at their assigned table desks.`,
+        },
+      ];
+
+  // Listen for active event updates from sidebar or switcher
+  useEffect(() => {
+    const handleEventUpdated = (e) => {
+      try {
+        const stored = JSON.parse(localStorage.getItem("admin") || "{}");
+        const updated = e?.detail ? { ...stored, ...e.detail } : stored;
+        setAdmin(updated);
+      } catch (err) {}
+    };
+
+    window.addEventListener("admin-event-updated", handleEventUpdated);
+    window.addEventListener("storage", handleEventUpdated);
+    return () => {
+      window.removeEventListener("admin-event-updated", handleEventUpdated);
+      window.removeEventListener("storage", handleEventUpdated);
+    };
+  }, []);
 
   // Fetch broadcasts history
   const fetchBroadcastHistory = async () => {
@@ -149,7 +234,9 @@ export default function EventBroadcastEmailer() {
       case "Emergency":
         return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30";
       case "Schedule Update":
-        return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30";
+        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
+      case "Study Materials":
+        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
       case "Venue Information":
         return "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30";
       default:
@@ -158,74 +245,107 @@ export default function EventBroadcastEmailer() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 p-4 sm:p-6 lg:p-8 transition-colors">
+    <div className="bg-slate-50 dark:bg-black min-h-screen text-slate-900 dark:text-zinc-100 transition-colors p-4 sm:p-6 md:p-8 lg:p-10 font-sans">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-600/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
-              <Megaphone className="w-6 h-6" />
+        {/* Top Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
+              <Radio className="w-4 h-4 animate-pulse" />
+              <span>{typeInfo.isWorkshop ? "Workshop Broadcasts" : "Event Communications"}</span>
+              <span className="text-slate-400">•</span>
+              <span>{admin?.EventName || "Active Event"}</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  Event Broadcast Emailer
-                </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  SMTP Live
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
-                Dispatch urgent announcements, schedules, and alerts directly to participant inboxes with responsive templates.
-              </p>
-            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Broadcast Emailer &amp; Announcements
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
+              {typeInfo.isWorkshop
+                ? "Dispatch official notifications, lab repositories, and schedule updates to workshop attendees."
+                : "Dispatch mass email announcements and evaluation notices directly to participants and team leads."}
+            </p>
           </div>
 
-          {/* Tab Switcher */}
-          <div className="flex items-center bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl self-start sm:self-auto border border-slate-200/80 dark:border-zinc-700/80">
+          {/* Navigation Tabs - No pills, rectangular rounded-xl */}
+          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-200/60 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
             <button
               type="button"
               onClick={() => setActiveTab("compose")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                 activeTab === "compose"
-                  ? "bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                  ? "bg-white dark:bg-zinc-950 text-emerald-600 dark:text-emerald-400 shadow-sm"
                   : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               <Send className="w-3.5 h-3.5" />
-              Compose
+              <span>Compose</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("history")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                 activeTab === "history"
-                  ? "bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-400 shadow-sm"
+                  ? "bg-white dark:bg-zinc-950 text-emerald-600 dark:text-emerald-400 shadow-sm"
                   : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               <History className="w-3.5 h-3.5" />
-              History ({broadcasts.length})
+              <span>History ({broadcasts.length})</span>
             </button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Tab 1: COMPOSE BROADCAST */}
         {activeTab === "compose" && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+          >
             {/* Form Column */}
-            <div className="lg:col-span-7 space-y-6">
+            <div className="lg:col-span-7 space-y-5">
+              {/* Quick Template Fillers */}
+              <div className="p-4 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
+                  1-Click Quick Templates
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {quickTemplates.map((tpl, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setSubject(tpl.sub);
+                        setMessage(tpl.msg);
+                        setCategory(tpl.cat);
+                        setRecipientFilter(tpl.filter);
+                        toast.success(`Template applied: ${tpl.name}`);
+                      }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 hover:border-emerald-500/40 hover:bg-emerald-500/5 transition cursor-pointer"
+                    >
+                      {tpl.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <form
                 onSubmit={handleSendBroadcast}
-                className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm space-y-5"
+                className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-5"
               >
-                {/* Target Audience */}
+                {/* Target Audience — Rectangular cards, no pills */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-2">
                     Target Recipient Audience
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {RECIPIENT_FILTERS.map((f) => {
+                    {recipientFilters.map((f) => {
                       const Icon = f.icon;
                       const isSelected = recipientFilter === f.id;
                       return (
@@ -233,17 +353,19 @@ export default function EventBroadcastEmailer() {
                           key={f.id}
                           type="button"
                           onClick={() => setRecipientFilter(f.id)}
-                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          className={`p-3.5 rounded-2xl border text-left transition cursor-pointer flex flex-col justify-between ${
                             isSelected
-                              ? "bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-500"
-                              : "bg-slate-50 dark:bg-zinc-800/50 border-slate-200 dark:border-zinc-700/80 hover:border-slate-300 dark:hover:border-zinc-600 text-slate-700 dark:text-zinc-300"
+                              ? "bg-emerald-500/10 border-emerald-500 text-emerald-700 dark:text-emerald-400"
+                              : "bg-slate-50/60 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 text-slate-700 dark:text-zinc-300"
                           }`}
                         >
-                          <div className="flex items-center gap-2 mb-1">
-                            <Icon className="w-4 h-4 shrink-0" />
-                            <span className="text-xs font-semibold">{f.label}</span>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              <Icon className="w-4 h-4 shrink-0" />
+                            </div>
+                            <span className="text-xs font-bold">{f.label}</span>
                           </div>
-                          <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight">
+                          <span className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">
                             {f.desc}
                           </span>
                         </button>
@@ -252,7 +374,7 @@ export default function EventBroadcastEmailer() {
                   </div>
                 </div>
 
-                {/* Category Pill Select */}
+                {/* Category Selection — Rectangular tags, no pills */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-2">
                     Announcement Category
@@ -263,10 +385,10 @@ export default function EventBroadcastEmailer() {
                         key={cat.id}
                         type="button"
                         onClick={() => setCategory(cat.id)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
                           category === cat.id
                             ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                            : "bg-slate-100 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300 hover:border-emerald-500/40"
+                            : "bg-slate-100 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:border-emerald-500/40"
                         }`}
                       >
                         {cat.label}
@@ -289,8 +411,8 @@ export default function EventBroadcastEmailer() {
                     required
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    placeholder="e.g., Avishkaar 4 - Hackathon Round 1 Guidelines & Evaluation Schedule"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                    placeholder="e.g. Web Development Workshop - Lab 2 Guidelines & GitHub Repo Link"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
 
@@ -304,12 +426,12 @@ export default function EventBroadcastEmailer() {
                   </label>
                   <textarea
                     id="broadcast_message"
-                    rows={6}
+                    rows={7}
                     required
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Write your announcement message here. Paragraph breaks will be formatted cleanly in the email..."
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all leading-relaxed resize-y"
+                    placeholder="Write your announcement message here. Line breaks will be preserved cleanly in the dispatched email..."
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition leading-relaxed resize-y font-mono"
                   />
                 </div>
 
@@ -326,30 +448,32 @@ export default function EventBroadcastEmailer() {
                     type="text"
                     value={organizerName}
                     onChange={(e) => setOrganizerName(e.target.value)}
-                    placeholder="e.g., AITAM Hackathon Organizing Committee"
-                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                    placeholder="e.g. Workshop Operations Team"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
 
                 {/* Dispatch Button */}
                 <div className="pt-2">
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                     type="submit"
                     disabled={loading || !subject.trim() || !message.trim()}
-                    className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold text-sm transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
                   >
                     {loading ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Dispatching via SMTP & WebSocket...</span>
+                        <span>Dispatching via SMTP &amp; Realtime Stream...</span>
                       </>
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        <span>Send Broadcast Now</span>
+                        <span>Dispatch Broadcast Announcement</span>
                       </>
                     )}
-                  </button>
+                  </motion.button>
                 </div>
               </form>
             </div>
@@ -359,37 +483,34 @@ export default function EventBroadcastEmailer() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
                   <Eye className="w-3.5 h-3.5" />
-                  Recipient Email Live Preview
+                  Live Email Template Preview
                 </span>
-                <span className="text-[11px] text-slate-400 dark:text-zinc-500">
-                  Mobile & Desktop Responsive
+                <span className="text-[11px] text-slate-400">
+                  SMTP Delivery Preview
                 </span>
               </div>
 
               {/* Styled Mock Email Container */}
-              <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-lg">
-                {/* Email Client Top Bar */}
-                <div className="bg-slate-100 dark:bg-zinc-800/80 px-4 py-3 border-b border-slate-200 dark:border-zinc-700/80 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm">
+                <div className="bg-slate-100 dark:bg-zinc-900 px-4 py-3 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-sm bg-rose-400" />
+                    <span className="w-2.5 h-2.5 rounded-sm bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />
                   </div>
-                  <span className="font-mono text-[11px]">smtp.ayojan-mail.com</span>
+                  <span className="font-mono text-[10px]">smtp.ayojan-mail.com</span>
                 </div>
 
-                {/* Email Header */}
-                <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white">
-                  <div className="inline-block px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-bold tracking-wider uppercase mb-2">
-                    Live Event Broadcast
+                <div className="bg-emerald-700 p-5 text-white space-y-2">
+                  <div className="inline-block px-2.5 py-0.5 rounded-md bg-white/20 text-[10px] font-bold tracking-wider uppercase">
+                    {typeInfo.isWorkshop ? "Workshop Official Notice" : "Hackathon Official Notice"}
                   </div>
-                  <h3 className="text-lg font-bold">
-                    {admin?.EventName || "Avishkaar 4 Hackathon"}
+                  <h3 className="text-base font-extrabold truncate">
+                    {admin?.EventName || "Event Announcement"}
                   </h3>
                 </div>
 
-                {/* Email Body */}
-                <div className="p-5 space-y-4 text-xs sm:text-sm">
+                <div className="p-5 space-y-4 text-xs">
                   <span
                     className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getCategoryBadgeClass(
                       category
@@ -398,49 +519,54 @@ export default function EventBroadcastEmailer() {
                     {category}
                   </span>
 
-                  <h4 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-                    {subject || "Subject line will appear here..."}
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
+                    {subject || "Subject line preview will appear here..."}
                   </h4>
 
                   <p className="text-slate-600 dark:text-zinc-400 font-medium">
-                    Dear Participant,
+                    Dear {typeInfo.isWorkshop ? "Workshop Attendee" : "Participant"},
                   </p>
 
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200/60 dark:border-zinc-700/60 text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap text-xs">
-                    {message || "Your message content will be formatted and delivered to all registered participants with your custom branding."}
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-mono text-[11px]">
+                    {message || "Your broadcast announcement text will be formatted and delivered directly to the inbox of verified attendees."}
                   </div>
 
-                  <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 text-[11px] text-slate-500 dark:text-zinc-400">
-                    <strong>Dispatched by:</strong> {organizerName || "Event Organizing Committee"}<br />
-                    <span>Sent via AYOJAN Event Broadcast Protocol.</span>
+                  <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 text-[11px] text-slate-500 dark:text-zinc-400 space-y-0.5">
+                    <p><strong>Dispatched by:</strong> {organizerName || "Operations Team"}</p>
+                    <p className="text-[10px] text-slate-400">Sent via AYOJAN Event Broadcast Protocol.</p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Tab 2: BROADCAST HISTORY */}
         {activeTab === "history" && (
-          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm"
+          >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <History className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                Dispatched Broadcasts History
+              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <History className="w-4 h-4 text-emerald-600" />
+                <span>Dispatched Broadcasts History</span>
               </h2>
               <button
                 type="button"
                 onClick={fetchBroadcastHistory}
                 disabled={historyLoading}
-                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${historyLoading ? "animate-spin" : ""}`} />
-                Refresh
+                <span>Refresh</span>
               </button>
             </div>
 
             {broadcasts.length === 0 ? (
-              <div className="text-center py-12 text-slate-400 dark:text-zinc-500 text-sm">
+              <div className="text-center py-16 text-slate-400 text-xs border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl">
                 No email broadcasts sent yet for this event.
               </div>
             ) : (
@@ -448,21 +574,21 @@ export default function EventBroadcastEmailer() {
                 {broadcasts.map((b) => (
                   <div key={b.Id} className="py-4 space-y-2 first:pt-0 last:pb-0">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
                         <span
-                          className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getCategoryBadgeClass(
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getCategoryBadgeClass(
                             b.Category
                           )}`}
                         >
                           {b.Category}
                         </span>
-                        <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                        <h3 className="font-bold text-xs text-slate-900 dark:text-white">
                           {b.Subject}
                         </h3>
                       </div>
-                      <span className="text-xs text-slate-400 dark:text-zinc-500 flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        {new Date(b.SentAt).toLocaleString()}
+                      <span className="text-[11px] text-slate-400 flex items-center gap-1 font-mono">
+                        <Clock className="w-3 h-3" />
+                        {new Date(b.SentAt).toLocaleString("en-IN")}
                       </span>
                     </div>
 
@@ -470,8 +596,8 @@ export default function EventBroadcastEmailer() {
                       {b.Message}
                     </p>
 
-                    <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-zinc-400 pt-1">
-                      <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
+                    <div className="flex items-center gap-4 text-[11px] text-slate-500 pt-1">
+                      <span className="flex items-center gap-1 text-emerald-600 font-bold">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Dispatched to {b.RecipientCount} participant(s)
                       </span>
@@ -481,7 +607,7 @@ export default function EventBroadcastEmailer() {
                 ))}
               </div>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

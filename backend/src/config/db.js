@@ -655,7 +655,64 @@ const migrationQueries = [
     `ALTER TABLE Accommodation DROP INDEX IF EXISTS room_num`,
     `ALTER TABLE Accommodation ADD UNIQUE KEY IF NOT EXISTS unique_event_room (EventId, room_num)`,
     `UPDATE Accommodation r INNER JOIN accommodation_blocks b ON r.BlockId = b.Id SET r.EventId = b.EventId WHERE r.EventId IS NULL AND b.EventId IS NOT NULL`,
-    `UPDATE Accommodation r INNER JOIN accommodation_allocations a ON r.Id = a.RoomId SET r.EventId = a.EventId WHERE r.EventId IS NULL`
+    `UPDATE Accommodation r INNER JOIN accommodation_allocations a ON r.Id = a.RoomId SET r.EventId = a.EventId WHERE r.EventId IS NULL`,
+
+    `CREATE TABLE IF NOT EXISTS event_admins (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        AdminId INT NOT NULL,
+        EventId INT NOT NULL,
+        Role VARCHAR(50) DEFAULT 'Organizer',
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_admin_event (AdminId, EventId),
+        INDEX idx_event_admins_admin (AdminId),
+        INDEX idx_event_admins_event (EventId),
+        FOREIGN KEY (AdminId) REFERENCES users(Id) ON DELETE CASCADE,
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `INSERT IGNORE INTO event_admins (AdminId, EventId, Role)
+     SELECT Id, EventId, 'Organizer'
+     FROM users
+     WHERE RoleId = 2 AND EventId IS NOT NULL`,
+
+    `CREATE TABLE IF NOT EXISTS workshop_sessions (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        SessionTitle VARCHAR(255) NOT NULL,
+        DayNumber INT NOT NULL DEFAULT 1,
+        SessionDate VARCHAR(100) NULL,
+        StartTime VARCHAR(50) NULL,
+        EndTime VARCHAR(50) NULL,
+        SpeakerName VARCHAR(255) NULL,
+        SpeakerDesignation VARCHAR(255) NULL,
+        SpeakerCompany VARCHAR(255) NULL,
+        SpeakerPhoto TEXT NULL,
+        VenueOrMeetLink TEXT NULL,
+        Description TEXT NULL,
+        ResourcesUrl TEXT NULL,
+        DisplayOrder INT DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_ws_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS workshop_resources (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        Title VARCHAR(255) NOT NULL,
+        ResourceType VARCHAR(50) DEFAULT 'Document',
+        ResourceUrl TEXT NOT NULL,
+        Description TEXT NULL,
+        SessionId INT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_wr_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE event_attendance ADD COLUMN IF NOT EXISTS DayNumber INT NOT NULL DEFAULT 1`,
+    `ALTER TABLE event_attendance ADD COLUMN IF NOT EXISTS SessionSlot VARCHAR(50) NOT NULL DEFAULT 'Morning'`,
+    `ALTER TABLE event_attendance ADD COLUMN IF NOT EXISTS AttendanceDate VARCHAR(50) NULL`,
+    `ALTER TABLE event_attendance MODIFY COLUMN Status VARCHAR(50) NOT NULL DEFAULT 'not_checked_in'`
 ];
 
 let isMigrating = false;

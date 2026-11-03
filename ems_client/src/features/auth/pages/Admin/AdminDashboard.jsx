@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from '@/lib/api';
 import { motion } from "framer-motion";
 import {
@@ -23,10 +24,13 @@ import {
     Layers,
     Save,
     Edit3,
-    Medal
+    Medal,
+    BookOpen,
+    GraduationCap,
+    CalendarCheck
 } from "lucide-react";
 import PrizePodiumStage from "../../../../components/Molecules/PrizePodiumStage";
-import { getTrackVisibility } from "../../../../lib/utils";
+import { getTrackVisibility, getEventTypeInfo, isSoloTeamSize } from "../../../../lib/utils";
 
 function formatDate(date) {
     if (!date) return "Not available";
@@ -50,6 +54,7 @@ function formatTime(date) {
 }
 
 function AdminDashboard() {
+    const navigate = useNavigate();
     const admin = JSON.parse(localStorage.getItem("admin") || "null");
     const eventId = admin?.EventId;
 
@@ -552,6 +557,9 @@ function AdminDashboard() {
         );
     };
 
+    const typeInfo = getEventTypeInfo(event?.EventType || admin?.EventType);
+    const isSolo = isSoloTeamSize(event?.TeamSize || admin?.TeamSize) || typeInfo.isWorkshop || typeInfo.isSeminar;
+
     const stats = [
         {
             title: "Total Registrations",
@@ -559,7 +567,7 @@ function AdminDashboard() {
             icon: Users
         },
         {
-            title: "Total Teams",
+            title: typeInfo.isWorkshop ? "Total Attendees" : (typeInfo.isSeminar ? "Total Delegates" : (isSolo ? "Total Participants" : "Total Teams")),
             value: teamsCount,
             icon: UsersRound
         },
@@ -626,20 +634,31 @@ function AdminDashboard() {
                     <button
                         type="button"
                         onClick={openGuidelinesModal}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-600/30 dark:border-zinc-800 bg-emerald-50 dark:bg-black px-4 py-2.5 text-sm font-medium text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-zinc-900 transition shadow-sm"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-600/30 dark:border-zinc-800 bg-emerald-50 dark:bg-black px-4 py-2.5 text-sm font-medium text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-zinc-900 transition shadow-sm cursor-pointer"
                     >
                         <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                         Manage Guidelines
                     </button>
 
-                    <button
-                        type="button"
-                        onClick={openPrizeModal}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-800 dark:bg-emerald-500 dark:text-black dark:hover:bg-emerald-600 transition shadow-sm"
-                    >
-                        <Trophy className="h-4 w-4" />
-                        {declaredPrizes.length > 0 ? "Edit Prize Money" : "Add Prize Money"}
-                    </button>
+                    {typeInfo?.isWorkshop ? (
+                        <button
+                            type="button"
+                            onClick={() => navigate('/admin/workshop/curriculum')}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition shadow-sm cursor-pointer"
+                        >
+                            <BookOpen className="h-4 w-4" />
+                            Schedule Session
+                        </button>
+                    ) : !typeInfo?.isSeminar ? (
+                        <button
+                            type="button"
+                            onClick={openPrizeModal}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-800 dark:bg-emerald-500 dark:text-black dark:hover:bg-emerald-600 transition shadow-sm cursor-pointer"
+                        >
+                            <Trophy className="h-4 w-4" />
+                            {declaredPrizes.length > 0 ? "Edit Prize Money" : "Add Prize Money"}
+                        </button>
+                    ) : null}
                 </div>
             </div>
 
@@ -694,9 +713,16 @@ function AdminDashboard() {
                         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
 
                             <div>
-                                <p className="text-sm text-emerald-700 dark:text-emerald-500 font-medium">
-                                    Assigned Event
-                                </p>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-sm text-emerald-700 dark:text-emerald-500 font-medium">
+                                        Assigned Event
+                                    </p>
+                                    {typeInfo?.label && (
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${typeInfo.badgeColor}`}>
+                                            {typeInfo.label}
+                                        </span>
+                                    )}
+                                </div>
 
                                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mt-1">
                                     {event?.EventName || "Event"}
@@ -849,6 +875,92 @@ function AdminDashboard() {
                     </div>
                 </motion.div>
 
+                {typeInfo?.isWorkshop && (
+                    <motion.section
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, delay: 0.25 }}
+                        className="bg-white dark:bg-black rounded-2xl border border-emerald-500/20 p-5 sm:p-6 shadow-sm"
+                    >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 border-b border-gray-100 dark:border-gray-800/80 pb-4">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                    <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                                        Workshop Command Center
+                                    </h2>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Manage curriculum, distribute study materials, assign instructors, and verify attendee check-ins.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <button
+                                onClick={() => navigate('/admin/workshop/curriculum')}
+                                className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 text-left hover:border-emerald-500 transition group cursor-pointer"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-105 transition">
+                                    <BookOpen className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 transition">
+                                    Curriculum & Agenda
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                                    Schedule day-wise sessions, assign trainers & meet/lab rooms.
+                                </p>
+                            </button>
+
+                            <button
+                                onClick={() => navigate('/admin/workshop/resources')}
+                                className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 text-left hover:border-emerald-500 transition group cursor-pointer"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-105 transition">
+                                    <FileText className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 transition">
+                                    Study Materials Hub
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                                    Upload slides, codebases, GitHub repositories & recordings.
+                                </p>
+                            </button>
+
+                            <button
+                                onClick={() => navigate('/admin/workshop/instructors')}
+                                className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 text-left hover:border-emerald-500 transition group cursor-pointer"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-105 transition">
+                                    <GraduationCap className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 transition">
+                                    Instructors & Trainers
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                                    Add lead trainers, industry speakers, lab TAs & coordinators.
+                                </p>
+                            </button>
+
+                            <button
+                                onClick={() => navigate('/admin/workshop/attendance')}
+                                className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 text-left hover:border-emerald-500 transition group cursor-pointer"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-105 transition">
+                                    <CalendarCheck className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 transition">
+                                    Attendance Tracker
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                                    Track daily attendee check-ins and export presence records to CSV.
+                                </p>
+                            </button>
+                        </div>
+                    </motion.section>
+                )}
+
+                {!typeInfo?.isWorkshop && !typeInfo?.isSeminar && (
                 <motion.section
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1068,6 +1180,7 @@ function AdminDashboard() {
                         );
                     })()}
                 </motion.section>
+                )}
 
                 <motion.div
                     initial={{ opacity: 0, y: 12 }}

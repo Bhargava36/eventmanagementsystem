@@ -367,7 +367,10 @@ const updateEventSettings = (id, settings, callback) => {
         'PhysicalPSMode',
         'PhysicalPSPublished',
         'PhysicalPSSelectionDeadline',
-        'PhysicalPSMaxTeamsPerStatement'
+        'PhysicalPSMaxTeamsPerStatement',
+        'Requirements',
+        'Facilities',
+        'Highlights'
     ];
 
     // Auto-sync generic RegistrationStart/RegistrationEnd if track-specific ones were supplied
@@ -611,6 +614,8 @@ const sendEventBroadcast = (EventId, { subject, message, category, recipientFilt
             filterClause = " AND (LOWER(tm.Role) IN ('teamlead', 'team lead') OR tm.UserId = t.TeamLeadUserId)";
         } else if (recipientFilter === 'checked_in') {
             filterClause = " AND ea.Status = 'checked_in'";
+        } else if (recipientFilter === 'absent' || recipientFilter === 'not_checked_in') {
+            filterClause = " AND (ea.Status IS NULL OR ea.Status != 'checked_in')";
         }
 
         const query = `

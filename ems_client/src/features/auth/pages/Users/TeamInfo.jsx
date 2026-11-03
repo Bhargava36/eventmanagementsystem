@@ -38,10 +38,15 @@ import {
     Video,
     ArrowRight,
     Code2,
-    Target
+    Target,
+    GraduationCap,
+    BookOpen,
+    Laptop,
+    Presentation
 } from "lucide-react";
 import { API_BASE_URL } from '@/lib/api';
 import { QRCodeSVG } from "qrcode.react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { useNavigate, useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
@@ -136,6 +141,13 @@ function TeamInfo() {
     const [organizerStatements, setOrganizerStatements] = useState([]);
     const [participantStatement, setParticipantStatement] = useState(null);
     const [selectedStatement, setSelectedStatement] = useState(null);
+
+    // Workshop Learning Hub state
+    const [workshopSessions, setWorkshopSessions] = useState([]);
+    const [workshopResources, setWorkshopResources] = useState([]);
+    const [workshopInstructors, setWorkshopInstructors] = useState([]);
+    const [loadingWorkshopHub, setLoadingWorkshopHub] = useState(false);
+    const [activeWorkshopTab, setActiveWorkshopTab] = useState('curriculum');
 
     // Public QR Pass state
     const [qrModalOpen, setQrModalOpen] = useState(false);
@@ -355,6 +367,35 @@ function TeamInfo() {
                 }
             }
 
+            // Fetch Workshop Curriculum, Resources & Instructors for Workshops
+            if (targetTeam.EventId && String(targetTeam.EventType || '').toLowerCase().includes('workshop')) {
+                try {
+                    setLoadingWorkshopHub(true);
+                    const [sessRes, resRes, instRes] = await Promise.all([
+                        fetch(`${API_BASE_URL}/api/workshops/${targetTeam.EventId}/sessions`),
+                        fetch(`${API_BASE_URL}/api/workshops/${targetTeam.EventId}/resources`),
+                        fetch(`${API_BASE_URL}/api/core_team/event/${targetTeam.EventId}`)
+                    ]);
+
+                    if (sessRes.ok) {
+                        const sData = await sessRes.json();
+                        setWorkshopSessions(sData.sessions || []);
+                    }
+                    if (resRes.ok) {
+                        const rData = await resRes.json();
+                        setWorkshopResources(rData.resources || []);
+                    }
+                    if (instRes.ok) {
+                        const iData = await instRes.json();
+                        setWorkshopInstructors(iData.members || []);
+                    }
+                } catch (wsErr) {
+                    console.error("Failed to fetch workshop hub data:", wsErr);
+                } finally {
+                    setLoadingWorkshopHub(false);
+                }
+            }
+
         } catch (err) {
             console.error("Error fetching team info:", err);
             setError(err.message || "Failed to load team information");
@@ -534,6 +575,12 @@ function TeamInfo() {
         (Number(team?.TeamSize) === 1 && members.length <= 1)
     );
 
+    const isWorkshop = String(team?.EventType || '').toLowerCase().includes('workshop');
+
+    const qrPassValue = isWorkshop
+        ? `${publicTeamUrl}?attendee=${team?.TeamId || teamId}&user=${currentUserId || team?.TeamLeadUserId || ''}&type=workshop`
+        : publicTeamUrl;
+
     const isApprovedPhysical =
         String(team?.ParticipationMode || "").toLowerCase() === "physical" &&
         String(team?.RegistrationStatus || "").toLowerCase() === "approved";
@@ -626,7 +673,7 @@ function TeamInfo() {
                             onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
                             className={`self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shadow-md ${
                                 isVirtualEventLive
-                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-emerald-500/25 ring-2 ring-emerald-400/50 animate-pulse'
+                                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25 ring-2 ring-emerald-500/40 animate-pulse'
                                     : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                             }`}
                         >
@@ -665,20 +712,20 @@ function TeamInfo() {
 
             {/* Live Virtual Event Alert Banner */}
             {isVirtualEventLive && team.EventId && (
-                <div className="rounded-3xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/80 via-zinc-950 to-slate-950 p-5 sm:p-6 shadow-xl shadow-emerald-950/30 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="rounded-3xl border border-emerald-500/40 bg-zinc-950 p-5 sm:p-6 shadow-xl shadow-emerald-950/30 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
                         <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
                             <Radio className="w-6 h-6 animate-pulse" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
+                                <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
                                     VIRTUAL EVENT IS LIVE NOW
                                 </span>
                                 <span className="text-xs text-slate-400 font-medium">{team.EventName}</span>
                             </div>
                             <h3 className="text-base sm:text-lg font-black text-white mt-1">
-                                Virtual Hackathon Room is Active!
+                                {isWorkshop ? "Virtual Workshop Room is Active!" : "Virtual Hackathon Room is Active!"}
                             </h3>
                             <p className="text-xs text-slate-300 leading-relaxed mt-0.5 max-w-2xl">
                                 Join the live Google Meet session, select your problem statement, view innovation themes, and track hackathon sprint milestones.
@@ -689,7 +736,7 @@ function TeamInfo() {
                     <button
                         type="button"
                         onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
-                        className="shrink-0 inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs sm:text-sm tracking-wide shadow-lg shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
+                        className="shrink-0 inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm tracking-wide shadow-lg shadow-emerald-600/30 hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
                     >
                         <Video className="w-4 h-4" />
                         <span>Go to Virtual Event Page</span>
@@ -746,23 +793,23 @@ function TeamInfo() {
                         <div className="min-w-0 space-y-1.5">
                             <div className="flex flex-wrap items-center gap-2">
                                 <span
-                                    className="text-[10px] uppercase font-extrabold tracking-widest px-2.5 py-0.5 rounded-full border"
+                                    className="text-[10px] uppercase font-extrabold tracking-widest px-2.5 py-1 rounded-xl border"
                                     style={{
                                         backgroundColor: theme.badgeBg,
                                         borderColor: theme.badgeBorder,
                                         color: theme.badgeText
                                     }}
                                 >
-                                    {isIndividual ? "Individual Participant" : `Team (${team.TeamSize} Members)`}
+                                    {isWorkshop ? "Solo Attendee" : (isIndividual ? "Individual Participant" : `Team (${team.TeamSize} Members)`)}
                                 </span>
 
-                                <span className="text-[10px] uppercase font-extrabold tracking-widest px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-zinc-800">
-                                    {team.ParticipationMode || "Physical"} Track
+                                <span className="text-[10px] uppercase font-extrabold tracking-widest px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-zinc-800">
+                                    {team.ParticipationMode || "Physical"} {isWorkshop ? "Mode" : "Track"}
                                 </span>
 
-                                <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                                <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-                                    {team.RegistrationStatus || "Approved"}
+                                    {isWorkshop ? "Confirmed Seat" : (team.RegistrationStatus || "Approved")}
                                 </span>
                             </div>
 
@@ -798,12 +845,12 @@ function TeamInfo() {
                         {/* Total Registrations in Event */}
                         <div className="space-y-1">
                             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-gray-400">
-                                Total Registrations
+                                {isWorkshop ? "Workshop Attendees" : "Total Registrations"}
                             </span>
                             <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white flex items-baseline gap-1.5">
                                 {team.totalEventRegistrations || resultsData?.totalRegistrations || 1}
                                 <span className="text-xs font-normal text-slate-500 dark:text-gray-400">
-                                    {isIndividual ? "Attendees" : "Teams"}
+                                    {isIndividual || isWorkshop ? "Attendees" : "Teams"}
                                 </span>
                             </p>
                         </div>
@@ -813,7 +860,7 @@ function TeamInfo() {
                         {/* Registration ID */}
                         <div className="space-y-1">
                             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-gray-400">
-                                {isIndividual ? "Participant ID" : "Team ID"}
+                                {isWorkshop ? "Workshop Pass ID" : (isIndividual ? "Participant ID" : "Team ID")}
                             </span>
                             <p className="text-2xl sm:text-3xl font-black" style={{ color: theme.accent }}>
                                 #{team.TeamId}
@@ -838,7 +885,7 @@ function TeamInfo() {
                     <div className="space-y-2 text-center md:text-left flex-1">
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                             <span
-                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider border"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider border"
                                 style={{
                                     backgroundColor: theme.badgeBg,
                                     borderColor: theme.badgeBorder,
@@ -846,19 +893,21 @@ function TeamInfo() {
                                 }}
                             >
                                 <QrCode className="w-3.5 h-3.5" />
-                                Official Public Team Pass
+                                {isWorkshop ? "Official Workshop Entry Pass" : "Official Public Team Pass"}
                             </span>
                             <span className="text-xs text-slate-500 dark:text-gray-400 font-medium">
-                                No Login Required to View
+                                {isWorkshop ? "Present at Registration Desk" : "No Login Required to View"}
                             </span>
                         </div>
 
                         <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                            Scannable Team Verification QR Code
+                            {isWorkshop ? "Scannable Workshop Attendee Entry Pass" : "Scannable Team Verification QR Code"}
                         </h2>
 
                         <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 max-w-xl leading-relaxed">
-                            Judges, organizers, and booth visitors can scan this QR code with their smartphone camera to view your verified team credentials, problem statement, roster, and live scorecard.
+                            {isWorkshop
+                                ? "Present this verified QR pass at the workshop check-in desk or lab entrance for instant automated check-in and attendance recording."
+                                : "Judges, organizers, and booth visitors can scan this QR code with their smartphone camera to view your verified team credentials, problem statement, roster, and live scorecard."}
                         </p>
 
                         {/* Action buttons */}
@@ -874,7 +923,7 @@ function TeamInfo() {
                                 }}
                             >
                                 <ExternalLink className="w-3.5 h-3.5" />
-                                <span>Open Public Page</span>
+                                <span>{isWorkshop ? "Open Public Pass" : "Open Public Page"}</span>
                             </a>
 
                             <button
@@ -914,13 +963,13 @@ function TeamInfo() {
                     >
                         <QRCodeSVG
                             id={`team-qr-code-${teamId}`}
-                            value={publicTeamUrl}
+                            value={qrPassValue}
                             size={135}
                             level="H"
                             includeMargin={false}
                         />
                         <div className="flex items-center gap-1 mt-2 text-[10px] font-black text-slate-800 tracking-wider uppercase group-hover:text-emerald-600 transition-colors">
-                            <span>TEAM #{team.TeamId}</span>
+                            <span>{isWorkshop ? `ATTENDEE #${team.TeamId}` : `TEAM #${team.TeamId}`}</span>
                             <Maximize2 className="w-2.5 h-2.5 opacity-60" />
                         </div>
                     </div>
@@ -971,10 +1020,275 @@ function TeamInfo() {
             )}
 
             {/* ══════════════════════════════════════════════════════════════ */}
-            {/* ── PRIORITY 2: EVALUATION RESULTS & SCORECARD (OR PENDING) ── */}
+            {/* ── PRIORITY 2: WORKSHOP LEARNING HUB OR HACKATHON EVALUATION ── */}
             {/* ══════════════════════════════════════════════════════════════ */}
-            {hasPublishedRounds ? (
-                <section className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-6">
+            {isWorkshop ? (
+                <motion.section
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-6"
+                >
+                    {/* Header with Navigation Tabs */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800/80 pb-5">
+                        <div className="flex items-center gap-3">
+                            <div
+                                className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border"
+                                style={{
+                                    backgroundColor: theme.iconBg,
+                                    borderColor: theme.cardBorder,
+                                    color: theme.iconColor
+                                }}
+                            >
+                                <BookOpen className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                                        Workshop Learning Hub &amp; Resources
+                                    </h2>
+                                    <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                                        Participant Portal
+                                    </span>
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                                    Interactive schedule, lecture slides, starter repositories, and trainer contact information.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Hub Switcher Tabs */}
+                        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 self-start sm:self-auto">
+                            {[
+                                { id: 'curriculum', label: 'Curriculum & Agenda', icon: CalendarDays },
+                                { id: 'resources', label: `Materials (${workshopResources.length})`, icon: Download },
+                                { id: 'instructors', label: `Instructors (${workshopInstructors.length})`, icon: GraduationCap }
+                            ].map((tab) => {
+                                const active = activeWorkshopTab === tab.id;
+                                const TabIcon = tab.icon;
+                                return (
+                                    <button
+                                        key={tab.id}
+                                        type="button"
+                                        onClick={() => setActiveWorkshopTab(tab.id)}
+                                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                            active
+                                                ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200/80 dark:border-zinc-700'
+                                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                                        }`}
+                                    >
+                                        <TabIcon className="w-3.5 h-3.5" />
+                                        <span>{tab.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Tab 1: Curriculum / Agenda */}
+                    {activeWorkshopTab === 'curriculum' && (
+                        <div className="space-y-4">
+                            {workshopSessions.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-3.5">
+                                    {workshopSessions.map((session, idx) => (
+                                        <div
+                                            key={session.Id || idx}
+                                            className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/40 hover:border-emerald-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                                        >
+                                            <div className="flex items-start gap-3.5">
+                                                <div className="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 mt-0.5">
+                                                    #{idx + 1}
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <h4 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                                                            {session.SessionTitle || session.title}
+                                                        </h4>
+                                                        {session.DayNumber && (
+                                                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                                                                Day {session.DayNumber}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {session.Description && (
+                                                        <p className="text-xs text-slate-600 dark:text-zinc-400 max-w-xl leading-relaxed">
+                                                            {session.Description}
+                                                        </p>
+                                                    )}
+                                                    {session.SpeakerName && (
+                                                        <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 pt-0.5">
+                                                            <GraduationCap className="w-3.5 h-3.5" />
+                                                            <span>Instructor: {session.SpeakerName} {session.SpeakerDesignation ? `(${session.SpeakerDesignation})` : ''}</span>
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                                                {(session.StartTime || session.EndTime) && (
+                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">
+                                                        <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                                                        {session.StartTime || ''} {session.EndTime ? `- ${session.EndTime}` : ''}
+                                                    </span>
+                                                )}
+                                                {session.VenueOrMeetLink && (
+                                                    session.VenueOrMeetLink.startsWith('http') ? (
+                                                        <a
+                                                            href={session.VenueOrMeetLink}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition"
+                                                        >
+                                                            <Video className="w-3.5 h-3.5" />
+                                                            <span>Join Lab</span>
+                                                        </a>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400">
+                                                            <MapPin className="w-3.5 h-3.5" />
+                                                            {session.VenueOrMeetLink}
+                                                        </span>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/50 dark:bg-zinc-900/30">
+                                    <Presentation className="w-10 h-10 mx-auto text-slate-400 dark:text-zinc-600" />
+                                    <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                                        Detailed Hands-on Syllabus Being Published
+                                    </h4>
+                                    <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
+                                        The instructors are organizing the sequence of code-along modules and hands-on lab exercises. Check back before session start!
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Tab 2: Study Materials & Downloads */}
+                    {activeWorkshopTab === 'resources' && (
+                        <div className="space-y-4">
+                            {workshopResources.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    {workshopResources.map((res) => (
+                                        <div
+                                            key={res.Id}
+                                            className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/40 flex items-start justify-between gap-3 hover:border-emerald-500/30 transition-all"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                                                    <FileText className="w-5 h-5" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                                                        {res.Title}
+                                                    </h4>
+                                                    <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                                                        {res.ResourceType || 'Resource'}
+                                                    </span>
+                                                    {res.Description && (
+                                                        <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+                                                            {res.Description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {res.ResourceUrl && (
+                                                <a
+                                                    href={res.ResourceUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="p-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm shrink-0"
+                                                    title="Open / Download Material"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                </a>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/50 dark:bg-zinc-900/30">
+                                    <BookOpen className="w-10 h-10 mx-auto text-slate-400 dark:text-zinc-600" />
+                                    <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                                        Learning Resources Will Be Added Soon
+                                    </h4>
+                                    <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
+                                        Presentation slides, starter code repositories, cheat sheets, and recorded sessions will be linked here directly.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Tab 3: Instructors & Trainers */}
+                    {activeWorkshopTab === 'instructors' && (
+                        <div className="space-y-4">
+                            {workshopInstructors.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                                    {workshopInstructors.map((inst, idx) => (
+                                        <div
+                                            key={inst.Id || idx}
+                                            className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/40 flex items-center gap-3.5 hover:border-emerald-500/30 transition-all"
+                                        >
+                                            {inst.Photo ? (
+                                                <img
+                                                    src={inst.Photo}
+                                                    alt={inst.Name}
+                                                    className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-zinc-800 shrink-0"
+                                                />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold text-base flex items-center justify-center shrink-0">
+                                                    {(inst.Name || 'I').charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                            <div className="min-w-0 flex-1 space-y-0.5">
+                                                <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                                                    {inst.Name}
+                                                </h4>
+                                                <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                                    {inst.Role || 'Instructor'}
+                                                </span>
+                                                {inst.Department && (
+                                                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
+                                                        {inst.Department}
+                                                    </p>
+                                                )}
+                                                {inst.Email && (
+                                                    <a
+                                                        href={`mailto:${inst.Email}`}
+                                                        className="text-[11px] text-emerald-600 dark:text-emerald-400 truncate flex items-center gap-1 hover:underline"
+                                                    >
+                                                        <Mail className="w-3 h-3" />
+                                                        <span className="truncate">{inst.Email}</span>
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/50 dark:bg-zinc-900/30">
+                                    <GraduationCap className="w-10 h-10 mx-auto text-slate-400 dark:text-zinc-600" />
+                                    <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                                        Instructor Panel Under Finalization
+                                    </h4>
+                                    <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
+                                        The faculty profiles and guest trainers delivering this workshop will be listed here.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </motion.section>
+            ) : (
+                <>
+                {/* ── PRIORITY 2: EVALUATION RESULTS & SCORECARD (OR PENDING) ── */}
+                {hasPublishedRounds ? (
+                    <section className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800/80 pb-5">
                         <div className="flex items-center gap-3">
                             <div
@@ -992,7 +1306,7 @@ function TeamInfo() {
                                     <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                                         Official Evaluation Results &amp; Scorecard
                                     </h2>
-                                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
                                         Published Live
                                     </span>
                                 </div>
@@ -1206,7 +1520,7 @@ function TeamInfo() {
                         <div>
                             <div className="flex items-center gap-2">
                                 <h4 className="text-sm font-bold text-slate-900 dark:text-white">Evaluation In Progress</h4>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-zinc-800">
+                                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-zinc-800">
                                     Scores Pending
                                 </span>
                             </div>
@@ -1220,6 +1534,8 @@ function TeamInfo() {
                         Stay tuned &bull; Results will update live
                     </div>
                 </div>
+            )}
+            </>
             )}
 
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -1276,11 +1592,11 @@ function TeamInfo() {
                                                 {member.UserName || "Member"}
                                             </h4>
                                             {isLead ? (
-                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 flex items-center gap-1">
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 flex items-center gap-1">
                                                     <Crown className="w-3 h-3 text-amber-500" /> Lead
                                                 </span>
                                             ) : (
-                                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-gray-400 shrink-0">
+                                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-lg bg-slate-200 dark:bg-zinc-800 text-slate-600 dark:text-gray-400 shrink-0">
                                                     Member
                                                 </span>
                                             )}
@@ -1360,7 +1676,7 @@ function TeamInfo() {
                         <div className="pt-2">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 mb-2">Description</h4>
                             <p className="text-xs text-slate-700 dark:text-gray-300 leading-relaxed bg-slate-50 dark:bg-zinc-900/40 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800/80">
-                                {team.EventDescription || "No detailed description provided for this hackathon."}
+                                {team.EventDescription || (isWorkshop ? "No detailed description provided for this workshop." : "No detailed description provided for this hackathon.")}
                             </p>
                         </div>
                     </div>
@@ -1396,7 +1712,7 @@ function TeamInfo() {
                                             </div>
 
                                             {bookingDetails.submitted && (
-                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider self-start sm:self-auto border ${
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold uppercase tracking-wider self-start sm:self-auto border ${
                                                     bookingDetails.bookingStatus === 'Approved'
                                                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                                                         : bookingDetails.bookingStatus === 'Rejected'
@@ -1794,20 +2110,20 @@ function TeamInfo() {
 
                         <div className="space-y-1 pt-2">
                             <span
-                                className="inline-block px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider border"
+                                className="inline-block px-3 py-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider border"
                                 style={{
                                     backgroundColor: theme.badgeBg,
                                     borderColor: theme.badgeBorder,
                                     color: theme.badgeText
                                 }}
                             >
-                                Official Team Pass
+                                {isWorkshop ? "Official Workshop Pass" : "Official Team Pass"}
                             </span>
                             <h3 className="text-xl font-black text-slate-900 dark:text-white">
                                 {displayName}
                             </h3>
                             <p className="text-xs text-slate-500 dark:text-gray-400">
-                                Team #{team.TeamId} • {team.EventName}
+                                {isWorkshop ? `Attendee #${team.TeamId} • ${team.EventName}` : `Team #${team.TeamId} • ${team.EventName}`}
                             </p>
                         </div>
 
@@ -1816,7 +2132,7 @@ function TeamInfo() {
                             className="p-5 bg-white rounded-2xl border-2 border-slate-200 shadow-inner flex flex-col items-center"
                         >
                             <QRCodeSVG
-                                value={publicTeamUrl}
+                                value={qrPassValue}
                                 size={220}
                                 level="H"
                                 includeMargin={true}

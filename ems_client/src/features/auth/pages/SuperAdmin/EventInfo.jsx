@@ -34,7 +34,8 @@ import {
     Check,
     Globe,
     Radio,
-    Trophy
+    Trophy,
+    Loader2
 } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';
@@ -56,7 +57,8 @@ function EventInfo() {
     const [admins, setAdmins] = useState([]);
     const [adminLoading, setAdminLoading] = useState(true);
     const [adminSaving, setAdminSaving] = useState(false);
-
+    const [existingAdminUser, setExistingAdminUser] = useState(null);
+    const [checkingEmail, setCheckingEmail] = useState(false);
     
     const [adminForm, setAdminForm] = useState({
         AdminName: '',
@@ -221,6 +223,38 @@ function EventInfo() {
         }
     };
 
+    const checkUserByEmail = async (emailToSearch) => {
+        const trimmed = (emailToSearch || '').trim().toLowerCase();
+        if (!trimmed || !trimmed.includes('@') || !trimmed.includes('.')) {
+            setExistingAdminUser(null);
+            return;
+        }
+
+        try {
+            setCheckingEmail(true);
+            const res = await fetch(`${API_BASE_URL}/api/users/email/${encodeURIComponent(trimmed)}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.user) {
+                    setExistingAdminUser(data.user);
+                    setAdminForm((prev) => ({
+                        ...prev,
+                        AdminName: data.user.UserName || prev.AdminName,
+                        Mobile: data.user.Mobile || prev.Mobile || '',
+                    }));
+                    toast.success(`Existing user found: ${data.user.UserName}! Details auto-populated.`);
+                    return;
+                }
+            }
+            setExistingAdminUser(null);
+        } catch (err) {
+            console.error('Email lookup error:', err);
+            setExistingAdminUser(null);
+        } finally {
+            setCheckingEmail(false);
+        }
+    };
+
     const handleCreateAdmin = async (e) => {
         e.preventDefault();
 
@@ -229,8 +263,23 @@ function EventInfo() {
             return;
         }
 
+        if (!existingAdminUser && !adminForm.Password) {
+            toast.error('Password is required for a new admin.');
+            return;
+        }
+
         try {
             setAdminSaving(true);
+
+            const payload = {
+                AdminName: adminForm.AdminName,
+                Email: adminForm.Email,
+                Mobile: adminForm.Mobile,
+                EventId: Number(id)
+            };
+            if (adminForm.Password) {
+                payload.Password = adminForm.Password;
+            }
 
             const res = await fetch(
                 `${API_BASE_URL}/api/admin/register`,
@@ -239,13 +288,7 @@ function EventInfo() {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        AdminName: adminForm.AdminName,
-                        Email: adminForm.Email,
-                        Password: adminForm.Password,
-                        Mobile: adminForm.Mobile,
-                        EventId: Number(id)
-                    })
+                    body: JSON.stringify(payload)
                 }
             );
 
@@ -257,7 +300,7 @@ function EventInfo() {
                 );
             }
 
-            toast.success('Admin created successfully');
+            toast.success(existingAdminUser ? 'Existing user assigned as Admin for this event!' : 'Admin created and assigned successfully!');
 
             setAdminForm({
                 AdminName: '',
@@ -265,6 +308,7 @@ function EventInfo() {
                 Password: '',
                 Mobile: ''
             });
+            setExistingAdminUser(null);
 
             setShowAdminModal(false);
 
@@ -284,6 +328,18 @@ function EventInfo() {
             ...prev,
             [name]: value
         }));
+
+        if (name === 'Email') {
+            const trimmed = value.trim().toLowerCase();
+            if (trimmed.includes('@') && trimmed.includes('.')) {
+                clearTimeout(window._adminEmailDebounce);
+                window._adminEmailDebounce = setTimeout(() => {
+                    checkUserByEmail(trimmed);
+                }, 400);
+            } else {
+                setExistingAdminUser(null);
+            }
+        }
     };
 
     const handleInputChange = (e) => {
@@ -2944,74 +3000,114 @@ function EventInfo() {
 
                             <form onSubmit={handleCreateAdmin} className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                        Admin Full Name <span className="text-rose-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            name="AdminName"
-                                            required
-                                            value={adminForm.AdminName}
-                                            onChange={handleAdminInputChange}
-                                            placeholder="e.g. Swathi Sharma"
-                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-1.5">
+                                    <div className="flex items-center justify-between">
                                         <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                                             Email Address <span className="text-rose-500">*</span>
                                         </label>
+                                        {checkingEmail && (
+                                            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                                <Loader2 className="w-3 h-3 animate-spin" /> Checking account...
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="relative">
+                                        <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <input
+                                            type="email"
+                                            name="Email"
+                                            required
+                                            value={adminForm.Email}
+                                            onChange={handleAdminInputChange}
+                                            onBlur={() => checkUserByEmail(adminForm.Email)}
+                                            placeholder="Enter organizer email (e.g. admin@example.com)"
+                                            className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                                        />
+                                        {existingAdminUser && (
+                                            <CheckCircle2 className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500" />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {existingAdminUser && (
+                                    <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2 text-xs">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                            <span>
+                                                Account found for <strong>{existingAdminUser.UserName}</strong>! Details have been auto-populated.
+                                            </span>
+                                        </div>
+                                        <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0">
+                                            {existingAdminUser.RoleName === 'admin' ? 'Existing Admin' : 'Registered User'}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                                Admin Full Name <span className="text-rose-500">*</span>
+                                            </label>
+                                            {existingAdminUser && (
+                                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                    auto-filled
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="relative">
-                                            <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                                            <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                                             <input
-                                                type="email"
-                                                name="Email"
+                                                type="text"
+                                                name="AdminName"
                                                 required
-                                                value={adminForm.Email}
+                                                value={adminForm.AdminName}
                                                 onChange={handleAdminInputChange}
-                                                placeholder="admin@example.com"
-                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                                                placeholder="e.g. Swathi Sharma"
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                            Mobile Number <span className="text-rose-500">*</span>
-                                        </label>
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                                Mobile Number
+                                            </label>
+                                            {existingAdminUser && adminForm.Mobile && (
+                                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                    auto-filled
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="relative">
                                             <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                                             <input
                                                 type="text"
                                                 name="Mobile"
-                                                required
                                                 value={adminForm.Mobile}
                                                 onChange={handleAdminInputChange}
                                                 placeholder="9876543210"
-                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all font-medium"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                                        Password <span className="text-rose-500">*</span>
-                                    </label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                            Password {existingAdminUser ? <span className="text-emerald-600 dark:text-emerald-400 font-normal normal-case">(Optional - keep existing)</span> : <span className="text-rose-500">*</span>}
+                                        </label>
+                                    </div>
                                     <div className="relative">
                                         <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                                         <input
                                             type="password"
                                             name="Password"
-                                            required
+                                            required={!existingAdminUser}
                                             value={adminForm.Password}
                                             onChange={handleAdminInputChange}
-                                            placeholder="Create a secure password"
+                                            placeholder={existingAdminUser ? 'Leave blank to preserve current password, or enter new password' : 'Create a secure password'}
                                             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                                         />
                                     </div>

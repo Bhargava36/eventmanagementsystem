@@ -53,6 +53,7 @@ import {
   ArrowLeftRight
 } from 'lucide-react';
 import useToast from '../../../../Hooks/useToast';
+import { getEventTypeInfo } from '../../../../lib/utils';
 
 function formatDate(date) {
   if (!date) return 'Not set';
@@ -764,6 +765,7 @@ export default function AdminVirtualEvent() {
     0
   );
 
+  const typeInfo = getEventTypeInfo(event?.EventType || storedAdmin?.EventType);
   const themePublished = !!publishStatus.ThemePublished;
   const psPublished = !!publishStatus.ProblemStatementsPublished;
   const unselectedTeamCount = Math.max(0, virtualTeams.length - selections.length);
@@ -797,26 +799,34 @@ export default function AdminVirtualEvent() {
           <div className="flex flex-wrap items-center gap-2 mb-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider">
               <Radio className="h-3.5 w-3.5 animate-pulse" />
-              Virtual Event Control Room
+              {typeInfo.isWorkshop ? 'Online Workshop Control Room' : typeInfo.isSeminar ? 'Virtual Broadcast Room' : 'Virtual Event Control Room'}
             </div>
 
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition ${
-              themePublished
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-500/20'
-                : 'bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'
-            }`}>
-              {themePublished ? <Eye className="h-3 w-3 text-emerald-500" /> : <EyeOff className="h-3 w-3 text-slate-400" />}
-              <span>Themes: {themePublished ? 'Published' : 'Draft'}</span>
+            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${typeInfo.badgeColor}`}>
+              {typeInfo.label}
             </span>
 
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition ${
-              psPublished
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-500/20'
-                : 'bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'
-            }`}>
-              {psPublished ? <Eye className="h-3 w-3 text-emerald-500" /> : <EyeOff className="h-3 w-3 text-slate-400" />}
-              <span>Problem Statements: {psPublished ? 'Published' : 'Draft'}</span>
-            </span>
+            {(typeInfo.isHackathon || typeInfo.isCodingContest) && (
+              <>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition ${
+                  themePublished
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-500/20'
+                    : 'bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'
+                }`}>
+                  {themePublished ? <Eye className="h-3 w-3 text-emerald-500" /> : <EyeOff className="h-3 w-3 text-slate-400" />}
+                  <span>Themes: {themePublished ? 'Published' : 'Draft'}</span>
+                </span>
+
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition ${
+                  psPublished
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-500/20'
+                    : 'bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'
+                }`}>
+                  {psPublished ? <Eye className="h-3 w-3 text-emerald-500" /> : <EyeOff className="h-3 w-3 text-slate-400" />}
+                  <span>Problem Statements: {psPublished ? 'Published' : 'Draft'}</span>
+                </span>
+              </>
+            )}
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -864,13 +874,19 @@ export default function AdminVirtualEvent() {
       <div className="space-y-0">
         <div className="flex items-end gap-1.5 overflow-x-auto scrollbar-none relative z-10 -mb-px">
           {[
-            { key: 'control', label: 'Control Room & Meet', icon: Radio },
-            { key: 'themes', label: `Themes (${themes.length})`, icon: Layers },
-            { key: 'statements', label: `Problem Statements (${problemStatements.length})`, icon: FileText },
-            { key: 'selections', label: `Team Selections (${selections.length})`, icon: ListChecks },
+            { 
+              key: 'control', 
+              label: typeInfo.isSeminar ? 'Broadcast Room & Meet' : (typeInfo.isWorkshop ? 'Workshop Room & Meet' : 'Control Room & Meet'), 
+              icon: Radio 
+            },
+            ...((typeInfo.isHackathon || typeInfo.isCodingContest) ? [
+              { key: 'themes', label: `Themes (${themes.length})`, icon: Layers },
+              { key: 'statements', label: `Problem Statements (${problemStatements.length})`, icon: FileText },
+              { key: 'selections', label: `Team Selections (${selections.length})`, icon: ListChecks },
+            ] : []),
             { key: 'settings', label: 'Publish & Deadlines', icon: Settings2 },
-            { key: 'teams', label: `Registered Teams (${virtualTeams.length})`, icon: Users },
-            { key: 'schedule', label: `Schedule & Milestones (${timelines.length})`, icon: Clock },
+            { key: 'teams', label: `${typeInfo.participantTerm} (${virtualTeams.length})`, icon: Users },
+            { key: 'schedule', label: `${typeInfo.agendaTerm} (${timelines.length})`, icon: Clock },
           ].map(tab => {
             const isActive = activeTab === tab.key;
             const IconComp = tab.icon;

@@ -124,8 +124,8 @@ const ROLE_CONFIGS = {
     ],
     formHeading: "Organizer",
     formHeadingHighlight: "Portal.",
-    formSubtitle: "Sign in to manage your assigned event",
-    showEventName: true,
+    formSubtitle: "Sign in to manage your events and operations",
+    showEventName: false,
     showRegisterLink: false,
     securityNotice: "Authorized event coordinators and organizing committee only",
     alternateLink: {
@@ -135,7 +135,7 @@ const ROLE_CONFIGS = {
     buildPayload: ({ email, password, eventName }) => ({
       Email: email,
       Password: password,
-      EventName: eventName,
+      EventName: eventName || undefined,
     }),
     onSuccess: (data, { login }) => {
       const adminUser = data.admin || data.user || {};

@@ -75,9 +75,36 @@ const getFeedbackById = (id, callback) => {
     });
 };
 
+const getFeedbackByEvent = (eventId, callback) => {
+    const query = `
+        SELECT 
+            f.Id, 
+            f.UserName, 
+            f.EventName, 
+            f.Category, 
+            f.Rating, 
+            f.Comments, 
+            f.EventId, 
+            f.AdminId, 
+            f.CreatedAt,
+            u.Photo AS UserPhoto
+        FROM feedback f 
+        LEFT JOIN users u ON LOWER(TRIM(u.UserName)) = LOWER(TRIM(f.UserName))
+        WHERE f.EventId = ?
+        ORDER BY f.CreatedAt DESC
+    `;
+    db.query(query, [eventId], (err, results) => {
+        if (err) {
+            return callback(err, null);
+        }
+        callback(null, results);
+    });
+};
+
 module.exports = {
     createFeedback,
     getAllFeedback,
     getFeedbackByAdmin,
+    getFeedbackByEvent,
     getFeedbackById
 };

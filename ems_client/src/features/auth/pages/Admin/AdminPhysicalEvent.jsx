@@ -1640,7 +1640,7 @@ function AdminPhysicalEvent() {
                 </div>
                 <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-zinc-800 overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-emerald-600 to-teal-500 rounded-full transition-all duration-500"
+                    className="h-full bg-emerald-600 rounded-full transition-all duration-500"
                     style={{
                       width: `${idCardCounts.total ? Math.min(100, Math.round((idCardCounts.generated / idCardCounts.total) * 100)) : 0}%`
                     }}
@@ -1895,7 +1895,7 @@ function AdminPhysicalEvent() {
 
                       return (
                         <div
-                          key={theme.Id}
+                          key={theme.Id || theme.id || theme.ThemeName || index}
                           className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/60 dark:bg-black space-y-3 flex flex-col justify-between hover:border-emerald-500/40 transition overflow-hidden"
                         >
                           <div className="space-y-2.5">
@@ -2041,7 +2041,7 @@ function AdminPhysicalEvent() {
 
                         return (
                         <div
-                          key={ps.Id}
+                          key={ps.Id || ps.id || ps.ProblemCode || index}
                           className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-2"
                         >
                           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -2148,8 +2148,8 @@ function AdminPhysicalEvent() {
                         className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none cursor-pointer"
                       >
                         <option value="ALL">All Themes</option>
-                        {themes.map((t) => (
-                          <option key={t.Id} value={t.ThemeName}>{t.ThemeName}</option>
+                        {themes.map((t, idx) => (
+                          <option key={t.Id || t.id || t.ThemeName || idx} value={t.ThemeName}>{t.ThemeName}</option>
                         ))}
                       </select>
 
@@ -2200,9 +2200,9 @@ function AdminPhysicalEvent() {
                           }
                           return true;
                         })
-                        .map((ps) => (
+                        .map((ps, idx) => (
                           <div
-                            key={ps.Id}
+                            key={ps.Id || ps.id || idx}
                             className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3"
                           >
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -2436,8 +2436,8 @@ function AdminPhysicalEvent() {
                           className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer"
                         >
                           <option value="">General</option>
-                          {themes.map((t) => (
-                            <option key={t.Id} value={t.ThemeName}>{t.ThemeName}</option>
+                          {themes.map((t, idx) => (
+                            <option key={t.Id || t.id || t.ThemeName || idx} value={t.ThemeName}>{t.ThemeName}</option>
                           ))}
                         </select>
                       </div>
