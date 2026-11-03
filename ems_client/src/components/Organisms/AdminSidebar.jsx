@@ -33,7 +33,11 @@ import {
   BookOpen,
   CalendarCheck,
   FileText,
+  Podium,
 } from 'lucide-react';
+import { GiTeamIdea } from "react-icons/gi";
+import { LuClipboardCheck,LuUserCheck } from "react-icons/lu";
+
 
 const logoElement = (
   <div className="relative w-5 h-5 flex items-center justify-center">
@@ -271,19 +275,21 @@ const SidebarContent = ({
 
   const menuItems = [
     {
-      name: 'Dashboard',
-      icon: LayoutDashboard,
-      path: '/admin/dashboard',
-      badge: null,
-      end: true,
-    },
-    {
       name: 'My Events',
       icon: Layers,
       path: '/admin/my-events',
       badge: adminData?.events?.length > 1 ? `${adminData.events.length}` : null,
       end: false,
     },
+
+    {
+      name: 'Dashboard',
+      icon: LayoutDashboard,
+      path: '/admin/dashboard',
+      badge: null,
+      end: true,
+    },
+  
 
     ...(typeInfo.isWorkshop
       ? [
@@ -331,7 +337,7 @@ const SidebarContent = ({
           ? [
             {
               name: isBoth ? 'Virtual Results' : 'Results',
-              icon: Trophy,
+              icon: Award,
               path: '/admin/virtual-results',
               badge: null,
               end: false,
@@ -345,7 +351,7 @@ const SidebarContent = ({
       ? [
         {
           name: physicalTrackName,
-          icon: Atom,
+          icon: GiTeamIdea,
           path: '/admin/physical-event',
           badge: null,
           end: false,
@@ -354,7 +360,7 @@ const SidebarContent = ({
           ? [
             {
               name: isBoth ? 'Physical Results' : 'Results',
-              icon: Trophy,
+              icon: Podium,
               path: '/admin/physical-results',
               badge: null,
               end: false,
@@ -368,7 +374,7 @@ const SidebarContent = ({
       ? [
         {
           name: 'Evaluators',
-          icon: UserPen,
+          icon: LuClipboardCheck,
           path: '/admin/evaluators',
           badge: null,
           end: false,
@@ -380,7 +386,7 @@ const SidebarContent = ({
       ? [
         {
           name: coreTeamLabel,
-          icon: UsersRound,
+          icon: LuUserCheck,
           path: '/admin/core-team',
           badge: null,
           end: false,
@@ -487,90 +493,7 @@ const SidebarContent = ({
       </div>
 
       <div className="border-t border-gray-200 dark:border-[#1A2440] mb-3 shrink-0"></div>
-
-      {/* Event Switcher Card / Dropdown */}
-      {canShowText ? (
-        <div className="relative mb-3 shrink-0">
-          <button
-            onClick={() => setEventDropdownOpen(!eventDropdownOpen)}
-            className="w-full p-2.5 rounded-xl border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 hover:border-emerald-500 text-left transition flex items-center justify-between gap-2 group cursor-pointer"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-1">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>Active Event</span>
-                </div>
-                {typeInfo?.label && (
-                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider border ${typeInfo.badgeColor}`}>
-                    {typeInfo.label}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs font-extrabold text-slate-800 dark:text-slate-100 truncate mt-1">
-                {adminData?.EventName || 'Select Event'}
-              </p>
-            </div>
-            <ChevronDown className={`w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 transition-transform duration-200 ${eventDropdownOpen ? 'rotate-180' : ''}`} />
-          </button>
-
-          {/* Dropdown Menu */}
-          {eventDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl p-1.5 z-50 max-h-56 overflow-y-auto space-y-1">
-              {(adminData?.events && adminData.events.length > 0) ? (
-                adminData.events.map((ev) => {
-                  const isCurrent = Number(ev.Id) === Number(adminData?.EventId);
-                  return (
-                    <button
-                      key={ev.Id}
-                      onClick={() => {
-                        handleSwitchEvent(ev);
-                        setEventDropdownOpen(false);
-                      }}
-                      className={`w-full p-2 rounded-lg text-left text-xs transition flex items-center justify-between gap-2 cursor-pointer ${
-                        isCurrent
-                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold'
-                          : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium'
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate">{ev.EventName}</p>
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 capitalize">{ev.EventType || 'Hackathon'}</span>
-                      </div>
-                      {isCurrent && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="p-2 text-center text-xs text-slate-400">
-                  {adminData?.EventName || 'No other events assigned'}
-                </div>
-              )}
-
-              <div className="pt-1 mt-1 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-1">
-                <button
-                  onClick={() => {
-                    setEventDropdownOpen(false);
-                    navigate('/admin/my-events');
-                  }}
-                  className="w-full py-1.5 px-2 rounded-lg text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 flex items-center justify-center gap-1.5 transition cursor-pointer"
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>All Events ({adminData?.events?.length || 1})</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
-        <button
-          onClick={() => navigate('/admin/my-events')}
-          title={`Active: ${adminData?.EventName || 'Event'}`}
-          className="mb-3 w-10 h-10 mx-auto rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center hover:bg-emerald-500/20 transition cursor-pointer"
-        >
-          <Layers className="w-4 h-4" />
-        </button>
-      )}
+     
 
       {/* Only Navigation Links Scroll */}
       <LayoutGroup id={isMobile ? 'admin-nav-mobile' : 'admin-nav-desktop'}>
