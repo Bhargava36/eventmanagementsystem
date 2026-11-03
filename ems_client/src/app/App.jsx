@@ -57,7 +57,7 @@ const AdminVirtualEvent = lazy(() => import('../features/auth/pages/Admin/AdminV
 const AdminPhysicalEvent = lazy(() => import('../features/auth/pages/Admin/AdminPhysicalEvent'));
 const AdminEventSettings = lazy(() => import('../features/auth/pages/Admin/AdminEventSettings'));
 const AccomodationRedirectPage = lazy(() => import('../features/auth/pages/Admin/AccomodationRedirectPage'));
-const FoodRedirectionPage = lazy(() => import('../features/auth/pages/Admin/FoodRedirectionPage'));
+// const FoodRedirectionPage = lazy(() => import('../features/auth/pages/Admin/FoodRedirectionPage'));
 const IdRedirectionPage = lazy(() => import('../features/auth/pages/Admin/IdRedirectionPage'));
 const IdDesignerPage = lazy(() => import('../features/auth/pages/Admin/IdDesignerPage'));
 const TeamCardDesignerPage = lazy(() => import('../features/auth/pages/Admin/TeamCardDesignerPage'));
@@ -191,7 +191,7 @@ function App() {
                 <Route path="profile" element={<AdminProfile />} />
                 <Route path="profile/:id" element={<AdminProfile />} />
                 <Route path="accomodation" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AccomodationRedirectPage /> </AdminModeRoute>} />
-                <Route path="food" element={<AdminModeRoute allowedModes={['physical', 'both']}> <FoodRedirectionPage /> </AdminModeRoute>} />
+                {/* <Route path="food" element={<AdminModeRoute allowedModes={['physical', 'both']}> <FoodRedirectionPage /> </AdminModeRoute>} /> */}
                 <Route path="id-card" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdRedirectionPage /> </AdminModeRoute>} />
                 <Route path="id-card-designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage /> </AdminModeRoute>} />
                 <Route path="id-card/designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage /> </AdminModeRoute>} />

@@ -15,7 +15,8 @@ import {
   ExternalLink,
   Clock,
   GraduationCap,
-  ScrollText
+  ScrollText,
+  Award
 } from 'lucide-react';
 import { isSoloTeamSize } from '../../../../lib/utils';
 
@@ -294,13 +295,13 @@ export default function UserDashboard() {
         <motion.section {...fadeUp(0.18)} className="pt-6 border-t border-slate-200 dark:border-zinc-800">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[
-              { to: '/user/competitions',       icon: Trophy,      label: 'Competitions & Workshops', sub: 'Explore all active programs' },
-              { to: '/user/problem-statements', icon: ScrollText,  label: 'Problem Statements', sub: 'Browse challenge tracks'        },
-              { to: '/user/teams',              icon: Users,       label: 'My Squads & Passes', sub: 'Manage cohorts and passes'      },
-              { to: '/user/profile',            icon: Users,       label: 'Profile Settings',   sub: 'Account & college details'      },
+              { to: '/user/competitions', icon: Trophy,     label: 'Competitions & Workshops', sub: 'Explore all active programs' },
+              { to: '/user/teams',        icon: Users,      label: 'My Squads & Passes',       sub: 'Manage cohorts and passes' },
+              { to: '/user/feedback',     icon: ScrollText, label: 'Platform Feedback',        sub: 'Share thoughts & suggestions' },
+              { to: '/user/profile',      icon: Award,      label: 'My Profile',               sub: 'Account & college details' },
             ].map((item, idx) => (
               <Link
-                key={idx}
+                key={item.to || idx}
                 to={item.to}
                 className="group p-4 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/10 shadow-sm transition-all flex items-center gap-3.5"
               >

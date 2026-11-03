@@ -1996,11 +1996,11 @@ function EventsDashboard() {
             </table>
           </div>
 
-          <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-800 text-center">
+          {/* <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-800 text-center">
             <button className="text-sm text-emerald-700 dark:text-emerald-500 hover:underline font-medium cursor-pointer">
               View All Events →
             </button>
-          </div>
+          </div> */}
         </motion.div>
       </div>
     </div>

@@ -223,7 +223,7 @@ function EventDetails() {
             });
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [loggedUser?.Id, loggedUser?.id]);
 
@@ -236,33 +236,33 @@ function EventDetails() {
   });
 
   /* ── event data ── */
-  const [event,     setEvent]     = useState(null);
-  const [prizes,    setPrizes]    = useState([]);
-  const [coreTeam,  setCoreTeam]  = useState([]);
+  const [event, setEvent] = useState(null);
+  const [prizes, setPrizes] = useState([]);
+  const [coreTeam, setCoreTeam] = useState([]);
   const [timelines, setTimelines] = useState([]);
-  const [sponsors,  setSponsors]  = useState([]);
-  const [gallery,   setGallery]   = useState([]);
-  const [themes,    setThemes]    = useState([]);
+  const [sponsors, setSponsors] = useState([]);
+  const [gallery, setGallery] = useState([]);
+  const [themes, setThemes] = useState([]);
   const [organizerStatements, setOrganizerStatements] = useState([]);
   const [participantStatement, setParticipantStatement] = useState(null);
   const [selectedStatement, setSelectedStatement] = useState(null);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   /* ── ui ── */
   const [activeTrackTab, setActiveTrackTab] = useState('physical');
-  const [copiedLink,     setCopiedLink]     = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   /* ── registration modal ── */
   const [showRegistration, setShowRegistration] = useState(false);
-  const [currentStep,      setCurrentStep]      = useState(1);
-  const [teamSize,         setTeamSize]         = useState('');
-  const [submitting,       setSubmitting]       = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [teamSize, setTeamSize] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [alreadyRegistered, setAlreadyRegistered] = useState(false);
-  const [registeredTeam,    setRegisteredTeam]    = useState(null);
+  const [registeredTeam, setRegisteredTeam] = useState(null);
   const [registeredTeamsList, setRegisteredTeamsList] = useState([]);
   const [checkingRegistration, setCheckingRegistration] = useState(true);
-  const [registrationMode, setRegistrationMode]   = useState('Virtual');
+  const [registrationMode, setRegistrationMode] = useState('Virtual');
 
   const getAvailableModes = (hackathonMode) => {
     const m = String(hackathonMode || '').trim().toLowerCase();
@@ -291,7 +291,7 @@ function EventDetails() {
     };
     return { TeamName: '', ...lead };
   });
-  const [members,  setMembers]  = useState([]);
+  const [members, setMembers] = useState([]);
   const [uploadingLeadPhoto, setUploadingLeadPhoto] = useState(false);
   const [uploadingMemberIndex, setUploadingMemberIndex] = useState(null);
 
@@ -317,7 +317,7 @@ function EventDetails() {
           setRegisteredTeam(null);
         }
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setCheckingRegistration(false));
   }, [loggedUser?.Id, loggedUser?.id, id]);
 
@@ -343,14 +343,14 @@ function EventDetails() {
       .then((data) => {
         if (data?.statement) setParticipantStatement(data.statement);
       })
-      .catch(() => {});
+      .catch(() => { });
 
     fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/team/${physicalTeam.TeamId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.selection) setSelectedStatement(data.selection);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [id, physicalTeam?.TeamId, event?.EventType]);
 
   const availableModes = useMemo(() => getAvailableModes(event?.HackathonMode), [event?.HackathonMode]);
@@ -398,14 +398,14 @@ function EventDetails() {
             .then((tData) => {
               if (tData?.themes && tData.themes.length > 0) setThemes(tData.themes);
             })
-            .catch(() => {});
+            .catch(() => { });
 
           fetch(`${API_BASE_URL}/api/problem-statements/event/${id}`)
             .then((r) => r.json())
             .then((psData) => {
               if (psData?.problemStatements) setOrganizerStatements(psData.problemStatements);
             })
-            .catch(() => {});
+            .catch(() => { });
         }
 
         if (evData.event?.Sponsors && (!sponsorsRes.value || !sponsorsRes.value.ok)) {
@@ -486,7 +486,7 @@ function EventDetails() {
     setShowRegistration(true);
     const initialSize = isSolo ? 1 : (opts.length === 1 ? opts[0] : (opts[0] || 2));
     setTeamSize(initialSize);
-    setMembers(Array.from({ length: initialSize > 1 ? initialSize - 1 : 0 }, () => ({ Name: '', Email: '', College: '', State: '', Photo: '' })));
+    setMembers(Array.from({ length: initialSize > 1 ? initialSize - 1 : 0 }, () => ({ Name: '', Email: '', College: '', State: '', Gender: '',Photo: '' })));
     setFormData((prev) => ({
       TeamName: isSolo ? `${lead.TeamLeadName || prev.TeamLeadName || 'Solo'} (Individual)` : '',
       TeamLeadName: lead.TeamLeadName || prev.TeamLeadName || '',
@@ -608,9 +608,9 @@ function EventDetails() {
     if (submitting) return;
     const isSolo = Number(teamSize) === 1;
     const effectiveTeamName = formData.TeamName.trim() || (isSolo ? `${formData.TeamLeadName || 'Solo'} (Individual)` : '');
-    if (!effectiveTeamName) { 
-      alert(isSolo ? 'Please enter your attendee/display name.' : 'Please enter team name.'); 
-      return; 
+    if (!effectiveTeamName) {
+      alert(isSolo ? 'Please enter your attendee/display name.' : 'Please enter team name.');
+      return;
     }
     if (!teamSize) { alert('Please select registration size.'); return; }
     if (!formData.TeamLeadEmail.trim()) { alert('Please enter registered email.'); return; }
@@ -638,6 +638,7 @@ function EventDetails() {
           Email: m.Email ? m.Email.trim() : '',
           College: m.College ? m.College.trim() : '',
           State: m.State ? m.State.trim() : '',
+          Gender: m.Gender ? m.Gender.trim() : '',
           Photo: m.Photo ? m.Photo.trim() : null
         })),
         ParticipationMode: registrationMode,
@@ -661,14 +662,14 @@ function EventDetails() {
       });
       const registrationData = await registrationResponse.json();
       if (!registrationResponse.ok) throw new Error(registrationData.message || 'Event registration failed');
-      
+
       const successTitle = isSolo ? 'Registration Successful' : 'Team Registered';
       alert(`${successTitle} for ${registrationMode} ${eventTypeInfo.label}!\n\n${isSolo ? 'Registration ID' : 'Team ID'}: ${teamId}`);
-      const newRegTeam = { 
-        TeamName: effectiveTeamName, 
-        TeamId: teamId, 
+      const newRegTeam = {
+        TeamName: effectiveTeamName,
+        TeamId: teamId,
         EventId: Number(id),
-        ParticipationMode: registrationMode 
+        ParticipationMode: registrationMode
       };
       setRegisteredTeamsList((prev) => [...prev, newRegTeam]);
       setAlreadyRegistered(true);
@@ -687,7 +688,7 @@ function EventDetails() {
       await navigator.clipboard.writeText(window.location.href);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
-    } catch {}
+    } catch { }
   };
 
   const formatDate = (ds) => {
@@ -825,21 +826,21 @@ function EventDetails() {
   }
 
   /* ── derived values ── */
-  const isDark      = theme === 'dark';
-  const eventTheme  = getEventTheme(event, isDark);
+  const isDark = theme === 'dark';
+  const eventTheme = getEventTheme(event, isDark);
   const eventTypeInfo = getEventTypeInfo(event?.EventType);
   const isSoloEvent = isSoloTeamSize(event?.TeamSize);
-  const posterImg   = getPoster();
-  const primaryBg   = eventTheme.primary;
+  const posterImg = getPoster();
+  const primaryBg = eventTheme.primary;
   const hasBothTracks =
     availableModes.length > 1 ||
     (event.HackathonMode || '').toLowerCase() === 'both' ||
     (event.HackathonMode || '').toLowerCase() === 'virtual and physical' ||
     (event.VirtualFacilities && event.PhysicalFacilities);
 
-  const virtualFacList  = splitFacilities(event.VirtualFacilities  || (!event.PhysicalFacilities ? event.Facilities : ''));
-  const virtualReqList  = splitFacilities(event.VirtualRequirements || (!event.PhysicalRequirements ? event.Requirements : ''));
-  const physicalFacList = splitFacilities(event.PhysicalFacilities  || (!event.VirtualFacilities ? event.Facilities : ''));
+  const virtualFacList = splitFacilities(event.VirtualFacilities || (!event.PhysicalFacilities ? event.Facilities : ''));
+  const virtualReqList = splitFacilities(event.VirtualRequirements || (!event.PhysicalRequirements ? event.Requirements : ''));
+  const physicalFacList = splitFacilities(event.PhysicalFacilities || (!event.VirtualFacilities ? event.Facilities : ''));
   const physicalReqList = splitFacilities(event.PhysicalRequirements || (!event.VirtualRequirements ? event.Requirements : ''));
 
   const formatPrizeText = (val, fallback) => {
@@ -851,36 +852,36 @@ function EventDetails() {
   };
 
   const physicalPrizesList = prizes.filter((p) => (p.Track || '').toLowerCase() === 'physical');
-  const virtualPrizesList  = prizes.filter((p) => (p.Track || '').toLowerCase() === 'virtual');
-  const overallPrizesList  = prizes.filter((p) => (p.Track || '').toLowerCase() === 'overall' || !p.Track);
+  const virtualPrizesList = prizes.filter((p) => (p.Track || '').toLowerCase() === 'virtual');
+  const overallPrizesList = prizes.filter((p) => (p.Track || '').toLowerCase() === 'overall' || !p.Track);
   const hasSeparateTrackPrizes = physicalPrizesList.length > 0 || virtualPrizesList.length > 0;
   const isDualTrackEvent = hasBothTracks || hasSeparateTrackPrizes;
 
   const currentTrackPrizes = isDualTrackEvent
     ? (activeTrackTab === 'virtual'
-        ? (virtualPrizesList.length > 0 ? virtualPrizesList : overallPrizesList)
-        : (physicalPrizesList.length > 0 ? physicalPrizesList : overallPrizesList))
+      ? (virtualPrizesList.length > 0 ? virtualPrizesList : overallPrizesList)
+      : (physicalPrizesList.length > 0 ? physicalPrizesList : overallPrizesList))
     : prizes;
 
-  const firstPrizeObj  = currentTrackPrizes.find((p) => p.PrizeRank === 1) || (currentTrackPrizes.length > 0 ? currentTrackPrizes[0] : null);
+  const firstPrizeObj = currentTrackPrizes.find((p) => p.PrizeRank === 1) || (currentTrackPrizes.length > 0 ? currentTrackPrizes[0] : null);
   const secondPrizeObj = currentTrackPrizes.find((p) => p.PrizeRank === 2) || (currentTrackPrizes.length > 1 && currentTrackPrizes[1] !== firstPrizeObj ? currentTrackPrizes[1] : null);
-  const thirdPrizeObj  = currentTrackPrizes.find((p) => p.PrizeRank === 3) || (currentTrackPrizes.length > 2 && currentTrackPrizes[2] !== firstPrizeObj && currentTrackPrizes[2] !== secondPrizeObj ? currentTrackPrizes[2] : null);
+  const thirdPrizeObj = currentTrackPrizes.find((p) => p.PrizeRank === 3) || (currentTrackPrizes.length > 2 && currentTrackPrizes[2] !== firstPrizeObj && currentTrackPrizes[2] !== secondPrizeObj ? currentTrackPrizes[2] : null);
 
   const activeTrackFallbackPool = isDualTrackEvent
     ? (activeTrackTab === 'virtual' ? (event.VirtualPrizeMoney || event.PrizeMoney) : (event.PhysicalPrizeMoney || event.PrizeMoney))
     : event.PrizeMoney;
 
-  const firstPrizeAmount  = formatPrizeText(firstPrizeObj?.Prize  || (currentTrackPrizes.length === 0 ? activeTrackFallbackPool : null), activeTrackTab === 'virtual' && isDualTrackEvent ? 'Virtual Champion' : 'Grand Champion');
+  const firstPrizeAmount = formatPrizeText(firstPrizeObj?.Prize || (currentTrackPrizes.length === 0 ? activeTrackFallbackPool : null), activeTrackTab === 'virtual' && isDualTrackEvent ? 'Virtual Champion' : 'Grand Champion');
   const secondPrizeAmount = formatPrizeText(secondPrizeObj?.Prize, 'Runner Up');
-  const thirdPrizeAmount  = formatPrizeText(thirdPrizeObj?.Prize,  'Second Runner Up');
+  const thirdPrizeAmount = formatPrizeText(thirdPrizeObj?.Prize, 'Second Runner Up');
 
-  const firstPrizeDesc  = isDualTrackEvent && activeTrackTab === 'virtual' ? 'Virtual Grand Champion • Gold Trophy & Direct Global Incubation' : 'On-Campus Grand Champion • Gold Trophy & Direct Incubation Entry';
+  const firstPrizeDesc = isDualTrackEvent && activeTrackTab === 'virtual' ? 'Virtual Grand Champion • Gold Trophy & Direct Global Incubation' : 'On-Campus Grand Champion • Gold Trophy & Direct Incubation Entry';
   const secondPrizeDesc = isDualTrackEvent && activeTrackTab === 'virtual' ? 'Virtual First Runner Up • Silver Trophy & Cloud Infrastructure Credits' : 'On-Campus First Runner Up • Silver Trophy & Mentorship Fast-Track';
-  const thirdPrizeDesc  = isDualTrackEvent && activeTrackTab === 'virtual' ? 'Virtual Second Runner Up • Bronze Shield & Digital Certificates' : 'On-Campus Second Runner Up • Bronze Shield & Hardware Swag Kits';
+  const thirdPrizeDesc = isDualTrackEvent && activeTrackTab === 'virtual' ? 'Virtual Second Runner Up • Bronze Shield & Digital Certificates' : 'On-Campus Second Runner Up • Bronze Shield & Hardware Swag Kits';
 
-  const firstPrizeTrack  = isDualTrackEvent ? (activeTrackTab === 'virtual' ? 'Virtual' : 'Physical') : (firstPrizeObj?.Track  && firstPrizeObj.Track  !== 'Overall' ? firstPrizeObj.Track  : null);
+  const firstPrizeTrack = isDualTrackEvent ? (activeTrackTab === 'virtual' ? 'Virtual' : 'Physical') : (firstPrizeObj?.Track && firstPrizeObj.Track !== 'Overall' ? firstPrizeObj.Track : null);
   const secondPrizeTrack = isDualTrackEvent ? (activeTrackTab === 'virtual' ? 'Virtual' : 'Physical') : (secondPrizeObj?.Track && secondPrizeObj.Track !== 'Overall' ? secondPrizeObj.Track : null);
-  const thirdPrizeTrack  = isDualTrackEvent ? (activeTrackTab === 'virtual' ? 'Virtual' : 'Physical') : (thirdPrizeObj?.Track  && thirdPrizeObj.Track  !== 'Overall' ? thirdPrizeObj.Track  : null);
+  const thirdPrizeTrack = isDualTrackEvent ? (activeTrackTab === 'virtual' ? 'Virtual' : 'Physical') : (thirdPrizeObj?.Track && thirdPrizeObj.Track !== 'Overall' ? thirdPrizeObj.Track : null);
 
   const additionalPrizes = currentTrackPrizes.filter((p) => p !== firstPrizeObj && p !== secondPrizeObj && p !== thirdPrizeObj);
   const showPrizesSection = Boolean(prizes.length > 0 || event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney || activeTrackFallbackPool);
@@ -1333,7 +1334,7 @@ function EventDetails() {
                         style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                       >
                         {isPhysical ? <MapPin className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-                        <span>Register for {singleMode} Hackathon</span>
+                        <span>Register for {singleMode} Event</span>
                         <ChevronRight className="h-3.5 w-3.5" />
                       </button>
                     )}
@@ -1893,9 +1894,8 @@ function EventDetails() {
                       style={{ backgroundColor: currentStep >= 2 ? eventTheme.buttonBg : undefined }}
                     />
                     <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${
-                        currentStep < 2 ? 'bg-slate-200 text-slate-500 dark:bg-zinc-800 dark:text-slate-300' : ''
-                      }`}
+                      className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold ${currentStep < 2 ? 'bg-slate-200 text-slate-500 dark:bg-zinc-800 dark:text-slate-300' : ''
+                        }`}
                       style={currentStep >= 2 ? { backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText } : undefined}
                     >
                       2
@@ -2224,6 +2224,18 @@ function EventDetails() {
                             <input type="email" value={member.Email} onChange={(e) => handleMemberChange(index, e)} placeholder="Enter email" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
                             <input type="text" value={member.College} onChange={(e) => setMembers((prev) => prev.map((item, mi) => mi === index ? { ...item, College: e.target.value } : item))} placeholder="College" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
                             <input type="text" value={member.State} onChange={(e) => setMembers((prev) => prev.map((item, mi) => mi === index ? { ...item, State: e.target.value } : item))} placeholder="State" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
+                            <div className='flex items-center gap-1 mx-2 sm:mx-0 sm:flex-none sm:gap-0 '>
+                              <label className='font-bold text-sm'>Gender : </label>
+                              <div className="flex items-center gap-2 mx-1">
+                                <input type="radio" id={`male-${index}`} name={`gender-${index}`} value="Male" onChange={(e) => setMembers((prev) => prev.map((item, mi) => mi === index ? { ...item, Gender: e.target.value } : item))} className="w-4 h-4 text-emerald-500 focus:ring-emerald-500 dark:focus:ring-emerald-600" />
+                                <label htmlFor={`male-${index}`} className="text-sm text-slate-900 dark:text-white">Male</label>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input type="radio" id={`female-${index}`} name={`gender-${index}`} value="Female" onChange={(e) => setMembers((prev) => prev.map((item, mi) => mi === index ? { ...item, Gender: e.target.value } : item))} className="w-4 h-4 text-emerald-500 focus:ring-emerald-500 dark:focus:ring-emerald-600" />
+                                <label htmlFor={`female-${index}`} className="text-sm text-slate-900 dark:text-white">Female</label>
+                              </div>
+                            </div>
+
                           </div>
 
                           {/* Member Photo Upload */}
