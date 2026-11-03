@@ -219,7 +219,7 @@ function App() {
                 <Route path="events/:id" element={<EventRedirectPage />} />
                 <Route path="events/:id/virtual" element={<ParticipantVirtualEventPage />} />
                 <Route path="competitions" element={<UserCompetitions />} />
-                <Route path="feedback" element={<UserFeedback />} />
+                {/* <Route path="feedback" element={<UserFeedback />} /> */}
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="profile/:id" element={<UserProfile />} />
               </Route>

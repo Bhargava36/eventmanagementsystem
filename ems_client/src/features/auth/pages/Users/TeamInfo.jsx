@@ -47,13 +47,14 @@ import {
 import { API_BASE_URL } from '@/lib/api';
 import { QRCodeSVG } from "qrcode.react";
 import { motion, AnimatePresence } from "framer-motion";
-
+import useAuth from '../../../../Hooks/useAuth';
 import { useNavigate, useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { getEventTheme, isSoloTeamSize } from "../../../../lib/utils";
 import useTheme from "../../../../Hooks/useTheme";
 import PhysicalHackathonThemesSection from "../../../../components/Molecules/PhysicalHackathonThemesSection";
 import PhysicalTeamPSActionCard from "../../../../components/Molecules/PhysicalTeamPSActionCard";
+import EventPlatformFeedbackCard from './components/EventPlatformFeedbackCard';
 
 function formatDate(date) {
     if (!date) return "Not available";
@@ -84,6 +85,14 @@ function TeamInfo() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [currentUserId, setCurrentUserId] = useState(null);
+    const [eventDetails, setEventDetails] = useState(null);
+    const { user: authUser } = useAuth();
+
+    const user = authUser || (() => {
+        try { return JSON.parse(localStorage.getItem('user') || 'null'); }
+        catch { return null; }
+    })();
+
 
     // Physical services & facilities booking state
     const [serviceAvailability, setServiceAvailability] = useState({
@@ -166,6 +175,12 @@ function TeamInfo() {
         }
     };
 
+    const fadeUp = (delay = 0) => ({
+        initial: { opacity: 0, y: 15 },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: 0.35, ease: 'easeOut', delay },
+    });
+
     const handleDownloadQr = () => {
         try {
             const svg = document.getElementById(`team-qr-code-${teamId}`) || qrSvgRef.current?.querySelector('svg');
@@ -202,7 +217,7 @@ function TeamInfo() {
             if (!storedUser) throw new Error("User information not found");
 
             const user = JSON.parse(storedUser);
-            const userId = user?.Id || user?.id; 
+            const userId = user?.Id || user?.id;
             if (!userId) throw new Error("User ID is missing");
 
             const response = await fetch(
@@ -549,6 +564,7 @@ function TeamInfo() {
 
     const team = teamData?.team;
     const members = teamData?.members || [];
+    const eventId = team?.EventId;
 
     // Theme branding calculation adapting to current mode
     const theme = useMemo(() => {
@@ -671,11 +687,10 @@ function TeamInfo() {
                         <button
                             type="button"
                             onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
-                            className={`self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shadow-md ${
-                                isVirtualEventLive
-                                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25 ring-2 ring-emerald-500/40 animate-pulse'
-                                    : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                            }`}
+                            className={`self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shadow-md ${isVirtualEventLive
+                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25 ring-2 ring-emerald-500/40 animate-pulse'
+                                : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                                }`}
                         >
                             {isVirtualEventLive ? (
                                 <span className="relative flex h-2 w-2">
@@ -1071,11 +1086,10 @@ function TeamInfo() {
                                         key={tab.id}
                                         type="button"
                                         onClick={() => setActiveWorkshopTab(tab.id)}
-                                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                            active
-                                                ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200/80 dark:border-zinc-700'
-                                                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-                                        }`}
+                                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${active
+                                            ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200/80 dark:border-zinc-700'
+                                            : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                                            }`}
                                     >
                                         <TabIcon className="w-3.5 h-3.5" />
                                         <span>{tab.label}</span>
@@ -1286,256 +1300,256 @@ function TeamInfo() {
                 </motion.section>
             ) : (
                 <>
-                {/* ── PRIORITY 2: EVALUATION RESULTS & SCORECARD (OR PENDING) ── */}
-                {hasPublishedRounds ? (
-                    <section className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800/80 pb-5">
-                        <div className="flex items-center gap-3">
-                            <div
-                                className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border"
-                                style={{
-                                    backgroundColor: theme.iconBg,
-                                    borderColor: theme.cardBorder,
-                                    color: theme.iconColor
-                                }}
-                            >
-                                <Award className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                                        Official Evaluation Results &amp; Scorecard
-                                    </h2>
-                                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                                        Published Live
-                                    </span>
+                    {/* ── PRIORITY 2: EVALUATION RESULTS & SCORECARD (OR PENDING) ── */}
+                    {hasPublishedRounds ? (
+                        <section className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800/80 pb-5">
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border"
+                                        style={{
+                                            backgroundColor: theme.iconBg,
+                                            borderColor: theme.cardBorder,
+                                            color: theme.iconColor
+                                        }}
+                                    >
+                                        <Award className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+                                                Official Evaluation Results &amp; Scorecard
+                                            </h2>
+                                            <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+                                                Published Live
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                                            Round-wise marks, criteria breakdown, and jury feedback published by event organizers.
+                                        </p>
+                                    </div>
                                 </div>
-                                <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-                                    Round-wise marks, criteria breakdown, and jury feedback published by event organizers.
-                                </p>
+
+                                <div className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs self-start sm:self-auto shadow-sm">
+                                    <span className="text-slate-500 dark:text-gray-400">Total Score: </span>
+                                    <strong className="text-slate-900 dark:text-white ml-1 text-sm font-black" style={{ color: theme.accent }}>
+                                        {resultsData?.totalPublishedScore}
+                                    </strong>
+                                    <span className="text-slate-400 dark:text-gray-500"> / {resultsData?.totalPublishedMaxMarks} pts</span>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs self-start sm:self-auto shadow-sm">
-                            <span className="text-slate-500 dark:text-gray-400">Total Score: </span>
-                            <strong className="text-slate-900 dark:text-white ml-1 text-sm font-black" style={{ color: theme.accent }}>
-                                {resultsData?.totalPublishedScore}
-                            </strong>
-                            <span className="text-slate-400 dark:text-gray-500"> / {resultsData?.totalPublishedMaxMarks} pts</span>
-                        </div>
-                    </div>
-
-                    {/* Overall Podium Standing if overall results are published */}
-                    {isOverallPublished && (
-                        <div
-                            className="rounded-2xl p-5 border relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 dark:bg-zinc-950/80 border-slate-200 dark:border-zinc-800"
-                            style={{
-                                borderColor: theme.cardBorder,
-                                boxShadow: isDark ? `0 8px 30px -4px ${theme.glow}` : undefined
-                            }}
-                        >
-                            <div className="flex items-center gap-4">
+                            {/* Overall Podium Standing if overall results are published */}
+                            {isOverallPublished && (
                                 <div
-                                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black shrink-0 border"
+                                    className="rounded-2xl p-5 border relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 dark:bg-zinc-950/80 border-slate-200 dark:border-zinc-800"
                                     style={{
-                                        backgroundColor: resultsData.overallRank === 1 ? 'rgba(245, 158, 11, 0.15)' : theme.badgeBg,
-                                        borderColor: resultsData.overallRank === 1 ? '#f59e0b' : theme.badgeBorder,
-                                        color: resultsData.overallRank === 1 ? '#d97706' : theme.badgeText
+                                        borderColor: theme.cardBorder,
+                                        boxShadow: isDark ? `0 8px 30px -4px ${theme.glow}` : undefined
                                     }}
                                 >
-                                    #{resultsData.overallRank}
+                                    <div className="flex items-center gap-4">
+                                        <div
+                                            className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black shrink-0 border"
+                                            style={{
+                                                backgroundColor: resultsData.overallRank === 1 ? 'rgba(245, 158, 11, 0.15)' : theme.badgeBg,
+                                                borderColor: resultsData.overallRank === 1 ? '#f59e0b' : theme.badgeBorder,
+                                                color: resultsData.overallRank === 1 ? '#d97706' : theme.badgeText
+                                            }}
+                                        >
+                                            #{resultsData.overallRank}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <Trophy className="w-4 h-4 text-amber-500" />
+                                                <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                                                    Official Leaderboard Standing
+                                                </span>
+                                            </div>
+                                            <h3 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
+                                                {resultsData.overallRank === 1
+                                                    ? "1st Place Winner 🏆"
+                                                    : resultsData.overallRank === 2
+                                                        ? "2nd Place Runner Up 🥈"
+                                                        : resultsData.overallRank === 3
+                                                            ? "3rd Place Podium Finish 🥉"
+                                                            : `Rank #${resultsData.overallRank} Overall`}
+                                            </h3>
+                                            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                                                Final standing across all {team.totalEventRegistrations || resultsData.totalRegistrations} participants.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-left sm:text-right sm:border-l sm:border-slate-200 dark:sm:border-zinc-800 sm:pl-6">
+                                        <span className="text-xs text-slate-500 dark:text-gray-400">Percentile</span>
+                                        <p className="text-2xl font-black text-slate-900 dark:text-white" style={{ color: theme.accent }}>
+                                            {resultsData.percentage}%
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Published Rounds Scorecards */}
+                            <div className="space-y-4">
+                                {publishedRounds.map((round) => {
+                                    const isExpanded = expandedRoundId === round.roundId;
+
+                                    return (
+                                        <div
+                                            key={round.roundId}
+                                            className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-900/60 overflow-hidden transition-all shadow-sm"
+                                        >
+                                            {/* Round Header */}
+                                            <div
+                                                onClick={() => setExpandedRoundId(isExpanded ? null : round.roundId)}
+                                                className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-100/90 dark:hover:bg-zinc-900/90 transition-colors select-none"
+                                            >
+                                                <div className="flex items-center gap-3.5">
+                                                    <div
+                                                        className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 border"
+                                                        style={{
+                                                            backgroundColor: theme.badgeBg,
+                                                            borderColor: theme.badgeBorder,
+                                                            color: theme.badgeText
+                                                        }}
+                                                    >
+                                                        #{round.roundOrder}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                                                {round.roundName}
+                                                            </h3>
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                                Published
+                                                            </span>
+                                                        </div>
+                                                        {round.description && (
+                                                            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5 leading-snug">
+                                                                {round.description}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-4 shrink-0">
+                                                    <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1 shadow-sm">
+                                                        <span style={{ color: theme.accent }} className="font-extrabold text-base">
+                                                            {round.score !== null ? round.score : "—"}
+                                                        </span>
+                                                        <span className="text-slate-400 dark:text-gray-400 font-bold text-xs">
+                                                            /{round.maxMarks}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="w-7 h-7 rounded-lg border border-slate-200 dark:border-zinc-800 flex items-center justify-center text-slate-500 dark:text-gray-400 bg-white dark:bg-transparent">
+                                                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Expanded Questions Breakdown */}
+                                            {isExpanded && (
+                                                <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-zinc-800/80 bg-white/70 dark:bg-black/40 space-y-4">
+                                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 flex items-center gap-1.5">
+                                                        <Layers className="w-3.5 h-3.5" />
+                                                        Evaluation Criteria Breakdown
+                                                    </h4>
+
+                                                    {round.questions && round.questions.length > 0 ? (
+                                                        <div className="space-y-1.5">
+                                                            {round.questions.map((q, qIdx) => {
+                                                                const hasScore = q.marksAwarded !== undefined && q.marksAwarded !== null;
+
+                                                                return (
+                                                                    <div
+                                                                        key={q.Id}
+                                                                        className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40 hover:bg-slate-50 dark:hover:bg-zinc-900/70 transition-colors flex items-center justify-between gap-3 shadow-xs"
+                                                                    >
+                                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                                            <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-zinc-800/90 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-gray-400 shrink-0">
+                                                                                {qIdx + 1}
+                                                                            </span>
+                                                                            <div className="min-w-0">
+                                                                                <span className="text-xs font-medium text-slate-800 dark:text-gray-200">
+                                                                                    {q.QuestionText}
+                                                                                </span>
+                                                                                {q.Description && (
+                                                                                    <span className="text-[11px] text-slate-400 dark:text-gray-500 ml-2 hidden lg:inline">
+                                                                                        ({q.Description})
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Marks Scored for this question */}
+                                                                        <div className="shrink-0">
+                                                                            {hasScore ? (
+                                                                                <div className="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-zinc-950/90 border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-900 dark:text-white flex items-center gap-0.5 shadow-xs">
+                                                                                    <span style={{ color: theme.accent }} className="font-extrabold text-xs">
+                                                                                        {q.marksAwarded}
+                                                                                    </span>
+                                                                                    <span className="text-slate-400 dark:text-gray-400 font-semibold text-[11px]">
+                                                                                        /{q.MaxMarks}
+                                                                                    </span>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-gray-400">
+                                                                                    {q.MaxMarks} Marks
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    ) : null}
+
+                                                    {/* Jury Feedback */}
+                                                    {round.feedback && (
+                                                        <div className="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 space-y-1">
+                                                            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                                                <FileText className="w-3.5 h-3.5" /> Jury Feedback &amp; Remarks
+                                                            </span>
+                                                            <p className="text-xs text-slate-700 dark:text-gray-300 italic leading-relaxed pt-1">
+                                                                &ldquo;{round.feedback}&rdquo;
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    ) : (
+                        /* Compact Pending Banner when marks aren't published yet */
+                        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-950/80 border border-slate-200 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-400 shrink-0">
+                                    <Clock className="w-5 h-5" />
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <Trophy className="w-4 h-4 text-amber-500" />
-                                        <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                                            Official Leaderboard Standing
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Evaluation In Progress</h4>
+                                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-zinc-800">
+                                            Scores Pending
                                         </span>
                                     </div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-                                        {resultsData.overallRank === 1
-                                            ? "1st Place Winner 🏆"
-                                            : resultsData.overallRank === 2
-                                            ? "2nd Place Runner Up 🥈"
-                                            : resultsData.overallRank === 3
-                                            ? "3rd Place Podium Finish 🥉"
-                                            : `Rank #${resultsData.overallRank} Overall`}
-                                    </h3>
                                     <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-                                        Final standing across all {team.totalEventRegistrations || resultsData.totalRegistrations} participants.
+                                        Official jury marks and rubric scores will appear here automatically once released by event organizers.
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="text-left sm:text-right sm:border-l sm:border-slate-200 dark:sm:border-zinc-800 sm:pl-6">
-                                <span className="text-xs text-slate-500 dark:text-gray-400">Percentile</span>
-                                <p className="text-2xl font-black text-slate-900 dark:text-white" style={{ color: theme.accent }}>
-                                    {resultsData.percentage}%
-                                </p>
+                            <div className="text-xs text-slate-400 dark:text-gray-500 font-medium sm:text-right shrink-0">
+                                Stay tuned &bull; Results will update live
                             </div>
                         </div>
                     )}
-
-                    {/* Published Rounds Scorecards */}
-                    <div className="space-y-4">
-                        {publishedRounds.map((round) => {
-                            const isExpanded = expandedRoundId === round.roundId;
-
-                            return (
-                                <div
-                                    key={round.roundId}
-                                    className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-900/60 overflow-hidden transition-all shadow-sm"
-                                >
-                                    {/* Round Header */}
-                                    <div
-                                        onClick={() => setExpandedRoundId(isExpanded ? null : round.roundId)}
-                                        className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-slate-100/90 dark:hover:bg-zinc-900/90 transition-colors select-none"
-                                    >
-                                        <div className="flex items-center gap-3.5">
-                                            <div
-                                                className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 border"
-                                                style={{
-                                                    backgroundColor: theme.badgeBg,
-                                                    borderColor: theme.badgeBorder,
-                                                    color: theme.badgeText
-                                                }}
-                                            >
-                                                #{round.roundOrder}
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                                                        {round.roundName}
-                                                    </h3>
-                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                                        Published
-                                                    </span>
-                                                </div>
-                                                {round.description && (
-                                                    <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5 leading-snug">
-                                                        {round.description}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-4 shrink-0">
-                                            <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1 shadow-sm">
-                                                <span style={{ color: theme.accent }} className="font-extrabold text-base">
-                                                    {round.score !== null ? round.score : "—"}
-                                                </span>
-                                                <span className="text-slate-400 dark:text-gray-400 font-bold text-xs">
-                                                    /{round.maxMarks}
-                                                </span>
-                                            </div>
-
-                                            <div className="w-7 h-7 rounded-lg border border-slate-200 dark:border-zinc-800 flex items-center justify-center text-slate-500 dark:text-gray-400 bg-white dark:bg-transparent">
-                                                {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Expanded Questions Breakdown */}
-                                    {isExpanded && (
-                                        <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-zinc-800/80 bg-white/70 dark:bg-black/40 space-y-4">
-                                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 flex items-center gap-1.5">
-                                                <Layers className="w-3.5 h-3.5" />
-                                                Evaluation Criteria Breakdown
-                                            </h4>
-
-                                            {round.questions && round.questions.length > 0 ? (
-                                                <div className="space-y-1.5">
-                                                    {round.questions.map((q, qIdx) => {
-                                                        const hasScore = q.marksAwarded !== undefined && q.marksAwarded !== null;
-
-                                                        return (
-                                                            <div
-                                                                key={q.Id}
-                                                                className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40 hover:bg-slate-50 dark:hover:bg-zinc-900/70 transition-colors flex items-center justify-between gap-3 shadow-xs"
-                                                            >
-                                                                <div className="flex items-center gap-2.5 min-w-0">
-                                                                    <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-zinc-800/90 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-gray-400 shrink-0">
-                                                                        {qIdx + 1}
-                                                                    </span>
-                                                                    <div className="min-w-0">
-                                                                        <span className="text-xs font-medium text-slate-800 dark:text-gray-200">
-                                                                            {q.QuestionText}
-                                                                        </span>
-                                                                        {q.Description && (
-                                                                            <span className="text-[11px] text-slate-400 dark:text-gray-500 ml-2 hidden lg:inline">
-                                                                                ({q.Description})
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Marks Scored for this question */}
-                                                                <div className="shrink-0">
-                                                                    {hasScore ? (
-                                                                        <div className="px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-zinc-950/90 border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-900 dark:text-white flex items-center gap-0.5 shadow-xs">
-                                                                            <span style={{ color: theme.accent }} className="font-extrabold text-xs">
-                                                                                {q.marksAwarded}
-                                                                            </span>
-                                                                            <span className="text-slate-400 dark:text-gray-400 font-semibold text-[11px]">
-                                                                                /{q.MaxMarks}
-                                                                            </span>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="text-[11px] font-medium px-2 py-0.5 rounded-lg border border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-gray-400">
-                                                                            {q.MaxMarks} Marks
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ) : null}
-
-                                            {/* Jury Feedback */}
-                                            {round.feedback && (
-                                                <div className="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 space-y-1">
-                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                                        <FileText className="w-3.5 h-3.5" /> Jury Feedback &amp; Remarks
-                                                    </span>
-                                                    <p className="text-xs text-slate-700 dark:text-gray-300 italic leading-relaxed pt-1">
-                                                        &ldquo;{round.feedback}&rdquo;
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </section>
-            ) : (
-                /* Compact Pending Banner when marks aren't published yet */
-                <div className="p-4 rounded-2xl bg-white dark:bg-zinc-950/80 border border-slate-200 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 flex items-center justify-center text-slate-500 dark:text-zinc-400 shrink-0">
-                            <Clock className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Evaluation In Progress</h4>
-                                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-zinc-800">
-                                    Scores Pending
-                                </span>
-                            </div>
-                            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-                                Official jury marks and rubric scores will appear here automatically once released by event organizers.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="text-xs text-slate-400 dark:text-gray-500 font-medium sm:text-right shrink-0">
-                        Stay tuned &bull; Results will update live
-                    </div>
-                </div>
-            )}
-            </>
+                </>
             )}
 
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -1712,20 +1726,18 @@ function TeamInfo() {
                                             </div>
 
                                             {bookingDetails.submitted && (
-                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold uppercase tracking-wider self-start sm:self-auto border ${
-                                                    bookingDetails.bookingStatus === 'Approved'
-                                                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                                                        : bookingDetails.bookingStatus === 'Rejected'
+                                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold uppercase tracking-wider self-start sm:self-auto border ${bookingDetails.bookingStatus === 'Approved'
+                                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                                    : bookingDetails.bookingStatus === 'Rejected'
                                                         ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
                                                         : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                                                }`}>
-                                                    <span className={`w-2 h-2 rounded-full ${
-                                                        bookingDetails.bookingStatus === 'Approved'
-                                                            ? 'bg-emerald-500'
-                                                            : bookingDetails.bookingStatus === 'Rejected'
+                                                    }`}>
+                                                    <span className={`w-2 h-2 rounded-full ${bookingDetails.bookingStatus === 'Approved'
+                                                        ? 'bg-emerald-500'
+                                                        : bookingDetails.bookingStatus === 'Rejected'
                                                             ? 'bg-rose-500'
                                                             : 'bg-amber-500 animate-pulse'
-                                                    }`} />
+                                                        }`} />
                                                     {bookingDetails.bookingStatus}
                                                 </span>
                                             )}
@@ -1736,28 +1748,27 @@ function TeamInfo() {
                                         ) : bookingDetails.submitted ? (
                                             /* Submitted Status Card */
                                             <div className="space-y-4">
-                                                <div className={`p-4 rounded-2xl border text-xs leading-relaxed flex items-start gap-3 ${
-                                                    bookingDetails.bookingStatus === 'Approved'
-                                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-300'
-                                                        : bookingDetails.bookingStatus === 'Rejected'
+                                                <div className={`p-4 rounded-2xl border text-xs leading-relaxed flex items-start gap-3 ${bookingDetails.bookingStatus === 'Approved'
+                                                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-800 dark:text-emerald-300'
+                                                    : bookingDetails.bookingStatus === 'Rejected'
                                                         ? 'bg-rose-500/10 border-rose-500/20 text-rose-800 dark:text-rose-300'
                                                         : 'bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-300'
-                                                }`}>
+                                                    }`}>
                                                     <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                                                     <div>
                                                         <h5 className="font-bold text-sm mb-0.5">
                                                             {bookingDetails.bookingStatus === 'Approved'
                                                                 ? 'Booking Approved & Confirmed!'
                                                                 : bookingDetails.bookingStatus === 'Rejected'
-                                                                ? 'Payment Verification Rejected'
-                                                                : 'Payment Verification in Progress'}
-                         </h5>
+                                                                    ? 'Payment Verification Rejected'
+                                                                    : 'Payment Verification in Progress'}
+                                                        </h5>
                                                         <p>
                                                             {bookingDetails.bookingStatus === 'Approved'
                                                                 ? 'Your payment has been accepted by the admin. Your team is officially eligible for hostel room allocation and meal coupon tokens.'
                                                                 : bookingDetails.bookingStatus === 'Rejected'
-                                                                ? `Admin remarks: ${bookingDetails.adminRemarks || 'Payment reference could not be verified. Please check details and re-submit.'}`
-                                                                : 'Your payment reference and proof have been submitted. Once the organizers verify and accept your payment, your squad will become eligible for room allocation and food tokens.'}
+                                                                    ? `Admin remarks: ${bookingDetails.adminRemarks || 'Payment reference could not be verified. Please check details and re-submit.'}`
+                                                                    : 'Your payment reference and proof have been submitted. Once the organizers verify and accept your payment, your squad will become eligible for room allocation and food tokens.'}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -2216,6 +2227,12 @@ function TeamInfo() {
                     </div>
                 </div>
             )}
+
+            <motion.section {...fadeUp(0.16)}>
+                <EventPlatformFeedbackCard 
+                 eventId={eventId}
+                user={user} />
+            </motion.section>
         </div>
     );
 }
