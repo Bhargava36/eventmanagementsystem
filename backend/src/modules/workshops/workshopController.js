@@ -105,6 +105,16 @@ const markAttendance = (req, res) => {
     });
 };
 
+const getUserAttendance = (req, res) => {
+    const { eventId, userId } = req.params;
+    workshopServices.getUserAttendance(eventId, userId, (err, records) => {
+        if (err) return res.status(500).json({ message: 'Error fetching user attendance', error: err.message });
+        res.status(200).json({
+            records: records || []
+        });
+    });
+};
+
 module.exports = {
     getSessions,
     createSession,
@@ -114,5 +124,6 @@ module.exports = {
     createResource,
     deleteResource,
     getAttendance,
-    markAttendance
+    markAttendance,
+    getUserAttendance
 };

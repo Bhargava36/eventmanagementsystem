@@ -76,6 +76,8 @@ export default function AdminEventSettings() {
     }
   });
 
+  const adminEventId = currentEventId || storedAdmin?.EventId || user?.EventId || null;
+
   const [eventsList, setEventsList] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState(currentEventId ? Number(currentEventId) : null);
   const [eventData, setEventData] = useState(null);
@@ -435,7 +437,7 @@ export default function AdminEventSettings() {
 
   const handleSaveTimeline = async (e) => {
     if (e) e.preventDefault();
-    const targetEventId = adminEventId ? Number(adminEventId) : selectedEventId;
+    const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
     if (!targetEventId) {
       toast.error('Please select an event first');
       return;
@@ -481,7 +483,7 @@ export default function AdminEventSettings() {
 
   const handleDeleteTimeline = async (id) => {
     if (!window.confirm('Are you sure you want to delete this timeline milestone?')) return;
-    const targetEventId = adminEventId ? Number(adminEventId) : selectedEventId;
+    const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
     try {
       const res = await fetch(`${API_BASE_URL}/api/event_timelines/${id}`, {
         method: 'DELETE'
@@ -496,7 +498,7 @@ export default function AdminEventSettings() {
   };
 
   const handleToggle = async (key) => {
-    const targetEventId = adminEventId ? Number(adminEventId) : selectedEventId;
+    const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
     if (!targetEventId) {
       toast.error('No event selected');
       return;
@@ -571,8 +573,11 @@ export default function AdminEventSettings() {
   };
 
   const handleSave = async () => {
-    const targetEventId = adminEventId ? Number(adminEventId) : selectedEventId;
-    if (!targetEventId) return;
+    const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
+    if (!targetEventId) {
+      toast.error('Please select an event first');
+      return;
+    }
 
     const payload = { ...settingsForm };
 

@@ -55,7 +55,7 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
     }
 
     // 1. Fetch Event and validate registration status & team size rules
-    const eventQuery = `SELECT EventName, TeamSize, EventStatus, RegistrationEnd, VirtualRegistrationEnd, PhysicalRegistrationEnd, VirtualRegistrationOpen, PhysicalRegistrationOpen, RegistrationOpen FROM events WHERE Id = ?`;
+    const eventQuery = `SELECT EventName, EventType, TeamSize, EventStatus, RegistrationEnd, VirtualRegistrationEnd, PhysicalRegistrationEnd, VirtualRegistrationOpen, PhysicalRegistrationOpen, RegistrationOpen FROM events WHERE Id = ?`;
     db.query(eventQuery, [EventId], (err, eventRows) => {
         if (err) return callback(err, null);
         if (!eventRows || eventRows.length === 0) {
@@ -65,6 +65,10 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
         }
 
         const ev = eventRows[0];
+        const isWebinarEvent = String(ev.EventType || '').toLowerCase().includes('webinar');
+        if (isWebinarEvent) {
+            ParticipationMode = 'Virtual';
+        }
 
         // Check if registration is paused by admin
         if (ParticipationMode === 'Virtual' && (ev.VirtualRegistrationOpen === 0 || ev.VirtualRegistrationOpen === false)) {
@@ -149,7 +153,7 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
 
             const leader = leadRows[0];
 
-            // 2. Check if Team Lead is ALREADY registered in this Event for the same track
+            // 2. Check if Team Lead is ALREADY registered in this Event
             const checkLeadRegQuery = `
                 SELECT t.TeamName, u.Email, u.UserName, er.ParticipationMode
                 FROM registered_team_members tm
@@ -161,19 +165,12 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
             db.query(checkLeadRegQuery, [EventId, leader.Id], (err, existingLeadReg) => {
                 if (err) return callback(err, null);
                 if (existingLeadReg && existingLeadReg.length > 0) {
-                    const leadConflict = existingLeadReg.find((r) => {
-                        if (!ParticipationMode) return true;
-                        if (!r.ParticipationMode) return true;
-                        return r.ParticipationMode.toLowerCase() === ParticipationMode.toLowerCase();
-                    });
-                    if (leadConflict) {
-                        const trackText = ParticipationMode ? `for the ${ParticipationMode} track of` : 'for';
-                        const errAlready = new Error(
-                            `Team Lead (${leader.Email}) is already registered ${trackText} this event in team "${leadConflict.TeamName}". A participant can only register once per track.`
-                        );
-                        errAlready.status = 400;
-                        return callback(errAlready, null);
-                    }
+                    const leadConflict = existingLeadReg[0];
+                    const errAlready = new Error(
+                        `Team Lead (${leader.Email}) is already registered for this event in team "${leadConflict.TeamName}". A participant cannot register multiple times for the same event.`
+                    );
+                    errAlready.status = 400;
+                    return callback(errAlready, null);
                 }
 
                 // 3. Process team members (both EMS users and outside participants)
@@ -215,20 +212,13 @@ const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Pa
                         db.query(checkMemberRegQuery, queryParams, (err, existingMemberReg) => {
                             if (err) return callback(err, null);
                             if (existingMemberReg && existingMemberReg.length > 0) {
-                                const memberConflict = existingMemberReg.find((r) => {
-                                    if (!ParticipationMode) return true;
-                                    if (!r.ParticipationMode) return true;
-                                    return r.ParticipationMode.toLowerCase() === ParticipationMode.toLowerCase();
-                                });
-                                if (memberConflict) {
-                                    const trackText = ParticipationMode ? `for the ${ParticipationMode} track of` : 'for';
-                                    const conflictEmail = memberConflict.Email || memberConflict.MemberEmail;
-                                    const errMemAlready = new Error(
-                                        `Team member (${conflictEmail}) is already registered ${trackText} this event in team "${memberConflict.TeamName}". A participant can only register once per track.`
-                                    );
-                                    errMemAlready.status = 400;
-                                    return callback(errMemAlready, null);
-                                }
+                                const memberConflict = existingMemberReg[0];
+                                const conflictEmail = memberConflict.Email || memberConflict.MemberEmail;
+                                const errMemAlready = new Error(
+                                    `Team member (${conflictEmail}) is already registered for this event in team "${memberConflict.TeamName}". A participant cannot register multiple times for the same event.`
+                                );
+                                errMemAlready.status = 400;
+                                return callback(errMemAlready, null);
                             }
 
                             insertTeamAndMembers(leader, membersList);

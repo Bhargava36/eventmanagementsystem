@@ -14,7 +14,11 @@ import {
     Layers,
     GraduationCap,
     User,
-    Radio
+    Radio,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getTrackVisibility, isSoloTeamSize, getEventTypeInfo } from '../../../../lib/utils';
@@ -24,9 +28,11 @@ function TeamsDashboard() {
     const storedAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
     const [currentEventId, setCurrentEventId] = useState(storedAdmin?.EventId || storedAdmin?.eventId || null);
 
+    const typeInfo = getEventTypeInfo(storedAdmin?.EventType);
     const { showVirtual, showPhysical, isBoth, isVirtual, isPhysical } = getTrackVisibility(
         storedAdmin?.HackathonMode,
-        storedAdmin?.Location
+        storedAdmin?.Location,
+        storedAdmin?.EventType
     );
 
     const [teams, setTeams] = useState([]);
@@ -36,9 +42,14 @@ function TeamsDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    const typeInfo = getEventTypeInfo(storedAdmin?.EventType);
     const isSolo = isSoloTeamSize(storedAdmin?.TeamSize) || typeInfo.isWorkshop || typeInfo.isSeminar || typeInfo.isWebinar || (teams.length > 0 && teams.every((t) => Number(t.MemberCount || t.MembersCount || t.TeamSize || 1) === 1));
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, activeTab]);
 
     useEffect(() => {
         const init = async () => {
@@ -146,38 +157,45 @@ function TeamsDashboard() {
         return true;
     });
 
+    const totalPages = Math.max(1, Math.ceil(filteredTeams.length / itemsPerPage));
+    const safeCurrentPage = Math.min(currentPage, totalPages);
+    const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+    const paginatedTeams = filteredTeams.slice(startIndex, startIndex + itemsPerPage);
+
     const handleTeamClick = (teamId) => {
         navigate(`/admin/teams/${teamId}`);
     };
 
-    const tabs = [
-        {
-            id: 'all',
-            label: typeInfo.isWebinar ? 'All Delegates' : isSolo ? 'All Attendees' : 'All Teams',
-            count: totalTeams,
-            icon: Layers
-        },
-        ...(isBoth || isVirtual
-            ? [
-                {
-                    id: 'virtual',
-                    label: typeInfo.isWebinar ? 'Live Stream Access' : typeInfo.isWorkshop ? 'Online Attendees' : 'Virtual Track',
-                    count: virtualCount,
-                    icon: Globe
-                }
-              ]
-            : []),
-        ...(isBoth || isPhysical
-            ? [
-                {
-                    id: 'physical',
-                    label: typeInfo.isWorkshop ? 'In-Person Lab' : 'Physical Track',
-                    count: physicalCount,
-                    icon: MapPin
-                }
-              ]
-            : [])
-    ];
+    const tabs = typeInfo.isWebinar
+        ? []
+        : [
+            {
+                id: 'all',
+                label: isSolo ? 'All Attendees' : 'All Teams',
+                count: totalTeams,
+                icon: Layers
+            },
+            ...(isBoth || isVirtual
+                ? [
+                    {
+                        id: 'virtual',
+                        label: typeInfo.isWorkshop ? 'Online Attendees' : 'Virtual Track',
+                        count: virtualCount,
+                        icon: Globe
+                    }
+                  ]
+                : []),
+            ...(isBoth || isPhysical
+                ? [
+                    {
+                        id: 'physical',
+                        label: typeInfo.isWorkshop ? 'In-Person Lab' : 'Physical Track',
+                        count: physicalCount,
+                        icon: MapPin
+                    }
+                  ]
+                : [])
+        ];
 
     return (
         <motion.div
@@ -336,59 +354,61 @@ function TeamsDashboard() {
             </div>
 
             <div className="relative pt-2">
-                <div className="flex items-end gap-2 px-4 sm:px-6 relative z-10 -mb-px sm: scrolling-touch overflow-x-auto sm:scrolling-smooth">
-                    {tabs.map((tab) => {
-                        const isActive = activeTab === tab.id;
-                        const Icon = tab.icon;
+                {tabs.length > 0 && (
+                    <div className="flex items-end gap-2 px-4 sm:px-6 relative z-10 -mb-px sm: scrolling-touch overflow-x-auto sm:scrolling-smooth">
+                        {tabs.map((tab) => {
+                            const isActive = activeTab === tab.id;
+                            const Icon = tab.icon;
 
-                        return (
-                            <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setActiveTab(tab.id)}
-                                className="relative h-12 px-5 sm:px-7 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-colors duration-200 outline-none cursor-pointer"
-                            >
-                                {isActive ? (
-                                    <motion.div
-                                        layoutId="teamsActiveTabFolder"
-                                        className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-gray-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
-                                        transition={{ type: 'spring', stiffness: 500, damping: 38 }}
-                                    >
-                                        {/* Seamless bottom mask: completely eliminates any hairline separation line */}
-                                        <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-20" />
-                                    </motion.div>
-                                ) : (
-                                    <div className="absolute inset-0 rounded-t-2xl bg-gray-100/80 dark:bg-black border border-gray-200 dark:border-zinc-800 z-0" />
-                                )}
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className="relative h-12 px-5 sm:px-7 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-colors duration-200 outline-none cursor-pointer"
+                                >
+                                    {isActive ? (
+                                        <motion.div
+                                            layoutId="teamsActiveTabFolder"
+                                            className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-gray-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                                            transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                                        >
+                                            {/* Seamless bottom mask: completely eliminates any hairline separation line */}
+                                            <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-20" />
+                                        </motion.div>
+                                    ) : (
+                                        <div className="absolute inset-0 rounded-t-2xl bg-gray-100/80 dark:bg-black border border-gray-200 dark:border-zinc-800 z-0" />
+                                    )}
 
-                                <span className={`relative z-20 flex items-center gap-2 transition-colors ${
-                                    isActive
-                                        ? 'text-gray-950 dark:text-white font-bold'
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                                }`}>
-                                    <Icon
-                                        className={`w-4 h-4 transition-colors ${
-                                            isActive
-                                                 ? 'text-emerald-600 dark:text-emerald-400'
-                                                : 'text-gray-400'
-                                        }`}
-                                    />
-                                    <span>{tab.label}</span>
+                                    <span className={`relative z-20 flex items-center gap-2 transition-colors ${
+                                        isActive
+                                            ? 'text-gray-950 dark:text-white font-bold'
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                                    }`}>
+                                        <Icon
+                                            className={`w-4 h-4 transition-colors ${
+                                                isActive
+                                                     ? 'text-emerald-600 dark:text-emerald-400'
+                                                    : 'text-gray-400'
+                                            }`}
+                                        />
+                                        <span>{tab.label}</span>
 
-                                    <span
-                                        className={`ml-1 px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
-                                            isActive
-                                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
-                                                : 'bg-gray-200/80 text-gray-600 dark:bg-zinc-900 dark:text-gray-400'
-                                        }`}
-                                    >
-                                        {tab.count}
+                                        <span
+                                            className={`ml-1 px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
+                                                isActive
+                                                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                                                    : 'bg-gray-200/80 text-gray-600 dark:bg-zinc-900 dark:text-gray-400'
+                                            }`}
+                                        >
+                                            {tab.count}
+                                        </span>
                                     </span>
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
 
                 <div className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden mb-6 relative z-0">
                     <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -439,13 +459,13 @@ function TeamsDashboard() {
                                         {typeInfo.isWebinar ? 'Delegate Details' : isSolo ? 'Attendee Details' : 'Team Details'}
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
-                                        Track
+                                        {typeInfo.isWebinar ? 'Pass Type' : 'Track'}
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
                                         {typeInfo.isWebinar ? 'Delegate Contact' : isSolo ? 'Contact Details' : 'Team Leader'}
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold text-center">
-                                        {typeInfo.isWebinar ? 'Pass Type' : isSolo ? 'Format' : 'Members'}
+                                        {typeInfo.isWebinar ? 'Live Access' : isSolo ? 'Format' : 'Members'}
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
                                         Registered On
@@ -509,7 +529,7 @@ function TeamsDashboard() {
                                         </td>
                                     </tr>
                                 ) : (
-                                    filteredTeams.map((team, index) => {
+                                    paginatedTeams.map((team, index) => {
                                         const teamId = getTeamId(team);
                                         const teamName = getTeamName(team);
                                         const mode = getMode(team);
@@ -526,7 +546,7 @@ function TeamsDashboard() {
                                                 className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors"
                                             >
                                                 <td className="px-4 py-3 sm:py-4 text-gray-900 dark:text-white font-medium">
-                                                    {String(index + 1).padStart(2, '0')}
+                                                    {String(startIndex + index + 1).padStart(2, '0')}
                                                 </td>
 
                                                 <td className="px-4 py-3 sm:py-4">
@@ -550,7 +570,7 @@ function TeamsDashboard() {
                                                     {typeInfo.isWebinar ? (
                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                                                             <Globe className="w-3.5 h-3.5" />
-                                                            Virtual Stream
+                                                            Delegate Pass
                                                         </span>
                                                     ) : isVirtual ? (
                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
@@ -586,7 +606,7 @@ function TeamsDashboard() {
                                                 <td className="px-4 py-3 sm:py-4 text-center text-gray-900 dark:text-white font-semibold">
                                                     {typeInfo.isWebinar ? (
                                                         <span className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                                                            Delegate
+                                                            Live Stream
                                                         </span>
                                                     ) : isSolo ? (
                                                         <span className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
@@ -621,16 +641,102 @@ function TeamsDashboard() {
                         </table>
                     </div>
 
-                    <div
-                        onClick={() => {
-                            setActiveTab('all');
-                            setSearch('');
-                        }}
-                        className="w-fit py-4 flex items-center m-auto justify-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 cursor-pointer hover:underline"
-                    >
-                        <span>View all registered teams</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                    </div>
+                    {filteredTeams.length > 0 && (
+                        <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50 dark:bg-black/60">
+                            <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                                <span>
+                                    Showing <span className="font-semibold text-gray-900 dark:text-white">{startIndex + 1}</span> to <span className="font-semibold text-gray-900 dark:text-white">{Math.min(startIndex + itemsPerPage, filteredTeams.length)}</span> of <span className="font-semibold text-gray-900 dark:text-white">{filteredTeams.length}</span> {typeInfo.isWebinar ? 'delegates' : isSolo ? 'attendees' : 'teams'}
+                                </span>
+
+                                <div className="hidden sm:flex items-center gap-1.5 ml-2 border-l border-gray-200 dark:border-zinc-800 pl-3">
+                                    <span className="text-xs text-gray-400">Per page:</span>
+                                    <select
+                                        value={itemsPerPage}
+                                        onChange={(e) => {
+                                            setItemsPerPage(Number(e.target.value));
+                                            setCurrentPage(1);
+                                        }}
+                                        className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-xs text-gray-700 dark:text-gray-300 focus:outline-none focus:border-emerald-500"
+                                    >
+                                        <option value={5}>5</option>
+                                        <option value={10}>10</option>
+                                        <option value={25}>25</option>
+                                        <option value={50}>50</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage(1)}
+                                    disabled={safeCurrentPage === 1}
+                                    className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    title="First page"
+                                >
+                                    <ChevronsLeft className="w-4 h-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                    disabled={safeCurrentPage === 1}
+                                    className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    title="Previous page"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+
+                                <div className="flex items-center gap-1 px-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                        .filter((p) => p === 1 || p === totalPages || Math.abs(p - safeCurrentPage) <= 1)
+                                        .reduce((acc, p, idx, arr) => {
+                                            if (idx > 0 && p - arr[idx - 1] > 1) {
+                                                acc.push({ type: 'ellipsis', key: `ellipsis-${p}` });
+                                            }
+                                            acc.push({ type: 'page', page: p, key: `page-${p}` });
+                                            return acc;
+                                        }, [])
+                                        .map((item) =>
+                                            item.type === 'ellipsis' ? (
+                                                <span key={item.key} className="px-1.5 text-xs text-gray-400">...</span>
+                                            ) : (
+                                                <button
+                                                    key={item.key}
+                                                    type="button"
+                                                    onClick={() => setCurrentPage(item.page)}
+                                                    className={`min-w-8 h-8 px-2 rounded-lg text-xs font-semibold transition-colors ${
+                                                        safeCurrentPage === item.page
+                                                            ? 'bg-emerald-600 text-white shadow-sm'
+                                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-900'
+                                                    }`}
+                                                >
+                                                    {item.page}
+                                                </button>
+                                            )
+                                        )}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={safeCurrentPage === totalPages}
+                                    className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    title="Next page"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    disabled={safeCurrentPage === totalPages}
+                                    className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    title="Last page"
+                                >
+                                    <ChevronsRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </motion.div>

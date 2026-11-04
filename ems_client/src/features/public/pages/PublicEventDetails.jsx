@@ -501,6 +501,8 @@ function PublicEventDetails() {
 
 
   const getAvailableModes = (hackathonMode) => {
+    const isWebinar = (event?.EventType || '').toLowerCase().includes('webinar');
+    if (isWebinar) return ['Virtual'];
     if (!hackathonMode) return ['Virtual'];
     const lower = String(hackathonMode).toLowerCase().trim();
     if (lower.includes('both') || lower.includes('hybrid') || (lower.includes('virtual') && lower.includes('physical'))) {

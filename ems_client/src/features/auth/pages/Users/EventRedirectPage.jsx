@@ -265,6 +265,10 @@ function EventDetails() {
   const [registrationMode, setRegistrationMode] = useState('Virtual');
 
   const getAvailableModes = (hackathonMode) => {
+    const isWebinar = (event?.EventType || '').toLowerCase().includes('webinar');
+    if (isWebinar) {
+      return ['Virtual'];
+    }
     const m = String(hackathonMode || '').trim().toLowerCase();
     if (m === 'both' || m === 'hybrid' || m.includes('virtual and physical') || (m.includes('virtual') && m.includes('physical'))) {
       return ['Virtual', 'Physical'];
@@ -353,11 +357,9 @@ function EventDetails() {
       .catch(() => { });
   }, [id, physicalTeam?.TeamId, event?.EventType]);
 
-  const availableModes = useMemo(() => getAvailableModes(event?.HackathonMode), [event?.HackathonMode]);
+  const availableModes = useMemo(() => getAvailableModes(event?.HackathonMode), [event?.HackathonMode, event?.EventType]);
   const hasBothModes = availableModes.includes('Virtual') && availableModes.includes('Physical');
-  const isFullyRegistered = hasBothModes
-    ? (isVirtualRegistered && isPhysicalRegistered)
-    : (availableModes.includes('Virtual') ? isVirtualRegistered : isPhysicalRegistered);
+  const isFullyRegistered = Boolean(alreadyRegistered || registeredTeamsList.length > 0);
 
   // Sync lead details when profile is fetched or updated
   useEffect(() => {
@@ -456,25 +458,19 @@ function EventDetails() {
   };
 
   const handleRegisterClick = (mode = null) => {
+    if (alreadyRegistered || registeredTeamsList.length > 0) {
+      const existingTeam = registeredTeam || registeredTeamsList[0];
+      alert(`You are already registered for this event in team/pass "${existingTeam?.TeamName || 'Participant'}". Multiple registrations for the same event are not permitted.`);
+      if (existingTeam?.TeamId) {
+        navigate(`/user/teamInfo/${existingTeam.TeamId}`);
+      }
+      return;
+    }
+
     const modes = getAvailableModes(event?.HackathonMode);
     let targetMode = mode;
     if (!targetMode) {
-      if (modes.includes('Virtual') && !isVirtualRegistered) {
-        targetMode = 'Virtual';
-      } else if (modes.includes('Physical') && !isPhysicalRegistered) {
-        targetMode = 'Physical';
-      } else {
-        targetMode = modes[0] || 'Virtual';
-      }
-    }
-
-    if (targetMode === 'Virtual' && isVirtualRegistered) {
-      alert(`You are already registered for the Virtual track of this event in team "${virtualTeam?.TeamName || ''}".`);
-      return;
-    }
-    if (targetMode === 'Physical' && isPhysicalRegistered) {
-      alert(`You are already registered for the Physical track of this event in team "${physicalTeam?.TeamName || ''}".`);
-      return;
+      targetMode = modes[0] || 'Virtual';
     }
 
     setRegistrationMode(targetMode);
@@ -1123,6 +1119,11 @@ function EventDetails() {
                             </span>
                             <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform shrink-0" style={{ color: eventTheme.accent }} />
                           </button>
+                        ) : alreadyRegistered ? (
+                          <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 font-bold text-xs border border-slate-200 dark:border-zinc-800 select-none">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            <span>Already Registered</span>
+                          </div>
                         ) : isVirtualRegistrationClosed ? (
                           <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-400 dark:text-zinc-500 font-bold text-xs border border-slate-200 dark:border-zinc-800 cursor-not-allowed select-none">
                             <AlertCircle className="h-3.5 w-3.5" />
@@ -1239,6 +1240,11 @@ function EventDetails() {
                             </span>
                             <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform shrink-0" style={{ color: eventTheme.accent }} />
                           </button>
+                        ) : alreadyRegistered ? (
+                          <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 font-bold text-xs border border-slate-200 dark:border-zinc-800 select-none">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                            <span>Already Registered</span>
+                          </div>
                         ) : isPhysicalRegistrationClosed ? (
                           <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-400 dark:text-zinc-500 font-bold text-xs border border-slate-200 dark:border-zinc-800 cursor-not-allowed select-none">
                             <AlertCircle className="h-3.5 w-3.5" />
@@ -1669,34 +1675,36 @@ function EventDetails() {
                 </div>
               </div>
               <div className="space-y-2.5 pt-2">
-                {hasBothTracks ? (
-                  <>
-                    {/* Virtual Track Sidebar Action */}
-                    {isVirtualRegistered ? (
+                {alreadyRegistered || registeredTeamsList.length > 0 ? (
+                  (() => {
+                    const primaryTeam = registeredTeam || virtualTeam || physicalTeam || registeredTeamsList[0];
+                    return (
                       <button
                         type="button"
-                        onClick={() => navigate(`/user/teamInfo/${virtualTeam.TeamId}`)}
-                        className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer text-left"
+                        onClick={() => navigate(`/user/teamInfo/${primaryTeam?.TeamId}`)}
+                        className="w-full py-3 px-3.5 rounded-2xl text-xs font-bold flex items-center justify-between transition-all group cursor-pointer text-left shadow-sm hover:-translate-y-0.5 active:translate-y-0"
                         style={{
                           backgroundColor: eventTheme.registeredBg,
                           borderColor: eventTheme.registeredBorder,
                           color: eventTheme.registeredText,
                           borderWidth: 1,
                         }}
-                        title="Click to view team details"
+                        title="Click to view pass and workspace"
                       >
-                        <span className="inline-flex items-center gap-1.5 truncate">
-                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: eventTheme.accent }} />
+                        <span className="inline-flex items-center gap-2 truncate">
+                          <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: eventTheme.accent }} />
                           <span className="truncate">
-                            Registered for the Virtual as{' '}
-                            <strong className="underline font-extrabold">
-                              {virtualTeam.TeamName}
-                            </strong>
+                            Registered as <strong className="underline font-extrabold">{primaryTeam?.TeamName}</strong>
                           </span>
                         </span>
                         <ChevronRight className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" style={{ color: eventTheme.accent }} />
                       </button>
-                    ) : isVirtualRegistrationClosed ? (
+                    );
+                  })()
+                ) : hasBothTracks ? (
+                  <>
+                    {/* Virtual Track Sidebar Action */}
+                    {isVirtualRegistrationClosed ? (
                       <div className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed">
                         <AlertCircle className="h-3.5 w-3.5" />
                         <span>Virtual Registration Closed</span>
@@ -1709,36 +1717,12 @@ function EventDetails() {
                         style={{ backgroundColor: eventTheme.buttonBg, color: eventTheme.buttonText }}
                       >
                         <Globe className="h-4 w-4" />
-                        <span>Register for Virtual Hackathon</span>
+                        <span>Register for Virtual {eventTypeInfo.label}</span>
                       </button>
                     )}
 
                     {/* Physical Track Sidebar Action */}
-                    {isPhysicalRegistered ? (
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/user/teamInfo/${physicalTeam.TeamId}`)}
-                        className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer text-left"
-                        style={{
-                          backgroundColor: eventTheme.registeredBg,
-                          borderColor: eventTheme.registeredBorder,
-                          color: eventTheme.registeredText,
-                          borderWidth: 1,
-                        }}
-                        title="Click to view team details"
-                      >
-                        <span className="inline-flex items-center gap-1.5 truncate">
-                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: eventTheme.accent }} />
-                          <span className="truncate">
-                            Registered for the Physical as{' '}
-                            <strong className="underline font-extrabold">
-                              {physicalTeam.TeamName}
-                            </strong>
-                          </span>
-                        </span>
-                        <ChevronRight className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" style={{ color: eventTheme.accent }} />
-                      </button>
-                    ) : isPhysicalRegistrationClosed ? (
+                    {isPhysicalRegistrationClosed ? (
                       <div className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed">
                         <AlertCircle className="h-3.5 w-3.5" />
                         <span>Physical Registration Closed</span>
@@ -1759,37 +1743,7 @@ function EventDetails() {
                   (() => {
                     const singleMode = availableModes[0] || 'Virtual';
                     const isPhysical = singleMode === 'Physical';
-                    const isTrackReg = isPhysical ? isPhysicalRegistered : isVirtualRegistered;
-                    const myTeam = isPhysical ? physicalTeam : virtualTeam;
                     const isClosed = isPhysical ? isPhysicalRegistrationClosed : isVirtualRegistrationClosed;
-
-                    if (isTrackReg) {
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/user/teamInfo/${myTeam?.TeamId || registeredTeam?.TeamId}`)}
-                          className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold flex items-center justify-between transition-all group cursor-pointer text-left"
-                          style={{
-                            backgroundColor: eventTheme.registeredBg,
-                            borderColor: eventTheme.registeredBorder,
-                            color: eventTheme.registeredText,
-                            borderWidth: 1,
-                          }}
-                          title="Click to view team details"
-                        >
-                          <span className="inline-flex items-center gap-1.5 truncate">
-                            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: eventTheme.accent }} />
-                            <span className="truncate">
-                              Registered for the {singleMode} as{' '}
-                              <strong className="underline font-bold">
-                                {myTeam?.TeamName || registeredTeam?.TeamName}
-                              </strong>
-                            </span>
-                          </span>
-                          <ChevronRight className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" style={{ color: eventTheme.accent }} />
-                        </button>
-                      );
-                    }
 
                     if (isClosed) {
                       return (
@@ -1815,7 +1769,7 @@ function EventDetails() {
                 )}
                 <p className="text-[11px] text-center text-slate-500 dark:text-zinc-400">
                   {isFullyRegistered
-                    ? 'A participant can only register once per track.'
+                    ? 'A participant can only register once per event.'
                     : 'Free student entry. All team members must be registered EMS users.'}
                 </p>
               </div>

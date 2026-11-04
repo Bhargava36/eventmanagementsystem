@@ -43,11 +43,16 @@ const createEventRegistration = ( EventId, TeamId, ParticipationMode, Status, Pr
             return callback(error, null);
         }
 
-        // Validate event registration pause status
-        const eventQuery = `SELECT EventName, VirtualRegistrationOpen, PhysicalRegistrationOpen, RegistrationOpen FROM events WHERE Id = ?`;
+        // Validate event registration pause status and event type
+        const eventQuery = `SELECT EventName, EventType, VirtualRegistrationOpen, PhysicalRegistrationOpen, RegistrationOpen FROM events WHERE Id = ?`;
         db.query(eventQuery, [EventId], (evErr, evRows) => {
             if (!evErr && evRows && evRows.length > 0) {
                 const ev = evRows[0];
+                const isWebinarEvent = String(ev.EventType || '').toLowerCase().includes('webinar');
+                if (isWebinarEvent) {
+                    ParticipationMode = 'Virtual';
+                }
+
                 if (ParticipationMode === 'Virtual' && (ev.VirtualRegistrationOpen === 0 || ev.VirtualRegistrationOpen === false)) {
                     const error = new Error(`Registration for the Virtual track is currently paused by the event admin.`);
                     error.status = 403;
@@ -65,18 +70,41 @@ const createEventRegistration = ( EventId, TeamId, ParticipationMode, Status, Pr
                 }
             }
 
-            const query = `
-                INSERT INTO event_registrations
-                ( EventId, TeamId, ParticipationMode, Status, ProblemStatementId ) VALUES (?, ?, ?, ?, ?)`;
-
-            const values = [ EventId, TeamId, ParticipationMode, Status, ProblemStatementId];
-
-            db.query(query, values, (err, result) => {
-                if (err) {
-                    return callback(err, null);
+            // Verify no team member is already registered in another team for this event
+            const memberDuplicateCheckQuery = `
+                SELECT tm2.MemberEmail, t2.TeamName
+                FROM registered_team_members tm1
+                JOIN registered_teams t1 ON tm1.TeamId = t1.Id
+                JOIN registered_teams t2 ON t2.EventId = t1.EventId AND t2.Id != t1.Id
+                JOIN registered_team_members tm2 ON tm2.TeamId = t2.Id
+                WHERE t1.Id = ? AND t1.EventId = ? AND (
+                    (tm1.UserId IS NOT NULL AND tm1.UserId = tm2.UserId) OR
+                    (LOWER(tm1.MemberEmail) = LOWER(tm2.MemberEmail))
+                )
+                LIMIT 1
+            `;
+            db.query(memberDuplicateCheckQuery, [TeamId, EventId], (dupErr, dupRows) => {
+                if (dupErr) return callback(dupErr, null);
+                if (dupRows && dupRows.length > 0) {
+                    const conflict = dupRows[0];
+                    const error = new Error(`Participant (${conflict.MemberEmail}) is already registered for this event in "${conflict.TeamName}". A participant cannot register multiple times for the same event.`);
+                    error.status = 400;
+                    return callback(error, null);
                 }
 
-                return callback(null, result);
+                const query = `
+                    INSERT INTO event_registrations
+                    ( EventId, TeamId, ParticipationMode, Status, ProblemStatementId ) VALUES (?, ?, ?, ?, ?)`;
+
+                const values = [ EventId, TeamId, ParticipationMode, Status, ProblemStatementId];
+
+                db.query(query, values, (err, result) => {
+                    if (err) {
+                        return callback(err, null);
+                    }
+
+                    return callback(null, result);
+                });
             });
         });
     });

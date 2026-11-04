@@ -205,6 +205,26 @@ const markAttendance = (eventId, userId, status, markedBy, dayNumber = 1, sessio
     });
 };
 
+const getUserAttendance = (eventId, userId, callback) => {
+    const query = `
+        SELECT 
+            ea.UserId, 
+            ea.DayNumber, 
+            ea.SessionSlot, 
+            ea.Status, 
+            ea.CheckInTime, 
+            ea.Remarks, 
+            ea.AttendanceDate
+        FROM event_attendance ea
+        WHERE ea.EventId = ? AND ea.UserId = ?
+        ORDER BY ea.DayNumber ASC, ea.SessionSlot ASC
+    `;
+    db.query(query, [eventId, userId], (err, results) => {
+        if (err) return callback(err, null);
+        return callback(null, results || []);
+    });
+};
+
 module.exports = {
     getSessions,
     createSession,
@@ -214,5 +234,6 @@ module.exports = {
     createResource,
     deleteResource,
     getAttendance,
-    markAttendance
+    markAttendance,
+    getUserAttendance
 };

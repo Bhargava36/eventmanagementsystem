@@ -15,6 +15,7 @@ router.delete('/resources/:resourceId', webinarController.deleteResource);
 
 // Attendance
 router.get('/:eventId/attendance', webinarController.getAttendance);
+router.get('/:eventId/attendance/user/:userId', webinarController.getUserAttendance);
 router.post('/:eventId/attendance', webinarController.markAttendance);
 
 // Webinar Feedback

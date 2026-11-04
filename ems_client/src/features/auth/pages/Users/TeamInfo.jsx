@@ -64,6 +64,7 @@ import PhysicalTeamPSActionCard from "../../../../components/Molecules/PhysicalT
 import EventPlatformFeedbackCard from './components/EventPlatformFeedbackCard';
 import WebinarDelegateFeedbackCard from './components/WebinarDelegateFeedbackCard';
 import WebinarLiveQA from './components/WebinarLiveQA';
+import ParticipantAttendanceView from './components/ParticipantAttendanceView';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../../../../lib/calendarUtils';
 
 function formatDate(date) {
@@ -167,6 +168,7 @@ function TeamInfo() {
     const [workshopInstructors, setWorkshopInstructors] = useState([]);
     const [loadingWorkshopHub, setLoadingWorkshopHub] = useState(false);
     const [activeWorkshopTab, setActiveWorkshopTab] = useState('curriculum');
+    const [participantAttendanceStatus, setParticipantAttendanceStatus] = useState('not_marked');
 
     // Public QR Pass state
     const [qrModalOpen, setQrModalOpen] = useState(false);
@@ -423,10 +425,14 @@ function TeamInfo() {
                 try {
                     setLoadingWorkshopHub(true);
                     const apiPrefix = targetTypeInfo.isWebinar ? 'webinars' : 'workshops';
-                    const [sessRes, resRes, instRes] = await Promise.all([
+                    const effectiveUserId = targetTeam.TeamLeadUserId || currentUserId;
+                    const [sessRes, resRes, instRes, attRes] = await Promise.all([
                         fetch(`${API_BASE_URL}/api/${apiPrefix}/${targetTeam.EventId}/sessions`),
                         fetch(`${API_BASE_URL}/api/${apiPrefix}/${targetTeam.EventId}/resources`),
-                        fetch(`${API_BASE_URL}/api/core_team/event/${targetTeam.EventId}`)
+                        fetch(`${API_BASE_URL}/api/core_team/event/${targetTeam.EventId}`),
+                        effectiveUserId
+                            ? fetch(`${API_BASE_URL}/api/${apiPrefix}/${targetTeam.EventId}/attendance/user/${effectiveUserId}`)
+                            : Promise.resolve(null)
                     ]);
 
                     if (sessRes.ok) {
@@ -440,6 +446,19 @@ function TeamInfo() {
                     if (instRes.ok) {
                         const iData = await instRes.json();
                         setWorkshopInstructors(iData.members || []);
+                    }
+                    if (attRes && attRes.ok) {
+                        const aData = await attRes.json();
+                        const records = aData.records || [];
+                        const hasPresent = records.some(r => r.Status === 'checked_in' || r.Status === 'present');
+                        const hasAbsent = records.some(r => r.Status === 'absent');
+                        if (hasPresent) {
+                            setParticipantAttendanceStatus('present');
+                        } else if (hasAbsent) {
+                            setParticipantAttendanceStatus('absent');
+                        } else {
+                            setParticipantAttendanceStatus('not_marked');
+                        }
                     }
                 } catch (wsErr) {
                     console.error("Failed to fetch workshop hub data:", wsErr);
@@ -902,6 +921,36 @@ function TeamInfo() {
                                     <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isWebinar ? "bg-emerald-500" : "bg-emerald-500"}`} />
                                     {isWebinar ? "Confirmed Delegate Seat" : isWorkshop ? "Confirmed Seat" : (team.RegistrationStatus || "Approved")}
                                 </span>
+
+                                {isSessionBased && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveWorkshopTab('attendance')}
+                                        className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-xl border flex items-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                                            participantAttendanceStatus === 'present'
+                                                ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                                                : participantAttendanceStatus === 'absent'
+                                                ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30"
+                                                : "bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700"
+                                        }`}
+                                        title="View your verified session attendance records"
+                                    >
+                                        <span className={`w-1.5 h-1.5 rounded-full ${
+                                            participantAttendanceStatus === 'present'
+                                                ? "bg-emerald-500 animate-pulse"
+                                                : participantAttendanceStatus === 'absent'
+                                                ? "bg-rose-500"
+                                                : "bg-slate-400"
+                                        }`} />
+                                        <span>
+                                            {participantAttendanceStatus === 'present'
+                                                ? 'Attendance: Present'
+                                                : participantAttendanceStatus === 'absent'
+                                                ? 'Attendance: Absent'
+                                                : 'Attendance: Not Marked'}
+                                        </span>
+                                    </button>
+                                )}
                             </div>
 
                             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight break-words">
@@ -1186,6 +1235,7 @@ function TeamInfo() {
                                 { id: 'curriculum', label: isWebinar ? 'Keynote Agenda' : 'Curriculum & Agenda', icon: CalendarDays },
                                 { id: 'resources', label: isWebinar ? `Decks & Replays (${workshopResources.length})` : `Materials (${workshopResources.length})`, icon: Download },
                                 { id: 'instructors', label: isWebinar ? `Keynote Speakers (${workshopInstructors.length})` : `Instructors (${workshopInstructors.length})`, icon: isWebinar ? Mic : GraduationCap },
+                                { id: 'attendance', label: 'My Attendance', icon: UserCheck },
                                 ...(isWebinar ? [{ id: 'qa', label: 'Live Q&A', icon: HelpCircle }] : []),
                                 ...(isWebinar ? [{ id: 'feedback', label: 'Delegate Feedback', icon: MessageSquare }] : [])
                             ].map((tab) => {
@@ -1436,6 +1486,20 @@ function TeamInfo() {
                                     </p>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* Tab: My Attendance (Webinars & Workshops) */}
+                    {activeWorkshopTab === 'attendance' && (
+                        <div className="space-y-4">
+                            <ParticipantAttendanceView
+                                eventId={team.EventId || eventId}
+                                userId={currentUserId || team?.TeamLeadUserId || user?.Id || user?.id}
+                                eventType={team.EventType || (isWebinar ? 'Webinar' : 'Workshop')}
+                                sessions={workshopSessions}
+                                startDate={team.StartDate}
+                                endDate={team.EndDate}
+                            />
                         </div>
                     )}
 

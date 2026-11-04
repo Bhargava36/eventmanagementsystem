@@ -436,7 +436,7 @@ const SidebarContent = ({
       : []),
     {
       name: participantLabel,
-      icon: (typeInfo.isWorkshop || typeInfo.isWebinar) ? GraduationCap : Users,
+      icon: typeInfo.isWebinar ? Radio : typeInfo.isWorkshop ? GraduationCap : Users,
       path: '/admin/teams',
       badge: null,
       end: false,

@@ -105,6 +105,16 @@ const markAttendance = (req, res) => {
     });
 };
 
+const getUserAttendance = (req, res) => {
+    const { eventId, userId } = req.params;
+    webinarServices.getUserAttendance(eventId, userId, (err, records) => {
+        if (err) return res.status(500).json({ message: 'Error fetching user attendance', error: err.message });
+        res.status(200).json({
+            records: records || []
+        });
+    });
+};
+
 // Delegate Feedback
 const submitFeedback = (req, res) => {
     const eventId = req.params.eventId || req.body.EventId;
@@ -189,6 +199,7 @@ module.exports = {
     deleteResource,
     getAttendance,
     markAttendance,
+    getUserAttendance,
     submitFeedback,
     getEventFeedback,
     getAllWebinarFeedback,

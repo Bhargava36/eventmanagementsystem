@@ -15,6 +15,7 @@ router.delete('/resources/:resourceId', workshopController.deleteResource);
 
 // Attendance
 router.get('/:eventId/attendance', workshopController.getAttendance);
+router.get('/:eventId/attendance/user/:userId', workshopController.getUserAttendance);
 router.post('/:eventId/attendance', workshopController.markAttendance);
 
 module.exports = router;

@@ -46,22 +46,7 @@ export default function MyEventsPage() {
   // Create Event Modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [formData, setFormData] = useState({
-    EventName: '',
-    Description: '',
-    EventType: 'Hackathon',
-    HackathonMode: 'Physical',
-    TeamSize: '2-4',
-    Location: '',
-    StartDate: '',
-    EndDate: '',
-    RegistrationStart: '',
-    RegistrationEnd: '',
-    PrizeMoney: '',
-    PrimaryColor: '#10B981',
-    SecondaryColor: '#FFFFFF',
-    TertiaryColor: '#059669',
-  });
+  
 
   const adminId = admin?.Id || admin?.id;
   const currentActiveEventId = admin?.EventId || admin?.eventId;
@@ -194,55 +179,6 @@ export default function MyEventsPage() {
     });
   }, [events, searchQuery, activeFilter]);
 
-  // Handle creating a new event
-  const handleCreateSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.EventName.trim()) {
-      toast.error('Event Name is required');
-      return;
-    }
-
-    try {
-      setCreating(true);
-      const payload = {
-        ...formData,
-        AdminId: adminId,
-        adminId: adminId,
-      };
-
-      const res = await fetch(`${API_BASE_URL}/api/events/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to create event');
-
-      toast.success('Event created and added to your portfolio!');
-      setIsCreateModalOpen(false);
-
-      // Refresh events
-      await fetchAdminEvents();
-
-      // Switch to newly created event
-      const newEventObj = {
-        Id: data.eventId,
-        EventName: formData.EventName,
-        EventType: formData.EventType,
-        HackathonMode: formData.HackathonMode,
-        Location: formData.Location,
-      };
-
-      handleSwitchEvent(newEventObj);
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message || 'Event creation failed');
-    } finally {
-      setCreating(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-6 sm:p-10 transition-colors">
       {/* Top Header */}
@@ -268,13 +204,6 @@ export default function MyEventsPage() {
               className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-500/30 transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Host New Event</span>
             </button>
           </div>
         </div>
@@ -489,160 +418,7 @@ export default function MyEventsPage() {
       </div>
 
       {/* Host New Event Modal */}
-      <AnimatePresence>
-        {isCreateModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
-                <div>
-                  <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
-                    Host a New Event
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    This event will automatically be added to your organizer workspace.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                    Event Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. NextGen AI Hackathon 2026"
-                    value={formData.EventName}
-                    onChange={(e) => setFormData({ ...formData, EventName: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-semibold"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                      Event Type
-                    </label>
-                    <select
-                      value={formData.EventType}
-                      onChange={(e) => setFormData({ ...formData, EventType: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-                    >
-                      <option value="Hackathon">Hackathon</option>
-                      <option value="Workshop">Workshop</option>
-                      <option value="Conference">Conference / Seminar</option>
-                      <option value="Tech Fest">Tech Fest</option>
-                      <option value="Coding Contest">Coding Contest</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                      Delivery Mode
-                    </label>
-                    <select
-                      value={formData.HackathonMode}
-                      onChange={(e) => setFormData({ ...formData, HackathonMode: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-                    >
-                      <option value="Physical">Physical (In-Person)</option>
-                      <option value="Virtual">Virtual (Online)</option>
-                      <option value="Both">Hybrid / Dual-Track (Both)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                      Participation Format
-                    </label>
-                    <select
-                      value={formData.TeamSize}
-                      onChange={(e) => setFormData({ ...formData, TeamSize: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-                    >
-                      <option value="1">Individual (Solo)</option>
-                      <option value="2-4">Team: 2 - 4 Members</option>
-                      <option value="2-3">Team: 2 - 3 Members</option>
-                      <option value="4">Fixed: 4 Members</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                      Location / Platform
-                    </label>
-                    <input
-                      type="text"
-                      placeholder={formData.HackathonMode === 'Virtual' ? 'e.g. Google Meet / Zoom' : 'e.g. Campus Auditorium'}
-                      value={formData.Location}
-                      onChange={(e) => setFormData({ ...formData, Location: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                      Start Date
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.StartDate}
-                      onChange={(e) => setFormData({ ...formData, StartDate: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                      End Date
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.EndDate}
-                      onChange={(e) => setFormData({ ...formData, EndDate: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={creating}
-                    className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/20 cursor-pointer transition disabled:opacity-50"
-                  >
-                    {creating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    <span>{creating ? 'Launching...' : 'Create & Open Event'}</span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      
     </div>
   );
 }

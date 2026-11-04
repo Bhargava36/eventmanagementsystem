@@ -117,19 +117,27 @@ export default function PublicTeamInfo() {
   // Derived event theme and flags
   const theme = useMemo(() => getEventTheme(teamData, isDark), [teamData, isDark]);
 
+  const isWebinar = useMemo(() => {
+    return String(teamData?.EventType || '').toLowerCase().includes('webinar');
+  }, [teamData]);
+
+  const isWorkshop = useMemo(() => {
+    return String(teamData?.EventType || '').toLowerCase().includes('workshop');
+  }, [teamData]);
+
   const isIndividual = useMemo(() => {
     if (!teamData) return false;
-    return isSoloTeamSize(teamData.TeamSize) || isSoloTeamSize(teamData.EventTeamSize);
-  }, [teamData]);
+    return isWebinar || isWorkshop || isSoloTeamSize(teamData.TeamSize) || isSoloTeamSize(teamData.EventTeamSize);
+  }, [teamData, isWebinar, isWorkshop]);
 
   const displayName = useMemo(() => {
     if (!teamData) return '';
     if (isIndividual) {
       const lead = members.find((m) => String(m.Role).toLowerCase() === 'teamlead') || members[0];
-      return lead?.UserName || teamData.TeamName?.replace(/\s*\(Individual\)/gi, '') || 'Participant';
+      return lead?.UserName || teamData.TeamName?.replace(/\s*\(Individual\)/gi, '') || (isWebinar ? 'Delegate' : isWorkshop ? 'Attendee' : 'Participant');
     }
     return teamData.TeamName || 'Team';
-  }, [teamData, isIndividual, members]);
+  }, [teamData, isIndividual, members, isWebinar, isWorkshop]);
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
 
@@ -344,10 +352,10 @@ export default function PublicTeamInfo() {
                     {displayName}
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1 font-medium">
-                    {isIndividual ? 'Individual Competitor Official Registration' : 'Team Pass & Credential Verification Record'}
+                    {isWebinar ? 'Webinar Delegate Official Pass & Access Credentials' : isWorkshop ? 'Workshop Attendee Official Pass' : isIndividual ? 'Individual Competitor Official Registration' : 'Team Pass & Credential Verification Record'}
                     {teamData.TeamId && (
                       <span className="ml-2 font-mono font-semibold" style={{ color: theme.accent }}>
-                        • #{teamData.TeamId}
+                        • #{isWebinar ? `DEL-${teamData.TeamId}` : teamData.TeamId}
                       </span>
                     )}
                   </p>
@@ -356,13 +364,13 @@ export default function PublicTeamInfo() {
                 {/* Event & Location Meta Strip */}
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-slate-600 dark:text-zinc-300 pt-1">
                   <span className="flex items-center gap-1.5 font-bold" style={{ color: theme.accent }}>
-                    <span>{teamData.EventName || 'Hackathon Event'}</span>
+                    <span>{teamData.EventName || (isWebinar ? 'Live Webinar Event' : 'Hackathon Event')}</span>
                   </span>
 
                   {teamData.ParticipationMode && (
                     <span className="flex items-center gap-1 text-slate-500 dark:text-zinc-400">
                       <span>•</span>
-                      <span>{teamData.ParticipationMode} Track</span>
+                      <span>{isWebinar ? 'Live Stream Broadcast' : `${teamData.ParticipationMode} Track`}</span>
                     </span>
                   )}
 
@@ -401,11 +409,11 @@ export default function PublicTeamInfo() {
                     style={{ color: theme.accent }}
                   >
                     <QrCode className="w-3 h-3" />
-                    <span>Team #{teamData.TeamId}</span>
+                    <span>{isWebinar ? `Delegate #DEL-${teamData.TeamId}` : isIndividual ? `Pass #${teamData.TeamId}` : `Team #${teamData.TeamId}`}</span>
                   </div>
                 </div>
                 <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 mt-2">
-                  Scan for check-in & scores
+                  {isWebinar ? 'Scan for digital pass verification' : 'Scan for check-in & scores'}
                 </span>
               </div>
             </div>
@@ -439,10 +447,10 @@ export default function PublicTeamInfo() {
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                  Venue
+                  {isWebinar ? 'Broadcast Venue' : 'Venue'}
                 </p>
                 <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-zinc-200 truncate" title={teamData.Location}>
-                  {teamData.Location || 'Campus Hub'}
+                  {teamData.Location || (isWebinar ? 'Live Stream Platform' : 'Campus Hub')}
                 </p>
               </div>
             </div>
@@ -456,10 +464,10 @@ export default function PublicTeamInfo() {
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                  {isIndividual ? 'Registration Type' : 'Team Members'}
+                  {isWebinar ? 'Pass Type' : isIndividual ? 'Registration Type' : 'Team Members'}
                 </p>
                 <p className="text-xs sm:text-sm font-bold text-slate-800 dark:text-zinc-200 truncate">
-                  {isIndividual ? 'Solo Participant' : `${members.length || teamData.TeamSize || 'Team'} Members`}
+                  {isWebinar ? 'Solo Delegate Pass' : isWorkshop ? 'Solo Attendee' : isIndividual ? 'Solo Participant' : `${members.length || teamData.TeamSize || 'Team'} Members`}
                 </p>
               </div>
             </div>

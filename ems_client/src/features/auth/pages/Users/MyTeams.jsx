@@ -203,7 +203,7 @@ export default function MyTeams() {
                         ) : (
                           <Users className="h-3 w-3" />
                         )}
-                        {isIndividual ? 'Individual Attendee' : isLead ? 'Team Lead' : 'Team Member'}
+                        {isIndividual ? (String(team.EventType || '').toLowerCase().includes('webinar') ? 'Webinar Delegate' : 'Individual Attendee') : isLead ? 'Team Lead' : 'Team Member'}
                       </span>
                       {team.RegistrationStatus && (
                         <StatusBadge status={team.RegistrationStatus} />
@@ -258,7 +258,7 @@ export default function MyTeams() {
                       onClick={() => navigate(`/user/teamInfo/${team.TeamId}`)}
                       className="flex-1 py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
                     >
-                      Team Dashboard <ArrowRight className="h-3.5 w-3.5" />
+                      {String(team.EventType || '').toLowerCase().includes('webinar') ? 'Delegate Pass' : isIndividual ? 'Pass & Details' : 'Team Dashboard'} <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                     {team.EventId && (
                       <button

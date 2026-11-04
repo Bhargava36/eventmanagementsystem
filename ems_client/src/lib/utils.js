@@ -137,7 +137,18 @@ export function normalizeHackathonMode(mode, location = '') {
   return 'physical';
 }
 
-export function getTrackVisibility(mode, location = '') {
+export function getTrackVisibility(mode, location = '', eventType = '') {
+  if (String(eventType || '').toLowerCase().includes('webinar')) {
+    return {
+      mode: 'virtual',
+      isBoth: false,
+      isVirtual: true,
+      isPhysical: false,
+      showVirtual: true,
+      showPhysical: false,
+    };
+  }
+
   const normalized = normalizeHackathonMode(mode, location);
   const isBoth = normalized === 'both';
   const isVirtual = normalized === 'virtual';

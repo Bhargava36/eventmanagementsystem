@@ -19,10 +19,17 @@ import {
   User,
   Trophy,
   Palette,
-  Loader2
+  Loader2,
+  Search,
+  Filter,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import useToast from '../../../../Hooks/useToast';
 import { validateEventDates } from '../../../../lib/utils';
 
@@ -103,9 +110,14 @@ function EventsDashboard() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [colorSelected, setColorSelected] = useState(false);
-  const [selectedPresetName, setSelectedPresetName] = useState('');
   const [sortOpen, setSortOpen] = useState(false);
   const [sortValue, setSortValue] = useState('Latest First');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedMode, setSelectedMode] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const initialForm = {
     EventName: '',
@@ -152,10 +164,13 @@ function EventsDashboard() {
     'Oldest First',
     'Name (A-Z)',
     'Name (Z-A)',
-    'Upcoming',
-    'Ongoing',
-    'Completed'
+    'Start Date (Earliest)',
+    'Start Date (Latest)'
   ];
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedStatus, selectedType, selectedMode, sortValue, itemsPerPage]);
 
   useEffect(() => {
     fetchEvents();
@@ -331,6 +346,10 @@ function EventsDashboard() {
         toast.error('Event Name is required before proceeding.');
         return false;
       }
+      if (!formData.EventType) {
+        toast.error('Please select an Event Type before proceeding.');
+        return false;
+      }
       return true;
     }
 
@@ -410,16 +429,12 @@ function EventsDashboard() {
     }
 
     if (step === 3) {
-      if (!formData.EventType) {
-        toast.error('Please select an Event Type.');
-        return false;
-      }
       if (!formData.TeamSize?.trim()) {
-        toast.error('Please specify Team Size.');
+        toast.error('Please specify Participation Format / Team Size.');
         return false;
       }
       if (!formData.Location?.trim()) {
-        toast.error('Location / Venue is required.');
+        toast.error(formData.EventType === 'Webinar' ? 'Broadcast room or meeting platform is required.' : 'Location / Venue is required.');
         return false;
       }
       return true;
@@ -567,35 +582,79 @@ function EventsDashboard() {
     }
   };
 
-  const getSortedEvents = () => {
-    const sortedEvents = [...eventData];
+  const filteredAndSortedEvents = useMemo(() => {
+    let list = [...eventData];
 
-    switch (sortValue) {
-      case 'Name (A-Z)':
-        return sortedEvents.sort((a, b) => (a.EventName || '').localeCompare(b.EventName || ''));
-
-      case 'Name (Z-A)':
-        return sortedEvents.sort((a, b) =>(b.EventName || '').localeCompare(a.EventName || '' ));
-
-      case 'Upcoming':
-        return sortedEvents.filter((event) => event.EventStatus?.toLowerCase() === 'upcoming');
-
-      case 'Ongoing':
-        return sortedEvents.filter((event) => event.EventStatus?.toLowerCase() === 'ongoing');
-
-      case 'Completed':
-        return sortedEvents.filter((event) => event.EventStatus?.toLowerCase() === 'completed');
-
-      case 'Oldest First':
-        return sortedEvents.sort((a, b) => new Date(a.CreatedAt).getTime() - new Date(b.CreatedAt).getTime());
-
-      case 'Latest First':
-      default:
-        return sortedEvents.sort((a, b) => new Date(b.CreatedAt).getTime() - new Date(a.CreatedAt).getTime());
+    // 1. Text Search Filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter((ev) => {
+        const name = (ev.EventName || '').toLowerCase();
+        const desc = (ev.Description || '').toLowerCase();
+        const loc = (ev.Location || '').toLowerCase();
+        const type = (ev.EventType || '').toLowerCase();
+        const slug = (ev.Slug || '').toLowerCase();
+        return name.includes(q) || desc.includes(q) || loc.includes(q) || type.includes(q) || slug.includes(q);
+      });
     }
+
+    // 2. Status Filter
+    if (selectedStatus !== 'all') {
+      list = list.filter((ev) => (ev.EventStatus || '').toLowerCase() === selectedStatus.toLowerCase());
+    }
+
+    // 3. Event Type Filter
+    if (selectedType !== 'all') {
+      list = list.filter((ev) => (ev.EventType || '').toLowerCase().includes(selectedType.toLowerCase()));
+    }
+
+    // 4. Mode Filter
+    if (selectedMode !== 'all') {
+      list = list.filter((ev) => {
+        const mode = (ev.HackathonMode || '').toLowerCase();
+        if (selectedMode === 'both') {
+          return mode === 'both' || mode === 'virtual and physical' || mode === 'hybrid';
+        }
+        return mode.includes(selectedMode.toLowerCase());
+      });
+    }
+
+    // 5. Sorting
+    list.sort((a, b) => {
+      switch (sortValue) {
+        case 'Name (A-Z)':
+          return (a.EventName || '').localeCompare(b.EventName || '');
+        case 'Name (Z-A)':
+          return (b.EventName || '').localeCompare(a.EventName || '');
+        case 'Start Date (Earliest)':
+          return new Date(a.StartDate || a.VirtualStartDate || 0).getTime() - new Date(b.StartDate || b.VirtualStartDate || 0).getTime();
+        case 'Start Date (Latest)':
+          return new Date(b.StartDate || b.VirtualStartDate || 0).getTime() - new Date(a.StartDate || a.VirtualStartDate || 0).getTime();
+        case 'Oldest First':
+          return new Date(a.CreatedAt || 0).getTime() - new Date(b.CreatedAt || 0).getTime();
+        case 'Latest First':
+        default:
+          return new Date(b.CreatedAt || 0).getTime() - new Date(a.CreatedAt || 0).getTime();
+      }
+    });
+
+    return list;
+  }, [eventData, searchQuery, selectedStatus, selectedType, selectedMode, sortValue]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedEvents.length / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+  const paginatedEvents = filteredAndSortedEvents.slice(startIndex, startIndex + itemsPerPage);
+
+  const hasActiveFilters = searchQuery.trim() !== '' || selectedStatus !== 'all' || selectedType !== 'all' || selectedMode !== 'all';
+  const resetFilters = () => {
+    setSearchQuery('');
+    setSelectedStatus('all');
+    setSelectedType('all');
+    setSelectedMode('all');
+    setSortValue('Latest First');
   };
 
-  const sortedEvents = getSortedEvents();
   const totalEvents = eventData.length;
   const upcomingEvents = eventData.filter((event) => event.EventStatus?.toLowerCase() === 'upcoming').length;
   const ongoingEvents = eventData.filter((event) => event.EventStatus?.toLowerCase() === 'ongoing').length;
@@ -703,9 +762,9 @@ function EventsDashboard() {
                 <div className="flex items-center">
                   {[1, 2, 3, 4].map((step) => {
                     const stepTitles = [
-                      'Basic Info',
-                      'Schedule',
-                      'Details',
+                      'Type & Info',
+                      'Mode & Dates',
+                      'Format & Venue',
                       'Colors'
                     ];
                     return (
@@ -771,9 +830,9 @@ function EventsDashboard() {
 
                 <div className="mt-5">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {currentStep === 1 && 'Basic Information & Posters'}
+                    {currentStep === 1 && 'Basic Information & Event Type'}
                     {currentStep === 2 && 'Participation Mode & Schedule'}
-                    {currentStep === 3 && 'Type, Team & Location'}
+                    {currentStep === 3 && 'Participation Format & Venue / Platform'}
                     {currentStep === 4 && 'Event Colors & Branding Setup'}
                   </h3>
 
@@ -800,21 +859,69 @@ function EventsDashboard() {
 
                   {currentStep === 1 && (
                     <div className="space-y-5">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Event Name
-                        </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Event Name
+                          </label>
 
-                        <input
-                          type="text"
-                          name="EventName"
-                          value={formData.EventName}
-                          onChange={handleChange}
-                          placeholder="Enter event name"
-                          required
-                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
+                          <input
+                            type="text"
+                            name="EventName"
+                            value={formData.EventName}
+                            onChange={handleChange}
+                            placeholder="Enter event name"
+                            required
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Event Type
+                          </label>
+
+                          <select
+                            name="EventType"
+                            value={formData.EventType}
+                            onChange={handleChange}
+                            required
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            <option value="">
+                              Select Event Type
+                            </option>
+                            <option value="Hackathon">
+                              Hackathon
+                            </option>
+                            <option value="Webinar">
+                              Webinar (Keynotes, Panels & Virtual Broadcasts)
+                            </option>
+                            <option value="Workshop">
+                              Workshop (Curriculum & Hands-on Labs)
+                            </option>
+                            <option value="Seminar">
+                              Seminar
+                            </option>
+                            <option value="Conference">
+                              Conference
+                            </option>
+                            <option value="Coding Contest">
+                              Coding Contest
+                            </option>
+                            <option value="Tech Fest">
+                              Tech Fest
+                            </option>
+                          </select>
+                        </div>
                       </div>
+
+                      {formData.EventType === 'Webinar' && (
+                        <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>Webinar selected: Flow will automatically lock to 100% Virtual live streaming with solo delegate passes.</span>
+                        </div>
+                      )}
 
                       <div>
                         <div className="flex items-center justify-between mb-2">
@@ -893,47 +1000,68 @@ function EventsDashboard() {
                         <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                           Participation / Event Mode
                         </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {[
-                            { id: 'Virtual', label: 'Virtual', desc: '100% Online', icon: Globe },
-                            { id: 'Physical', label: 'Physical', desc: 'In-person / Campus', icon: MapPin },
-                            { id: 'Virtual and Physical', label: 'Virtual and Physical', desc: 'Multi-stage / Both', icon: Layers },
-                            { id: 'Hybrid', label: 'Hybrid', desc: 'Simultaneous Live & Online', icon: Radio }
-                          ].map((modeOption) => {
-                            const IconComponent = modeOption.icon;
-                            const isSelected = (formData.HackathonMode || 'Physical').toLowerCase() === modeOption.id.toLowerCase() ||
-                              (modeOption.id === 'Virtual and Physical' && formData.HackathonMode === 'Both');
-                            return (
-                              <button
-                                key={modeOption.id}
-                                type="button"
-                                onClick={() => {
-                                  const newMode = modeOption.id;
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    HackathonMode: newMode,
-                                    Location: newMode === 'Virtual' ? (prev.Location || 'Virtual / Online') : (prev.Location === 'Virtual / Online' ? '' : prev.Location)
-                                  }));
-                                }}
-                                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                                  isSelected
-                                    ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 ring-2 ring-emerald-500/30'
-                                    : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 mb-1">
-                                  <IconComponent className={`w-4 h-4 ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'}`} />
-                                  <span className={`text-xs sm:text-sm font-semibold ${isSelected ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
-                                    {modeOption.label}
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                                  {modeOption.desc}
+                        {formData.EventType === 'Webinar' ? (
+                          <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-950/20 flex items-start gap-3.5">
+                            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                              <Globe className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                  100% Virtual Live Stream Broadcast
                                 </p>
-                              </button>
-                            );
-                          })}
-                        </div>
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white">
+                                  Locked for Webinar
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                Webinars are conducted exclusively online via live broadcast. Separate physical/offline venue tracks are disabled, and all delegates participate virtually with personalized digital credentials.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            {[
+                              { id: 'Virtual', label: 'Virtual', desc: '100% Online', icon: Globe },
+                              { id: 'Physical', label: 'Physical', desc: 'In-person / Campus', icon: MapPin },
+                              { id: 'Virtual and Physical', label: 'Virtual and Physical', desc: 'Multi-stage / Both', icon: Layers },
+                              { id: 'Hybrid', label: 'Hybrid', desc: 'Simultaneous Live & Online', icon: Radio }
+                            ].map((modeOption) => {
+                              const IconComponent = modeOption.icon;
+                              const isSelected = (formData.HackathonMode || 'Physical').toLowerCase() === modeOption.id.toLowerCase() ||
+                                (modeOption.id === 'Virtual and Physical' && formData.HackathonMode === 'Both');
+                              return (
+                                <button
+                                  key={modeOption.id}
+                                  type="button"
+                                  onClick={() => {
+                                    const newMode = modeOption.id;
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      HackathonMode: newMode,
+                                      Location: newMode === 'Virtual' ? (prev.Location || 'Virtual / Online') : (prev.Location === 'Virtual / Online' ? '' : prev.Location)
+                                    }));
+                                  }}
+                                  className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                                    isSelected
+                                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 ring-2 ring-emerald-500/30'
+                                      : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <IconComponent className={`w-4 h-4 ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500'}`} />
+                                    <span className={`text-xs sm:text-sm font-semibold ${isSelected ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-800 dark:text-gray-200'}`}>
+                                      {modeOption.label}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                                    {modeOption.desc}
+                                  </p>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
 
                       {formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical' ? (
@@ -1067,7 +1195,7 @@ function EventsDashboard() {
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
                                 <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                                Registration Window (From &amp; To)
+                                {formData.EventType === 'Webinar' ? 'Webinar Delegate Registration Window (From & To)' : 'Registration Window (From & To)'}
                               </span>
                               <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-md">
                                 Closes before Event Starts
@@ -1109,7 +1237,7 @@ function EventsDashboard() {
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
                                 <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                {formData.HackathonMode === 'Virtual' ? 'Virtual Event Dates (From & To)' : 'Event Dates (From & To)'}
+                                {formData.EventType === 'Webinar' ? 'Webinar Live Broadcast Dates (From & To)' : formData.HackathonMode === 'Virtual' ? 'Virtual Event Dates (From & To)' : 'Event Dates (From & To)'}
                               </span>
                               <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-md">
                                 Official Duration
@@ -1166,46 +1294,44 @@ function EventsDashboard() {
 
                   {currentStep === 3 && (
                     <div className="space-y-5">
-                      <div className="grid grid-cols-2 gap-5">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Event Type
-                          </label>
-
-                          <select
-                            name="EventType"
-                            value={formData.EventType}
-                            onChange={handleChange}
-                            required
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white"
-                          >
-                            <option value="">
-                              Select Event Type
-                            </option>
-                            <option value="Hackathon">
-                              Hackathon
-                            </option>
-                            <option value="Webinar">
-                              Webinar (Keynotes, Panels & Virtual Broadcasts)
-                            </option>
-                            <option value="Workshop">
-                              Workshop (Curriculum & Hands-on Labs)
-                            </option>
-                            <option value="Seminar">
-                              Seminar
-                            </option>
-                            <option value="Conference">
-                              Conference
-                            </option>
-                            <option value="Coding Contest">
-                              Coding Contest
-                            </option>
-                            <option value="Tech Fest">
-                              Tech Fest
-                            </option>
-                          </select>
+                      <div className="flex items-center justify-between p-3.5 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Selected Event Type:
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                            {formData.EventType || 'Hackathon'}
+                          </span>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => setCurrentStep(1)}
+                          className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-semibold cursor-pointer"
+                        >
+                          Change in Step 1
+                        </button>
+                      </div>
 
+                      {formData.EventType === 'Webinar' ? (
+                        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              <User className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                Individual (Solo) Delegate Pass
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Webinar delegates enroll individually with personalized digital passes.
+                              </p>
+                            </div>
+                          </div>
+                          <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-600 text-white shrink-0">
+                            Solo Delegate
+                          </span>
+                        </div>
+                      ) : (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Participation Format
@@ -1244,18 +1370,13 @@ function EventsDashboard() {
                               <span>Team</span>
                             </button>
                           </div>
-                          {formData.EventType === 'Webinar' && (
-                            <p className="text-[11px] text-cyan-600 dark:text-cyan-400 mt-1 font-medium">
-                              Note: Webinar participants enroll as Individual / Solo delegates.
-                            </p>
-                          )}
                           {formData.EventType === 'Workshop' && (
                             <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 font-medium">
                               Note: Workshop participants typically enroll as Individual / Solo attendees.
                             </p>
                           )}
                         </div>
-                      </div>
+                      )}
 
                       {/* Team Configuration if Team is selected */}
                       {formData.TeamSize !== '1' && formData.TeamSize?.toLowerCase() !== 'solo' && formData.TeamSize?.toLowerCase() !== 'individual' && (
@@ -1347,7 +1468,7 @@ function EventsDashboard() {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          Location / Venue
+                          {formData.EventType === 'Webinar' ? 'Webinar Live Broadcast Link / Platform URL' : 'Location / Venue'}
                         </label>
 
                         <input
@@ -1355,7 +1476,7 @@ function EventsDashboard() {
                           name="Location"
                           value={formData.Location}
                           onChange={handleChange}
-                          placeholder={formData.HackathonMode === 'Virtual' ? 'Online / Meeting Platform (e.g. Google Meet, Zoom)' : 'Enter venue location (e.g. Campus Auditorium / Hall A)'}
+                          placeholder={formData.EventType === 'Webinar' ? 'e.g. Google Meet, Zoom URL, YouTube Live, or Virtual Broadcast Room' : formData.HackathonMode === 'Virtual' ? 'Online / Meeting Platform (e.g. Google Meet, Zoom)' : 'Enter venue location (e.g. Campus Auditorium / Hall A)'}
                           required
                           className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white"
                         />
@@ -1689,8 +1810,8 @@ function EventsDashboard() {
                         onClick={handleNextStep}
                         className="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium cursor-pointer"
                       >
-                        {currentStep === 1 && 'Continue to Schedule'}
-                        {currentStep === 2 && 'Continue to Details'}
+                        {currentStep === 1 && 'Continue to Mode & Dates'}
+                        {currentStep === 2 && 'Continue to Format & Venue'}
                         {currentStep === 3 && 'Continue to Colors Setup'}
                       </button>
                     ) : (
@@ -1738,7 +1859,14 @@ function EventsDashboard() {
           }}
           className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
         >
-          <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div
+            onClick={() => setSelectedStatus('all')}
+            className={`bg-white dark:bg-black rounded-xl p-4 sm:p-5 border cursor-pointer transition-all hover:border-emerald-500/50 shadow-sm ${
+              selectedStatus === 'all'
+                ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                : 'border-gray-200 dark:border-gray-800'
+            }`}
+          >
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Calendar className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
@@ -1752,7 +1880,14 @@ function EventsDashboard() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div
+            onClick={() => setSelectedStatus('upcoming')}
+            className={`bg-white dark:bg-black rounded-xl p-4 sm:p-5 border cursor-pointer transition-all hover:border-emerald-500/50 shadow-sm ${
+              selectedStatus === 'upcoming'
+                ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                : 'border-gray-200 dark:border-gray-800'
+            }`}
+          >
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
@@ -1766,7 +1901,14 @@ function EventsDashboard() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div
+            onClick={() => setSelectedStatus('ongoing')}
+            className={`bg-white dark:bg-black rounded-xl p-4 sm:p-5 border cursor-pointer transition-all hover:border-emerald-500/50 shadow-sm ${
+              selectedStatus === 'ongoing'
+                ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                : 'border-gray-200 dark:border-gray-800'
+            }`}
+          >
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Radio className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
@@ -1780,7 +1922,14 @@ function EventsDashboard() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
+          <div
+            onClick={() => setSelectedStatus('completed')}
+            className={`bg-white dark:bg-black rounded-xl p-4 sm:p-5 border cursor-pointer transition-all hover:border-emerald-500/50 shadow-sm ${
+              selectedStatus === 'completed'
+                ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                : 'border-gray-200 dark:border-gray-800'
+            }`}
+          >
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Clock className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
@@ -1804,63 +1953,175 @@ function EventsDashboard() {
           }}
           className="bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden"
         >
-          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                All Events
-              </h2>
+          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800 space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                    All Events
+                  </h2>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400 border border-emerald-500/20">
+                    {filteredAndSortedEvents.length} of {totalEvents}
+                  </span>
+                </div>
 
-              <div className="relative">
-                <button
-                  onClick={() =>
-                    setSortOpen(!sortOpen)
-                  }
-                  className="flex items-center gap-2 text-xs sm:text-sm bg-white dark:bg-black border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                >
-                  {sortValue}
+                {/* Status Filter Tabs */}
+                <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 text-xs">
+                  {[
+                    { id: 'all', label: 'All', count: totalEvents },
+                    { id: 'upcoming', label: 'Upcoming', count: upcomingEvents },
+                    { id: 'ongoing', label: 'Ongoing', count: ongoingEvents },
+                    { id: 'completed', label: 'Completed', count: completedEvents }
+                  ].map((tab) => {
+                    const isActive = selectedStatus === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setSelectedStatus(tab.id)}
+                        className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                          isActive
+                            ? 'bg-white dark:bg-black text-gray-900 dark:text-white font-bold shadow-xs'
+                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                        }`}
+                      >
+                        <span>{tab.label}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                          isActive
+                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold'
+                            : 'bg-gray-200/80 dark:bg-zinc-800 text-gray-500 dark:text-gray-400'
+                        }`}>
+                          {tab.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${sortOpen
-                      ? 'rotate-180'
-                      : ''
-                      }`}
-                  />
-                </button>
+              {/* Sort selector */}
+              <div className="flex items-center gap-2 self-end lg:self-center">
+                <span className="text-xs text-gray-400 hidden sm:inline">Sort:</span>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSortOpen(!sortOpen)}
+                    className="flex items-center gap-2 text-xs sm:text-sm bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors cursor-pointer"
+                  >
+                    <span>{sortValue}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
+                  </button>
 
-                {sortOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg z-10 overflow-hidden">
-                    {sortOptions.map(
-                      (option) => (
+                  {sortOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-xl shadow-lg z-20 overflow-hidden py-1">
+                      {sortOptions.map((option) => (
                         <button
                           key={option}
+                          type="button"
                           onClick={() => {
-                            setSortValue(
-                              option
-                            );
-                            setSortOpen(
-                              false
-                            );
+                            setSortValue(option);
+                            setSortOpen(false);
                           }}
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${sortValue ===
-                            option
-                            ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-500 font-medium'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                            }`}
+                          className={`w-full text-left px-4 py-2 text-xs transition-colors cursor-pointer ${
+                            sortValue === option
+                              ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-900'
+                          }`}
                         >
                           {option}
                         </button>
-                      )
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Filter controls row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 pt-1">
+              <div className="relative lg:col-span-5">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search events by name, location, type, slug..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-9 py-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="lg:col-span-3">
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  <option value="all">All Event Categories</option>
+                  <option value="hackathon">Hackathon</option>
+                  <option value="webinar">Webinar</option>
+                  <option value="workshop">Workshop</option>
+                  <option value="seminar">Seminar</option>
+                  <option value="conference">Conference</option>
+                  <option value="coding contest">Coding Contest</option>
+                  <option value="tech fest">Tech Fest</option>
+                </select>
+              </div>
+
+              <div className="lg:col-span-2">
+                <select
+                  value={selectedMode}
+                  onChange={(e) => setSelectedMode(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-xl text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  <option value="all">All Modes</option>
+                  <option value="virtual">Virtual</option>
+                  <option value="physical">Physical</option>
+                  <option value="both">Both / Hybrid</option>
+                </select>
+              </div>
+
+              <div className="lg:col-span-2 flex items-center">
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="w-full py-2 px-3 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/40 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    title="Reset all filters"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset Filters</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={fetchEvents}
+                    className="w-full py-2 px-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-black text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-900 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    title="Refresh events list"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Refresh</span>
+                  </button>
                 )}
               </div>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-xs sm:text-sm min-w-[500px]">
+            <table className="w-full text-xs sm:text-sm min-w-[650px]">
               <thead>
-                <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
+                <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-black">
+                  <th className="px-4 sm:px-6 py-3 font-medium w-12">
+                    #
+                  </th>
                   <th className="px-4 sm:px-6 py-3 font-medium">
                     Event
                   </th>
@@ -1877,7 +2138,7 @@ function EventsDashboard() {
                     Status
                   </th>
 
-                  <th className="px-4 sm:px-6 py-3 font-medium">
+                  <th className="px-4 sm:px-6 py-3 font-medium text-center">
                     Action
                   </th>
                 </tr>
@@ -1887,48 +2148,76 @@ function EventsDashboard() {
                 {loading && (
                   <tr>
                     <td
-                      colSpan="5"
-                      className="text-center py-10 text-gray-500"
+                      colSpan="6"
+                      className="text-center py-12 text-gray-500"
                     >
-                      Loading events...
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+                        <span className="text-xs">Loading events...</span>
+                      </div>
                     </td>
                   </tr>
                 )}
 
                 {!loading &&
-                  sortedEvents.length === 0 && (
+                  filteredAndSortedEvents.length === 0 && (
                     <tr>
                       <td
-                        colSpan="5"
-                        className="text-center py-10 text-gray-500"
+                        colSpan="6"
+                        className="text-center py-16 text-gray-500"
                       >
-                        No events found.
+                        <div className="flex flex-col items-center justify-center gap-2 max-w-sm mx-auto">
+                          <div className="p-3 rounded-full bg-gray-100 dark:bg-zinc-900 text-gray-400">
+                            <Calendar className="w-6 h-6" />
+                          </div>
+                          <p className="font-semibold text-gray-800 dark:text-white text-sm">
+                            No events match your criteria
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {hasActiveFilters
+                              ? 'Try adjusting your search keywords, event category or status filters.'
+                              : 'No events created yet. Click "+ Create Event" above to create your first event.'}
+                          </p>
+                          {hasActiveFilters && (
+                            <button
+                              type="button"
+                              onClick={resetFilters}
+                              className="mt-2 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors cursor-pointer"
+                            >
+                              Reset Filters
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )}
 
                 {!loading &&
-                  sortedEvents.map(
+                  paginatedEvents.map(
                     (event, index) => (
                       <motion.tr
                         key={event.Id}
                         initial={{
                           opacity: 0,
-                          x: -8
+                          y: 6
                         }}
                         animate={{
                           opacity: 1,
-                          x: 0
+                          y: 0
                         }}
                         transition={{
-                          duration: 0.25,
+                          duration: 0.2,
                           delay: Math.min(
-                            index * 0.04,
-                            0.4
+                            index * 0.03,
+                            0.3
                           )
                         }}
-                        className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50/70 dark:hover:bg-black transition-colors"
+                        className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50/70 dark:hover:bg-zinc-900/40 transition-colors"
                       >
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-400 text-xs font-mono">
+                          {String(startIndex + index + 1).padStart(2, '0')}
+                        </td>
+
                         <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <div className="flex items-center gap-2 sm:gap-3">
                             {event.Posters && event.Posters.length > 0 ? (
@@ -1944,89 +2233,73 @@ function EventsDashboard() {
                             )}
 
                             <div className="min-w-0">
-                              <p className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white">
-                                {
-                                  event.EventName
-                                }
+                              <p className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white truncate max-w-xs sm:max-w-md">
+                                {event.EventName}
                               </p>
 
-                              {/* <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5 hidden sm:block line-clamp-1">
-                                {
-                                  event.Description
-                                }
-                              </p> */}
+                              <div className="flex flex-wrap items-center gap-2 mt-1">
+                                {event.HackathonMode && (
+                                  <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-zinc-700">
+                                    {event.HackathonMode}
+                                  </span>
+                                )}
 
-                              {(event.VirtualPrizeMoney || event.PhysicalPrizeMoney || event.PrizeMoney) && (
-                                <div className="flex items-center gap-2 mt-1">
-                                  {event.PhysicalPrizeMoney && (
-                                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                                      Physical: {event.PhysicalPrizeMoney}
-                                    </span>
-                                  )}
-                                  {event.VirtualPrizeMoney && (
-                                    <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
-                                      Virtual: {event.VirtualPrizeMoney}
-                                    </span>
-                                  )}
-                                  {!event.PhysicalPrizeMoney && !event.VirtualPrizeMoney && event.PrizeMoney && (
-                                    <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                                      Pool: {event.PrizeMoney}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
+                                {event.PhysicalPrizeMoney && (
+                                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                    Physical: {event.PhysicalPrizeMoney}
+                                  </span>
+                                )}
+                                {event.VirtualPrizeMoney && (
+                                  <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20">
+                                    Virtual: {event.VirtualPrizeMoney}
+                                  </span>
+                                )}
+                                {!event.PhysicalPrizeMoney && !event.VirtualPrizeMoney && event.PrizeMoney && (
+                                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                    Pool: {event.PrizeMoney}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
 
                         <td className="px-3 sm:px-4 py-3 sm:py-4 hidden sm:table-cell">
                           <span
-                            className={`text-xs px-2 py-1 rounded-full font-medium ${getCategoryStyles()}`}
+                            className={`text-xs px-2.5 py-1 rounded-full font-semibold ${getCategoryStyles()}`}
                           >
-                            {
-                              event.EventType
-                            }
+                            {event.EventType || 'General'}
                           </span>
                         </td>
 
                         <td className="px-3 sm:px-4 py-3 sm:py-4 text-gray-600 dark:text-gray-300 hidden md:table-cell">
                           <p className="text-xs sm:text-sm whitespace-nowrap">
-                            {new Date(
-                              event.StartDate
-                            ).toLocaleDateString(
-                              'en-GB',
-                              {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric'
-                              }
-                            )}
+                            {event.StartDate ? new Date(event.StartDate).toLocaleDateString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric'
+                            }) : 'Date TBD'}
                           </p>
                         </td>
 
                         <td className="px-3 sm:px-4 py-3 sm:py-4">
                           <span
-                            className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusStyles(
+                            className={`text-xs px-2.5 py-1 rounded-full font-semibold ${getStatusStyles(
                               event.EventStatus
                             )}`}
                           >
-                            {
-                              event.EventStatus
-                            }
+                            {event.EventStatus || 'Active'}
                           </span>
                         </td>
 
-                        <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4 text-center">
                           <Link
                             to={`/sidebar/eventinfo/${event.Id}`}
                             state={{ initialEvent: event }}
-                            className="flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 text-xs rounded-lg bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-500 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 font-medium transition-colors whitespace-nowrap cursor-pointer w-fit"
+                            className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 text-xs rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-500/30 font-semibold transition-colors whitespace-nowrap cursor-pointer"
                           >
-                            <Eye className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-
-                            <span className="hidden sm:inline">
-                              View Info
-                            </span>
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>View Info</span>
                           </Link>
                         </td>
                       </motion.tr>
@@ -2036,11 +2309,102 @@ function EventsDashboard() {
             </table>
           </div>
 
-          {/* <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-800 text-center">
-            <button className="text-sm text-emerald-700 dark:text-emerald-500 hover:underline font-medium cursor-pointer">
-              View All Events →
-            </button>
-          </div> */}
+          {filteredAndSortedEvents.length > 0 && (
+            <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50 dark:bg-black">
+              <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                <span>
+                  Showing <span className="font-semibold text-gray-900 dark:text-white">{startIndex + 1}</span> to <span className="font-semibold text-gray-900 dark:text-white">{Math.min(startIndex + itemsPerPage, filteredAndSortedEvents.length)}</span> of <span className="font-semibold text-gray-900 dark:text-white">{filteredAndSortedEvents.length}</span> events
+                </span>
+
+                <div className="hidden sm:flex items-center gap-1.5 ml-2 border-l border-gray-200 dark:border-zinc-800 pl-3">
+                  <span className="text-xs text-gray-400">Per page:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg px-2 py-1 text-xs text-gray-700 dark:text-gray-300 focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={safeCurrentPage === 1}
+                  className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="First page"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safeCurrentPage === 1}
+                  className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - safeCurrentPage) <= 1)
+                    .reduce((acc, p, idx, arr) => {
+                      if (idx > 0 && p - arr[idx - 1] > 1) {
+                        acc.push({ type: 'ellipsis', key: `ellipsis-${p}` });
+                      }
+                      acc.push({ type: 'page', page: p, key: `page-${p}` });
+                      return acc;
+                    }, [])
+                    .map((item) =>
+                      item.type === 'ellipsis' ? (
+                        <span key={item.key} className="px-1.5 text-xs text-gray-400">...</span>
+                      ) : (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => setCurrentPage(item.page)}
+                          className={`min-w-8 h-8 px-2 rounded-lg text-xs font-semibold transition-colors ${
+                            safeCurrentPage === item.page
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-900'
+                          }`}
+                        >
+                          {item.page}
+                        </button>
+                      )
+                    )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safeCurrentPage === totalPages}
+                  className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={safeCurrentPage === totalPages}
+                  className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  title="Last page"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </div>
