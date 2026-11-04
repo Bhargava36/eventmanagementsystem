@@ -22,7 +22,15 @@ import {
     Eye,
     ExternalLink,
     Palette,
+    Video,
+    Radio,
+    FileText,
+    CalendarCheck,
+    Presentation,
+    ShieldCheck,
+    Clock,
 } from 'lucide-react';
+import { getEventTypeInfo, isSoloTeamSize } from '@/lib/utils';
 import TeamCardCanvas from './TeamCardCanvas';
 import ParticipantIdCanvas from './ParticipantIdCanvas';
 
@@ -108,18 +116,6 @@ function TeamDetails() {
         navigate('/admin/teams');
     };
 
-    const handleCopy = async () => {
-        if (!team?.Id) return;
-
-        try {
-            await navigator.clipboard.writeText(`TEAM-${team.Id}`);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch (err) {
-            console.error('Unable to copy Team ID:', err);
-        }
-    };
-
     if (loading) {
         return (
             <div className="bg-gray-50 dark:bg-black min-h-screen p-8 flex items-center justify-center">
@@ -186,6 +182,27 @@ function TeamDetails() {
         team.FoodPreference ??
         team.Food;
 
+    const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
+    const eventType = team.EventType || team.Category || adminData?.EventType || '';
+    const typeInfo = getEventTypeInfo(eventType);
+    const isWebinar = typeInfo.isWebinar;
+    const isWorkshop = typeInfo.isWorkshop;
+    const isIndividual = isSoloTeamSize(team.TeamSize) || isWebinar || isWorkshop;
+    const idPrefix = isWebinar ? 'DEL' : isWorkshop ? 'ATT' : 'TEAM';
+    const idLabel = isWebinar ? 'Delegate ID' : isWorkshop ? 'Attendee ID' : 'Team ID';
+
+    const handleCopy = async () => {
+        if (!team?.Id) return;
+
+        try {
+            await navigator.clipboard.writeText(`${idPrefix}-${team.Id}`);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Unable to copy ID:', err);
+        }
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 14 }}
@@ -199,7 +216,7 @@ function TeamDetails() {
                     className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-500 transition-colors font-medium cursor-pointer"
                 >
                     <ArrowLeft className="w-4 h-4" />
-                    Back to Registered Teams
+                    Back to {typeInfo.participantTerm || 'Registered Teams'}
                 </button>
             </div>
 
@@ -212,22 +229,38 @@ function TeamDetails() {
                                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-words">
                                     {team.TeamName}
                                 </h1>
+                                {isWebinar && (
+                                    <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                        Webinar Delegate
+                                    </span>
+                                )}
+                                {isWorkshop && (
+                                    <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                        Workshop Attendee
+                                    </span>
+                                )}
                             </div>
 
                             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">
                                 {team.College
                                     ? `${team.College}, ${team.State || ''}`
+                                    : isWebinar
+                                    ? 'Registered for keynote sessions & live stream.'
                                     : 'Building solutions, creating impact.'}
                             </p>
 
                             <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-black border border-transparent dark:border-zinc-800 px-2.5 py-1 rounded-md">
-                                    Team ID: TEAM-{team.Id}
+                                <span className={`text-xs font-semibold px-2.5 py-1 rounded-md border ${
+                                    isWebinar
+                                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                                        : 'bg-gray-100 dark:bg-black text-gray-700 dark:text-gray-300 border-gray-200 dark:border-zinc-800'
+                                }`}>
+                                    {idLabel}: {idPrefix}-{team.Id}
                                 </span>
 
                                 <button
                                     onClick={handleCopy}
-                                    title="Copy Team ID"
+                                    title={`Copy ${idLabel}`}
                                     className="text-gray-400 hover:text-emerald-700 dark:hover:text-emerald-500 transition-colors cursor-pointer"
                                 >
                                     {copied
@@ -256,394 +289,670 @@ function TeamDetails() {
                             <div className="flex flex-col items-start gap-0.5">
                                 <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                                     <Users className="w-3.5 h-3.5" />
-                                    <span className="text-[10px]">Members</span>
+                                    <span className="text-[10px]">{isWebinar ? 'Seat' : isIndividual ? 'Seats' : 'Members'}</span>
                                 </div>
                                 <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                    {members.length || team.TeamSize || 0}
+                                    {isIndividual ? 'Solo (1)' : (members.length || team.TeamSize || 0)}
                                 </span>
                             </div>
                         </div>
 
-                        {/* Action 1: Download Team Card (Landscape Format) */}
-                        <button
-                            type="button"
-                            onClick={() => setShowTeamCardModal(true)}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer"
-                            title="Generate and download official landscape Team Display Card"
-                        >
-                            <IdCard className="w-3.5 h-3.5" />
-                            <span>Download Team Card</span>
-                        </button>
-
-                        {/* Action: Visual Designer for Team Card */}
-                        <button
-                            type="button"
-                            onClick={() => navigate(team?.EventId ? `/admin/team-card-designer?eventId=${team.EventId}` : '/admin/team-card-designer')}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-cyan-500/30 bg-cyan-950/30 hover:bg-cyan-900/40 text-cyan-300 font-bold text-xs shadow-md transition cursor-pointer"
-                            title="Open visual studio to design custom team card"
-                        >
-                            <Palette className="w-3.5 h-3.5 text-cyan-400" />
-                            <span>Design Card</span>
-                        </button>
-
-                        {/* Action 2: Download Member ID Passes (A6 Format) */}
-                        <button
-                            type="button"
-                            onClick={() => setSelectedMemberForId(teamLead || members[0])}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/25 transition cursor-pointer"
-                            title="Download standard A6 Member ID Passes"
-                        >
-                            <IdCard className="w-3.5 h-3.5" />
-                            <span>Download ID Cards</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
-                {/* Team Information Card */}
-                <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
-                    <div className="flex items-center justify-between mb-4 sm:mb-5">
-                        <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
-                            Team Information
-                        </h2>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
-                            <UserCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
-                            <span className="text-gray-500 dark:text-gray-400">Team Leader</span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                                {teamLead?.UserName || 'Not assigned'}
-                            </span>
-                        </div>
-
-                        <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
-                            <Building className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
-                            <span className="text-gray-500 dark:text-gray-400">College / University</span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                                {team.College || teamLead?.College || 'Not available'}
-                            </span>
-                        </div>
-
-                        <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
-                            <Mail className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
-                            <span className="text-gray-500 dark:text-gray-400">Contact Email</span>
-                            <span className="font-medium text-gray-900 dark:text-white break-all">
-                                {teamLead?.Email || 'Not available'}
-                            </span>
-                        </div>
-
-                        <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
-                            <Layers className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
-                            <span className="text-gray-500 dark:text-gray-400">Mode</span>
-                            <span className="font-medium text-gray-900 dark:text-white capitalize">
-                                {team.ParticipationMode || 'General'}
-                            </span>
-                        </div>
-
-                        {/* Physical event only: Accommodation and Food */}
-                        {isPhysicalEvent && (
+                        {/* Webinar Specific Action Buttons */}
+                        {isWebinar ? (
                             <>
-                                <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
-                                    <BedDouble className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/admin/webinar/attendance')}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer"
+                                    title="Monitor delegate live stream attendance & check-ins"
+                                >
+                                    <CalendarCheck className="w-3.5 h-3.5" />
+                                    <span>Attendance Tracker</span>
+                                </button>
 
-                                    <span className="text-gray-500 dark:text-gray-400">
-                                        Accommodation
-                                    </span>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/admin/webinar/agenda')}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-950/30 hover:bg-emerald-900/40 text-emerald-300 font-bold text-xs shadow-md transition cursor-pointer"
+                                    title="View webinar keynote schedule & live stream details"
+                                >
+                                    <Radio className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>Keynote Agenda</span>
+                                </button>
 
-                                    <span className="font-medium text-emerald-600 dark:text-emerald-400 break-words">
-                                        {accommodationStatus || 'Not configured'}
-                                    </span>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/admin/webinar/resources')}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 font-bold text-xs shadow-md transition cursor-pointer"
+                                    title="View slide decks, replay links & shared handouts"
+                                >
+                                    <FileText className="w-3.5 h-3.5 text-zinc-400" />
+                                    <span>Resources</span>
+                                </button>
+                            </>
+                        ) : isWorkshop ? (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/admin/workshop/attendance')}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer"
+                                    title="Check attendee lab attendance"
+                                >
+                                    <CalendarCheck className="w-3.5 h-3.5" />
+                                    <span>Attendance Tracker</span>
+                                </button>
 
-                                <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
-                                    <Utensils className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
+                                <button
+                                    type="button"
+                                    onClick={() => navigate('/admin/workshop/agenda')}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-950/30 hover:bg-emerald-900/40 text-emerald-300 font-bold text-xs shadow-md transition cursor-pointer"
+                                    title="View workshop agenda & syllabus"
+                                >
+                                    <Presentation className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>Curriculum Agenda</span>
+                                </button>
 
-                                    <span className="text-gray-500 dark:text-gray-400">
-                                        Food
-                                    </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedMemberForId(teamLead || members[0])}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/25 transition cursor-pointer"
+                                    title="Download standard Attendee ID Pass"
+                                >
+                                    <IdCard className="w-3.5 h-3.5" />
+                                    <span>Download ID Card</span>
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                {/* Action 1: Download Team Card (Landscape Format) */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowTeamCardModal(true)}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer"
+                                    title="Generate and download official landscape Team Display Card"
+                                >
+                                    <IdCard className="w-3.5 h-3.5" />
+                                    <span>Download Team Card</span>
+                                </button>
 
-                                    <span className="font-medium text-emerald-600 dark:text-emerald-400 break-words">
-                                        {foodStatus || 'Not configured'}
-                                    </span>
-                                </div>
+                                {/* Action: Visual Designer for Team Card */}
+                                <button
+                                    type="button"
+                                    onClick={() => navigate(team?.EventId ? `/admin/team-card-designer?eventId=${team.EventId}` : '/admin/team-card-designer')}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-950/30 hover:bg-emerald-900/40 text-emerald-300 font-bold text-xs shadow-md transition cursor-pointer"
+                                    title="Open visual studio to design custom team card"
+                                >
+                                    <Palette className="w-3.5 h-3.5 text-emerald-400" />
+                                    <span>Design Card</span>
+                                </button>
+
+                                {/* Action 2: Download Member ID Passes (A6 Format) */}
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedMemberForId(teamLead || members[0])}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/25 transition cursor-pointer"
+                                    title="Download standard A6 Member ID Passes"
+                                >
+                                    <IdCard className="w-3.5 h-3.5" />
+                                    <span>Download ID Cards</span>
+                                </button>
                             </>
                         )}
-
-                        {problemStatement && (
-                            <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm pt-2">
-                                <Lightbulb className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
-                                <span className="text-gray-500 dark:text-gray-400">Problem Statement</span>
-                                <div className="space-y-1">
-                                    <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
-                                        <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400">
-                                            ID: {problemStatement.code ??'Not available'}
-                                        </span>
-                                        <span>{problemStatement.title || 'Untitled problem statement'}</span>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowProblemDetailsModal(true)}
-                                        className="text-xs text-slate-500 dark:text-zinc-400 block hover:text-emerald-600 dark:hover:text-emerald-400 transition font-medium cursor-pointer"
-                                    >
-                                        View Details
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-
-                        <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
-                            <Users className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
-                            <span className="text-gray-500 dark:text-gray-400">Team Size</span>
-                            <span className="font-medium text-gray-900 dark:text-white">
-                                {team.TeamSize || members.length} Members
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Event Information */}
-                <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
-                    <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 sm:mb-5">
-                        Registered Event
-                    </h2>
-
-                    <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg p-4 mb-4">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 mb-3 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                            <Lightbulb className="w-4 h-4" />
-                        </div>
-
-                        <div>
-                            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
-                                {team.EventName || 'Event'}
-                            </h3>
-
-                            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                                {team.Location
-                                    ? `Location: ${team.Location}`
-                                    : `Status: ${team.EventStatus || 'Active'}`}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300 pt-1">
-                        <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800">
-                            <span className="text-gray-400">Registration Status:</span>
-                            <span className="font-semibold text-emerald-600 dark:text-emerald-400 uppercase">
-                                {team.RegistrationStatus || 'Approved'}
-                            </span>
-                        </div>
-
-                        <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800">
-                            <span className="text-gray-400">State:</span>
-                            <span className="font-semibold text-gray-800 dark:text-gray-200">
-                                {team.State || 'Not available'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Team Lead Card */}
-                <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
-                    <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 sm:mb-5">
-                        Team Lead
-                    </h2>
-
-                    {teamLead ? (
-                        <>
-                            <div className="flex items-start gap-3 sm:gap-4 mb-5">
-                                {teamLead.Photo ? (
-                                    <img
-                                        src={teamLead.Photo}
-                                        alt={teamLead.UserName}
-                                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover shrink-0 border-2 border-emerald-500 shadow-md"
-                                    />
-                                ) : (
-                                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-700 dark:bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-md">
-                                        {getInitial(teamLead.UserName)}
-                                    </div>
-                                )}
-
-                                <div className="min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate">
-                                            {teamLead.UserName}
-                                        </h3>
-
-                                        <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500 px-2 py-0.5 rounded-full font-medium">
-                                            Leader
-                                        </span>
-                                    </div>
-
-                                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate mb-1">
-                                        {teamLead.Email}
-                                    </p>
-
-                                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
-                                        {teamLead.College || 'College not provided'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-black p-3 rounded-lg border border-gray-100 dark:border-zinc-800">
-                                <div>
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                        Gender
-                                    </p>
-                                    <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                        {teamLead.Gender || 'N/A'}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
-                                        Assigned Room
-                                    </p>
-                                    <p className="text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                                        {teamLead.RoomNumber ? `Room ${teamLead.RoomNumber}` : 'Not Allocated'}
-                                    </p>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <p className="text-xs text-gray-400">
-                            No lead assigned.
-                        </p>
-                    )}
-                </div>
-
-                {/* Team Members Table with Assigned Rooms & ID Pass buttons */}
-                <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1 lg:col-span-2 xl:col-span-3">
-                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4 sm:mb-5">
-                        <div>
-                            <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
-                                Team Members ({members.length})
-                            </h2>
-                            <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-                                Member profiles, hostel room allocations, and individual ID passes.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-xs sm:text-sm min-w-[700px]">
-                            <thead>
-                                <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
-                                    <th className="pb-3 font-medium">Member</th>
-                                    <th className="pb-3 font-medium">Role</th>
-                                    <th className="pb-3 font-medium">Gender</th>
-                                    <th className="pb-3 font-medium">Assigned Room</th>
-                                    <th className="pb-3 font-medium">College</th>
-                                    <th className="pb-3 font-medium">Email</th>
-                                    <th className="pb-3 font-medium text-right">Actions</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                {members.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="py-6 text-center text-xs text-gray-400">
-                                            No members found
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    members.map((member, i) => {
-                                        const isLead = (member.Role || '')
-                                            .toLowerCase()
-                                            .includes('lead');
-
-                                        return (
-                                            <tr
-                                                key={member.UserId ? `user-${member.UserId}` : member.TeamMemberId ? `tm-${member.TeamMemberId}` : `member-${i}`}
-                                                className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors"
-                                            >
-                                                <td className="py-3 sm:py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        {member.Photo ? (
-                                                            <img
-                                                                src={member.Photo}
-                                                                alt={member.UserName}
-                                                                className="w-8 h-8 rounded-full object-cover shrink-0 border border-emerald-500/40"
-                                                            />
-                                                        ) : (
-                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                                                                isLead
-                                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
-                                                                    : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300'
-                                                            }`}>
-                                                                {getInitial(member.UserName)}
-                                                            </div>
-                                                        )}
-
-                                                        <span className="font-semibold text-gray-900 dark:text-white">
-                                                            {member.UserName}
-                                                        </span>
-                                                    </div>
-                                                </td>
-
-                                                <td className="py-3 sm:py-4">
-                                                    <span className={`text-[10px] px-2.5 py-1 rounded-full font-medium ${
-                                                        isLead
-                                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
-                                                            : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400'
-                                                    }`}>
-                                                        {isLead ? 'Team Lead' : 'Member'}
-                                                    </span>
-                                                </td>
-
-                                                <td className="py-3 sm:py-4 text-gray-600 dark:text-gray-300">
-                                                    {member.Gender || 'Male'}
-                                                </td>
-
-                                                {/* Assigned Room Details */}
-                                                <td className="py-3 sm:py-4">
-                                                    {member.RoomNumber ? (
-                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
-                                                            <BedDouble className="w-3.5 h-3.5" />
-                                                            <span>Room {member.RoomNumber}</span>
-                                                            {member.BlockName && (
-                                                                <span className="text-[10px] opacity-75">({member.BlockName})</span>
-                                                            )}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                                            <span>Awaiting Room</span>
-                                                        </span>
-                                                    )}
-                                                </td>
-
-                                                <td className="py-3 sm:py-4 text-gray-600 dark:text-gray-300 font-medium">
-                                                    {member.College || 'N/A'}
-                                                </td>
-
-                                                <td className="py-3 sm:py-4 text-gray-500 dark:text-gray-400">
-                                                    {member.Email || 'N/A'}
-                                                </td>
-
-                                                {/* Actions: View / Download Member ID Pass */}
-                                                <td className="py-3 sm:py-4 text-right">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setSelectedMemberForId(member)}
-                                                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition cursor-pointer"
-                                                        title="Preview & download A6 ID card"
-                                                    >
-                                                        <IdCard className="w-3.5 h-3.5" />
-                                                        <span>ID Pass</span>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                )}
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
+
+            {/* Main Content Layout */}
+            {isWebinar ? (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+                    {/* Card 1: Delegate Profile */}
+                    <div className="bg-white dark:bg-black rounded-xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
+                        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100 dark:border-zinc-800">
+                            <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                                Delegate Profile
+                            </h2>
+                        </div>
+
+                        <div className="space-y-4 text-xs sm:text-sm">
+                            <div className="flex items-start justify-between">
+                                <span className="text-gray-500 dark:text-zinc-400">Delegate Name</span>
+                                <span className="font-semibold text-gray-900 dark:text-white text-right">
+                                    {teamLead?.UserName || team.TeamName}
+                                </span>
+                            </div>
+
+                            <div className="flex items-start justify-between">
+                                <span className="text-gray-500 dark:text-zinc-400">Contact Email</span>
+                                <span className="font-semibold text-gray-900 dark:text-white text-right break-all">
+                                    {teamLead?.Email || team.Email || 'Not specified'}
+                                </span>
+                            </div>
+
+                            <div className="flex items-start justify-between">
+                                <span className="text-gray-500 dark:text-zinc-400">College / Company</span>
+                                <span className="font-semibold text-gray-900 dark:text-white text-right">
+                                    {team.College || teamLead?.College || 'Independent Delegate'}
+                                </span>
+                            </div>
+
+                            <div className="flex items-start justify-between">
+                                <span className="text-gray-500 dark:text-zinc-400">Registration Mode</span>
+                                <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-right">
+                                    Virtual Live Stream
+                                </span>
+                            </div>
+
+                            <div className="flex items-start justify-between">
+                                <span className="text-gray-500 dark:text-zinc-400">Seat Type</span>
+                                <span className="font-semibold text-gray-900 dark:text-white text-right">
+                                    Solo Delegate Pass
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Card 2: Webinar Program */}
+                    <div className="bg-white dark:bg-black rounded-xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
+                        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100 dark:border-zinc-800">
+                            <Radio className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                                Enrolled Webinar
+                            </h2>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 mb-4">
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
+                                {team.EventName || adminData?.EventName || 'Interactive Live Webinar'}
+                            </h3>
+                            <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80 leading-relaxed">
+                                {team.Location ? `Broadcast Platform: ${team.Location}` : 'Virtual Broadcast Room with Interactive Q&A'}
+                            </p>
+                        </div>
+
+                        <div className="space-y-3 text-xs">
+                            <div className="flex justify-between py-1 border-b border-gray-100 dark:border-zinc-800">
+                                <span className="text-gray-400">Enrollment Status:</span>
+                                <span className="font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                                    {team.RegistrationStatus || 'Confirmed'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-gray-100 dark:border-zinc-800">
+                                <span className="text-gray-400">Pass Code:</span>
+                                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                    DEL-{team.Id}
+                                </span>
+                            </div>
+                            <div className="flex justify-between py-1">
+                                <span className="text-gray-400">Region:</span>
+                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                                    {team.State || 'Global Online'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Card 3: Webinar Management Shortcuts */}
+                    <div className="bg-white dark:bg-black rounded-xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1 flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100 dark:border-zinc-800">
+                                <Video className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                                    Webinar Hub Actions
+                                </h2>
+                            </div>
+
+                            <p className="text-xs text-gray-600 dark:text-zinc-400 mb-4 leading-relaxed">
+                                Direct administrative controls for this webinar's keynote schedule, speaker panel, and real-time attendance verification.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2.5">
+                            <button
+                                type="button"
+                                onClick={() => navigate('/admin/webinar/attendance')}
+                                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-semibold transition cursor-pointer"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <CalendarCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Track Live Check-ins</span>
+                                </span>
+                                <ArrowLeft className="w-3.5 h-3.5 rotate-180 opacity-70" />
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => navigate('/admin/webinar/agenda')}
+                                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-gray-50/80 dark:bg-zinc-900/60 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-800 dark:text-zinc-300 text-xs font-semibold transition cursor-pointer"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Radio className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Keynote Agenda & Schedule</span>
+                                </span>
+                                <ArrowLeft className="w-3.5 h-3.5 rotate-180 opacity-70" />
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => navigate('/admin/webinar/resources')}
+                                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-gray-50/80 dark:bg-zinc-900/60 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-800 dark:text-zinc-300 text-xs font-semibold transition cursor-pointer"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Manage Slide Decks & Replays</span>
+                                </span>
+                                <ArrowLeft className="w-3.5 h-3.5 rotate-180 opacity-70" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Full Width Delegate Credential Card */}
+                    <div className="bg-white dark:bg-black rounded-xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1 lg:col-span-3">
+                        <div className="flex flex-wrap items-center justify-between gap-4 mb-5 pb-4 border-b border-gray-100 dark:border-zinc-800">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                    <h2 className="text-base font-bold text-gray-900 dark:text-white">
+                                        Official Webinar Delegate Record
+                                    </h2>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                                    Confirmed delegate seat credentials and verified broadcast access permissions.
+                                </p>
+                            </div>
+                            <span className="text-xs px-3 py-1 rounded-full font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                Pass: DEL-{team.Id}
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800">
+                                <span className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Delegate Name</span>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">
+                                    {teamLead?.UserName || team.TeamName}
+                                </p>
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1 inline-block">Solo Delegate</span>
+                            </div>
+
+                            <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800">
+                                <span className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Email Address</span>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white mt-1 break-all">
+                                    {teamLead?.Email || team.Email || 'N/A'}
+                                </p>
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 inline-block">Broadcast Access Granted</span>
+                            </div>
+
+                            <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800">
+                                <span className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Affiliation</span>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white mt-1 truncate">
+                                    {team.College || teamLead?.College || 'Independent Delegate'}
+                                </p>
+                                <span className="text-[10px] text-gray-400 dark:text-zinc-500 mt-1 inline-block">
+                                    {team.State || 'Delegate'}
+                                </span>
+                            </div>
+
+                            <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800">
+                                <span className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Enrolled Date</span>
+                                <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">
+                                    {registeredDate}
+                                </p>
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1 inline-block">Registered</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 sm:gap-8">
+                    {/* Team Information Card */}
+                    <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
+                        <div className="flex items-center justify-between mb-4 sm:mb-5">
+                            <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                                {isWorkshop ? 'Attendee Information' : 'Team Information'}
+                            </h2>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
+                                <UserCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
+                                <span className="text-gray-500 dark:text-gray-400">{isWorkshop ? 'Attendee Name' : 'Team Leader'}</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {teamLead?.UserName || 'Not assigned'}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
+                                <Building className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
+                                <span className="text-gray-500 dark:text-gray-400">College / University</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {team.College || teamLead?.College || 'Not available'}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
+                                <Mail className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
+                                <span className="text-gray-500 dark:text-gray-400">Contact Email</span>
+                                <span className="font-medium text-gray-900 dark:text-white break-all">
+                                    {teamLead?.Email || 'Not available'}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
+                                <Layers className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
+                                <span className="text-gray-500 dark:text-gray-400">Mode</span>
+                                <span className="font-medium text-gray-900 dark:text-white capitalize">
+                                    {team.ParticipationMode || 'General'}
+                                </span>
+                            </div>
+
+                            {/* Physical event only: Accommodation and Food */}
+                            {isPhysicalEvent && (
+                                <>
+                                    <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
+                                        <BedDouble className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
+
+                                        <span className="text-gray-500 dark:text-gray-400">
+                                            Accommodation
+                                        </span>
+
+                                        <span className="font-medium text-emerald-600 dark:text-emerald-400 break-words">
+                                            {accommodationStatus || 'Not configured'}
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
+                                        <Utensils className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
+
+                                        <span className="text-gray-500 dark:text-gray-400">
+                                            Food
+                                        </span>
+
+                                        <span className="font-medium text-emerald-600 dark:text-emerald-400 break-words">
+                                            {foodStatus || 'Not configured'}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+
+                            {problemStatement && (
+                                <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm pt-2">
+                                    <Lightbulb className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
+                                    <span className="text-gray-500 dark:text-gray-400">Problem Statement</span>
+                                    <div className="space-y-1">
+                                        <div className="font-semibold text-gray-900 dark:text-white flex items-center gap-2 flex-wrap">
+                                            <span className="font-mono text-xs text-emerald-600 dark:text-emerald-400">
+                                                ID: {problemStatement.code ??'Not available'}
+                                            </span>
+                                            <span>{problemStatement.title || 'Untitled problem statement'}</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowProblemDetailsModal(true)}
+                                            className="text-xs text-slate-500 dark:text-zinc-400 block hover:text-emerald-600 dark:hover:text-emerald-400 transition font-medium cursor-pointer"
+                                        >
+                                            View Details
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
+                                <Users className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
+                                <span className="text-gray-500 dark:text-gray-400">{isIndividual ? 'Capacity' : 'Team Size'}</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                    {isIndividual ? 'Solo (1 Attendee)' : `${team.TeamSize || members.length} Members`}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Event Information */}
+                    <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
+                        <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 sm:mb-5">
+                            Registered Event
+                        </h2>
+
+                        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg p-4 mb-4">
+                            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 mb-3 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                <Lightbulb className="w-4 h-4" />
+                            </div>
+
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
+                                    {team.EventName || 'Event'}
+                                </h3>
+
+                                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                                    {team.Location
+                                        ? `Location: ${team.Location}`
+                                        : `Status: ${team.EventStatus || 'Active'}`}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300 pt-1">
+                            <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800">
+                                <span className="text-gray-400">Registration Status:</span>
+                                <span className="font-semibold text-emerald-600 dark:text-emerald-400 uppercase">
+                                    {team.RegistrationStatus || 'Approved'}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800">
+                                <span className="text-gray-400">State:</span>
+                                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                    {team.State || 'Not available'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Team Lead Card */}
+                    <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
+                        <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 sm:mb-5">
+                            {isWorkshop ? 'Attendee Profile' : 'Team Lead'}
+                        </h2>
+
+                        {teamLead ? (
+                            <>
+                                <div className="flex items-start gap-3 sm:gap-4 mb-5">
+                                    {teamLead.Photo ? (
+                                        <img
+                                            src={teamLead.Photo}
+                                            alt={teamLead.UserName}
+                                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover shrink-0 border-2 border-emerald-500 shadow-md"
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-700 dark:bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-md">
+                                            {getInitial(teamLead.UserName)}
+                                        </div>
+                                    )}
+
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate">
+                                                {teamLead.UserName}
+                                            </h3>
+
+                                            <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500 px-2 py-0.5 rounded-full font-medium">
+                                                {isWorkshop ? 'Attendee' : 'Leader'}
+                                            </span>
+                                        </div>
+
+                                        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate mb-1">
+                                            {teamLead.Email}
+                                        </p>
+
+                                        <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
+                                            {teamLead.College || 'College not provided'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-black p-3 rounded-lg border border-gray-100 dark:border-zinc-800">
+                                    <div>
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
+                                            Gender
+                                        </p>
+                                        <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                                            {teamLead.Gender || 'N/A'}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
+                                            {isPhysicalEvent ? 'Assigned Room' : 'Participation'}
+                                        </p>
+                                        <p className="text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                            {isPhysicalEvent
+                                                ? (teamLead.RoomNumber ? `Room ${teamLead.RoomNumber}` : 'Not Allocated')
+                                                : 'Confirmed'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <p className="text-xs text-gray-400">
+                                No profile available.
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Team Members Table with Assigned Rooms & ID Pass buttons */}
+                    <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1 lg:col-span-2 xl:col-span-3">
+                        <div className="flex flex-wrap items-center justify-between gap-4 mb-4 sm:mb-5">
+                            <div>
+                                <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                                    {isWorkshop ? 'Registered Attendees' : `Team Members (${members.length})`}
+                                </h2>
+                                <p className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
+                                    {isWorkshop
+                                        ? 'Attendee profile and individual pass details.'
+                                        : 'Member profiles, hostel room allocations, and individual ID passes.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs sm:text-sm min-w-[700px]">
+                                <thead>
+                                    <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
+                                        <th className="pb-3 font-medium">Participant</th>
+                                        <th className="pb-3 font-medium">Role</th>
+                                        <th className="pb-3 font-medium">Gender</th>
+                                        {isPhysicalEvent && <th className="pb-3 font-medium">Assigned Room</th>}
+                                        <th className="pb-3 font-medium">College</th>
+                                        <th className="pb-3 font-medium">Email</th>
+                                        <th className="pb-3 font-medium text-right">Actions</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {members.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={isPhysicalEvent ? 7 : 6} className="py-6 text-center text-xs text-gray-400">
+                                                No members found
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        members.map((member, i) => {
+                                            const isLead = (member.Role || '')
+                                                .toLowerCase()
+                                                .includes('lead');
+
+                                            return (
+                                                <tr
+                                                    key={member.UserId ? `user-${member.UserId}` : member.TeamMemberId ? `tm-${member.TeamMemberId}` : `member-${i}`}
+                                                    className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors"
+                                                >
+                                                    <td className="py-3 sm:py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            {member.Photo ? (
+                                                                <img
+                                                                    src={member.Photo}
+                                                                    alt={member.UserName}
+                                                                    className="w-8 h-8 rounded-full object-cover shrink-0 border border-emerald-500/40"
+                                                                />
+                                                            ) : (
+                                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                                                                    isLead
+                                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
+                                                                        : 'bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300'
+                                                                }`}>
+                                                                    {getInitial(member.UserName)}
+                                                                </div>
+                                                            )}
+
+                                                            <span className="font-semibold text-gray-900 dark:text-white">
+                                                                {member.UserName}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+
+                                                    <td className="py-3 sm:py-4">
+                                                        <span className={`text-[10px] px-2.5 py-1 rounded-full font-medium ${
+                                                            isLead
+                                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
+                                                                : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400'
+                                                        }`}>
+                                                            {isWorkshop ? 'Attendee' : isLead ? 'Team Lead' : 'Member'}
+                                                        </span>
+                                                    </td>
+
+                                                    <td className="py-3 sm:py-4 text-gray-600 dark:text-gray-300">
+                                                        {member.Gender || 'Male'}
+                                                    </td>
+
+                                                    {/* Assigned Room Details */}
+                                                    {isPhysicalEvent && (
+                                                        <td className="py-3 sm:py-4">
+                                                            {member.RoomNumber ? (
+                                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/40">
+                                                                    <BedDouble className="w-3.5 h-3.5" />
+                                                                    <span>Room {member.RoomNumber}</span>
+                                                                    {member.BlockName && (
+                                                                        <span className="text-[10px] opacity-75">({member.BlockName})</span>
+                                                                    )}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                                                    <span>Awaiting Room</span>
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    )}
+
+                                                    <td className="py-3 sm:py-4 text-gray-600 dark:text-gray-300 font-medium">
+                                                        {member.College || 'N/A'}
+                                                    </td>
+
+                                                    <td className="py-3 sm:py-4 text-gray-500 dark:text-gray-400">
+                                                        {member.Email || 'N/A'}
+                                                    </td>
+
+                                                    {/* Actions: View / Download Member ID Pass */}
+                                                    <td className="py-3 sm:py-4 text-right">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setSelectedMemberForId(member)}
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition cursor-pointer"
+                                                            title="Preview & download A6 ID card"
+                                                        >
+                                                            <IdCard className="w-3.5 h-3.5" />
+                                                            <span>ID Pass</span>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <AnimatePresence>
                 {showProblemDetailsModal && problemStatement && (
@@ -725,10 +1034,10 @@ function TeamDetails() {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="my-auto w-full max-w-2xl rounded-3xl bg-slate-950 border border-cyan-500/30 p-5 text-white shadow-2xl"
+                            className="my-auto w-full max-w-2xl rounded-3xl bg-slate-950 border border-emerald-500/30 p-5 text-white shadow-2xl"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="mb-4 flex items-center justify-between border-b border-cyan-500/20 pb-3">
+                            <div className="mb-4 flex items-center justify-between border-b border-emerald-500/20 pb-3">
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <IdCard className="w-4 h-4 text-emerald-400" />

@@ -43,7 +43,9 @@ import {
   Eye,
   EyeOff,
   Palette,
-  Code
+  Code,
+  Radio,
+  ExternalLink
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';
@@ -156,14 +158,16 @@ export default function AdminEventSettings() {
   });
 
   useEffect(() => {
-    if (typeInfo.isWorkshop) {
+    if (typeInfo.isWebinar) {
+      setActiveTab('webinar_config');
+    } else if (typeInfo.isWorkshop) {
       setActiveTab('workshop_config');
     } else if (isPhysicalMode) {
       setActiveTab('physical');
     } else if (isVirtualMode || isBothMode) {
       setActiveTab('virtual');
     }
-  }, [typeInfo.isWorkshop, isVirtualMode, isPhysicalMode, isBothMode]);
+  }, [typeInfo.isWebinar, typeInfo.isWorkshop, isVirtualMode, isPhysicalMode, isBothMode]);
 
   useEffect(() => {
     const handleEventUpdated = (e) => {
@@ -246,7 +250,9 @@ export default function AdminEventSettings() {
 
       setEventData(ev);
       const evType = getEventTypeInfo(ev.EventType);
-      if (evType.isWorkshop) {
+      if (evType.isWebinar) {
+        setActiveTab('webinar_config');
+      } else if (evType.isWorkshop) {
         setActiveTab('workshop_config');
       } else if (ev.HackathonMode === 'Physical') {
         setActiveTab('physical');
@@ -570,9 +576,15 @@ export default function AdminEventSettings() {
 
     const payload = { ...settingsForm };
 
-    // For workshops, team size is 1 (individual attendee)
-    if (typeInfo.isWorkshop) {
+    // For webinars and workshops, team size is 1 (individual delegate/attendee)
+    if (typeInfo.isWebinar || typeInfo.isWorkshop) {
       payload.TeamSize = '1';
+      if (typeInfo.isWebinar) {
+        payload.HackathonMode = 'Virtual';
+        if (!payload.Location || payload.Location.trim() === '') {
+          payload.Location = 'Virtual Live Broadcast Room';
+        }
+      }
       payload.RegistrationOpen = settingsForm.RegistrationOpen !== undefined ? settingsForm.RegistrationOpen : 1;
       payload.PhysicalRegistrationOpen = payload.RegistrationOpen;
       payload.VirtualRegistrationOpen = payload.RegistrationOpen;
@@ -648,7 +660,7 @@ export default function AdminEventSettings() {
   const renderCardBackgroundsSection = () => (
     <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold">
+        <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
           <Layers className="w-5 h-5" />
         </div>
         <div>
@@ -812,7 +824,7 @@ export default function AdminEventSettings() {
                   disabled={isSoloTeamSize(settingsForm.TeamSize)}
                   className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition shadow-sm ${
                     !isSoloTeamSize(settingsForm.TeamSize)
-                      ? 'border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 text-cyan-400 cursor-pointer'
+                      ? 'border-emerald-500/30 bg-emerald-950/20 hover:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 cursor-pointer'
                       : 'border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-850 text-slate-400 dark:text-zinc-600 cursor-not-allowed opacity-60'
                   }`}
                   title={
@@ -1139,7 +1151,34 @@ export default function AdminEventSettings() {
           {/* Seamless Navigation Tabs */}
           <div className="relative pt-2">
             <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto">
-              {(typeInfo.isWorkshop
+              {(typeInfo.isWebinar
+                ? [
+                    {
+                      id: 'webinar_config',
+                      label: 'Webinar & Live Broadcast',
+                      icon: Radio,
+                      status: settingsForm.VirtualStatus === 'LIVE' ? 'LIVE NOW' : (settingsForm.RegistrationOpen === 1 || settingsForm.VirtualRegistrationOpen === 1) ? 'Open' : 'Paused',
+                    },
+                    {
+                      id: 'keynote_settings',
+                      label: 'Keynotes & Delegate Guidelines',
+                      icon: FileText,
+                      status: null,
+                    },
+                    {
+                      id: 'sponsors',
+                      label: 'Sponsors & Partners',
+                      icon: Award,
+                      status: null,
+                    },
+                    {
+                      id: 'gallery',
+                      label: 'Webinar Gallery',
+                      icon: Camera,
+                      status: null,
+                    },
+                  ]
+                : typeInfo.isWorkshop
                 ? [
                     {
                       id: 'workshop_config',
@@ -1253,6 +1292,336 @@ export default function AdminEventSettings() {
 
             {/* Main Content Area */}
             <div className="bg-white dark:bg-black rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 space-y-6 relative z-0">
+              {/* WEBINAR CONFIG TAB */}
+              {activeTab === 'webinar_config' && (
+                <div className="space-y-6">
+                  {/* Webinar Header Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Radio className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Webinar Controls &amp; Live Broadcast Settings
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Manage live streaming room URL, broadcast readiness, delegate registrations, and official pass generation.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                        settingsForm.RegistrationOpen === 1
+                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                      }`}>
+                        {settingsForm.RegistrationOpen === 1 ? '• Registrations Open' : '• Registrations Paused'}
+                      </span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                        settingsForm.IsMeetActive === 1
+                          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 animate-pulse'
+                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                      }`}>
+                        {settingsForm.IsMeetActive === 1 ? '• Broadcast Live' : '• Standby'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Webinar Registration Controls Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Webinar Delegate Registration Availability</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xl">
+                          When paused, new delegates cannot register for this webinar keynote on the public portal.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextVal = settingsForm.RegistrationOpen === 1 ? 0 : 1;
+                          setSettingsForm((prev) => ({
+                            ...prev,
+                            RegistrationOpen: nextVal,
+                            PhysicalRegistrationOpen: nextVal,
+                            VirtualRegistrationOpen: nextVal
+                          }));
+                        }}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 shrink-0 ${
+                          settingsForm.RegistrationOpen === 1
+                            ? 'bg-white dark:bg-black hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+                        }`}
+                      >
+                        {settingsForm.RegistrationOpen === 1 ? (
+                          <>
+                            <Lock className="h-4 w-4" />
+                            <span>Pause Webinar Registrations</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="h-4 w-4" />
+                            <span>Resume / Open Registrations</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Registration Dates */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>From: Delegate Registration Start Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="RegistrationStart"
+                          value={settingsForm.RegistrationStart ? settingsForm.RegistrationStart.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>To: Delegate Registration Deadline Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="RegistrationEnd"
+                          value={settingsForm.RegistrationEnd ? settingsForm.RegistrationEnd.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Webinar Schedule Dates Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Webinar Broadcast Schedule</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Webinar Start Date *
+                        </label>
+                        <input
+                          type="date"
+                          name="StartDate"
+                          value={settingsForm.StartDate ? settingsForm.StartDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Webinar End Date *
+                        </label>
+                        <input
+                          type="date"
+                          name="EndDate"
+                          value={settingsForm.EndDate ? settingsForm.EndDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Live Stream Room Controls Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-zinc-800">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Video className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Live Broadcast Room &amp; Streaming URL</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xl">
+                          Broadcast channel link for confirmed delegates. Accepts YouTube Live, Zoom Webinar, Google Meet, or Microsoft Teams.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextVal = settingsForm.IsMeetActive === 1 ? 0 : 1;
+                          setSettingsForm((prev) => ({
+                            ...prev,
+                            IsMeetActive: nextVal
+                          }));
+                        }}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 shrink-0 ${
+                          settingsForm.IsMeetActive === 1
+                            ? 'bg-red-600 hover:bg-red-500 text-white shadow-md shadow-red-600/20'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+                        }`}
+                      >
+                        <Radio className="h-4 w-4" />
+                        <span>{settingsForm.IsMeetActive === 1 ? 'End Live Broadcast (Set Standby)' : 'Go Live / Broadcast On-Air'}</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center justify-between">
+                        <span>Live Stream / Meeting URL</span>
+                        {settingsForm.VirtualMeetUrl && (
+                          <a
+                            href={settingsForm.VirtualMeetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                          >
+                            <span>Test Live Broadcast Stream</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </label>
+                      <input
+                        type="url"
+                        name="VirtualMeetUrl"
+                        placeholder="https://meet.google.com/xxx-xxxx-xxx or https://youtube.com/live/..."
+                        value={settingsForm.VirtualMeetUrl || ''}
+                        onChange={handleInputChange}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-mono"
+                      />
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                        This URL will be accessible to registered delegates in their dashboard and verified digital pass when the broadcast goes live.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* ID Card Pass Toggle */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Digital Delegate Pass &amp; Certificate Eligibility</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Allow registered delegates to generate their verified digital webinar pass with security QR code.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggle('IDCardEnabled')}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer ${
+                          settingsForm.IDCardEnabled === 1
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-white dark:bg-black text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700'
+                        }`}
+                      >
+                        {settingsForm.IDCardEnabled === 1 ? '• Delegate Pass Enabled' : 'Delegate Pass Disabled'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* KEYNOTE SETTINGS TAB */}
+              {activeTab === 'keynote_settings' && (
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <FileText className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Keynote Overview, Syllabus &amp; Speaker Synopsis
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Set the webinar topic description, speaker highlights, agenda chapters, and technical joining guidelines.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Webinar Title & Overview */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                        Webinar / Keynote Session Title *
+                      </label>
+                      <input
+                        type="text"
+                        name="EventName"
+                        placeholder="e.g. Next-Gen Generative AI in Production: Architecture, Scalability & Safety"
+                        value={settingsForm.EventName || ''}
+                        onChange={handleInputChange}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-bold"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                        Webinar Overview &amp; Abstract *
+                      </label>
+                      <textarea
+                        name="Description"
+                        rows={4}
+                        placeholder="Provide an engaging overview of the keynote, featured insights, and who will benefit most from attending..."
+                        value={settingsForm.Description || ''}
+                        onChange={handleInputChange}
+                        className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Keynote Highlights & Agenda */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Keynote Highlights, Agenda &amp; Speaker Details</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Break down keynote topics, featured industry speakers, agenda timeline, and delegate takeaways.
+                    </p>
+                    <textarea
+                      name="Highlights"
+                      rows={5}
+                      placeholder="e.g.&#10;• Keynote Address by Leading Industry Experts&#10;• Live Demonstrations &amp; Real-World Case Studies&#10;• Framework Comparison &amp; Production Best Practices&#10;• Moderated Audience Q&amp;A Session"
+                      value={settingsForm.Highlights || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+
+                  {/* Joining Guidelines & Technical Requirements */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Delegate Joining Guidelines &amp; Technical Requirements</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Specify browser compatibility, audio recommendations, live interaction rules, and certificate criteria.
+                    </p>
+                    <textarea
+                      name="Facilities"
+                      rows={4}
+                      placeholder="e.g.&#10;• High-speed internet connection (minimum 5 Mbps recommended)&#10;• Supported browsers: Google Chrome, Mozilla Firefox, Microsoft Edge, Safari&#10;• Use headphones/earphones for optimal keynote audio clarity&#10;• Questions can be submitted live in the Q&amp;A stream panel"
+                      value={settingsForm.Facilities || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* WORKSHOP CONFIG TAB */}
               {activeTab === 'workshop_config' && (
                 <div className="space-y-6">

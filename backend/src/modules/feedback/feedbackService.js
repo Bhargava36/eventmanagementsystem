@@ -101,10 +101,19 @@ const getFeedbackByEvent = (eventId, callback) => {
     });
 };
 
+const deleteFeedback = (id, callback) => {
+    const query = `DELETE FROM feedback WHERE Id = ?`;
+    db.query(query, [id], (err, result) => {
+        if (err) return callback(err, null);
+        callback(null, result);
+    });
+};
+
 module.exports = {
     createFeedback,
     getAllFeedback,
     getFeedbackByAdmin,
     getFeedbackByEvent,
-    getFeedbackById
+    getFeedbackById,
+    deleteFeedback
 };

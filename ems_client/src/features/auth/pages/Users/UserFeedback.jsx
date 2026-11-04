@@ -93,6 +93,9 @@ export default function UserFeedback() {
 
   const eventCategories = [
     'Event Organization',
+    'Keynote & Speaker Insights',
+    'Live Stream Audio & Video Clarity',
+    'Slide Decks & Learning Resources',
     'Judging & Mentorship',
     'Facilities & Venue',
     'Problem Statements',
@@ -116,7 +119,7 @@ export default function UserFeedback() {
               </span>
             </div>
             <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm mt-1">
-              Share your experience and feedback for hackathons and competitions with their organizers.
+              Share your experience and feedback for webinars, workshops, hackathons and competitions with their organizers.
             </p>
           </div>
         </div>

@@ -42,8 +42,11 @@ import {
   GraduationCap,
   Laptop,
   Video,
-  Presentation
+  Presentation,
+  Mic,
+  CalendarPlus
 } from 'lucide-react';
+import { buildGoogleCalendarUrl } from '../../../lib/calendarUtils';
 
 
 
@@ -436,8 +439,10 @@ function PublicEventDetails() {
         }
 
         const isWorkshopEvent = (evData.event?.EventType || '').toLowerCase().includes('workshop');
-        if (isWorkshopEvent) {
-          fetch(`${API_BASE_URL}/api/workshops/${id}/sessions`)
+        const isWebinarEvent = (evData.event?.EventType || '').toLowerCase().includes('webinar');
+        if (isWorkshopEvent || isWebinarEvent) {
+          const apiPrefix = isWebinarEvent ? 'webinars' : 'workshops';
+          fetch(`${API_BASE_URL}/api/${apiPrefix}/${id}/sessions`)
             .then((r) => r.json())
             .then((sData) => {
               if (sData?.sessions) setWorkshopSessions(sData.sessions);
@@ -811,6 +816,24 @@ function PublicEventDetails() {
           </div>
 
           <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => {
+                const url = buildGoogleCalendarUrl({
+                  title: event.EventName,
+                  description: event.Description,
+                  location: event.Location || 'Virtual Live Stream',
+                  startDate: event.StartDate,
+                  endDate: event.EndDate
+                });
+                window.open(url, '_blank');
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-xs font-semibold text-slate-700 dark:text-zinc-300 transition-all shadow-sm cursor-pointer hover:border-emerald-500/40"
+              title="Add to Google Calendar"
+            >
+              <CalendarPlus className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Add to Calendar</span>
+            </button>
+
             <button
               onClick={handleShare}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-xs font-semibold text-slate-700 dark:text-zinc-300 transition-all shadow-sm cursor-pointer hover:border-zinc-700"
@@ -1269,7 +1292,7 @@ function PublicEventDetails() {
               <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-zinc-800/80">
                 <FileText className="h-5 w-5" style={{ color: eventTheme.accent }} />
                 <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                  {eventTypeInfo.isWorkshop ? 'About this Workshop' : 'About the Challenge'}
+                  {eventTypeInfo.isWebinar ? 'About this Webinar' : eventTypeInfo.isWorkshop ? 'About this Workshop' : 'About the Challenge'}
                 </h2>
               </div>
               <div className="text-slate-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed whitespace-pre-line space-y-3">
@@ -1277,27 +1300,29 @@ function PublicEventDetails() {
               </div>
             </div>
 
-            {eventTypeInfo.isWorkshop ? (
+            {(eventTypeInfo.isWorkshop || eventTypeInfo.isWebinar) ? (
               <div className="space-y-8">
-                {/* Workshop Curriculum & Modules */}
+                {/* Workshop / Webinar Curriculum & Agenda */}
                 <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800/80">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-2xl" style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}>
-                        <GraduationCap className="h-5 w-5" />
+                        {eventTypeInfo.isWebinar ? <Radio className="h-5 w-5" /> : <GraduationCap className="h-5 w-5" />}
                       </div>
                       <div>
                         <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                          Workshop Curriculum & Hands-on Agenda
+                          {eventTypeInfo.isWebinar ? 'Webinar Keynote Agenda & Schedule' : 'Workshop Curriculum & Hands-on Agenda'}
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                          Step-by-step interactive sessions, code-along labs, and live instructor demos
+                          {eventTypeInfo.isWebinar
+                            ? 'Live streaming schedule, distinguished keynote sessions, and panel discussions'
+                            : 'Step-by-step interactive sessions, code-along labs, and live instructor demos'}
                         </p>
                       </div>
                     </div>
                     {workshopSessions.length > 0 && (
                       <span className="self-start sm:self-auto px-3 py-1 rounded-lg text-xs font-bold border" style={{ backgroundColor: eventTheme.badgeBg, borderColor: eventTheme.badgeBorder, color: eventTheme.badgeText }}>
-                        {workshopSessions.length} Modules Planned
+                        {workshopSessions.length} {eventTypeInfo.isWebinar ? 'Keynotes Planned' : 'Modules Planned'}
                       </span>
                     )}
                   </div>
@@ -1310,15 +1335,15 @@ function PublicEventDetails() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.25, delay: idx * 0.05 }}
-                          className="p-5 rounded-2xl border border-slate-200/90 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950 hover:border-emerald-500/40 transition-all group"
+                          className="p-5 rounded-2xl border bg-slate-50/70 dark:bg-zinc-950 transition-all group border-slate-200/90 dark:border-zinc-800 hover:border-emerald-500/40"
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="flex items-start gap-3">
-                              <span className="w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0 mt-0.5 sm:mt-0">
+                              <span className="w-8 h-8 rounded-xl flex items-center justify-center font-mono font-bold text-xs shrink-0 mt-0.5 sm:mt-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                 {idx + 1}
                               </span>
                               <div>
-                                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white transition-colors group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
                                   {session.title || session.Title || `Session ${idx + 1}`}
                                 </h4>
                                 {session.description && (
@@ -1336,7 +1361,7 @@ function PublicEventDetails() {
                                 </span>
                               )}
                               <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                {session.speaker_name ? `By ${session.speaker_name}` : 'Hands-on Lab'}
+                                {session.speaker_name ? `By ${session.speaker_name}` : eventTypeInfo.isWebinar ? 'Keynote Talk' : 'Hands-on Lab'}
                               </span>
                             </div>
                           </div>
@@ -1347,10 +1372,12 @@ function PublicEventDetails() {
                     <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/40 dark:bg-zinc-950/40">
                       <Presentation className="h-10 w-10 mx-auto text-slate-400 dark:text-zinc-600 stroke-[1.5]" />
                       <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
-                        Interactive Modules & Lab Syllabus Coming Soon
+                        {eventTypeInfo.isWebinar ? 'Keynote Agenda & Speaker Topics Coming Soon' : 'Interactive Modules & Lab Syllabus Coming Soon'}
                       </h4>
                       <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
-                        The workshop instructors are finalizing the code-along topics, starter repositories, and module timelines. Check back shortly!
+                        {eventTypeInfo.isWebinar
+                          ? 'The webinar organizers are finalizing the keynote topics, live stream links, and speaker timelines. Check back shortly!'
+                          : 'The workshop instructors are finalizing the code-along topics, starter repositories, and module timelines. Check back shortly!'}
                       </p>
                     </div>
                   )}
@@ -1822,18 +1849,26 @@ function PublicEventDetails() {
               eventTheme={eventTheme}
             />
 
-            {(coreTeam.length > 0 || eventTypeInfo.isWorkshop) && (
+            {(coreTeam.length > 0 || eventTypeInfo.isWorkshop || eventTypeInfo.isWebinar) && (
               <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800/80">
                   <div className="flex items-center gap-2.5">
-                    <GraduationCap className="h-5 w-5" style={{ color: eventTheme.accent }} />
+                    {eventTypeInfo.isWebinar ? (
+                      <Mic className="h-5 w-5" style={{ color: eventTheme.accent }} />
+                    ) : (
+                      <GraduationCap className="h-5 w-5" style={{ color: eventTheme.accent }} />
+                    )}
                     <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                      {eventTypeInfo.isWorkshop ? 'Workshop Instructors & Tech Mentors' : 'Organizing Committee & Leads'}
+                      {eventTypeInfo.isWebinar
+                        ? 'Keynote Speakers & Distinguished Panel'
+                        : eventTypeInfo.isWorkshop
+                        ? 'Workshop Instructors & Tech Mentors'
+                        : 'Organizing Committee & Leads'}
                     </h2>
                   </div>
-                  {eventTypeInfo.isWorkshop && coreTeam.length > 0 && (
+                  {coreTeam.length > 0 && (eventTypeInfo.isWorkshop || eventTypeInfo.isWebinar) && (
                     <span className="px-3 py-1 rounded-lg text-xs font-bold border" style={{ backgroundColor: eventTheme.badgeBg, borderColor: eventTheme.badgeBorder, color: eventTheme.badgeText }}>
-                      {coreTeam.length} Mentors
+                      {coreTeam.length} {eventTypeInfo.isWebinar ? 'Keynote Speakers' : 'Mentors'}
                     </span>
                   )}
                 </div>
@@ -1846,7 +1881,9 @@ function PublicEventDetails() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2, delay: idx * 0.04 }}
-                        className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3.5 hover:border-emerald-500/30 transition-colors"
+                        className={`p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3.5 transition-colors ${
+                          'hover:border-emerald-500/30'
+                        }`}
                       >
                         {member.Photo ? (
                           <img
@@ -1859,7 +1896,7 @@ function PublicEventDetails() {
                             className="w-13 h-13 rounded-xl flex items-center justify-center font-bold text-base shrink-0"
                             style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}
                           >
-                            {(member.Name || 'I').charAt(0).toUpperCase()}
+                            {(member.Name || 'S').charAt(0).toUpperCase()}
                           </div>
                         )}
 
@@ -1867,8 +1904,8 @@ function PublicEventDetails() {
                           <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                             {member.Name}
                           </h4>
-                          <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            {member.Role || 'Instructor'}
+                          <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                            {member.Role || (eventTypeInfo.isWebinar ? 'Keynote Speaker' : 'Instructor')}
                           </span>
                           {member.Department && (
                             <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-1">
@@ -1881,12 +1918,18 @@ function PublicEventDetails() {
                   </div>
                 ) : (
                   <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/40 dark:bg-zinc-950/40">
-                    <GraduationCap className="h-10 w-10 mx-auto text-emerald-500/60 stroke-[1.5]" />
+                    {eventTypeInfo.isWebinar ? (
+                      <Mic className="h-10 w-10 mx-auto text-emerald-500/60 stroke-[1.5]" />
+                    ) : (
+                      <GraduationCap className="h-10 w-10 mx-auto text-emerald-500/60 stroke-[1.5]" />
+                    )}
                     <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
-                      Workshop Instructors &amp; Mentors Announcing Soon
+                      {eventTypeInfo.isWebinar ? 'Keynote Speakers & Panel Announcing Soon' : 'Workshop Instructors & Mentors Announcing Soon'}
                     </h4>
                     <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
-                      The organizing department and lead trainers are finalizing the curriculum faculty and lab assistants. All instructor credentials will appear here shortly.
+                      {eventTypeInfo.isWebinar
+                        ? 'The organizing team is confirming distinguished industry leaders, researchers, and panel guests. Speaker profiles will appear here shortly.'
+                        : 'The organizing department and lead trainers are finalizing the curriculum faculty and lab assistants. All instructor credentials will appear here shortly.'}
                     </p>
                   </div>
                 )}
@@ -1902,14 +1945,14 @@ function PublicEventDetails() {
                   Participation Details
                 </span>
                 <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">
-                  {eventTypeInfo.isWorkshop ? 'Ready to Learn?' : 'Ready to Build?'}
+                  {eventTypeInfo.isWebinar ? 'Reserve Your Seat' : eventTypeInfo.isWorkshop ? 'Ready to Learn?' : 'Ready to Build?'}
                 </h3>
               </div>
 
               <div className="space-y-3.5 text-xs text-slate-700 dark:text-zinc-300">
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                  <span className="text-slate-500 dark:text-zinc-400">{eventTypeInfo.isWorkshop ? 'Seat Type' : 'Allowed Team Size'}</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{eventTypeInfo.isWorkshop ? 'Solo Participant (1 Seat)' : `${event.TeamSize || 'Flexible'} Members`}</span>
+                  <span className="text-slate-500 dark:text-zinc-400">{eventTypeInfo.isSessionBased ? 'Seat Type' : 'Allowed Team Size'}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{eventTypeInfo.isWebinar ? 'Solo Delegate Pass (1 Seat)' : eventTypeInfo.isWorkshop ? 'Solo Participant (1 Seat)' : `${event.TeamSize || 'Flexible'} Members`}</span>
                 </div>
 
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">

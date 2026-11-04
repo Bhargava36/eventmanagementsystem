@@ -16,9 +16,12 @@ import {
   Clock,
   GraduationCap,
   ScrollText,
-  Award
+  Award,
+  Radio,
+  Presentation,
+  Video
 } from 'lucide-react';
-import { isSoloTeamSize } from '../../../../lib/utils';
+import { isSoloTeamSize, getEventTypeInfo } from '../../../../lib/utils';
 
 /* ── dot-pulse keyframes ── */
 const DotStyle = () => (
@@ -202,7 +205,9 @@ export default function UserDashboard() {
                 const isLead = (team.Role || '').toLowerCase().includes('lead');
                 const matchedEvent = events.find(e => Number(e.Id) === Number(team.EventId));
                 const rawType = (team.EventType || matchedEvent?.EventType || '').trim();
-                const isWorkshop = rawType.toLowerCase().includes('workshop');
+                const typeInfo = getEventTypeInfo(rawType);
+                const isWorkshop = typeInfo.isWorkshop;
+                const isWebinar = typeInfo.isWebinar;
                 const eventTypeBadge = rawType || 'Hackathon';
 
                 return (
@@ -219,11 +224,7 @@ export default function UserDashboard() {
                         <StatusBadge status={team.RegistrationStatus ?? ''} />
                         {/* Event Type Badge - Rectangular, no pill */}
                         <span
-                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${
-                            isWorkshop
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                              : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
-                          }`}
+                          className="px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
                         >
                           {eventTypeBadge}
                         </span>
@@ -233,10 +234,15 @@ export default function UserDashboard() {
 
                     <div className="space-y-1">
                       <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
-                        {team.EventName || (isWorkshop ? 'Workshop Program' : 'Event Workspace')}
+                        {team.EventName || (isWebinar ? 'Live Webinar Session' : isWorkshop ? 'Workshop Program' : 'Event Workspace')}
                       </h3>
 
-                      {isWorkshop ? (
+                      {isWebinar ? (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
+                          <Radio className="h-3.5 w-3.5 shrink-0" />
+                          <span>Individual Delegate Seat ({user?.UserName || 'Enrolled'})</span>
+                        </p>
+                      ) : isWorkshop ? (
                         <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1.5">
                           <GraduationCap className="h-3.5 w-3.5 shrink-0" />
                           <span>Individual Attendee Seat ({user?.UserName || 'Enrolled'})</span>
@@ -256,7 +262,7 @@ export default function UserDashboard() {
 
                     {(team.StartDate || team.EndDate) && (
                       <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-xs text-slate-600 dark:text-zinc-400">
-                        <Calendar className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        <Calendar className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
                         <span className="font-medium font-mono text-[11px]">{fmt(team.StartDate)} – {fmt(team.EndDate)}</span>
                       </div>
                     )}
@@ -265,9 +271,9 @@ export default function UserDashboard() {
                       <button
                         type="button"
                         onClick={() => navigate(`/user/teamInfo/${team.TeamId}`)}
-                        className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer"
+                        className="flex-1 py-2 px-3 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer bg-emerald-600 hover:bg-emerald-500"
                       >
-                        <span>{isWorkshop ? 'Workshop Hub' : 'Team Workspace'}</span>
+                        <span>{isWebinar ? 'Webinar Hub' : isWorkshop ? 'Workshop Hub' : 'Team Workspace'}</span>
                         <ArrowRight className="h-3.5 w-3.5" />
                       </button>
                       <button

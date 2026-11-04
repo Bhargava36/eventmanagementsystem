@@ -189,10 +189,31 @@ function EventsDashboard() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    setFormData((previousData) => ({
-      ...previousData,
-      [name]: value
-    }));
+    setFormData((previousData) => {
+      const next = {
+        ...previousData,
+        [name]: value
+      };
+
+      if (name === 'EventType') {
+        const lower = String(value || '').toLowerCase();
+        if (lower.includes('webinar')) {
+          next.TeamSize = '1';
+          if (!next.HackathonMode || next.HackathonMode === 'Physical') {
+            next.HackathonMode = 'Virtual';
+          }
+          if (!next.Location || next.Location === 'TBD' || next.Location === '-') {
+            next.Location = 'Virtual Live Broadcast Room';
+          }
+        } else if (lower.includes('workshop')) {
+          if (!next.TeamSize || next.TeamSize === '2-4') {
+            next.TeamSize = '1';
+          }
+        }
+      }
+
+      return next;
+    });
   };
 
   const compressImage = (file) => {
@@ -1164,11 +1185,20 @@ function EventsDashboard() {
                             <option value="Hackathon">
                               Hackathon
                             </option>
+                            <option value="Webinar">
+                              Webinar (Keynotes, Panels & Virtual Broadcasts)
+                            </option>
                             <option value="Workshop">
-                              Workshop
+                              Workshop (Curriculum & Hands-on Labs)
+                            </option>
+                            <option value="Seminar">
+                              Seminar
                             </option>
                             <option value="Conference">
                               Conference
+                            </option>
+                            <option value="Coding Contest">
+                              Coding Contest
                             </option>
                             <option value="Tech Fest">
                               Tech Fest
@@ -1214,6 +1244,16 @@ function EventsDashboard() {
                               <span>Team</span>
                             </button>
                           </div>
+                          {formData.EventType === 'Webinar' && (
+                            <p className="text-[11px] text-cyan-600 dark:text-cyan-400 mt-1 font-medium">
+                              Note: Webinar participants enroll as Individual / Solo delegates.
+                            </p>
+                          )}
+                          {formData.EventType === 'Workshop' && (
+                            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 font-medium">
+                              Note: Workshop participants typically enroll as Individual / Solo attendees.
+                            </p>
+                          )}
                         </div>
                       </div>
 

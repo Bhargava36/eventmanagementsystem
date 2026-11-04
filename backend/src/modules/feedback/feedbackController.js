@@ -125,10 +125,31 @@ const getFeedbackByEvent = (req, res) => {
     });
 };
 
+const deleteFeedback = (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({
+            message: 'Invalid feedback ID'
+        });
+    }
+    feedbackService.deleteFeedback(id, (err, result) => {
+        if (err) {
+            console.error('Delete feedback error:', err);
+            return res.status(500).json({
+                message: 'Failed to delete feedback'
+            });
+        }
+        return res.status(200).json({
+            message: 'Feedback deleted successfully'
+        });
+    });
+};
+
 module.exports = {
     createFeedback,
     getAllFeedback,
     getFeedbackByAdmin,
     getFeedbackByEvent,
-    getFeedbackById
+    getFeedbackById,
+    deleteFeedback
 };

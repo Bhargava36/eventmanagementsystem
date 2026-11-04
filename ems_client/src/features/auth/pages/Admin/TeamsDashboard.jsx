@@ -13,7 +13,8 @@ import {
     MapPin,
     Layers,
     GraduationCap,
-    User
+    User,
+    Radio
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getTrackVisibility, isSoloTeamSize, getEventTypeInfo } from '../../../../lib/utils';
@@ -37,7 +38,7 @@ function TeamsDashboard() {
     const [activeTab, setActiveTab] = useState('all');
 
     const typeInfo = getEventTypeInfo(storedAdmin?.EventType);
-    const isSolo = isSoloTeamSize(storedAdmin?.TeamSize) || typeInfo.isWorkshop || typeInfo.isSeminar || (teams.length > 0 && teams.every((t) => Number(t.MemberCount || t.MembersCount || t.TeamSize || 1) === 1));
+    const isSolo = isSoloTeamSize(storedAdmin?.TeamSize) || typeInfo.isWorkshop || typeInfo.isSeminar || typeInfo.isWebinar || (teams.length > 0 && teams.every((t) => Number(t.MemberCount || t.MembersCount || t.TeamSize || 1) === 1));
 
     useEffect(() => {
         const init = async () => {
@@ -152,7 +153,7 @@ function TeamsDashboard() {
     const tabs = [
         {
             id: 'all',
-            label: isSolo ? 'All Attendees' : 'All Teams',
+            label: typeInfo.isWebinar ? 'All Delegates' : isSolo ? 'All Attendees' : 'All Teams',
             count: totalTeams,
             icon: Layers
         },
@@ -160,7 +161,7 @@ function TeamsDashboard() {
             ? [
                 {
                     id: 'virtual',
-                    label: typeInfo.isWorkshop ? 'Online Attendees' : 'Virtual Track',
+                    label: typeInfo.isWebinar ? 'Live Stream Access' : typeInfo.isWorkshop ? 'Online Attendees' : 'Virtual Track',
                     count: virtualCount,
                     icon: Globe
                 }
@@ -188,10 +189,12 @@ function TeamsDashboard() {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 sm:mb-8">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                        {isSolo ? 'Registered Attendees' : 'Registered Teams'}
+                        {typeInfo.isWebinar ? 'Registered Webinar Delegates' : isSolo ? 'Registered Attendees' : 'Registered Teams'}
                     </h1>
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {isSolo
+                        {typeInfo.isWebinar
+                            ? 'Track, filter, and manage confirmed webinar delegates, digital pass credentials, and live stream access.'
+                            : isSolo
                             ? `Track, filter and manage individual ${typeInfo.label.toLowerCase()} attendee registrations.`
                             : `Track, filter and manage virtual and physical ${typeInfo.label.toLowerCase()} registrations.`}
                     </p>
@@ -202,7 +205,7 @@ function TeamsDashboard() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
-                            placeholder={isSolo ? "Search attendee name, email, college..." : "Search teams or leaders..."}
+                            placeholder={typeInfo.isWebinar ? "Search delegate by name, email, pass ID, org..." : isSolo ? "Search attendee name, email, college..." : "Search teams or leaders..."}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full sm:w-64 pl-10 pr-4 py-2 bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500 shadow-sm"
@@ -237,7 +240,7 @@ function TeamsDashboard() {
                     <div className="flex items-start justify-between">
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                {isSolo ? 'Total Attendees' : 'Total Teams'}
+                                {typeInfo.isWebinar ? 'Total Delegates' : isSolo ? 'Total Attendees' : 'Total Teams'}
                             </p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                                 {totalTeams}
@@ -248,7 +251,7 @@ function TeamsDashboard() {
                         </div>
                     </div>
                     <p className="text-xs text-emerald-700 dark:text-emerald-500 mt-3 font-medium">
-                        All registrations
+                        {typeInfo.isWebinar ? 'Registered delegates' : 'All registrations'}
                     </p>
                 </motion.div>
 
@@ -263,7 +266,7 @@ function TeamsDashboard() {
                         <div className="flex items-start justify-between">
                             <div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                    Virtual Track
+                                    {typeInfo.isWebinar ? 'Live Stream Access' : 'Virtual Track'}
                                 </p>
                                 <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
                                     {virtualCount}
@@ -274,7 +277,7 @@ function TeamsDashboard() {
                             </div>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-                            Online participants
+                            {typeInfo.isWebinar ? 'Virtual stream delegates' : 'Online participants'}
                         </p>
                     </motion.div>
                 )}
@@ -290,7 +293,7 @@ function TeamsDashboard() {
                         <div className="flex items-start justify-between">
                             <div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                    Physical Track
+                                    {typeInfo.isWorkshop ? 'In-Person Lab' : 'Physical Track'}
                                 </p>
                                 <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
                                     {physicalCount}
@@ -316,7 +319,7 @@ function TeamsDashboard() {
                     <div className="flex items-start justify-between">
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                                Total Members
+                                {typeInfo.isWebinar ? 'Confirmed Seats' : isSolo ? 'Total Registrations' : 'Total Members'}
                             </p>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
                                 {totalMembers}
@@ -327,7 +330,7 @@ function TeamsDashboard() {
                         </div>
                     </div>
                     <p className="text-xs text-emerald-700 dark:text-emerald-500 mt-3">
-                        Across all teams
+                        {typeInfo.isWebinar ? 'Live stream passes issued' : isSolo ? 'Registered attendees' : 'Across all teams'}
                     </p>
                 </motion.div>
             </div>
@@ -392,13 +395,13 @@ function TeamsDashboard() {
                         <div className="flex items-center gap-2">
                             <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                                 {activeTab === 'virtual'
-                                    ? (typeInfo.isWorkshop ? 'Online Workshop Attendees' : 'Virtual Track Registrations')
+                                    ? (typeInfo.isWebinar ? 'Live Stream Delegates' : typeInfo.isWorkshop ? 'Online Workshop Attendees' : 'Virtual Track Registrations')
                                     : activeTab === 'physical'
                                     ? (typeInfo.isWorkshop ? 'In-Person Lab Attendees' : 'Physical Track Registrations')
-                                    : (isSolo ? 'All Registered Attendees' : 'All Registered Teams')}
+                                    : (typeInfo.isWebinar ? 'All Registered Delegates' : isSolo ? 'All Registered Attendees' : 'All Registered Teams')}
                             </h2>
                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                                ({filteredTeams.length} {filteredTeams.length === 1 ? (isSolo ? 'attendee' : 'team') : (isSolo ? 'attendees' : 'teams')})
+                                ({filteredTeams.length} {filteredTeams.length === 1 ? (typeInfo.isWebinar ? 'delegate' : isSolo ? 'attendee' : 'team') : (typeInfo.isWebinar ? 'delegates' : isSolo ? 'attendees' : 'teams')})
                             </span>
                         </div>
 
@@ -407,7 +410,7 @@ function TeamsDashboard() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder="Filter by name, lead, college..."
+                                    placeholder={typeInfo.isWebinar ? "Filter delegates..." : "Filter by name, lead, college..."}
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     className="w-full sm:w-60 pl-9 pr-4 py-1.5 sm:py-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500"
@@ -433,16 +436,16 @@ function TeamsDashboard() {
                                         #
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
-                                        {isSolo ? 'Attendee Details' : 'Team Details'}
+                                        {typeInfo.isWebinar ? 'Delegate Details' : isSolo ? 'Attendee Details' : 'Team Details'}
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
                                         Track
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
-                                        {isSolo ? 'Contact Details' : 'Team Leader'}
+                                        {typeInfo.isWebinar ? 'Delegate Contact' : isSolo ? 'Contact Details' : 'Team Leader'}
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold text-center">
-                                        {isSolo ? 'Format' : 'Members'}
+                                        {typeInfo.isWebinar ? 'Pass Type' : isSolo ? 'Format' : 'Members'}
                                     </th>
                                     <th className="px-4 py-3 sm:py-4 font-semibold">
                                         Registered On
@@ -529,7 +532,7 @@ function TeamsDashboard() {
                                                 <td className="px-4 py-3 sm:py-4">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0 bg-emerald-700 dark:bg-emerald-500">
-                                                            {typeInfo.isWorkshop ? <GraduationCap className="w-4 h-4" /> : isSolo ? <User className="w-4 h-4" /> : <Code className="w-4 h-4" />}
+                                                            {typeInfo.isWebinar ? <Radio className="w-4 h-4" /> : typeInfo.isWorkshop ? <GraduationCap className="w-4 h-4" /> : isSolo ? <User className="w-4 h-4" /> : <Code className="w-4 h-4" />}
                                                         </div>
 
                                                         <div className="min-w-0">
@@ -544,7 +547,12 @@ function TeamsDashboard() {
                                                 </td>
 
                                                 <td className="px-4 py-3 sm:py-4">
-                                                    {isVirtual ? (
+                                                    {typeInfo.isWebinar ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                                            <Globe className="w-3.5 h-3.5" />
+                                                            Virtual Stream
+                                                        </span>
+                                                    ) : isVirtual ? (
                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                                                             <Globe className="w-3.5 h-3.5" />
                                                             {typeInfo.isWorkshop ? 'Online' : 'Virtual'}
@@ -571,12 +579,16 @@ function TeamsDashboard() {
                                                         {getLeaderEmail(team)}
                                                     </p>
                                                     <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                                                        {team.LeaderPhone || team.Phone || team.Mobile || (isSolo ? 'Individual Attendee' : 'Team Leader')}
+                                                        {team.LeaderPhone || team.Phone || team.Mobile || (typeInfo.isWebinar ? 'Webinar Delegate' : isSolo ? 'Individual Attendee' : 'Team Leader')}
                                                     </p>
                                                 </td>
 
                                                 <td className="px-4 py-3 sm:py-4 text-center text-gray-900 dark:text-white font-semibold">
-                                                    {isSolo ? (
+                                                    {typeInfo.isWebinar ? (
+                                                        <span className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                                            Delegate
+                                                        </span>
+                                                    ) : isSolo ? (
                                                         <span className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                                                             Solo
                                                         </span>
@@ -595,7 +607,7 @@ function TeamsDashboard() {
                                                             type="button"
                                                             onClick={() => handleTeamClick(teamId)}
                                                             className="p-1.5 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-emerald-500 hover:text-emerald-500 text-gray-500 dark:text-gray-400 transition-colors cursor-pointer"
-                                                            title="View details"
+                                                            title={typeInfo.isWebinar ? "View delegate pass & profile" : "View details"}
                                                         >
                                                             <Eye className="w-4 h-4" />
                                                         </button>

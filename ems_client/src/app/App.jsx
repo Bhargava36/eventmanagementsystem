@@ -69,6 +69,10 @@ const WorkshopSessionsPage = lazy(() => import('../features/auth/pages/Admin/Wor
 const WorkshopResourcesPage = lazy(() => import('../features/auth/pages/Admin/WorkshopResourcesPage'));
 const WorkshopAttendancePage = lazy(() => import('../features/auth/pages/Admin/WorkshopAttendancePage'));
 const WorkshopInstructorsPage = lazy(() => import('../features/auth/pages/Admin/WorkshopInstructorsPage'));
+const WebinarAgendaPage = lazy(() => import('../features/auth/pages/Admin/WebinarAgendaPage'));
+const WebinarResourcesPage = lazy(() => import('../features/auth/pages/Admin/WebinarResourcesPage'));
+const WebinarAttendancePage = lazy(() => import('../features/auth/pages/Admin/WebinarAttendancePage'));
+const WebinarSpeakersPage = lazy(() => import('../features/auth/pages/Admin/WebinarSpeakersPage'));
 
 // User Pages
 const UserSidebar = lazy(() => import('../components/Organisms/UserSidebar'));
@@ -206,6 +210,10 @@ function App() {
                 <Route path="workshop/resources" element={<WorkshopResourcesPage />} />
                 <Route path="workshop/attendance" element={<WorkshopAttendancePage />} />
                 <Route path="workshop/instructors" element={<WorkshopInstructorsPage />} />
+                <Route path="webinar/agenda" element={<WebinarAgendaPage />} />
+                <Route path="webinar/resources" element={<WebinarResourcesPage />} />
+                <Route path="webinar/attendance" element={<WebinarAttendancePage />} />
+                <Route path="webinar/speakers" element={<WebinarSpeakersPage />} />
               </Route>
             </Route>
 

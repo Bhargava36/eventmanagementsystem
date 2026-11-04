@@ -27,7 +27,11 @@ import {
     Medal,
     BookOpen,
     GraduationCap,
-    CalendarCheck
+    CalendarCheck,
+    Presentation,
+    Video,
+    Radio,
+    Mic
 } from "lucide-react";
 import PrizePodiumStage from "../../../../components/Molecules/PrizePodiumStage";
 import { getTrackVisibility, getEventTypeInfo, isSoloTeamSize } from "../../../../lib/utils";
@@ -644,7 +648,7 @@ function AdminDashboard() {
                         <button
                             type="button"
                             onClick={() => navigate('/admin/workshop/curriculum')}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition shadow-sm cursor-pointer"
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition shadow-sm cursor-pointer"
                         >
                             <BookOpen className="h-4 w-4" />
                             Schedule Session
@@ -728,7 +732,7 @@ function AdminDashboard() {
                                     {event?.EventName || "Event"}
                                 </h2>
 
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-3xl">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 w-full text-justify">
                                     {event?.Description || "No event description available."}
                                 </p>
                             </div>
@@ -960,7 +964,92 @@ function AdminDashboard() {
                     </motion.section>
                 )}
 
-                {!typeInfo?.isWorkshop && !typeInfo?.isSeminar && (
+                {typeInfo?.isWebinar && (
+                    <motion.section
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, delay: 0.25 }}
+                        className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-zinc-800 p-5 sm:p-6 shadow-sm"
+                    >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 border-b border-gray-100 dark:border-gray-800/80 pb-4">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Radio className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                    <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                                        Webinar Command Center
+                                    </h2>
+                                </div>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Schedule keynote sessions, publish slide decks &amp; recordings, feature distinguished guest speakers, and verify delegate live joins.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <button
+                                onClick={() => navigate('/admin/webinar/agenda')}
+                                className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/60 text-left hover:border-emerald-500 transition group cursor-pointer"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+                                    <Presentation className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                                    Keynote Agenda &amp; Schedule
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                                    Organize real-time talks, keynote slots, meet links &amp; panel agendas.
+                                </p>
+                            </button>
+
+                            <button
+                                onClick={() => navigate('/admin/webinar/resources')}
+                                className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/60 text-left hover:border-emerald-500 transition group cursor-pointer"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+                                    <Video className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                                    Decks &amp; Recordings Hub
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                                    Publish keynote presentation slides, video replays &amp; delegate briefs.
+                                </p>
+                            </button>
+
+                            <button
+                                onClick={() => navigate('/admin/webinar/speakers')}
+                                className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/60 text-left hover:border-emerald-500 transition group cursor-pointer"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+                                    <Mic className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                                    Keynote Speakers &amp; Panel
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                                    Add keynote speakers, panel discussion leads &amp; guest dignitaries.
+                                </p>
+                            </button>
+
+                            <button
+                                onClick={() => navigate('/admin/webinar/attendance')}
+                                className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/60 text-left hover:border-emerald-500 transition group cursor-pointer"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-sm">
+                                    <CalendarCheck className="w-5 h-5" />
+                                </div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                                    Attendance &amp; Joins Tracker
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                                    Track live virtual room check-ins and export attendance matrix to CSV.
+                                </p>
+                            </button>
+                        </div>
+                    </motion.section>
+                )}
+
+                {!typeInfo?.isWorkshop && !typeInfo?.isWebinar && !typeInfo?.isSeminar && (
                 <motion.section
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}

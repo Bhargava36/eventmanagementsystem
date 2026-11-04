@@ -34,6 +34,7 @@ import {
   CalendarCheck,
   FileText,
   Podium,
+  Mic,
 } from 'lucide-react';
 import { GiTeamIdea } from "react-icons/gi";
 import { LuClipboardCheck,LuUserCheck } from "react-icons/lu";
@@ -230,7 +231,7 @@ const SidebarContent = ({
   const rawMode = adminData?.HackathonMode || user?.HackathonMode;
   const { showVirtual, showPhysical, isBoth } = getTrackVisibility(rawMode, adminData?.Location);
   const typeInfo = getEventTypeInfo(adminData?.EventType);
-  const isIndividual = isSoloTeamSize(adminData?.TeamSize || user?.TeamSize) || typeInfo.isWorkshop || typeInfo.isSeminar;
+  const isIndividual = isSoloTeamSize(adminData?.TeamSize || user?.TeamSize) || typeInfo.isWorkshop || typeInfo.isWebinar || typeInfo.isSeminar;
 
   // Track operation labels based on event type
   let virtualTrackName = isBoth ? 'Virtual Event' : 'Event Operations';
@@ -239,6 +240,9 @@ const SidebarContent = ({
   if (typeInfo.isWorkshop) {
     virtualTrackName = isBoth ? 'Online Workshop' : 'Workshop Sessions';
     physicalTrackName = isBoth ? 'In-Person Workshop' : 'Workshop Operations';
+  } else if (typeInfo.isWebinar) {
+    virtualTrackName = 'Live Stream & Meet';
+    physicalTrackName = 'Webinar Operations';
   } else if (typeInfo.isSeminar) {
     virtualTrackName = isBoth ? 'Virtual Broadcast' : 'Webinar / Stream';
     physicalTrackName = isBoth ? 'Conference Venue' : 'Conference Operations';
@@ -257,6 +261,8 @@ const SidebarContent = ({
   let participantLabel = 'Registered Teams';
   if (typeInfo.isWorkshop) {
     participantLabel = 'Registered Attendees';
+  } else if (typeInfo.isWebinar) {
+    participantLabel = 'Registered Delegates';
   } else if (typeInfo.isSeminar) {
     participantLabel = 'Registered Delegates';
   } else if (typeInfo.isCodingContest) {
@@ -269,6 +275,8 @@ const SidebarContent = ({
   let coreTeamLabel = 'Core Team';
   if (typeInfo.isWorkshop) {
     coreTeamLabel = 'Instructors & Team';
+  } else if (typeInfo.isWebinar) {
+    coreTeamLabel = 'Keynote Speakers';
   } else if (typeInfo.isSeminar) {
     coreTeamLabel = 'Speakers & Committee';
   }
@@ -324,7 +332,40 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(showVirtual && !typeInfo.isWorkshop
+    ...(typeInfo.isWebinar
+      ? [
+        {
+          name: 'Keynote Agenda',
+          icon: Presentation,
+          path: '/admin/webinar/agenda',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Decks & Recordings',
+          icon: Video,
+          path: '/admin/webinar/resources',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Keynote Speakers',
+          icon: Mic,
+          path: '/admin/webinar/speakers',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Attendance & Joins',
+          icon: LuUserCheck,
+          path: '/admin/webinar/attendance',
+          badge: null,
+          end: false,
+        },
+      ]
+      : []),
+
+    ...(showVirtual && !typeInfo.isWorkshop && !typeInfo.isWebinar
       ? [
         {
           name: virtualTrackName,
@@ -347,7 +388,7 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(showPhysical && !typeInfo.isWorkshop
+    ...(showPhysical && !typeInfo.isWorkshop && !typeInfo.isWebinar
       ? [
         {
           name: physicalTrackName,
@@ -382,7 +423,7 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(!typeInfo.isWorkshop
+    ...(!typeInfo.isWorkshop && !typeInfo.isWebinar
       ? [
         {
           name: coreTeamLabel,
@@ -395,7 +436,7 @@ const SidebarContent = ({
       : []),
     {
       name: participantLabel,
-      icon: typeInfo.isWorkshop ? GraduationCap : Users,
+      icon: (typeInfo.isWorkshop || typeInfo.isWebinar) ? GraduationCap : Users,
       path: '/admin/teams',
       badge: null,
       end: false,

@@ -207,20 +207,29 @@ export function parseTeamSizeOptions(rawTeamSize) {
 export function getEventTypeInfo(eventType = '') {
   const t = String(eventType || '').trim().toLowerCase();
   const isWorkshop = t.includes('workshop') || t.includes('bootcamp');
-  const isSeminar = t.includes('seminar') || t.includes('conference') || t.includes('webinar') || t.includes('talk');
+  const isWebinar = t.includes('webinar');
+  const isSeminar = (t.includes('seminar') || t.includes('conference') || t.includes('talk')) && !isWebinar;
   const isCodingContest = t.includes('coding') || t.includes('contest') || t.includes('competitive') || t.includes('challenge');
   const isTechFest = t.includes('fest') || t.includes('symposium');
-  const isHackathon = !isWorkshop && !isSeminar && !isCodingContest && !isTechFest;
+  const isHackathon = !isWorkshop && !isSeminar && !isCodingContest && !isTechFest && !isWebinar;
 
   let label = 'Event';
-  const badgeColor = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20';
+  let badgeColor = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20';
   let participantTerm = 'Participants & Teams';
   let singleParticipantTerm = 'Participant';
   let agendaTerm = 'Event Schedule & Timelines';
   let submissionTerm = 'Project Submission';
   let prizeTerm = 'Prize Pool & Rewards';
 
-  if (isWorkshop) {
+  if (isWebinar) {
+    label = 'Webinar';
+    badgeColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+    participantTerm = 'Registered Delegates';
+    singleParticipantTerm = 'Delegate';
+    agendaTerm = 'Keynote Agenda & Schedule';
+    submissionTerm = 'Keynote Resources & Replays';
+    prizeTerm = 'Delegate Certification & Access';
+  } else if (isWorkshop) {
     label = 'Workshop';
     participantTerm = 'Registered Attendees';
     singleParticipantTerm = 'Attendee';
@@ -266,6 +275,7 @@ export function getEventTypeInfo(eventType = '') {
     agendaTerm,
     submissionTerm,
     prizeTerm,
+    isWebinar,
     isWorkshop,
     isSeminar,
     isCodingContest,

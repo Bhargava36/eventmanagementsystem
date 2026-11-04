@@ -201,13 +201,15 @@ export default function AdminProfile() {
             console.warn('Could not fetch event stats:', e);
           }
 
-          // If workshop, fetch workshop extra metrics (sessions, attendance, instructors)
-          const isWs = getEventTypeInfo(mergedAdmin.EventType || activeEvent?.EventType).isWorkshop;
-          if (isWs) {
+          // If workshop or webinar, fetch extra metrics (sessions, attendance, speakers/instructors)
+          const evTypeInfo = getEventTypeInfo(mergedAdmin.EventType || activeEvent?.EventType);
+          const isSessionEvent = evTypeInfo.isWorkshop || evTypeInfo.isWebinar;
+          if (isSessionEvent) {
             try {
+              const apiPrefix = evTypeInfo.isWebinar ? 'webinars' : 'workshops';
               const [sessRes, attRes, instRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/api/workshops/${currentEvId}/sessions`),
-                fetch(`${API_BASE_URL}/api/workshops/${currentEvId}/attendance`),
+                fetch(`${API_BASE_URL}/api/${apiPrefix}/${currentEvId}/sessions`),
+                fetch(`${API_BASE_URL}/api/${apiPrefix}/${currentEvId}/attendance`),
                 fetch(`${API_BASE_URL}/api/core_team/event/${currentEvId}`)
               ]);
 
@@ -218,16 +220,16 @@ export default function AdminProfile() {
               if (attRes.ok) {
                 const ad = await attRes.json();
                 const list = ad.attendees || [];
-                const present = list.filter((a) => a.AttendanceStatus === 'checked_in').length;
+                const present = list.filter((a) => a.AttendanceStatus === 'checked_in' || a.AttendanceStatus === 'present').length;
                 setCheckedInCount(present);
               }
               if (instRes.ok) {
                 const idData = await instRes.json();
-                const members = Array.isArray(idData) ? idData : idData.team || idData.data || [];
+                const members = Array.isArray(idData) ? idData : idData.team || idData.data || idData.members || [];
                 setInstructorsCount(members.length);
               }
             } catch (wErr) {
-              console.warn('Workshop metrics fetch error:', wErr);
+              console.warn('Session event metrics fetch error:', wErr);
             }
           }
         }
@@ -466,7 +468,59 @@ export default function AdminProfile() {
   ];
 
   // Dynamic quick action links based on active event type
-  const quickActions = activeTypeInfo.isWorkshop
+  const quickActions = activeTypeInfo.isWebinar
+    ? [
+        {
+          title: 'Registered Delegates',
+          desc: 'Individual delegate registrations & profiles',
+          path: '/admin/teams',
+          icon: GraduationCap,
+          count: `${teamsCount} Delegates`
+        },
+        {
+          title: 'Keynote Agenda',
+          desc: 'Live streams, keynotes & panel talks',
+          path: '/admin/webinar/agenda',
+          icon: Calendar,
+          count: `${sessionsCount} Keynotes`
+        },
+        {
+          title: 'Decks & Recordings',
+          desc: 'Presentation slides, video archives & briefs',
+          path: '/admin/webinar/resources',
+          icon: BookOpen,
+          count: 'Materials'
+        },
+        {
+          title: 'Keynote Speakers',
+          desc: 'Distinguished dignitaries & panel moderators',
+          path: '/admin/webinar/speakers',
+          icon: UsersRound,
+          count: `${instructorsCount} Speakers`
+        },
+        {
+          title: 'Attendance & Joins',
+          desc: 'Virtual join check-ins & presence matrix',
+          path: '/admin/webinar/attendance',
+          icon: Clock,
+          count: `${checkedInCount} Joined`
+        },
+        {
+          title: 'Webinar Settings',
+          desc: 'Streaming URLs, delegate cap & guidelines',
+          path: '/admin/settings',
+          icon: Sliders,
+          count: 'Configure'
+        },
+        {
+          title: 'Delegate Feedback',
+          desc: 'Session ratings & delegate reviews',
+          path: '/admin/feedback',
+          icon: MessageSquare,
+          count: `${feedbackCount} Reviews`
+        }
+      ]
+    : activeTypeInfo.isWorkshop
     ? [
         {
           title: 'Registered Attendees',
@@ -478,28 +532,28 @@ export default function AdminProfile() {
         {
           title: 'Curriculum & Agenda',
           desc: 'Session schedules, timelines & lab demos',
-          path: '/admin/workshop-sessions',
+          path: '/admin/workshop/curriculum',
           icon: Calendar,
           count: `${sessionsCount} Sessions`
         },
         {
           title: 'Study Materials & Kits',
           desc: 'PDFs, slide decks, GitHub repositories',
-          path: '/admin/workshop-resources',
+          path: '/admin/workshop/resources',
           icon: BookOpen,
           count: 'Resources'
         },
         {
           title: 'Instructors & Trainers',
           desc: 'Lead facilitators, tech leads & mentors',
-          path: '/admin/workshop-instructors',
+          path: '/admin/workshop/instructors',
           icon: UsersRound,
           count: `${instructorsCount} Instructors`
         },
         {
           title: 'Attendance Tracker',
           desc: 'Live QR check-in & verification records',
-          path: '/admin/workshop-attendance',
+          path: '/admin/workshop/attendance',
           icon: Clock,
           count: `${checkedInCount} Present`
         },

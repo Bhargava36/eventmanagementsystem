@@ -42,7 +42,14 @@ import {
     GraduationCap,
     BookOpen,
     Laptop,
-    Presentation
+    Presentation,
+    Mic,
+    MessageSquare,
+    CalendarPlus,
+    HelpCircle,
+    Send,
+    ThumbsUp,
+    Bell
 } from "lucide-react";
 import { API_BASE_URL } from '@/lib/api';
 import { QRCodeSVG } from "qrcode.react";
@@ -50,11 +57,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import useAuth from '../../../../Hooks/useAuth';
 import { useNavigate, useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { getEventTheme, isSoloTeamSize } from "../../../../lib/utils";
+import { getEventTheme, getEventTypeInfo, isSoloTeamSize } from "../../../../lib/utils";
 import useTheme from "../../../../Hooks/useTheme";
 import PhysicalHackathonThemesSection from "../../../../components/Molecules/PhysicalHackathonThemesSection";
 import PhysicalTeamPSActionCard from "../../../../components/Molecules/PhysicalTeamPSActionCard";
 import EventPlatformFeedbackCard from './components/EventPlatformFeedbackCard';
+import WebinarDelegateFeedbackCard from './components/WebinarDelegateFeedbackCard';
+import WebinarLiveQA from './components/WebinarLiveQA';
+import { buildGoogleCalendarUrl, downloadIcsFile } from '../../../../lib/calendarUtils';
 
 function formatDate(date) {
     if (!date) return "Not available";
@@ -173,6 +183,31 @@ function TeamInfo() {
             setCopiedLink(true);
             setTimeout(() => setCopiedLink(false), 2500);
         }
+    };
+
+    const [calendarDropdownOpen, setCalendarDropdownOpen] = useState(false);
+
+    const handleAddToGoogleCalendar = () => {
+        const url = buildGoogleCalendarUrl({
+            title: team?.EventName || 'Webinar Keynote Session',
+            description: team?.EventDescription || 'Join the live interactive keynote session and Q&A panel.',
+            location: 'Virtual Live Stream Room',
+            startDate: team?.StartDate,
+            endDate: team?.EndDate
+        });
+        window.open(url, '_blank');
+        setCalendarDropdownOpen(false);
+    };
+
+    const handleDownloadIcs = () => {
+        downloadIcsFile({
+            title: team?.EventName || 'Webinar Keynote Session',
+            description: team?.EventDescription || 'Join the live interactive keynote session and Q&A panel.',
+            location: 'Virtual Live Stream Room',
+            startDate: team?.StartDate,
+            endDate: team?.EndDate
+        });
+        setCalendarDropdownOpen(false);
     };
 
     const fadeUp = (delay = 0) => ({
@@ -382,13 +417,15 @@ function TeamInfo() {
                 }
             }
 
-            // Fetch Workshop Curriculum, Resources & Instructors for Workshops
-            if (targetTeam.EventId && String(targetTeam.EventType || '').toLowerCase().includes('workshop')) {
+            // Fetch Agenda, Resources & Instructors/Speakers for Workshops and Webinars
+            const targetTypeInfo = getEventTypeInfo(targetTeam.EventType || '');
+            if (targetTeam.EventId && (targetTypeInfo.isWorkshop || targetTypeInfo.isWebinar)) {
                 try {
                     setLoadingWorkshopHub(true);
+                    const apiPrefix = targetTypeInfo.isWebinar ? 'webinars' : 'workshops';
                     const [sessRes, resRes, instRes] = await Promise.all([
-                        fetch(`${API_BASE_URL}/api/workshops/${targetTeam.EventId}/sessions`),
-                        fetch(`${API_BASE_URL}/api/workshops/${targetTeam.EventId}/resources`),
+                        fetch(`${API_BASE_URL}/api/${apiPrefix}/${targetTeam.EventId}/sessions`),
+                        fetch(`${API_BASE_URL}/api/${apiPrefix}/${targetTeam.EventId}/resources`),
                         fetch(`${API_BASE_URL}/api/core_team/event/${targetTeam.EventId}`)
                     ]);
 
@@ -591,10 +628,13 @@ function TeamInfo() {
         (Number(team?.TeamSize) === 1 && members.length <= 1)
     );
 
-    const isWorkshop = String(team?.EventType || '').toLowerCase().includes('workshop');
+    const typeInfo = getEventTypeInfo(team?.EventType || eventObj?.EventType || '');
+    const isWorkshop = typeInfo.isWorkshop;
+    const isWebinar = typeInfo.isWebinar;
+    const isSessionBased = isWorkshop || isWebinar;
 
-    const qrPassValue = isWorkshop
-        ? `${publicTeamUrl}?attendee=${team?.TeamId || teamId}&user=${currentUserId || team?.TeamLeadUserId || ''}&type=workshop`
+    const qrPassValue = isSessionBased
+        ? `${publicTeamUrl}?attendee=${team?.TeamId || teamId}&user=${currentUserId || team?.TeamLeadUserId || ''}&type=${isWebinar ? 'webinar' : 'workshop'}`
         : publicTeamUrl;
 
     const isApprovedPhysical =
@@ -734,29 +774,61 @@ function TeamInfo() {
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <span className="px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-500/30">
-                                    VIRTUAL EVENT IS LIVE NOW
+                                <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
+                                    isWebinar
+                                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                        : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                }`}>
+                                    {isWebinar ? "WEBINAR STREAM IS LIVE NOW" : "VIRTUAL EVENT IS LIVE NOW"}
                                 </span>
                                 <span className="text-xs text-slate-400 font-medium">{team.EventName}</span>
                             </div>
                             <h3 className="text-base sm:text-lg font-black text-white mt-1">
-                                {isWorkshop ? "Virtual Workshop Room is Active!" : "Virtual Hackathon Room is Active!"}
+                                {isWebinar ? "Virtual Webinar Live Stream is Active!" : isWorkshop ? "Virtual Workshop Room is Active!" : "Virtual Hackathon Room is Active!"}
                             </h3>
                             <p className="text-xs text-slate-300 leading-relaxed mt-0.5 max-w-2xl">
-                                Join the live Google Meet session, select your problem statement, view innovation themes, and track hackathon sprint milestones.
+                                {isWebinar
+                                    ? "Join the live broadcast room, watch distinguished keynote speakers, ask questions during Q&A, and download session presentation decks."
+                                    : isWorkshop
+                                    ? "Join the live interactive lab session, follow code-along instructor demos, and download starter repositories."
+                                    : "Join the live Google Meet session, select your problem statement, view innovation themes, and track hackathon sprint milestones."}
                             </p>
                         </div>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
-                        className="shrink-0 inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm tracking-wide shadow-lg shadow-emerald-600/30 hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
-                    >
-                        <Video className="w-4 h-4" />
-                        <span>Go to Virtual Event Page</span>
-                        <ArrowRight className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            type="button"
+                            onClick={handleAddToGoogleCalendar}
+                            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-xs tracking-wide transition cursor-pointer active:scale-98"
+                            title="Add live stream reminder to Google Calendar"
+                        >
+                            <CalendarPlus className="w-4 h-4 text-emerald-400" />
+                            <span className="hidden sm:inline">Add to Calendar</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
+                            className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-white font-black text-xs sm:text-sm tracking-wide bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-600/30 hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
+                        >
+                            <Video className="w-4 h-4" />
+                            <span>{isWebinar ? "Join Live Webinar Stream" : "Go to Virtual Event Page"}</span>
+                            <ArrowRight className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    {isWebinar && (
+                        <div className="w-full mt-3 pt-3 border-t border-emerald-500/20 flex items-center gap-2 text-xs text-emerald-300/90 font-medium overflow-hidden">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px] tracking-wider uppercase shrink-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                Live Ticker
+                            </span>
+                            <div className="truncate">
+                                Keynote presentation is live. Post your questions in the Live Q&amp;A tab below to be answered by keynote speakers.
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -815,16 +887,20 @@ function TeamInfo() {
                                         color: theme.badgeText
                                     }}
                                 >
-                                    {isWorkshop ? "Solo Attendee" : (isIndividual ? "Individual Participant" : `Team (${team.TeamSize} Members)`)}
+                                    {isWebinar ? "Webinar Delegate" : isWorkshop ? "Solo Attendee" : (isIndividual ? "Individual Participant" : `Team (${team.TeamSize} Members)`)}
                                 </span>
 
                                 <span className="text-[10px] uppercase font-extrabold tracking-widest px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-zinc-800">
-                                    {team.ParticipationMode || "Physical"} {isWorkshop ? "Mode" : "Track"}
+                                    {isWebinar ? "Virtual Live Stream" : `${team.ParticipationMode || "Physical"} ${isWorkshop ? "Mode" : "Track"}`}
                                 </span>
 
-                                <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
-                                    {isWorkshop ? "Confirmed Seat" : (team.RegistrationStatus || "Approved")}
+                                <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
+                                    isWebinar
+                                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isWebinar ? "bg-emerald-500" : "bg-emerald-500"}`} />
+                                    {isWebinar ? "Confirmed Delegate Seat" : isWorkshop ? "Confirmed Seat" : (team.RegistrationStatus || "Approved")}
                                 </span>
                             </div>
 
@@ -860,12 +936,12 @@ function TeamInfo() {
                         {/* Total Registrations in Event */}
                         <div className="space-y-1">
                             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-gray-400">
-                                {isWorkshop ? "Workshop Attendees" : "Total Registrations"}
+                                {isWebinar ? "Webinar Delegates" : isWorkshop ? "Workshop Attendees" : "Total Registrations"}
                             </span>
                             <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white flex items-baseline gap-1.5">
                                 {team.totalEventRegistrations || resultsData?.totalRegistrations || 1}
                                 <span className="text-xs font-normal text-slate-500 dark:text-gray-400">
-                                    {isIndividual || isWorkshop ? "Attendees" : "Teams"}
+                                    {isWebinar ? "Delegates" : (isIndividual || isWorkshop) ? "Attendees" : "Teams"}
                                 </span>
                             </p>
                         </div>
@@ -875,7 +951,7 @@ function TeamInfo() {
                         {/* Registration ID */}
                         <div className="space-y-1">
                             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-gray-400">
-                                {isWorkshop ? "Workshop Pass ID" : (isIndividual ? "Participant ID" : "Team ID")}
+                                {isWebinar ? "Webinar Pass ID" : isWorkshop ? "Workshop Pass ID" : (isIndividual ? "Participant ID" : "Team ID")}
                             </span>
                             <p className="text-2xl sm:text-3xl font-black" style={{ color: theme.accent }}>
                                 #{team.TeamId}
@@ -908,19 +984,21 @@ function TeamInfo() {
                                 }}
                             >
                                 <QrCode className="w-3.5 h-3.5" />
-                                {isWorkshop ? "Official Workshop Entry Pass" : "Official Public Team Pass"}
+                                {isWebinar ? "Official Webinar Delegate Pass" : isWorkshop ? "Official Workshop Entry Pass" : "Official Public Team Pass"}
                             </span>
                             <span className="text-xs text-slate-500 dark:text-gray-400 font-medium">
-                                {isWorkshop ? "Present at Registration Desk" : "No Login Required to View"}
+                                {isWebinar ? "Show or Scan to Verify Virtual Join" : isWorkshop ? "Present at Registration Desk" : "No Login Required to View"}
                             </span>
                         </div>
 
                         <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                            {isWorkshop ? "Scannable Workshop Attendee Entry Pass" : "Scannable Team Verification QR Code"}
+                            {isWebinar ? "Scannable Webinar Delegate Entry Pass" : isWorkshop ? "Scannable Workshop Attendee Entry Pass" : "Scannable Team Verification QR Code"}
                         </h2>
 
                         <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 max-w-xl leading-relaxed">
-                            {isWorkshop
+                            {isWebinar
+                                ? "Present or scan this digital delegate pass to verify your attendance for keynote sessions and generate your webinar completion certificate."
+                                : isWorkshop
                                 ? "Present this verified QR pass at the workshop check-in desk or lab entrance for instant automated check-in and attendance recording."
                                 : "Judges, organizers, and booth visitors can scan this QR code with their smartphone camera to view your verified team credentials, problem statement, roster, and live scorecard."}
                         </p>
@@ -938,7 +1016,7 @@ function TeamInfo() {
                                 }}
                             >
                                 <ExternalLink className="w-3.5 h-3.5" />
-                                <span>{isWorkshop ? "Open Public Pass" : "Open Public Page"}</span>
+                                <span>{isWebinar ? "Open Delegate Pass" : isWorkshop ? "Open Public Pass" : "Open Public Page"}</span>
                             </a>
 
                             <button
@@ -984,16 +1062,13 @@ function TeamInfo() {
                             includeMargin={false}
                         />
                         <div className="flex items-center gap-1 mt-2 text-[10px] font-black text-slate-800 tracking-wider uppercase group-hover:text-emerald-600 transition-colors">
-                            <span>{isWorkshop ? `ATTENDEE #${team.TeamId}` : `TEAM #${team.TeamId}`}</span>
+                            <span>{isWebinar ? `DELEGATE #${team.TeamId}` : isWorkshop ? `ATTENDEE #${team.TeamId}` : `TEAM #${team.TeamId}`}</span>
                             <Maximize2 className="w-2.5 h-2.5 opacity-60" />
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* ══════════════════════════════════════════════════════════════ */}
-            {/* ── PRIORITY 1.8: HACKATHON THEME & PROBLEM STATEMENT ─────── */}
-            {/* ══════════════════════════════════════════════════════════════ */}
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 1.8: HACKATHON THEME & PROBLEM STATEMENT ─────── */}
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -1035,17 +1110,12 @@ function TeamInfo() {
             )}
 
             {/* ══════════════════════════════════════════════════════════════ */}
-            {/* ── PRIORITY 2: WORKSHOP LEARNING HUB OR HACKATHON EVALUATION ── */}
+            {/* ── PRIORITY 2: WORKSHOP / WEBINAR LEARNING HUB ──────────── */}
             {/* ══════════════════════════════════════════════════════════════ */}
-            {isWorkshop ? (
-                <motion.section
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-6"
-                >
-                    {/* Header with Navigation Tabs */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800/80 pb-5">
+            {isSessionBased ? (
+                <div className="space-y-0">
+                    {/* Header Banner with Add-to-Calendar */}
+                    <div className="p-5 sm:p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div
                                 className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border"
@@ -1055,49 +1125,120 @@ function TeamInfo() {
                                     color: theme.iconColor
                                 }}
                             >
-                                <BookOpen className="w-6 h-6" />
+                                {isWebinar ? <Presentation className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />}
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                                        Workshop Learning Hub &amp; Resources
+                                        {isWebinar ? "Webinar Keynote Hub & Resources" : "Workshop Learning Hub & Resources"}
                                     </h2>
                                     <span className="px-2.5 py-0.5 text-[10px] font-bold rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
-                                        Participant Portal
+                                        {isWebinar ? "Webinar Delegate Portal" : "Participant Portal"}
                                     </span>
                                 </div>
                                 <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
-                                    Interactive schedule, lecture slides, starter repositories, and trainer contact information.
+                                    {isWebinar
+                                        ? "Interactive keynote schedule, speaker slides, live Q&A panel, and session recordings."
+                                        : "Interactive schedule, lecture slides, starter repositories, and trainer contact information."}
                                 </p>
                             </div>
                         </div>
 
-                        {/* Hub Switcher Tabs */}
-                        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 self-start sm:self-auto">
+                        {/* Calendar Integration Menu */}
+                        <div className="relative self-start sm:self-auto">
+                            <button
+                                type="button"
+                                onClick={() => setCalendarDropdownOpen((prev) => !prev)}
+                                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 hover:border-emerald-500/40 text-xs font-bold text-slate-700 dark:text-zinc-200 transition shadow-xs cursor-pointer active:scale-95"
+                            >
+                                <CalendarPlus className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <span>Add to Calendar</span>
+                                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${calendarDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {calendarDropdownOpen && (
+                                <div className="absolute right-0 mt-1.5 w-56 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-1.5 shadow-xl z-30 space-y-1">
+                                    <button
+                                        type="button"
+                                        onClick={handleAddToGoogleCalendar}
+                                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900 text-xs font-semibold text-slate-800 dark:text-zinc-200 flex items-center justify-between transition cursor-pointer"
+                                    >
+                                        <span>Google Calendar</span>
+                                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleDownloadIcs}
+                                        className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-900 text-xs font-semibold text-slate-800 dark:text-zinc-200 flex items-center justify-between transition cursor-pointer"
+                                    >
+                                        <span>Apple / Outlook (.ics)</span>
+                                        <Download className="w-3.5 h-3.5 text-slate-400" />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ── WEBSITE SIGNATURE THEME TABS ── */}
+                    <div className="relative pt-4">
+                        <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto scrollbar-none">
                             {[
-                                { id: 'curriculum', label: 'Curriculum & Agenda', icon: CalendarDays },
-                                { id: 'resources', label: `Materials (${workshopResources.length})`, icon: Download },
-                                { id: 'instructors', label: `Instructors (${workshopInstructors.length})`, icon: GraduationCap }
+                                { id: 'curriculum', label: isWebinar ? 'Keynote Agenda' : 'Curriculum & Agenda', icon: CalendarDays },
+                                { id: 'resources', label: isWebinar ? `Decks & Replays (${workshopResources.length})` : `Materials (${workshopResources.length})`, icon: Download },
+                                { id: 'instructors', label: isWebinar ? `Keynote Speakers (${workshopInstructors.length})` : `Instructors (${workshopInstructors.length})`, icon: isWebinar ? Mic : GraduationCap },
+                                ...(isWebinar ? [{ id: 'qa', label: 'Live Q&A', icon: HelpCircle }] : []),
+                                ...(isWebinar ? [{ id: 'feedback', label: 'Delegate Feedback', icon: MessageSquare }] : [])
                             ].map((tab) => {
-                                const active = activeWorkshopTab === tab.id;
+                                const isActive = activeWorkshopTab === tab.id;
                                 const TabIcon = tab.icon;
+
                                 return (
                                     <button
                                         key={tab.id}
                                         type="button"
                                         onClick={() => setActiveWorkshopTab(tab.id)}
-                                        className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${active
-                                            ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200/80 dark:border-zinc-700'
-                                            : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-                                            }`}
+                                        className="relative h-12 px-5 sm:px-6 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-colors duration-200 outline-none cursor-pointer shrink-0"
                                     >
-                                        <TabIcon className="w-3.5 h-3.5" />
-                                        <span>{tab.label}</span>
+                                        {isActive ? (
+                                            <motion.div
+                                                layoutId="webinarHubTabFolder"
+                                                className="absolute inset-0 rounded-t-2xl bg-white dark:bg-zinc-950 border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                                                transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                                            >
+                                                {/* Seamless bottom mask */}
+                                                <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-zinc-950 pointer-events-none z-20" />
+                                            </motion.div>
+                                        ) : (
+                                            <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
+                                        )}
+
+                                        <span
+                                            className={`relative z-20 flex items-center gap-2 transition-colors ${
+                                                isActive
+                                                    ? 'text-slate-950 dark:text-white font-bold'
+                                                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                                            }`}
+                                        >
+                                            <TabIcon
+                                                className={`w-4 h-4 transition-colors ${
+                                                    isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
+                                                }`}
+                                            />
+                                            <span>{tab.label}</span>
+                                        </span>
                                     </button>
                                 );
                             })}
                         </div>
                     </div>
+
+                    {/* Connected Content Container */}
+                    <motion.section
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="rounded-3xl rounded-tl-none border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-6"
+                    >
 
                     {/* Tab 1: Curriculum / Agenda */}
                     {activeWorkshopTab === 'curriculum' && (
@@ -1297,7 +1438,29 @@ function TeamInfo() {
                             )}
                         </div>
                     )}
+
+                    {/* Tab 4: Live Q&A (Webinar only) */}
+                    {activeWorkshopTab === 'qa' && isWebinar && (
+                        <div className="space-y-4">
+                            <WebinarLiveQA
+                                eventId={team.EventId || eventId}
+                                user={user}
+                                speakers={workshopInstructors}
+                            />
+                        </div>
+                    )}
+
+                    {/* Tab 5: Delegate Feedback (Webinar only) */}
+                    {activeWorkshopTab === 'feedback' && isWebinar && (
+                        <div className="space-y-4">
+                            <WebinarDelegateFeedbackCard
+                                eventId={eventId}
+                                user={user}
+                            />
+                        </div>
+                    )}
                 </motion.section>
+                </div>
             ) : (
                 <>
                     {/* ── PRIORITY 2: EVALUATION RESULTS & SCORECARD (OR PENDING) ── */}
@@ -1690,7 +1853,7 @@ function TeamInfo() {
                         <div className="pt-2">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 mb-2">Description</h4>
                             <p className="text-xs text-slate-700 dark:text-gray-300 leading-relaxed bg-slate-50 dark:bg-zinc-900/40 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800/80">
-                                {team.EventDescription || (isWorkshop ? "No detailed description provided for this workshop." : "No detailed description provided for this hackathon.")}
+                                {team.EventDescription || (isWebinar ? "No detailed description provided for this webinar." : isWorkshop ? "No detailed description provided for this workshop." : "No detailed description provided for this hackathon.")}
                             </p>
                         </div>
                     </div>
@@ -2128,13 +2291,13 @@ function TeamInfo() {
                                     color: theme.badgeText
                                 }}
                             >
-                                {isWorkshop ? "Official Workshop Pass" : "Official Team Pass"}
+                                {isWebinar ? "Official Webinar Pass" : isWorkshop ? "Official Workshop Pass" : "Official Team Pass"}
                             </span>
                             <h3 className="text-xl font-black text-slate-900 dark:text-white">
                                 {displayName}
                             </h3>
                             <p className="text-xs text-slate-500 dark:text-gray-400">
-                                {isWorkshop ? `Attendee #${team.TeamId} • ${team.EventName}` : `Team #${team.TeamId} • ${team.EventName}`}
+                                {isWebinar ? `Delegate #${team.TeamId} • ${team.EventName}` : isWorkshop ? `Attendee #${team.TeamId} • ${team.EventName}` : `Team #${team.TeamId} • ${team.EventName}`}
                             </p>
                         </div>
 
@@ -2229,9 +2392,17 @@ function TeamInfo() {
             )}
 
             <motion.section {...fadeUp(0.16)}>
-                <EventPlatformFeedbackCard 
-                 eventId={eventId}
-                user={user} />
+                {isWebinar ? (
+                    <WebinarDelegateFeedbackCard 
+                        eventId={eventId}
+                        user={user} 
+                    />
+                ) : (
+                    <EventPlatformFeedbackCard 
+                        eventId={eventId}
+                        user={user} 
+                    />
+                )}
             </motion.section>
         </div>
     );

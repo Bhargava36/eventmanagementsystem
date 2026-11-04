@@ -80,7 +80,7 @@ export default function TeamCardDesignerPage() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#07090b] flex flex-col items-center justify-center text-slate-900 dark:text-white p-6">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-cyan-500 dark:text-cyan-400 animate-spin" />
+          <Loader2 className="w-8 h-8 text-emerald-500 dark:text-emerald-400 animate-spin" />
           <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">Verifying event participation structure...</p>
         </div>
       </div>
@@ -93,7 +93,7 @@ export default function TeamCardDesignerPage() {
       <div className="min-h-screen bg-slate-50 dark:bg-[#07090b] text-slate-900 dark:text-white flex flex-col items-center justify-center p-6 select-none">
         <div className="max-w-xl w-full bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
           {/* Accent glow backdrop */}
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Header Tag */}
@@ -109,8 +109,8 @@ export default function TeamCardDesignerPage() {
 
           {/* Main Visual */}
           <div className="flex items-start gap-4 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-cyan-50 dark:bg-zinc-800/80 border border-cyan-200 dark:border-zinc-700/60 flex items-center justify-center text-cyan-600 dark:text-cyan-400 shrink-0 shadow-inner">
-              <Users className="w-7 h-7 text-cyan-600 dark:text-cyan-400/80" />
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-zinc-800/80 border border-emerald-200 dark:border-zinc-700/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-inner">
+              <Users className="w-7 h-7 text-emerald-600 dark:text-emerald-400/80" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -127,7 +127,7 @@ export default function TeamCardDesignerPage() {
 
           {/* Quick Guidance Box */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 mb-6 text-xs text-slate-600 dark:text-zinc-400 space-y-2">
-            <div className="flex items-center gap-2 text-cyan-600 dark:text-cyan-400 font-bold">
+            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
               <ShieldAlert className="w-4 h-4" />
               <span>What would you like to do?</span>
             </div>

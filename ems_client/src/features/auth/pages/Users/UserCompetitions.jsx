@@ -27,8 +27,11 @@ import {
   Layers,
   Camera,
   Image as ImageIcon,
+  BookOpen,
+  Presentation
 } from 'lucide-react';
 import { resolveEventMode } from '../../../public/pages/ExploreEvents';
+import { getEventTypeInfo } from '../../../../lib/utils';
 
 export default function UserCompetitions() {
   const navigate = useNavigate();
@@ -99,9 +102,12 @@ export default function UserCompetitions() {
           (selectedStatus === 'ONGOING'  && statusN === 'ongoing')  ||
           (selectedStatus === 'COMPLETED'&& statusN === 'completed');
 
+        const eventTypeLower = (ev.EventType || '').toLowerCase();
         const matchesType =
           selectedType === 'ALL' ||
-          ev.EventType?.toLowerCase() === selectedType.toLowerCase();
+          (selectedType === 'Hackathon'
+            ? (!eventTypeLower.includes('webinar') && !eventTypeLower.includes('workshop'))
+            : eventTypeLower === selectedType.toLowerCase());
 
         return matchesSearch && matchesMode && matchesStatus && matchesType;
       })
@@ -211,6 +217,58 @@ export default function UserCompetitions() {
           </div>
         </motion.div>
 
+        {/* ── WEBSITE SIGNATURE THEME TABS FOR EVENT TYPES ── */}
+        <div className="relative pt-2">
+          <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto scrollbar-none">
+            {[
+              { id: 'ALL', label: `All Events (${events.length})`, icon: Layers },
+              { id: 'Webinar', label: `Webinars (${events.filter(e => (e.EventType || '').toLowerCase() === 'webinar').length})`, icon: Presentation },
+              { id: 'Workshop', label: `Workshops (${events.filter(e => (e.EventType || '').toLowerCase() === 'workshop').length})`, icon: BookOpen },
+              { id: 'Hackathon', label: `Hackathons (${events.filter(e => !(e.EventType || '').toLowerCase().match(/webinar|workshop/)).length})`, icon: Trophy },
+            ].map((tab) => {
+              const isActive = selectedType === tab.id;
+              const TabIcon = tab.icon;
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSelectedType(tab.id)}
+                  className="relative h-12 px-5 sm:px-6 rounded-t-2xl font-bold text-xs sm:text-sm tracking-wide flex items-center gap-2.5 transition-colors duration-200 outline-none cursor-pointer shrink-0"
+                >
+                  {isActive ? (
+                    <motion.div
+                      layoutId="userCompetitionsActiveTabFolder"
+                      className="absolute inset-0 rounded-t-2xl bg-white dark:bg-zinc-950 border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                      transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                    >
+                      {/* Seamless bottom mask */}
+                      <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-zinc-950 pointer-events-none z-20" />
+                    </motion.div>
+                  ) : (
+                    <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
+                  )}
+
+                  <span
+                    className={`relative z-20 flex items-center gap-2 transition-colors ${
+                      isActive
+                        ? 'text-slate-950 dark:text-white font-bold'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
+                    }`}
+                  >
+                    <TabIcon
+                      className={`w-4 h-4 transition-colors ${
+                        isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
+                      }`}
+                    />
+                    <span>{tab.label}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* ── SEARCH + FILTER BAR ── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -218,7 +276,7 @@ export default function UserCompetitions() {
           transition={{ duration: 0.35, delay: 0.08 }}
           className="space-y-3"
         >
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl rounded-tl-none bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-zinc-400" />
               <input
@@ -291,23 +349,6 @@ export default function UserCompetitions() {
                 {s.label}
               </button>
             ))}
-
-            {eventTypes.length > 0 && (
-              <>
-                <div className="h-3 w-px bg-slate-200 dark:bg-zinc-800 mx-1.5 hidden md:block" />
-                <span className="text-slate-500 dark:text-zinc-500 mr-1 flex items-center gap-1 font-medium">Type:</span>
-                <button onClick={() => setSelectedType('ALL')}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedType === 'ALL' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:text-slate-900 dark:hover:text-white'}`}>
-                  All Types
-                </button>
-                {eventTypes.map((t) => (
-                  <button key={t} onClick={() => setSelectedType(t)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedType === t ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:text-slate-900 dark:hover:text-white'}`}>
-                    {t}
-                  </button>
-                ))}
-              </>
-            )}
           </div>
         </motion.div>
 
@@ -348,6 +389,7 @@ export default function UserCompetitions() {
               const isOngoing  = (event.EventStatus || '').toLowerCase() === 'ongoing';
               const isCompleted= (event.EventStatus || '').toLowerCase() === 'completed';
               const mode       = resolveEventMode(event);
+              const typeInfo   = getEventTypeInfo(event.EventType);
 
               return (
                 <motion.div
@@ -461,9 +503,12 @@ export default function UserCompetitions() {
 
                         <div className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-zinc-800/60">
                           <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 text-[11px]">
-                            <Users className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /><span>Team Size</span>
+                            <Users className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>{typeInfo.isWebinar ? 'Pass Type' : typeInfo.isWorkshop ? 'Format' : 'Team Size'}</span>
                           </span>
-                          <span className="font-semibold text-slate-900 dark:text-white">{event.TeamSize ? `${event.TeamSize} Members` : 'Flexible'}</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {typeInfo.isWebinar ? 'Solo Delegate Pass' : typeInfo.isWorkshop ? 'Solo Attendee' : (event.TeamSize ? `${event.TeamSize} Members` : 'Flexible')}
+                          </span>
                         </div>
 
                         {event.Location && (
@@ -501,7 +546,7 @@ export default function UserCompetitions() {
                         onClick={(e) => handleActionClick(e, event)}
                         className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95"
                       >
-                        <span>Register</span>
+                        <span>{typeInfo.isWebinar ? 'Join Webinar' : typeInfo.isWorkshop ? 'Enroll' : 'Register'}</span>
                         <ArrowRight className="h-3.5 w-3.5 text-white" />
                       </button>
                     </div>

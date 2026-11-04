@@ -28,6 +28,7 @@ import {
   Camera,
   Image as ImageIcon
 } from 'lucide-react';
+import { getEventTypeInfo } from '../../../lib/utils';
 
 export const resolveEventMode = (ev) => {
   const raw = String(ev?.HackathonMode || '').trim().toLowerCase();
@@ -512,6 +513,7 @@ function ExploreEvents() {
               const isOngoing = (event.EventStatus || '').toLowerCase() === 'ongoing';
               const isCompleted = (event.EventStatus || '').toLowerCase() === 'completed';
               const mode = resolveEventMode(event);
+              const typeInfo = getEventTypeInfo(event.EventType);
 
               return (
                 <motion.div
@@ -640,9 +642,11 @@ function ExploreEvents() {
                         <div className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-zinc-800/60">
                           <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 text-[11px]">
                             <Users className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                            <span>Team Size</span>
+                            <span>{typeInfo.isWebinar ? 'Delegate Pass' : 'Team Size'}</span>
                           </span>
-                          <span className="font-semibold text-slate-900 dark:text-white">{event.TeamSize ? `${event.TeamSize} Members` : 'Flexible'}</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {typeInfo.isWebinar ? 'Solo Delegate (1 Seat)' : (event.TeamSize ? `${event.TeamSize} Members` : 'Flexible')}
+                          </span>
                         </div>
 
                         {event.Location && (
@@ -711,7 +715,7 @@ function ExploreEvents() {
                         onClick={(e) => handleActionClick(e, event)}
                         className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95"
                       >
-                        <span>Participate</span>
+                        <span>{typeInfo.isWebinar ? 'Join Webinar' : 'Participate'}</span>
                         <ArrowRight className="h-3.5 w-3.5 text-white" />
                       </button>
                     </div>

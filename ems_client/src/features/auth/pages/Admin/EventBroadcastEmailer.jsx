@@ -21,13 +21,23 @@ import { API_BASE_URL } from "@/lib/api";
 import useToast from "../../../../Hooks/useToast";
 import { getEventTypeInfo } from "../../../../lib/utils";
 
-const CATEGORIES = [
+const WORKSHOP_CATEGORIES = [
   { id: "Announcement", label: "Announcement" },
   { id: "Important Alert", label: "Important Alert" },
   { id: "Schedule Update", label: "Schedule Update" },
   { id: "Venue Information", label: "Venue Information" },
   { id: "Study Materials", label: "Study Materials & Code" },
   { id: "Emergency", label: "Emergency" },
+];
+
+const WEBINAR_CATEGORIES = [
+  { id: "Live Broadcast Link", label: "Live Broadcast Link" },
+  { id: "Keynote Announcement", label: "Keynote Announcement" },
+  { id: "Speaker Spotlight", label: "Speaker Spotlight" },
+  { id: "Schedule & Timings", label: "Schedule & Timings" },
+  { id: "Slide Decks & Replays", label: "Slide Decks & Replays" },
+  { id: "Delegate Feedback", label: "Delegate Feedback & Certificate" },
+  { id: "Emergency", label: "Urgent Notification" },
 ];
 
 export default function EventBroadcastEmailer() {
@@ -44,21 +54,46 @@ export default function EventBroadcastEmailer() {
   const eventId = admin?.EventId || "";
   const typeInfo = getEventTypeInfo(admin?.EventType);
 
+  const CATEGORIES = typeInfo.isWebinar ? WEBINAR_CATEGORIES : WORKSHOP_CATEGORIES;
+
   const [activeTab, setActiveTab] = useState("compose"); // 'compose' | 'history'
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [category, setCategory] = useState("Announcement");
+  const [category, setCategory] = useState(typeInfo.isWebinar ? "Live Broadcast Link" : "Announcement");
   const [recipientFilter, setRecipientFilter] = useState("all");
   const [organizerName, setOrganizerName] = useState(
-    admin?.AdminName ? `${admin.AdminName} (${typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})` : "Event Organizing Team"
+    admin?.AdminName 
+      ? `${admin.AdminName} (${typeInfo.isWebinar ? 'Webinar Host' : typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})` 
+      : (typeInfo.isWebinar ? "Webinar Organizing Team" : "Event Organizing Team")
   );
 
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [broadcasts, setBroadcasts] = useState([]);
 
-  // Audience filters tailored for Workshop vs Hackathon
-  const recipientFilters = typeInfo.isWorkshop
+  // Audience filters tailored for Webinar vs Workshop vs Hackathon
+  const recipientFilters = typeInfo.isWebinar
+    ? [
+        {
+          id: "all",
+          label: "All Registered Delegates",
+          desc: "Dispatches to every delegate registered for this live webinar broadcast.",
+          icon: Users,
+        },
+        {
+          id: "checked_in",
+          label: "Checked-in Keynote Delegates",
+          desc: "Dispatches only to delegates verified attending the live stream.",
+          icon: ShieldCheck,
+        },
+        {
+          id: "absent",
+          label: "Pending / Stream Reminder",
+          desc: "Dispatches a live stream reminder to delegates who haven't checked in yet.",
+          icon: Clock,
+        },
+      ]
+    : typeInfo.isWorkshop
     ? [
         {
           id: "all",
@@ -101,7 +136,38 @@ export default function EventBroadcastEmailer() {
       ];
 
   // Quick 1-click broadcast templates
-  const quickTemplates = typeInfo.isWorkshop
+  const quickTemplates = typeInfo.isWebinar
+    ? [
+        {
+          name: "Live Broadcast Link",
+          cat: "Live Broadcast Link",
+          filter: "all",
+          sub: `${admin?.EventName || "Webinar"} - Live Stream Link & Keynote Access Instructions`,
+          msg: `Dear Delegate,\n\nWe are thrilled to welcome you to ${admin?.EventName || "our upcoming webinar"}!\n\nThe live virtual broadcast will commence shortly. You can access the live stream link directly from your Delegate Hub or the virtual broadcast room.\n\nPlease log in 5 minutes ahead of the session to check your audio and video reception.\n\nLooking forward to an inspiring session!`,
+        },
+        {
+          name: "Keynote Starting Soon",
+          cat: "Keynote Announcement",
+          filter: "all",
+          sub: `${admin?.EventName || "Webinar"} - Keynote Commencing in 15 Minutes!`,
+          msg: `Dear Delegate,\n\nOur distinguished keynote speaker is about to go live! The virtual broadcast doors are now open.\n\nPlease join the live stream immediately so you don't miss the introductory keynote address and interactive audience poll.`,
+        },
+        {
+          name: "Slide Decks & Replays",
+          cat: "Slide Decks & Replays",
+          filter: "checked_in",
+          sub: `${admin?.EventName || "Webinar"} - Keynote Slides & Recording Replay Released`,
+          msg: `Dear Delegate,\n\nThank you for attending today's live webinar! The speaker presentation decks, reference whitepapers, and full video replay recording have been uploaded to your Keynote Hub.\n\nYou can review the materials and download the resources anytime.`,
+        },
+        {
+          name: "Feedback & Certificate",
+          cat: "Delegate Feedback",
+          filter: "checked_in",
+          sub: `${admin?.EventName || "Webinar"} - Delegate Review & Verified Certificate`,
+          msg: `Dear Delegate,\n\nWe value your experience and perspective! Please take 2 minutes to submit your delegate feedback and speaker ratings in your Keynote Hub.\n\nUpon submission, your verified Certificate of Participation will be issued. Thank you for making this webinar a success!`,
+        },
+      ]
+    : typeInfo.isWorkshop
     ? [
         {
           name: "Session Reminder",
@@ -257,15 +323,17 @@ export default function EventBroadcastEmailer() {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
               <Radio className="w-4 h-4 animate-pulse" />
-              <span>{typeInfo.isWorkshop ? "Workshop Broadcasts" : "Event Communications"}</span>
+              <span>{typeInfo.isWebinar ? "Webinar Keynote Broadcasts" : typeInfo.isWorkshop ? "Workshop Broadcasts" : "Event Communications"}</span>
               <span className="text-slate-400">•</span>
               <span>{admin?.EventName || "Active Event"}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Broadcast Emailer &amp; Announcements
+              {typeInfo.isWebinar ? "Webinar Delegate Broadcast Mailer" : "Broadcast Emailer & Announcements"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
-              {typeInfo.isWorkshop
+              {typeInfo.isWebinar
+                ? "Dispatch live stream links, keynote announcements, slide decks, replays, and feedback requests to registered delegates."
+                : typeInfo.isWorkshop
                 ? "Dispatch official notifications, lab repositories, and schedule updates to workshop attendees."
                 : "Dispatch mass email announcements and evaluation notices directly to participants and team leads."}
             </p>

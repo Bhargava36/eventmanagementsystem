@@ -602,7 +602,7 @@ export default function TeamCardCanvas({ team, event, eventId: propEventId }) {
             <button
               type="button"
               onClick={() => navigate(`/admin/team-card-designer?eventId=${eventId}`)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20 transition cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 transition cursor-pointer"
               title="Open Visual Team Card Designer"
             >
               <Palette className="h-3 w-3" />
@@ -659,7 +659,7 @@ export default function TeamCardCanvas({ team, event, eventId: propEventId }) {
         <button
           type="button"
           onClick={() => navigate(eventId ? `/admin/team-card-designer?eventId=${eventId}` : "/admin/team-card-designer")}
-          className="flex items-center justify-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/40 hover:bg-cyan-900/40 text-cyan-300 font-bold py-2.5 px-2 text-xs transition cursor-pointer"
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-300 font-bold py-2.5 px-2 text-xs transition cursor-pointer"
           title="Open Visual Studio to customize layout, colors & placeholders"
         >
           <Palette className="h-4 w-4" />

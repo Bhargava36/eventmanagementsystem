@@ -1048,10 +1048,10 @@ function AdminPhysicalEvent() {
                   <button
                     type="button"
                     onClick={() => navigate(`/admin/team-card-designer?eventId=${encodeURIComponent(eventId)}`)}
-                    className="inline-flex items-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 dark:bg-cyan-950/40 dark:hover:bg-cyan-900/40 px-3.5 py-2 text-xs font-semibold text-cyan-600 dark:text-cyan-300 transition cursor-pointer shadow-xs"
+                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-950/20 hover:bg-emerald-900/30 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 px-3.5 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-300 transition cursor-pointer shadow-xs"
                     title="Design custom table display cards for teams"
                   >
-                    <Palette className="h-3.5 w-3.5 text-cyan-500" />
+                    <Palette className="h-3.5 w-3.5 text-emerald-500" />
                     <span>Design Team Cards</span>
                   </button>
 
@@ -1290,7 +1290,7 @@ function AdminPhysicalEvent() {
                 </div>
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black">
                   <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Teams Requested</p>
-                  <p className="text-2xl font-black text-cyan-600 dark:text-cyan-400 mt-1">
+                  <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
                     {serviceCountsLoading ? '—' : accommodationChoiceCounts.teams}
                   </p>
                 </div>
@@ -1582,11 +1582,11 @@ function AdminPhysicalEvent() {
                     }
                     className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs sm:text-sm font-bold shadow-xs transition ${
                       !isSoloTeamSize(eventDetails?.TeamSize)
-                        ? 'border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 dark:bg-cyan-950/40 dark:hover:bg-cyan-900/40 text-cyan-600 dark:text-cyan-300 cursor-pointer'
+                        ? 'border-emerald-500/30 bg-emerald-950/20 hover:bg-emerald-900/30 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 cursor-pointer'
                         : 'border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-850 text-slate-400 dark:text-zinc-600 cursor-not-allowed opacity-60'
                     }`}
                   >
-                    <Palette className={`h-4 w-4 ${!isSoloTeamSize(eventDetails?.TeamSize) ? 'text-cyan-500' : 'text-slate-400 dark:text-zinc-600'}`} />
+                    <Palette className={`h-4 w-4 ${!isSoloTeamSize(eventDetails?.TeamSize) ? 'text-emerald-500' : 'text-slate-400 dark:text-zinc-600'}`} />
                     <span>Team Card Designer</span>
                     {isSoloTeamSize(eventDetails?.TeamSize) && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-500 font-normal">

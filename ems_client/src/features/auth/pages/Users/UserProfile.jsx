@@ -848,7 +848,7 @@ function UserProfile() {
                   className="group p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 hover:border-emerald-500/50 shadow-sm transition-all hover:shadow-md flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-xl bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
                       <Code className="w-5 h-5" />
                     </div>
                     <div>

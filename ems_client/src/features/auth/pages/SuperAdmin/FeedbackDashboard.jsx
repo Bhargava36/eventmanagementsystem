@@ -22,7 +22,10 @@ import {
   Quote,
   Laptop,
   Award,
-  ArrowRight
+  ArrowRight,
+  Trash2,
+  Layers,
+  Radio,
 } from 'lucide-react';
 import { apiUrl } from '../../../../lib/api';
 
@@ -82,6 +85,7 @@ export default function SuperAdminFeedback() {
 
   // Filters & View state
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
+  const [selectedSource, setSelectedSource] = useState('ALL'); // 'ALL' | 'EVENT' | 'PLATFORM'
   const [search, setSearch] = useState('');
   const [selectedRating, setSelectedRating] = useState('ALL');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -96,21 +100,93 @@ export default function SuperAdminFeedback() {
   const [activeItem, setActiveItem] = useState(null);
   const [copiedId, setCopiedId] = useState(false);
 
-  // Fetch dedicated platform feedback from backend
+  // Fetch both event feedback and platform feedback from backend
   const getFeedback = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(apiUrl('/api/platform-feedback'));
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch platform feedback.');
+      const [platformRes, eventRes, webinarRes] = await Promise.allSettled([
+        fetch(apiUrl('/api/platform-feedback')),
+        fetch(apiUrl('/api/feedback')),
+        fetch(apiUrl('/api/webinars/feedback/all'))
+      ]);
+
+      const combined = [];
+
+      if (platformRes.status === 'fulfilled' && platformRes.value.ok) {
+        const pData = await platformRes.value.json();
+        const pList = Array.isArray(pData.feedback) ? pData.feedback : [];
+        pList.forEach(item => {
+          combined.push({
+            ...item,
+            feedbackType: 'PLATFORM',
+            sourceLabel: 'Platform Feedback',
+            deleteEndpoint: '/api/platform-feedback',
+            EventName: item.EventName || 'General Platform',
+          });
+        });
       }
-      setFeedbackList(Array.isArray(data.feedback) ? data.feedback : []);
+
+      if (webinarRes.status === 'fulfilled' && webinarRes.value.ok) {
+        const wData = await webinarRes.value.json();
+        const wList = Array.isArray(wData.feedbacks) ? wData.feedbacks : [];
+        wList.forEach(item => {
+          combined.push({
+            ...item,
+            Rating: item.OverallRating || item.Rating || 5,
+            Category: item.FavoriteSpeaker ? `Keynote: ${item.FavoriteSpeaker}` : (item.Category || 'Webinar Experience'),
+            feedbackType: 'WEBINAR',
+            sourceLabel: 'Webinar Feedback',
+            deleteEndpoint: '/api/webinars/feedback',
+            EventName: item.EventName || 'Webinar',
+          });
+        });
+      }
+
+      if (eventRes.status === 'fulfilled' && eventRes.value.ok) {
+        const eData = await eventRes.value.json();
+        const eList = Array.isArray(eData.feedback) ? eData.feedback : [];
+        eList.forEach(item => {
+          if (item.Category === 'Webinar Experience') return;
+          combined.push({
+            ...item,
+            feedbackType: 'EVENT',
+            sourceLabel: 'Event Feedback',
+            deleteEndpoint: '/api/feedback',
+            EventName: item.EventName || 'Event',
+          });
+        });
+      }
+
+      combined.sort((a, b) => new Date(b.CreatedAt || 0) - new Date(a.CreatedAt || 0));
+      setFeedbackList(combined);
     } catch (err) {
       setError(err.message || 'Unable to connect to the server.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteFeedback = async (item, e) => {
+    if (e) e.stopPropagation();
+    const confirmed = window.confirm(`Are you sure you want to delete this ${item.sourceLabel || 'feedback'} entry?`);
+    if (!confirmed) return;
+
+    try {
+      const endpoint = item.deleteEndpoint || '/api/feedback';
+      const res = await fetch(apiUrl(`${endpoint}/${item.Id || item.id}`), {
+        method: 'DELETE'
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || 'Failed to delete feedback entry.');
+      }
+      setFeedbackList(prev => prev.filter(f => !(f.Id === item.Id && f.feedbackType === item.feedbackType)));
+      if (activeItem?.Id === item.Id && activeItem?.feedbackType === item.feedbackType) {
+        setActiveItem(null);
+      }
+    } catch (err) {
+      alert(err.message || 'Error deleting feedback.');
     }
   };
 
@@ -120,7 +196,7 @@ export default function SuperAdminFeedback() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedRating, selectedCategory, selectedEvent, sortBy, itemsPerPage]);
+  }, [search, selectedRating, selectedCategory, selectedEvent, selectedSource, sortBy, itemsPerPage]);
 
   const getRating = (item) => Number(item.Rating ?? item.rating ?? 0);
 
@@ -199,6 +275,24 @@ export default function SuperAdminFeedback() {
     };
   }, [feedbackList]);
 
+  // Counts by source
+  const sourceCounts = useMemo(() => {
+    let eventCount = 0;
+    let webinarCount = 0;
+    let platformCount = 0;
+    feedbackList.forEach(item => {
+      if (item.feedbackType === 'EVENT') eventCount++;
+      else if (item.feedbackType === 'WEBINAR') webinarCount++;
+      else platformCount++;
+    });
+    return {
+      all: feedbackList.length,
+      event: eventCount,
+      webinar: webinarCount,
+      platform: platformCount
+    };
+  }, [feedbackList]);
+
   // Filtered feedback
   const filteredFeedback = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -208,6 +302,10 @@ export default function SuperAdminFeedback() {
         const rating = getRating(item);
         const category = String(item.Category || item.category || 'General').trim();
         const eventName = String(item.EventName || item.eventName || 'Website').trim();
+
+        if (selectedSource !== 'ALL' && item.feedbackType !== selectedSource) {
+          return false;
+        }
 
         if (selectedRating !== 'ALL' && Math.round(rating) !== Number(selectedRating)) {
           return false;
@@ -254,7 +352,7 @@ export default function SuperAdminFeedback() {
         }
         return 0;
       });
-  }, [feedbackList, search, selectedRating, selectedCategory, selectedEvent, sortBy]);
+  }, [feedbackList, search, selectedRating, selectedCategory, selectedEvent, selectedSource, sortBy]);
 
   // Pagination slice
   const totalPages = Math.ceil(filteredFeedback.length / itemsPerPage) || 1;
@@ -265,6 +363,7 @@ export default function SuperAdminFeedback() {
 
   const hasActiveFilters =
     search.trim() !== '' ||
+    selectedSource !== 'ALL' ||
     selectedRating !== 'ALL' ||
     selectedCategory !== 'ALL' ||
     selectedEvent !== 'ALL' ||
@@ -272,6 +371,7 @@ export default function SuperAdminFeedback() {
 
   const resetFilters = () => {
     setSearch('');
+    setSelectedSource('ALL');
     setSelectedRating('ALL');
     setSelectedCategory('ALL');
     setSelectedEvent('ALL');
@@ -589,6 +689,64 @@ export default function SuperAdminFeedback() {
           {/* Spacious Filter & Search Controls */}
           <div className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-zinc-800 shadow-sm space-y-5">
             
+            {/* Feedback Source Switcher */}
+            <div className="flex items-center gap-2 border-b border-gray-100 dark:border-zinc-800/80 pb-4 flex-wrap">
+              <span className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mr-1">
+                Feedback Source:
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedSource('ALL')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  selectedSource === 'ALL'
+                    ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20'
+                    : 'bg-gray-100 dark:bg-zinc-900 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>All Feedbacks ({sourceCounts.all})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedSource('EVENT')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  selectedSource === 'EVENT'
+                    ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20'
+                    : 'bg-gray-100 dark:bg-zinc-900 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span>Event Feedbacks ({sourceCounts.event})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedSource('WEBINAR')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  selectedSource === 'WEBINAR'
+                    ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20'
+                    : 'bg-gray-100 dark:bg-zinc-900 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span>Webinar Feedbacks ({sourceCounts.webinar})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedSource('PLATFORM')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  selectedSource === 'PLATFORM'
+                    ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20'
+                    : 'bg-gray-100 dark:bg-zinc-900 text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Platform Feedbacks ({sourceCounts.platform})</span>
+              </button>
+            </div>
+
             {/* Search Input */}
             <div className="relative">
               <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -792,7 +950,7 @@ export default function SuperAdminFeedback() {
 
                 return (
                   <motion.div
-                    key={item.Id || item.id || index}
+                    key={item.Id ? `${item.feedbackType}-${item.Id}` : `item-${index}`}
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.04 }}
@@ -836,18 +994,41 @@ export default function SuperAdminFeedback() {
                     {/* Card Bottom: Metadata Badges & Timestamp */}
                     <div className="flex items-center justify-between gap-2 pt-3 border-t border-gray-100 dark:border-zinc-800/80 text-xs">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-zinc-900 text-gray-800 dark:text-zinc-300 font-medium">
-                          {eventName}
-                        </span>
+                        {item.feedbackType === 'EVENT' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold text-[11px]">
+                            <Radio className="w-3 h-3" />
+                            {eventName}
+                          </span>
+                        ) : item.feedbackType === 'WEBINAR' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold text-[11px]">
+                            <Award className="w-3 h-3" />
+                            {eventName}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold text-[11px]">
+                            <MessageSquare className="w-3 h-3" />
+                            Platform Experience
+                          </span>
+                        )}
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-zinc-900 text-gray-600 dark:text-zinc-400">
                           <Tag className="w-3 h-3" />
                           {category}
                         </span>
                       </div>
 
-                      <span className="text-gray-400 dark:text-zinc-500 whitespace-nowrap">
-                        {formatDate(item.CreatedAt || item.createdAt)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 dark:text-zinc-500 whitespace-nowrap">
+                          {formatDate(item.CreatedAt || item.createdAt)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteFeedback(item, e)}
+                          title="Delete this feedback"
+                          className="p-1 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 );
@@ -861,7 +1042,7 @@ export default function SuperAdminFeedback() {
                   <thead>
                     <tr className="text-left text-gray-400 dark:text-zinc-500 border-b border-gray-100 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-900/40">
                       <th className="py-4 px-6 font-semibold">User</th>
-                      <th className="py-4 px-6 font-semibold">Event</th>
+                      <th className="py-4 px-6 font-semibold">Source & Event</th>
                       <th className="py-4 px-6 font-semibold">Category</th>
                       <th className="py-4 px-6 font-semibold">Rating</th>
                       <th className="py-4 px-6 font-semibold">Comment</th>
@@ -881,7 +1062,7 @@ export default function SuperAdminFeedback() {
 
                       return (
                         <tr
-                          key={item.Id || item.id || index}
+                          key={item.Id ? `${item.feedbackType}-${item.Id}` : `item-row-${index}`}
                           onClick={() => setActiveItem(item)}
                           className="hover:bg-gray-50/80 dark:hover:bg-zinc-900/50 cursor-pointer transition-colors"
                         >
@@ -898,8 +1079,12 @@ export default function SuperAdminFeedback() {
                           </td>
 
                           <td className="py-4 px-6 text-gray-700 dark:text-zinc-300 font-medium">
-                            <span className="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-zinc-900 text-xs">
-                              {eventName}
+                            <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
+                              item.feedbackType === 'EVENT' || item.feedbackType === 'WEBINAR'
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                : 'bg-gray-100 dark:bg-zinc-900 text-gray-700 dark:text-zinc-300'
+                            }`}>
+                              {item.feedbackType === 'EVENT' ? `Event: ${eventName}` : item.feedbackType === 'WEBINAR' ? `Webinar: ${eventName}` : 'Platform'}
                             </span>
                           </td>
 
@@ -925,15 +1110,25 @@ export default function SuperAdminFeedback() {
                           </td>
 
                           <td className="py-4 px-6 text-right">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveItem(item);
-                              }}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveItem(item);
+                                }}
+                                title="View Details"
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors cursor-pointer"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => handleDeleteFeedback(item, e)}
+                                title="Delete Feedback"
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1045,9 +1240,9 @@ export default function SuperAdminFeedback() {
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800/80 space-y-1">
                   <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                    Event & Category
+                    {activeItem.feedbackType === 'WEBINAR' ? 'Webinar Feedback' : activeItem.feedbackType === 'EVENT' ? 'Event Feedback' : 'Platform Feedback'}
                   </span>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
                     {activeItem.EventName || activeItem.eventName || 'Website'}
                   </p>
                   <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
@@ -1070,6 +1265,38 @@ export default function SuperAdminFeedback() {
                   </span>
                 </div>
               </div>
+
+              {activeItem.feedbackType === 'WEBINAR' && (
+                <div className="p-3.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/50 space-y-2.5 text-xs">
+                  <span className="font-bold uppercase tracking-wider text-[10px] text-emerald-700 dark:text-emerald-400">
+                    Webinar Keynote Metrics
+                  </span>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/40">
+                      <span className="text-[10px] text-gray-400 block">Keynote Rating</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{activeItem.KeynoteRating || 5}/5</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/40">
+                      <span className="text-[10px] text-gray-400 block">Stream Audio/Video</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{activeItem.AudioVideoRating || 5}/5</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/40">
+                      <span className="text-[10px] text-gray-400 block">Content Depth</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{activeItem.ContentQuality || 5}/5</span>
+                    </div>
+                  </div>
+                  {activeItem.FavoriteSpeaker && (
+                    <div className="text-slate-600 dark:text-zinc-300">
+                      <span className="font-semibold">Favorite Speaker:</span> {activeItem.FavoriteSpeaker}
+                    </div>
+                  )}
+                  {activeItem.Suggestions && (
+                    <div className="text-slate-600 dark:text-zinc-300">
+                      <span className="font-semibold">Suggestions:</span> {activeItem.Suggestions}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Comment Content */}
               <div className="space-y-2">
@@ -1097,17 +1324,28 @@ export default function SuperAdminFeedback() {
 
               {/* Footer */}
               <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-zinc-800 text-xs text-gray-400">
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  {formatDateTime(activeItem.CreatedAt || activeItem.createdAt)}
-                </span>
-
                 <button
-                  onClick={() => setActiveItem(null)}
-                  className="px-5 py-2 rounded-xl bg-gray-900 text-white dark:bg-white dark:text-black font-semibold text-xs hover:opacity-90 transition-opacity"
+                  type="button"
+                  onClick={(e) => handleDeleteFeedback(activeItem, e)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-xs font-semibold transition cursor-pointer"
                 >
-                  Done
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Feedback</span>
                 </button>
+
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    {formatDateTime(activeItem.CreatedAt || activeItem.createdAt)}
+                  </span>
+
+                  <button
+                    onClick={() => setActiveItem(null)}
+                    className="px-5 py-2 rounded-xl bg-gray-900 text-white dark:bg-white dark:text-black font-semibold text-xs hover:opacity-90 transition-opacity cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

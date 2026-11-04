@@ -712,7 +712,60 @@ const migrationQueries = [
     `ALTER TABLE event_attendance ADD COLUMN IF NOT EXISTS DayNumber INT NOT NULL DEFAULT 1`,
     `ALTER TABLE event_attendance ADD COLUMN IF NOT EXISTS SessionSlot VARCHAR(50) NOT NULL DEFAULT 'Morning'`,
     `ALTER TABLE event_attendance ADD COLUMN IF NOT EXISTS AttendanceDate VARCHAR(50) NULL`,
-    `ALTER TABLE event_attendance MODIFY COLUMN Status VARCHAR(50) NOT NULL DEFAULT 'not_checked_in'`
+    `ALTER TABLE event_attendance MODIFY COLUMN Status VARCHAR(50) NOT NULL DEFAULT 'not_checked_in'`,
+
+    `CREATE TABLE IF NOT EXISTS webinar_sessions (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        SessionTitle VARCHAR(255) NOT NULL,
+        DayNumber INT NOT NULL DEFAULT 1,
+        SessionDate VARCHAR(100) NULL,
+        StartTime VARCHAR(50) NULL,
+        EndTime VARCHAR(50) NULL,
+        SpeakerName VARCHAR(255) NULL,
+        SpeakerDesignation VARCHAR(255) NULL,
+        SpeakerCompany VARCHAR(255) NULL,
+        SpeakerPhoto TEXT NULL,
+        VenueOrMeetLink TEXT NULL,
+        Description TEXT NULL,
+        ResourcesUrl TEXT NULL,
+        DisplayOrder INT DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_webinar_sessions_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS webinar_resources (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        Title VARCHAR(255) NOT NULL,
+        ResourceType VARCHAR(100) DEFAULT 'Deck',
+        ResourceUrl TEXT NOT NULL,
+        Description TEXT NULL,
+        SessionId INT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_webinar_resources_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS webinar_feedback (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        UserId INT NULL,
+        UserName VARCHAR(150) NOT NULL,
+        UserEmail VARCHAR(150) NULL,
+        UserPhoto LONGTEXT NULL,
+        KeynoteRating TINYINT DEFAULT 5,
+        AudioVideoRating TINYINT DEFAULT 5,
+        ContentQuality TINYINT DEFAULT 5,
+        OverallRating TINYINT DEFAULT 5,
+        FavoriteSpeaker VARCHAR(150) NULL,
+        Comments TEXT NOT NULL,
+        Suggestions TEXT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_webinar_feedback_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 
 let isMigrating = false;
