@@ -1,8 +1,8 @@
 const feedbackService = require('./feedbackService');
 
 const createFeedback = (req, res) => {
-    const { name, eventName, category, rating, comments } = req.body;
-    if (!name?.trim() || !eventName?.trim() || !category?.trim() || rating === undefined || rating === null) {
+    const { name, eventName, eventId, category, rating, comments } = req.body;
+    if (!name?.trim() || (!eventName?.trim() && !eventId) || rating === undefined || rating === null) {
         return res.status(400).json({
             message: 'Please provide all required feedback fields'
         });
@@ -15,15 +15,16 @@ const createFeedback = (req, res) => {
     }
     const feedbackData = {
         UserName: name.trim(),
-        EventName: eventName.trim(),
-        Category: category.trim(),
+        EventName: eventName?.trim() || null,
+        EventId: eventId ? Number(eventId) : null,
+        Category: category?.trim() || 'General Experience',
         Rating: numericRating,
         Comments: comments?.trim() || null
     };
     feedbackService.createFeedback(feedbackData, (err, feedback) => {
         if (err) {
             console.error('Create feedback error:', err);
-            if (err.message.includes('Event not found')) {
+            if (err.message && err.message.includes('Event not found')) {
                 return res.status(404).json({
                     message: err.message
                 });
@@ -33,7 +34,7 @@ const createFeedback = (req, res) => {
             });
         }
         return res.status(201).json({
-            message: 'Feedback submitted successfully',
+            message: feedback.isUpdated ? 'Feedback updated successfully' : 'Feedback submitted successfully',
             feedback
         });
     });

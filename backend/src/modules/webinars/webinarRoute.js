@@ -23,6 +23,11 @@ router.get('/feedback/all', webinarController.getAllWebinarFeedback);
 router.delete('/feedback/:id', webinarController.deleteFeedback);
 router.post('/:eventId/feedback', webinarController.submitFeedback);
 router.post('/feedback', webinarController.submitFeedback);
-router.get('/:eventId/feedback', webinarController.getEventFeedback);
+// Live Q&A Routes
+router.get('/:eventId/questions', webinarController.getQuestions);
+router.post('/:eventId/questions', webinarController.createQuestion);
+router.post('/questions/:questionId/upvote', webinarController.upvoteQuestion);
+router.put('/questions/:questionId/status', webinarController.updateQuestionStatus);
+router.delete('/questions/:questionId', webinarController.deleteQuestion);
 
 module.exports = router;

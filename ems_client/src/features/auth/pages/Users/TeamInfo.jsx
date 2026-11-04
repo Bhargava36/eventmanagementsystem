@@ -61,9 +61,9 @@ import { getEventTheme, getEventTypeInfo, isSoloTeamSize } from "../../../../lib
 import useTheme from "../../../../Hooks/useTheme";
 import PhysicalHackathonThemesSection from "../../../../components/Molecules/PhysicalHackathonThemesSection";
 import PhysicalTeamPSActionCard from "../../../../components/Molecules/PhysicalTeamPSActionCard";
-import EventPlatformFeedbackCard from './components/EventPlatformFeedbackCard';
-import WebinarDelegateFeedbackCard from './components/WebinarDelegateFeedbackCard';
+import UnifiedEventFeedbackCard from './components/UnifiedEventFeedbackCard';
 import WebinarLiveQA from './components/WebinarLiveQA';
+import SeminarDelegatePassCard from './components/SeminarDelegatePassCard';
 import ParticipantAttendanceView from './components/ParticipantAttendanceView';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../../../../lib/calendarUtils';
 
@@ -650,6 +650,7 @@ function TeamInfo() {
     const typeInfo = getEventTypeInfo(team?.EventType || eventObj?.EventType || '');
     const isWorkshop = typeInfo.isWorkshop;
     const isWebinar = typeInfo.isWebinar;
+    const isSeminar = typeInfo.isSeminar;
     const isSessionBased = isWorkshop || isWebinar;
 
     const qrPassValue = isSessionBased
@@ -1013,110 +1014,112 @@ function TeamInfo() {
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 1.5: TEAM PASS & PUBLIC SCANNER QR CODE ── */}
             {/* ══════════════════════════════════════════════════════════════ */}
-            <section
-                className="rounded-3xl border p-5 sm:p-6 bg-white dark:bg-zinc-950/90 border-slate-200/80 dark:border-zinc-800 shadow-sm relative overflow-hidden"
-                style={{
-                    borderColor: theme.cardBorder,
-                    boxShadow: isDark ? `0 8px 30px -10px ${theme.glow}` : `0 2px 15px -2px rgba(0,0,0,0.04)`
-                }}
-            >
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                    {/* Left: Info & Actions */}
-                    <div className="space-y-2 text-center md:text-left flex-1">
-                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                            <span
-                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider border"
-                                style={{
-                                    backgroundColor: theme.badgeBg,
-                                    borderColor: theme.badgeBorder,
-                                    color: theme.badgeText
-                                }}
-                            >
-                                <QrCode className="w-3.5 h-3.5" />
-                                {isWebinar ? "Official Webinar Delegate Pass" : isWorkshop ? "Official Workshop Entry Pass" : "Official Public Team Pass"}
-                            </span>
-                            <span className="text-xs text-slate-500 dark:text-gray-400 font-medium">
-                                {isWebinar ? "Show or Scan to Verify Virtual Join" : isWorkshop ? "Present at Registration Desk" : "No Login Required to View"}
-                            </span>
+            {!isSeminar && (
+                <section
+                    className="rounded-3xl border p-5 sm:p-6 bg-white dark:bg-zinc-950/90 border-slate-200/80 dark:border-zinc-800 shadow-sm relative overflow-hidden"
+                    style={{
+                        borderColor: theme.cardBorder,
+                        boxShadow: isDark ? `0 8px 30px -10px ${theme.glow}` : `0 2px 15px -2px rgba(0,0,0,0.04)`
+                    }}
+                >
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                        {/* Left: Info & Actions */}
+                        <div className="space-y-2 text-center md:text-left flex-1">
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                                <span
+                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider border"
+                                    style={{
+                                        backgroundColor: theme.badgeBg,
+                                        borderColor: theme.badgeBorder,
+                                        color: theme.badgeText
+                                    }}
+                                >
+                                    <QrCode className="w-3.5 h-3.5" />
+                                    {isWebinar ? "Official Webinar Delegate Pass" : isWorkshop ? "Official Workshop Entry Pass" : "Official Public Team Pass"}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-gray-400 font-medium">
+                                    {isWebinar ? "Show or Scan to Verify Virtual Join" : isWorkshop ? "Present at Registration Desk" : "No Login Required to View"}
+                                </span>
+                            </div>
+
+                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                                {isWebinar ? "Scannable Webinar Delegate Entry Pass" : isWorkshop ? "Scannable Workshop Attendee Entry Pass" : "Scannable Team Verification QR Code"}
+                            </h2>
+
+                            <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 max-w-xl leading-relaxed">
+                                {isWebinar
+                                    ? "Present or scan this digital delegate pass to verify your attendance for keynote sessions and generate your webinar completion certificate."
+                                    : isWorkshop
+                                    ? "Present this verified QR pass at the workshop check-in desk or lab entrance for instant automated check-in and attendance recording."
+                                    : "Judges, organizers, and booth visitors can scan this QR code with their smartphone camera to view your verified team credentials, problem statement, roster, and live scorecard."}
+                            </p>
+
+                            {/* Action buttons */}
+                            <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2.5">
+                                <a
+                                    href={publicTeamUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-sm hover:opacity-90"
+                                    style={{
+                                        backgroundColor: theme.buttonBg,
+                                        boxShadow: `0 4px 14px -3px ${theme.glow}`
+                                    }}
+                                >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <span>{isWebinar ? "Open Delegate Pass" : isWorkshop ? "Open Public Pass" : "Open Public Page"}</span>
+                                </a>
+
+                                <button
+                                    type="button"
+                                    onClick={handleCopyPublicUrl}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors"
+                                >
+                                    {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                    <span>{copiedLink ? "Link Copied!" : "Copy Link"}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setQrModalOpen(true)}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors"
+                                >
+                                    <Maximize2 className="w-3.5 h-3.5" />
+                                    <span>Enlarge QR Pass</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleDownloadQr}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors"
+                                >
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>Save PNG</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                            {isWebinar ? "Scannable Webinar Delegate Entry Pass" : isWorkshop ? "Scannable Workshop Attendee Entry Pass" : "Scannable Team Verification QR Code"}
-                        </h2>
-
-                        <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 max-w-xl leading-relaxed">
-                            {isWebinar
-                                ? "Present or scan this digital delegate pass to verify your attendance for keynote sessions and generate your webinar completion certificate."
-                                : isWorkshop
-                                ? "Present this verified QR pass at the workshop check-in desk or lab entrance for instant automated check-in and attendance recording."
-                                : "Judges, organizers, and booth visitors can scan this QR code with their smartphone camera to view your verified team credentials, problem statement, roster, and live scorecard."}
-                        </p>
-
-                        {/* Action buttons */}
-                        <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-                            <a
-                                href={publicTeamUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-sm hover:opacity-90"
-                                style={{
-                                    backgroundColor: theme.buttonBg,
-                                    boxShadow: `0 4px 14px -3px ${theme.glow}`
-                                }}
-                            >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                <span>{isWebinar ? "Open Delegate Pass" : isWorkshop ? "Open Public Pass" : "Open Public Page"}</span>
-                            </a>
-
-                            <button
-                                type="button"
-                                onClick={handleCopyPublicUrl}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors"
-                            >
-                                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                                <span>{copiedLink ? "Link Copied!" : "Copy Link"}</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setQrModalOpen(true)}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors"
-                            >
-                                <Maximize2 className="w-3.5 h-3.5" />
-                                <span>Enlarge QR Pass</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={handleDownloadQr}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors"
-                            >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>Save PNG</span>
-                            </button>
+                        {/* Right: QR Code Visual Box */}
+                        <div
+                            onClick={() => setQrModalOpen(true)}
+                            className="p-3.5 bg-white rounded-2xl border-2 border-slate-200 dark:border-zinc-700 shadow-md flex flex-col items-center justify-center cursor-pointer hover:scale-[1.02] transition-transform shrink-0 group relative"
+                            title="Click to enlarge"
+                        >
+                            <QRCodeSVG
+                                id={`team-qr-code-${teamId}`}
+                                value={qrPassValue}
+                                size={135}
+                                level="H"
+                                includeMargin={false}
+                            />
+                            <div className="flex items-center gap-1 mt-2 text-[10px] font-black text-slate-800 tracking-wider uppercase group-hover:text-emerald-600 transition-colors">
+                                <span>{isWebinar ? `DELEGATE #${team.TeamId}` : isWorkshop ? `ATTENDEE #${team.TeamId}` : `TEAM #${team.TeamId}`}</span>
+                                <Maximize2 className="w-2.5 h-2.5 opacity-60" />
+                            </div>
                         </div>
                     </div>
-
-                    {/* Right: QR Code Visual Box */}
-                    <div
-                        onClick={() => setQrModalOpen(true)}
-                        className="p-3.5 bg-white rounded-2xl border-2 border-slate-200 dark:border-zinc-700 shadow-md flex flex-col items-center justify-center cursor-pointer hover:scale-[1.02] transition-transform shrink-0 group relative"
-                        title="Click to enlarge"
-                    >
-                        <QRCodeSVG
-                            id={`team-qr-code-${teamId}`}
-                            value={qrPassValue}
-                            size={135}
-                            level="H"
-                            includeMargin={false}
-                        />
-                        <div className="flex items-center gap-1 mt-2 text-[10px] font-black text-slate-800 tracking-wider uppercase group-hover:text-emerald-600 transition-colors">
-                            <span>{isWebinar ? `DELEGATE #${team.TeamId}` : isWorkshop ? `ATTENDEE #${team.TeamId}` : `TEAM #${team.TeamId}`}</span>
-                            <Maximize2 className="w-2.5 h-2.5 opacity-60" />
-                        </div>
-                    </div>
-                </div>
-            </section>
+                </section>
+            )}
 
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 1.8: HACKATHON THEME & PROBLEM STATEMENT ─────── */}
@@ -1159,9 +1162,17 @@ function TeamInfo() {
             )}
 
             {/* ══════════════════════════════════════════════════════════════ */}
-            {/* ── PRIORITY 2: WORKSHOP / WEBINAR LEARNING HUB ──────────── */}
+            {/* ── PRIORITY 2: SEMINAR / WORKSHOP / WEBINAR LEARNING HUB ─── */}
             {/* ══════════════════════════════════════════════════════════════ */}
-            {isSessionBased ? (
+            {isSeminar ? (
+                <div className="space-y-6">
+                    <SeminarDelegatePassCard
+                        eventId={team.EventId || eventId}
+                        user={user}
+                        team={team}
+                    />
+                </div>
+            ) : isSessionBased ? (
                 <div className="space-y-0">
                     {/* Header Banner with Add-to-Calendar */}
                     <div className="p-5 sm:p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1517,9 +1528,10 @@ function TeamInfo() {
                     {/* Tab 5: Delegate Feedback (Webinar only) */}
                     {activeWorkshopTab === 'feedback' && isWebinar && (
                         <div className="space-y-4">
-                            <WebinarDelegateFeedbackCard
+                            <UnifiedEventFeedbackCard
                                 eventId={eventId}
                                 user={user}
+                                title="Webinar Delegate Feedback & Session Review"
                             />
                         </div>
                     )}
@@ -2455,19 +2467,14 @@ function TeamInfo() {
                 </div>
             )}
 
-            <motion.section {...fadeUp(0.16)}>
-                {isWebinar ? (
-                    <WebinarDelegateFeedbackCard 
+            {!isSeminar && !isWebinar && (
+                <motion.section {...fadeUp(0.16)}>
+                    <UnifiedEventFeedbackCard 
                         eventId={eventId}
                         user={user} 
                     />
-                ) : (
-                    <EventPlatformFeedbackCard 
-                        eventId={eventId}
-                        user={user} 
-                    />
-                )}
-            </motion.section>
+                </motion.section>
+            )}
         </div>
     );
 }

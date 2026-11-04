@@ -154,7 +154,9 @@ function EventsDashboard() {
     PrimaryTextColor: '#FFFFFF',
     SecondaryTextColor: '#000000',
     TertiaryTextColor: '#FFFFFF',
-    Posters: []
+    Posters: [],
+    AuditoriumVenue: '',
+    MaxCapacity: 200
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -219,6 +221,20 @@ function EventsDashboard() {
           }
           if (!next.Location || next.Location === 'TBD' || next.Location === '-') {
             next.Location = 'Virtual Live Broadcast Room';
+          }
+        } else if (lower.includes('seminar') || lower.includes('conference')) {
+          next.TeamSize = '1';
+          if (!next.HackathonMode) {
+            next.HackathonMode = 'Physical';
+          }
+          if (!next.AuditoriumVenue) {
+            next.AuditoriumVenue = 'Main Campus Auditorium';
+          }
+          if (!next.Location) {
+            next.Location = 'Main Campus Auditorium';
+          }
+          if (!next.MaxCapacity) {
+            next.MaxCapacity = 200;
           }
         } else if (lower.includes('workshop')) {
           if (!next.TeamSize || next.TeamSize === '2-4') {
@@ -920,6 +936,47 @@ function EventsDashboard() {
                         <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>Webinar selected: Flow will automatically lock to 100% Virtual live streaming with solo delegate passes.</span>
+                        </div>
+                      )}
+
+                      {(formData.EventType === 'Seminar' || formData.EventType === 'Conference') && (
+                        <div className="space-y-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/20">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span>Seminar / Conference: Configured for campus auditorium venue, solo delegate entry passes, and keynote proceedings.</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Auditorium / Hall Venue *
+                              </label>
+                              <input
+                                type="text"
+                                name="AuditoriumVenue"
+                                value={formData.AuditoriumVenue}
+                                onChange={handleChange}
+                                placeholder="e.g. Dr. APJ Abdul Kalam Central Auditorium"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Maximum Seating Capacity (Seats) *
+                              </label>
+                              <input
+                                type="number"
+                                name="MaxCapacity"
+                                min="10"
+                                max="5000"
+                                value={formData.MaxCapacity}
+                                onChange={handleChange}
+                                placeholder="200"
+                                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+                              />
+                            </div>
+                          </div>
                         </div>
                       )}
 

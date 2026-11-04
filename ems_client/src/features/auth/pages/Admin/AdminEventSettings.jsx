@@ -160,7 +160,9 @@ export default function AdminEventSettings() {
   });
 
   useEffect(() => {
-    if (typeInfo.isWebinar) {
+    if (typeInfo.isSeminar) {
+      setActiveTab('seminar_config');
+    } else if (typeInfo.isWebinar) {
       setActiveTab('webinar_config');
     } else if (typeInfo.isWorkshop) {
       setActiveTab('workshop_config');
@@ -169,7 +171,7 @@ export default function AdminEventSettings() {
     } else if (isVirtualMode || isBothMode) {
       setActiveTab('virtual');
     }
-  }, [typeInfo.isWebinar, typeInfo.isWorkshop, isVirtualMode, isPhysicalMode, isBothMode]);
+  }, [typeInfo.isSeminar, typeInfo.isWebinar, typeInfo.isWorkshop, isVirtualMode, isPhysicalMode, isBothMode]);
 
   useEffect(() => {
     const handleEventUpdated = (e) => {
@@ -252,7 +254,9 @@ export default function AdminEventSettings() {
 
       setEventData(ev);
       const evType = getEventTypeInfo(ev.EventType);
-      if (evType.isWebinar) {
+      if (evType.isSeminar) {
+        setActiveTab('seminar_config');
+      } else if (evType.isWebinar) {
         setActiveTab('webinar_config');
       } else if (evType.isWorkshop) {
         setActiveTab('workshop_config');
@@ -292,6 +296,7 @@ export default function AdminEventSettings() {
         RegistrationEnd: ev.RegistrationEnd || '',
         TeamSize: ev.TeamSize || '4',
         VirtualStatus: ev.VirtualStatus || 'NOT_STARTED',
+        IsMeetActive: ev.VirtualStatus === 'LIVE' ? 1 : 0,
         VirtualMeetUrl: ev.VirtualMeetUrl || '',
         HackathonMode: ev.HackathonMode || 'Physical',
         AccommodationEnabled: ev.AccommodationEnabled === true || Number(ev.AccommodationEnabled) === 1 ? 1 : 0,
@@ -581,23 +586,38 @@ export default function AdminEventSettings() {
 
     const payload = { ...settingsForm };
 
-    // For webinars and workshops, team size is 1 (individual delegate/attendee)
-    if (typeInfo.isWebinar || typeInfo.isWorkshop) {
+    // For webinars, workshops, and seminars, team size is 1 (individual delegate/attendee)
+    if (typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
       payload.TeamSize = '1';
       if (typeInfo.isWebinar) {
         payload.HackathonMode = 'Virtual';
         if (!payload.Location || payload.Location.trim() === '') {
           payload.Location = 'Virtual Live Broadcast Room';
         }
+      } else if (typeInfo.isSeminar) {
+        payload.HackathonMode = 'Physical';
+        if (!payload.Location || payload.Location.trim() === '') {
+          payload.Location = 'Main University Auditorium';
+        }
       }
       payload.RegistrationOpen = settingsForm.RegistrationOpen !== undefined ? settingsForm.RegistrationOpen : 1;
       payload.PhysicalRegistrationOpen = payload.RegistrationOpen;
       payload.VirtualRegistrationOpen = payload.RegistrationOpen;
-      if (!payload.RegistrationStart) {
-        payload.RegistrationStart = payload.PhysicalRegistrationStart || payload.VirtualRegistrationStart || payload.StartDate;
-      }
-      if (!payload.RegistrationEnd) {
-        payload.RegistrationEnd = payload.PhysicalRegistrationEnd || payload.VirtualRegistrationEnd || payload.EndDate;
+
+      // Force-sync track fields to match seminar/webinar/workshop fields so old dates don't linger
+      payload.VirtualRegistrationStart = payload.RegistrationStart;
+      payload.PhysicalRegistrationStart = payload.RegistrationStart;
+      payload.VirtualRegistrationEnd = payload.RegistrationEnd;
+      payload.PhysicalRegistrationEnd = payload.RegistrationEnd;
+      payload.VirtualStartDate = payload.StartDate;
+      payload.PhysicalStartDate = payload.StartDate;
+      payload.VirtualEndDate = payload.EndDate;
+      payload.PhysicalEndDate = payload.EndDate;
+
+      if (payload.IsMeetActive === 1) {
+        payload.VirtualStatus = 'LIVE';
+      } else if (payload.IsMeetActive === 0 && payload.VirtualStatus === 'LIVE') {
+        payload.VirtualStatus = 'NOT_STARTED';
       }
     } else {
       // Validate TeamSize for hackathons
@@ -608,14 +628,35 @@ export default function AdminEventSettings() {
       }
     }
 
-    // Validate Event and Registration dates
-    const regStart = payload.PhysicalRegistrationStart || payload.VirtualRegistrationStart || payload.RegistrationStart;
-    const regEnd = payload.PhysicalRegistrationEnd || payload.VirtualRegistrationEnd || payload.RegistrationEnd;
+    // Validate Event and Registration dates accurately based on event type
+    let regStart, regEnd, eventStart, eventEnd;
+    if (typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
+      regStart = payload.RegistrationStart || payload.PhysicalRegistrationStart;
+      regEnd = payload.RegistrationEnd || payload.PhysicalRegistrationEnd;
+      eventStart = payload.StartDate || payload.PhysicalStartDate;
+      eventEnd = payload.EndDate || payload.PhysicalEndDate;
+    } else if (payload.HackathonMode === 'Virtual') {
+      regStart = payload.VirtualRegistrationStart || payload.RegistrationStart;
+      regEnd = payload.VirtualRegistrationEnd || payload.RegistrationEnd;
+      eventStart = payload.VirtualStartDate || payload.StartDate;
+      eventEnd = payload.VirtualEndDate || payload.EndDate;
+    } else if (payload.HackathonMode === 'Physical') {
+      regStart = payload.PhysicalRegistrationStart || payload.RegistrationStart;
+      regEnd = payload.PhysicalRegistrationEnd || payload.RegistrationEnd;
+      eventStart = payload.PhysicalStartDate || payload.StartDate;
+      eventEnd = payload.PhysicalEndDate || payload.EndDate;
+    } else {
+      regStart = payload.RegistrationStart || payload.PhysicalRegistrationStart || payload.VirtualRegistrationStart;
+      regEnd = payload.RegistrationEnd || payload.PhysicalRegistrationEnd || payload.VirtualRegistrationEnd;
+      eventStart = payload.StartDate;
+      eventEnd = payload.EndDate;
+    }
+
     const dateErr = validateEventDates({
       registrationStart: regStart,
       registrationEnd: regEnd,
-      eventStart: payload.StartDate,
-      eventEnd: payload.EndDate
+      eventStart: eventStart,
+      eventEnd: eventEnd
     });
     if (dateErr) {
       toast.error(dateErr);
@@ -1156,7 +1197,34 @@ export default function AdminEventSettings() {
           {/* Seamless Navigation Tabs */}
           <div className="relative pt-2">
             <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto">
-              {(typeInfo.isWebinar
+              {(typeInfo.isSeminar
+                ? [
+                    {
+                      id: 'seminar_config',
+                      label: 'Seminar & Hall Settings',
+                      icon: Sliders,
+                      status: (settingsForm.RegistrationOpen === 1 || settingsForm.PhysicalRegistrationOpen === 1) ? 'Open' : 'Paused',
+                    },
+                    {
+                      id: 'conference_guidelines',
+                      label: 'Conference Guidelines & Themes',
+                      icon: FileText,
+                      status: null,
+                    },
+                    {
+                      id: 'sponsors',
+                      label: 'Sponsors & Partners',
+                      icon: Award,
+                      status: null,
+                    },
+                    {
+                      id: 'gallery',
+                      label: 'Seminar Gallery',
+                      icon: Camera,
+                      status: null,
+                    },
+                  ]
+                : typeInfo.isWebinar
                 ? [
                     {
                       id: 'webinar_config',
@@ -1460,12 +1528,45 @@ export default function AdminEventSettings() {
 
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           const nextVal = settingsForm.IsMeetActive === 1 ? 0 : 1;
+                          const nextStatus = nextVal === 1 ? 'LIVE' : 'NOT_STARTED';
+
+                          if (nextVal === 1 && (!settingsForm.VirtualMeetUrl || !settingsForm.VirtualMeetUrl.trim())) {
+                            toast.error('Please enter a valid Live Stream / Meeting URL before going live.');
+                            return;
+                          }
+
                           setSettingsForm((prev) => ({
                             ...prev,
-                            IsMeetActive: nextVal
+                            IsMeetActive: nextVal,
+                            VirtualStatus: nextStatus
                           }));
+
+                          const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
+                          if (targetEventId) {
+                            try {
+                              await Promise.all([
+                                fetch(`${API_BASE_URL}/api/events/${targetEventId}/virtual-status`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ VirtualStatus: nextStatus })
+                                }),
+                                fetch(`${API_BASE_URL}/api/events/${targetEventId}/virtual-meet`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ VirtualMeetUrl: (settingsForm.VirtualMeetUrl || '').trim() })
+                                })
+                              ]);
+                              if (nextVal === 1) {
+                                toast.success('Webinar is now LIVE! Meeting link is active for delegates.');
+                              } else {
+                                toast.info('Webinar live broadcast set to Standby.');
+                              }
+                            } catch (err) {
+                              console.error('Error toggling live broadcast:', err);
+                            }
+                          }
                         }}
                         className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 shrink-0 ${
                           settingsForm.IsMeetActive === 1
@@ -1949,6 +2050,368 @@ export default function AdminEventSettings() {
                       name="Highlights"
                       rows={4}
                       placeholder="e.g.&#10;• Build and deploy 2 production-ready projects&#10;• Official Workshop Certificate of Completion&#10;• Access to downloadable code repositories & slides"
+                      value={settingsForm.Highlights || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* SEMINAR CONFIG TAB */}
+              {activeTab === 'seminar_config' && (
+                <div className="space-y-6">
+                  {/* Seminar Header Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Sliders className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Seminar Controls &amp; Auditorium Settings
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Configure delegate registration availability, conference dates, auditorium hall venue, and campus delegate facilities.
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                      settingsForm.RegistrationOpen === 1
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                    }`}>
+                      {settingsForm.RegistrationOpen === 1 ? '• Registrations Open' : '• Registrations Paused'}
+                    </span>
+                  </div>
+
+                  {/* Seminar Registration Controls Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Delegate Registration Availability</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xl">
+                          When paused, new delegates cannot sign up or acquire tickets for this conference on the public portal.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextVal = settingsForm.RegistrationOpen === 1 ? 0 : 1;
+                          setSettingsForm((prev) => ({
+                            ...prev,
+                            RegistrationOpen: nextVal,
+                            PhysicalRegistrationOpen: nextVal,
+                            VirtualRegistrationOpen: nextVal
+                          }));
+                        }}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 shrink-0 ${
+                          settingsForm.RegistrationOpen === 1
+                            ? 'bg-white dark:bg-black hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+                        }`}
+                      >
+                        {settingsForm.RegistrationOpen === 1 ? (
+                          <>
+                            <Lock className="h-4 w-4" />
+                            <span>Pause Delegate Registrations</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="h-4 w-4" />
+                            <span>Resume / Open Registrations</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Registration Dates */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>From: Delegate Registration Start Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="RegistrationStart"
+                          value={settingsForm.RegistrationStart ? settingsForm.RegistrationStart.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>To: Registration Deadline Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="RegistrationEnd"
+                          value={settingsForm.RegistrationEnd ? settingsForm.RegistrationEnd.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Seminar Schedule & Auditorium Venue Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Conference Schedule &amp; Auditorium Venue</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>From: Seminar Start Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="StartDate"
+                          value={settingsForm.StartDate ? settingsForm.StartDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>To: Seminar End Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="EndDate"
+                          value={settingsForm.EndDate ? settingsForm.EndDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 pt-2">
+                      <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>Auditorium Hall Venue &amp; Campus Location</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="Location"
+                        placeholder="e.g. Main Convention Center, APJ Abdul Kalam Auditorium, Block 3"
+                        value={settingsForm.Location || ''}
+                        onChange={handleInputChange}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Delegate Campus Services & ID Badge Generation */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>Delegate Campus Services &amp; ID Badge Passes</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                        Configure guest room accommodation, conference lunch/high tea tokens, and digital delegate badge passes.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* Accommodation */}
+                      <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <BedDouble className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">Guest Accommodation</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={settingsForm.AccommodationEnabled === 1}
+                            onChange={(e) =>
+                              setSettingsForm((prev) => ({
+                                ...prev,
+                                AccommodationEnabled: e.target.checked ? 1 : 0
+                              }))
+                            }
+                            className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                          />
+                        </div>
+                        {settingsForm.AccommodationEnabled === 1 && (
+                          <div>
+                            <label className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium">Lodging Fee (INR)</label>
+                            <input
+                              type="number"
+                              name="AccommodationFee"
+                              value={settingsForm.AccommodationFee || 0}
+                              onChange={handleInputChange}
+                              className="w-full mt-1 px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-slate-900 dark:text-white"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Food & Meals */}
+                      <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Utensils className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">Conference Lunch</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={settingsForm.FoodEnabled === 1}
+                            onChange={(e) =>
+                              setSettingsForm((prev) => ({
+                                ...prev,
+                                FoodEnabled: e.target.checked ? 1 : 0
+                              }))
+                            }
+                            className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                          />
+                        </div>
+                        {settingsForm.FoodEnabled === 1 && (
+                          <div>
+                            <label className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium">Meal Token Fee (INR)</label>
+                            <input
+                              type="number"
+                              name="FoodFee"
+                              value={settingsForm.FoodFee || 0}
+                              onChange={handleInputChange}
+                              className="w-full mt-1 px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-slate-900 dark:text-white"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ID Card Generation */}
+                      <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">Delegate Gate Pass</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={settingsForm.IDCardEnabled === 1}
+                            onChange={(e) =>
+                              setSettingsForm((prev) => ({
+                                ...prev,
+                                IDCardEnabled: e.target.checked ? 1 : 0
+                              }))
+                            }
+                            className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                          />
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                          Enables printable gate passes and auditorium entrance badges with QR verification.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* On-Spot UPI Payments */}
+                    <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800 space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <IndianRupee className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Admin UPI ID (for On-Spot Delegate Registration Fees)</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="AdminUpiId"
+                          placeholder="e.g. conference@oksbi or admin@upi"
+                          value={settingsForm.AdminUpiId || ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CONFERENCE GUIDELINES TAB */}
+              {activeTab === 'conference_guidelines' && (
+                <div className="space-y-6">
+                  {/* Conference Overview */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>About the Conference &amp; Theme Overview</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Provide a comprehensive overview of the seminar theme, keynote objectives, and conference scope for prospective delegates.
+                    </p>
+                    <textarea
+                      name="Description"
+                      rows={5}
+                      placeholder="e.g. National AI &amp; Cloud Computing Seminar 2026 brings together leading researchers, cloud architects, and industry pioneers to deliberate on the future of scalable intelligence and multi-cloud architectures..."
+                      value={settingsForm.Description || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+
+                  {/* Conference Subject Tracks & Keynote Themes */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Keynote Tracks &amp; Conference Domains</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Highlight the discussion tracks, topics, and domains covered during the keynote presentations.
+                    </p>
+                    <textarea
+                      name="Requirements"
+                      rows={4}
+                      placeholder="e.g.&#10;• Track 1: Next-Gen Generative Models and Safety Alignment&#10;• Track 2: Enterprise Cloud Topology &amp; Zero-Trust Security&#10;• Track 3: High-Performance GPU Clusters &amp; Distributed Training"
+                      value={settingsForm.Requirements || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+
+                  {/* Delegate Guidelines & Auditorium Etiquette */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Delegate Guidelines &amp; Hall Entry Policies</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Auditorium gate pass verification requirements, reporting time, and seating guidelines.
+                    </p>
+                    <textarea
+                      name="Facilities"
+                      rows={4}
+                      placeholder="e.g.&#10;• Delegates are requested to carry their digital or printed gate pass with QR code.&#10;• Seating in the main auditorium is on a first-come, first-served basis.&#10;• Questions for keynote speakers can be submitted directly through the conference portal."
+                      value={settingsForm.Facilities || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+
+                  {/* Highlights & Delegate Takeaways */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Keynote Highlights &amp; Delegate Benefits</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Certificates of participation, speaker interaction sessions, and conference proceedings booklet.
+                    </p>
+                    <textarea
+                      name="Highlights"
+                      rows={4}
+                      placeholder="e.g.&#10;• Verified National Seminar Certificate of Participation&#10;• Digital access to all presentation decks and research abstracts&#10;• Dedicated networking tea with distinguished keynote speakers"
                       value={settingsForm.Highlights || ''}
                       onChange={handleInputChange}
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"

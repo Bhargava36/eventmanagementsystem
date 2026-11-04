@@ -440,14 +440,32 @@ function PublicEventDetails() {
 
         const isWorkshopEvent = (evData.event?.EventType || '').toLowerCase().includes('workshop');
         const isWebinarEvent = (evData.event?.EventType || '').toLowerCase().includes('webinar');
-        if (isWorkshopEvent || isWebinarEvent) {
-          const apiPrefix = isWebinarEvent ? 'webinars' : 'workshops';
+        const isSeminarEvent = (evData.event?.EventType || '').toLowerCase().includes('seminar') || (evData.event?.EventType || '').toLowerCase().includes('conference');
+        if (isWorkshopEvent || isWebinarEvent || isSeminarEvent) {
+          const apiPrefix = isSeminarEvent ? 'seminars' : isWebinarEvent ? 'webinars' : 'workshops';
           fetch(`${API_BASE_URL}/api/${apiPrefix}/${id}/sessions`)
             .then((r) => r.json())
             .then((sData) => {
               if (sData?.sessions) setWorkshopSessions(sData.sessions);
             })
             .catch(() => {});
+
+          if (isSeminarEvent) {
+            fetch(`${API_BASE_URL}/api/seminars/${id}/speakers`)
+              .then((r) => r.json())
+              .then((spkData) => {
+                if (spkData?.speakers && spkData.speakers.length > 0) {
+                  setCoreTeam(spkData.speakers.map(s => ({
+                    Name: s.Name,
+                    Role: s.Designation || 'Keynote Speaker',
+                    Company: s.Organization,
+                    Photo: s.PhotoUrl,
+                    Bio: s.Topic ? `Keynote: ${s.Topic}` : s.Bio
+                  })));
+                }
+              })
+              .catch(() => {});
+          }
         }
 
         if (evData.event?.Sponsors && (!sponsorsRes.value || !sponsorsRes.value.ok)) {
@@ -688,7 +706,7 @@ function PublicEventDetails() {
   if (error || !event) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white pt-32 pb-24 flex items-center justify-center px-4">
-        <div className="max-w-md w-full p-8 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-center space-y-5 shadow-xl">
+        <div className="max-w-md w-full p-8 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-center space-y-5 shadow-xl">
           <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
             <AlertCircle className="h-7 w-7" />
           </div>
@@ -1104,7 +1122,7 @@ function PublicEventDetails() {
                       {/* Middle: Timer or Paused Alert */}
                       <div className="flex flex-col items-center">
                         {isVirtualRegistrationClosed ? (
-                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold">
                             <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
                             <span>
                               {isVirtualPaused
@@ -1189,7 +1207,7 @@ function PublicEventDetails() {
                       {/* Middle: Timer or Paused Alert */}
                       <div className="flex flex-col items-center">
                         {isPhysicalRegistrationClosed ? (
-                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold">
                             <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
                             <span>
                               {isPhysicalPaused
@@ -1302,21 +1320,23 @@ function PublicEventDetails() {
               </div>
             </div>
 
-            {(eventTypeInfo.isWorkshop || eventTypeInfo.isWebinar) ? (
+            {(eventTypeInfo.isWorkshop || eventTypeInfo.isWebinar || eventTypeInfo.isSeminar) ? (
               <div className="space-y-8">
-                {/* Workshop / Webinar Curriculum & Agenda */}
+                {/* Workshop / Webinar / Seminar Curriculum & Agenda */}
                 <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800/80">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-2xl" style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}>
-                        {eventTypeInfo.isWebinar ? <Radio className="h-5 w-5" /> : <GraduationCap className="h-5 w-5" />}
+                        {eventTypeInfo.isSeminar ? <Building2 className="h-5 w-5" /> : eventTypeInfo.isWebinar ? <Radio className="h-5 w-5" /> : <GraduationCap className="h-5 w-5" />}
                       </div>
                       <div>
                         <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-                          {eventTypeInfo.isWebinar ? 'Webinar Keynote Agenda & Schedule' : 'Workshop Curriculum & Hands-on Agenda'}
+                          {eventTypeInfo.isSeminar ? 'Seminar Conference Agenda & Proceedings' : eventTypeInfo.isWebinar ? 'Webinar Keynote Agenda & Schedule' : 'Workshop Curriculum & Hands-on Agenda'}
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                          {eventTypeInfo.isWebinar
+                          {eventTypeInfo.isSeminar
+                            ? 'Keynote lectures, paper discussions, tea breaks, and auditorium proceedings schedule'
+                            : eventTypeInfo.isWebinar
                             ? 'Live streaming schedule, distinguished keynote sessions, and panel discussions'
                             : 'Step-by-step interactive sessions, code-along labs, and live instructor demos'}
                         </p>
@@ -1324,7 +1344,7 @@ function PublicEventDetails() {
                     </div>
                     {workshopSessions.length > 0 && (
                       <span className="self-start sm:self-auto px-3 py-1 rounded-lg text-xs font-bold border" style={{ backgroundColor: eventTheme.badgeBg, borderColor: eventTheme.badgeBorder, color: eventTheme.badgeText }}>
-                        {workshopSessions.length} {eventTypeInfo.isWebinar ? 'Keynotes Planned' : 'Modules Planned'}
+                        {workshopSessions.length} {eventTypeInfo.isSeminar ? 'Sessions Planned' : eventTypeInfo.isWebinar ? 'Keynotes Planned' : 'Modules Planned'}
                       </span>
                     )}
                   </div>
@@ -1337,7 +1357,7 @@ function PublicEventDetails() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.25, delay: idx * 0.05 }}
-                          className="p-5 rounded-2xl border bg-slate-50/70 dark:bg-zinc-950 transition-all group border-slate-200/90 dark:border-zinc-800 hover:border-emerald-500/40"
+                          className="p-5 rounded-2xl border bg-slate-50/70 dark:bg-black transition-all group border-slate-200/90 dark:border-zinc-800 hover:border-emerald-500/40"
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="flex items-start gap-3">
@@ -1371,7 +1391,7 @@ function PublicEventDetails() {
                       ))}
                     </div>
                   ) : (
-                    <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/40 dark:bg-zinc-950/40">
+                    <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/40 dark:bg-black/40">
                       <Presentation className="h-10 w-10 mx-auto text-slate-400 dark:text-zinc-600 stroke-[1.5]" />
                       <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-200">
                         {eventTypeInfo.isWebinar ? 'Keynote Agenda & Speaker Topics Coming Soon' : 'Interactive Modules & Lab Syllabus Coming Soon'}
@@ -1468,7 +1488,7 @@ function PublicEventDetails() {
                             transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                           />
                         ) : (
-                          <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 z-0" />
+                          <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 z-0" />
                         )}
 
                         <span className={`relative z-20 flex items-center gap-2.5 ${
@@ -1518,7 +1538,7 @@ function PublicEventDetails() {
                       className="space-y-6"
                     >
                       {(event.VirtualStartDate || event.VirtualRegistrationStart) && (
-                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
                           <div className="space-y-1">
                             <span className="text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[10px] block">
                               Virtual Registration Window
@@ -1539,7 +1559,7 @@ function PublicEventDetails() {
                       )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-3">
+                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
                           <div className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: eventTheme.accent }}>
                             <CheckCircle2 className="h-4 w-4" />
                             <span>Digital Infrastructure Provided</span>
@@ -1560,7 +1580,7 @@ function PublicEventDetails() {
                           )}
                         </div>
 
-                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-3">
+                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
                           <div className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: eventTheme.secondary || eventTheme.accent }}>
                             <ShieldCheck className="h-4 w-4" />
                             <span>Virtual Track Requirements</span>
@@ -1636,7 +1656,7 @@ function PublicEventDetails() {
                                   {additionalPrizes.map((pz, idx) => (
                                     <div
                                       key={pz.Id || idx}
-                                      className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950 flex items-center justify-between gap-3"
+                                      className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-black flex items-center justify-between gap-3"
                                     >
                                       <div className="flex items-center gap-2.5">
                                         <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/80 dark:bg-zinc-900" style={{ color: eventTheme.accent }}>
@@ -1675,7 +1695,7 @@ function PublicEventDetails() {
                       className="space-y-6"
                     >
                       {(event.PhysicalStartDate || event.PhysicalRegistrationStart) && (
-                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
                           <div className="space-y-1">
                             <span className="text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider text-[10px] block">
                               Campus Registration Window
@@ -1705,7 +1725,7 @@ function PublicEventDetails() {
                       )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-3">
+                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
                           <div className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: eventTheme.accent }}>
                             <CheckCircle2 className="h-4 w-4" />
                             <span>Campus Amenities & Lab Facilities</span>
@@ -1726,7 +1746,7 @@ function PublicEventDetails() {
                           )}
                         </div>
 
-                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-3">
+                        <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
                           <div className="text-xs font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: eventTheme.secondary || eventTheme.accent }}>
                             <ShieldCheck className="h-4 w-4" />
                             <span>On-Campus Prerequisites</span>
@@ -1802,7 +1822,7 @@ function PublicEventDetails() {
                                   {additionalPrizes.map((pz, idx) => (
                                     <div
                                       key={pz.Id || idx}
-                                      className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950 flex items-center justify-between gap-3"
+                                      className="p-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-black flex items-center justify-between gap-3"
                                     >
                                       <div className="flex items-center gap-2.5">
                                         <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-slate-200/80 dark:bg-zinc-900" style={{ color: eventTheme.accent }}>
@@ -1883,7 +1903,7 @@ function PublicEventDetails() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.2, delay: idx * 0.04 }}
-                        className={`p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3.5 transition-colors ${
+                        className={`p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 flex items-center gap-3.5 transition-colors ${
                           'hover:border-emerald-500/30'
                         }`}
                       >
@@ -1919,7 +1939,7 @@ function PublicEventDetails() {
                     ))}
                   </div>
                 ) : (
-                  <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/40 dark:bg-zinc-950/40">
+                  <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3 bg-slate-50/40 dark:bg-black/40">
                     {eventTypeInfo.isWebinar ? (
                       <Mic className="h-10 w-10 mx-auto text-emerald-500/60 stroke-[1.5]" />
                     ) : (
@@ -1953,9 +1973,23 @@ function PublicEventDetails() {
 
               <div className="space-y-3.5 text-xs text-slate-700 dark:text-zinc-300">
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                  <span className="text-slate-500 dark:text-zinc-400">{eventTypeInfo.isSessionBased ? 'Seat Type' : 'Allowed Team Size'}</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{eventTypeInfo.isWebinar ? 'Solo Delegate Pass (1 Seat)' : eventTypeInfo.isWorkshop ? 'Solo Participant (1 Seat)' : `${event.TeamSize || 'Flexible'} Members`}</span>
+                  <span className="text-slate-500 dark:text-zinc-400">{eventTypeInfo.isSessionBased || eventTypeInfo.isSeminar ? 'Seat Type' : 'Allowed Team Size'}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{eventTypeInfo.isSeminar ? 'Solo Delegate Pass (1 Seat)' : eventTypeInfo.isWebinar ? 'Solo Delegate Pass (1 Seat)' : eventTypeInfo.isWorkshop ? 'Solo Participant (1 Seat)' : `${event.TeamSize || 'Flexible'} Members`}</span>
                 </div>
+
+                {eventTypeInfo.isSeminar && (
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                    <span className="text-slate-500 dark:text-zinc-400">Auditorium Venue</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{event.AuditoriumVenue || event.Location || 'Main Campus Auditorium'}</span>
+                  </div>
+                )}
+
+                {eventTypeInfo.isSeminar && event.MaxCapacity && (
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                    <span className="text-slate-500 dark:text-zinc-400">Seating Capacity</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">{event.MaxCapacity} Seats Maximum</span>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-zinc-800">
                   <span className="text-slate-500 dark:text-zinc-400">Registration Begins</span>

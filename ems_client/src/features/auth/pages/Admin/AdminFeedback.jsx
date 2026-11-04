@@ -209,7 +209,7 @@ export default function AdminFeedback() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 whileHover={{ y: -3 }}
-                className="bg-white dark:bg-zinc-950 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-zinc-800/80 shadow-sm transition"
+                className="bg-white dark:bg-black rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-zinc-800/80 shadow-sm transition"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -234,7 +234,7 @@ export default function AdminFeedback() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.1 }}
-          className="bg-white dark:bg-zinc-950 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-zinc-800 shadow-sm"
+          className="bg-white dark:bg-black rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-zinc-800 shadow-sm"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>

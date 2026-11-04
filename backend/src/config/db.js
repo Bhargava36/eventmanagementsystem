@@ -765,6 +765,101 @@ const migrationQueries = [
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_webinar_feedback_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS webinar_questions (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        UserId INT NULL,
+        AuthorName VARCHAR(150) NOT NULL,
+        TargetSpeaker VARCHAR(150) DEFAULT 'All Speakers & Panel',
+        QuestionText TEXT NOT NULL,
+        Upvotes INT DEFAULT 1,
+        Status ENUM('open', 'answered', 'pinned', 'dismissed') DEFAULT 'open',
+        Answer TEXT NULL,
+        AnsweredBy VARCHAR(150) NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        AnsweredAt DATETIME NULL,
+        INDEX idx_webinar_qa_event (EventId),
+        INDEX idx_webinar_qa_status (Status),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS webinar_question_upvotes (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        QuestionId INT NOT NULL,
+        UserId INT NOT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_user_question (QuestionId, UserId),
+        INDEX idx_wqu_question (QuestionId),
+        FOREIGN KEY (QuestionId) REFERENCES webinar_questions(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS AuditoriumVenue VARCHAR(255) NULL`,
+    `ALTER TABLE events ADD COLUMN IF NOT EXISTS MaxCapacity INT DEFAULT NULL`,
+
+    `CREATE TABLE IF NOT EXISTS seminar_speakers (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        Name VARCHAR(150) NOT NULL,
+        Designation VARCHAR(150) NULL,
+        Organization VARCHAR(150) NULL,
+        Topic VARCHAR(255) NULL,
+        Bio TEXT NULL,
+        PhotoUrl LONGTEXT NULL,
+        LinkedinUrl VARCHAR(255) NULL,
+        OrderIndex INT DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_seminar_speakers_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS seminar_sessions (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        SessionTitle VARCHAR(255) NOT NULL,
+        SessionDate DATE NULL,
+        StartTime VARCHAR(50) NOT NULL,
+        EndTime VARCHAR(50) NOT NULL,
+        SpeakerName VARCHAR(150) NULL,
+        HallName VARCHAR(150) DEFAULT 'Main Auditorium',
+        Description TEXT NULL,
+        OrderIndex INT DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_seminar_sessions_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS seminar_attendance (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        UserId INT NOT NULL,
+        TeamId INT NULL,
+        CheckInStatus ENUM('Registered', 'CheckedIn') DEFAULT 'Registered',
+        CheckInTime DATETIME NULL,
+        CheckInBy VARCHAR(150) NULL,
+        FeedbackSubmitted BOOLEAN DEFAULT FALSE,
+        FeedbackRating TINYINT DEFAULT 0,
+        FeedbackComments TEXT NULL,
+        CertificateIssued BOOLEAN DEFAULT FALSE,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_user_seminar (EventId, UserId),
+        INDEX idx_seminar_att_event (EventId),
+        INDEX idx_seminar_att_user (UserId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS seminar_resources (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        Title VARCHAR(255) NOT NULL,
+        ResourceType VARCHAR(100) DEFAULT 'Slides',
+        ResourceUrl TEXT NOT NULL,
+        Description TEXT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_seminar_res_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 

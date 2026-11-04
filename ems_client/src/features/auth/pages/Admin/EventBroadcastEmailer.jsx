@@ -15,7 +15,7 @@ import {
   FileText,
   UserCheck,
   GraduationCap,
-  Sparkle
+
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import useToast from "../../../../Hooks/useToast";
@@ -40,6 +40,16 @@ const WEBINAR_CATEGORIES = [
   { id: "Emergency", label: "Urgent Notification" },
 ];
 
+const SEMINAR_CATEGORIES = [
+  { id: "Keynote Announcement", label: "Keynote Announcement" },
+  { id: "Auditorium & Gate Pass", label: "Auditorium & Gate Pass" },
+  { id: "Conference Schedule", label: "Conference Schedule & Timetable" },
+  { id: "Proceedings & Slides", label: "Proceedings & Presentation Slides" },
+  { id: "Delegate Certificate", label: "Delegate Feedback & Certificate" },
+  { id: "Important Notice", label: "Important Notice" },
+  { id: "Emergency", label: "Urgent Notification" },
+];
+
 export default function EventBroadcastEmailer() {
   const toast = useToast();
 
@@ -54,25 +64,56 @@ export default function EventBroadcastEmailer() {
   const eventId = admin?.EventId || "";
   const typeInfo = getEventTypeInfo(admin?.EventType);
 
-  const CATEGORIES = typeInfo.isWebinar ? WEBINAR_CATEGORIES : WORKSHOP_CATEGORIES;
+  const CATEGORIES = typeInfo.isSeminar 
+    ? SEMINAR_CATEGORIES 
+    : typeInfo.isWebinar 
+    ? WEBINAR_CATEGORIES 
+    : WORKSHOP_CATEGORIES;
 
   const [activeTab, setActiveTab] = useState("compose"); // 'compose' | 'history'
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
-  const [category, setCategory] = useState(typeInfo.isWebinar ? "Live Broadcast Link" : "Announcement");
+  const [category, setCategory] = useState(
+    typeInfo.isSeminar 
+      ? "Keynote Announcement" 
+      : typeInfo.isWebinar 
+      ? "Live Broadcast Link" 
+      : "Announcement"
+  );
   const [recipientFilter, setRecipientFilter] = useState("all");
   const [organizerName, setOrganizerName] = useState(
     admin?.AdminName 
-      ? `${admin.AdminName} (${typeInfo.isWebinar ? 'Webinar Host' : typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})` 
-      : (typeInfo.isWebinar ? "Webinar Organizing Team" : "Event Organizing Team")
+      ? `${admin.AdminName} (${typeInfo.isSeminar ? 'Conference Chair' : typeInfo.isWebinar ? 'Webinar Host' : typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})` 
+      : (typeInfo.isSeminar ? "Seminar Organizing Committee" : typeInfo.isWebinar ? "Webinar Organizing Team" : "Event Organizing Team")
   );
 
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [broadcasts, setBroadcasts] = useState([]);
 
-  // Audience filters tailored for Webinar vs Workshop vs Hackathon
-  const recipientFilters = typeInfo.isWebinar
+  // Audience filters tailored for Seminar vs Webinar vs Workshop vs Hackathon
+  const recipientFilters = typeInfo.isSeminar
+    ? [
+        {
+          id: "all",
+          label: "All Registered Delegates",
+          desc: "Dispatches to every delegate registered for this conference & seminar.",
+          icon: Users,
+        },
+        {
+          id: "checked_in",
+          label: "Checked-in Delegates (In Hall)",
+          desc: "Dispatches only to delegates verified checked-in inside the auditorium/hall.",
+          icon: ShieldCheck,
+        },
+        {
+          id: "absent",
+          label: "Pending / Gate Arrival Reminder",
+          desc: "Dispatches gate pass and auditorium arrival reminders to delegates not yet checked in.",
+          icon: Clock,
+        },
+      ]
+    : typeInfo.isWebinar
     ? [
         {
           id: "all",
@@ -136,7 +177,38 @@ export default function EventBroadcastEmailer() {
       ];
 
   // Quick 1-click broadcast templates
-  const quickTemplates = typeInfo.isWebinar
+  const quickTemplates = typeInfo.isSeminar
+    ? [
+        {
+          name: "Auditorium Gate Pass",
+          cat: "Auditorium & Gate Pass",
+          filter: "all",
+          sub: `${admin?.EventName || "Seminar"} - Auditorium Gate Pass & Registration Desk Details`,
+          msg: `Dear Delegate,\n\nWe look forward to welcoming you to ${admin?.EventName || "our upcoming seminar"}!\n\nPlease have your Delegate QR Pass or Registration ID ready at the convention entry gate for expedited verification and badge pickup.\n\nAuditorium doors open 30 minutes prior to the inaugural session.\n\nSee you at the conference!`,
+        },
+        {
+          name: "Inaugural Keynote Commencing",
+          cat: "Keynote Announcement",
+          filter: "all",
+          sub: `${admin?.EventName || "Seminar"} - Inaugural Keynote Commencing in 15 Minutes!`,
+          msg: `Dear Delegate,\n\nOur distinguished keynote speaker is scheduled to commence the inaugural address shortly in the main auditorium hall.\n\nPlease take your seats to ensure a prompt start to the opening proceedings.`,
+        },
+        {
+          name: "Proceedings & Slide Decks",
+          cat: "Proceedings & Slides",
+          filter: "checked_in",
+          sub: `${admin?.EventName || "Seminar"} - Research Proceedings & Presentation Slides Released`,
+          msg: `Dear Delegate,\n\nThank you for attending today's seminar sessions! The conference proceedings booklet, research presentations, and speaker slide decks have been compiled and uploaded to the delegate portal.\n\nYou may view and download all digital materials directly from your Delegate Hub.`,
+        },
+        {
+          name: "Delegate Review & Certificate",
+          cat: "Delegate Certificate",
+          filter: "checked_in",
+          sub: `${admin?.EventName || "Seminar"} - Delegate Feedback & Certificate of Participation`,
+          msg: `Dear Delegate,\n\nWe appreciate your participation in ${admin?.EventName || "today's seminar"}. Please take 2 minutes to provide your session ratings and feedback.\n\nUpon submission, your verified Certificate of Participation will be issued in your portal. Thank you for making this conference a success!`,
+        },
+      ]
+    : typeInfo.isWebinar
     ? [
         {
           name: "Live Broadcast Link",
@@ -297,14 +369,26 @@ export default function EventBroadcastEmailer() {
   const getCategoryBadgeClass = (cat) => {
     switch (cat) {
       case "Important Alert":
+      case "Important Notice":
       case "Emergency":
         return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30";
       case "Schedule Update":
+      case "Conference Schedule":
+      case "Schedule & Timings":
         return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
       case "Study Materials":
+      case "Slide Decks & Replays":
+      case "Proceedings & Slides":
         return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
       case "Venue Information":
+      case "Auditorium & Gate Pass":
         return "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30";
+      case "Keynote Announcement":
+      case "Speaker Spotlight":
+        return "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30";
+      case "Delegate Feedback":
+      case "Delegate Certificate":
+        return "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30";
       default:
         return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
     }
@@ -323,15 +407,29 @@ export default function EventBroadcastEmailer() {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
               <Radio className="w-4 h-4 animate-pulse" />
-              <span>{typeInfo.isWebinar ? "Webinar Keynote Broadcasts" : typeInfo.isWorkshop ? "Workshop Broadcasts" : "Event Communications"}</span>
+              <span>
+                {typeInfo.isSeminar
+                  ? "Conference & Seminar Broadcasts"
+                  : typeInfo.isWebinar
+                  ? "Webinar Keynote Broadcasts"
+                  : typeInfo.isWorkshop
+                  ? "Workshop Broadcasts"
+                  : "Event Communications"}
+              </span>
               <span className="text-slate-400">•</span>
               <span>{admin?.EventName || "Active Event"}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {typeInfo.isWebinar ? "Webinar Delegate Broadcast Mailer" : "Broadcast Emailer & Announcements"}
+              {typeInfo.isSeminar
+                ? "Seminar Delegate Broadcast Mailer"
+                : typeInfo.isWebinar
+                ? "Webinar Delegate Broadcast Mailer"
+                : "Broadcast Emailer & Announcements"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
-              {typeInfo.isWebinar
+              {typeInfo.isSeminar
+                ? "Dispatch keynote announcements, gate entry instructions, conference proceedings, and participation certificates directly to registered delegates."
+                : typeInfo.isWebinar
                 ? "Dispatch live stream links, keynote announcements, slide decks, replays, and feedback requests to registered delegates."
                 : typeInfo.isWorkshop
                 ? "Dispatch official notifications, lab repositories, and schedule updates to workshop attendees."
@@ -346,7 +444,7 @@ export default function EventBroadcastEmailer() {
               onClick={() => setActiveTab("compose")}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                 activeTab === "compose"
-                  ? "bg-white dark:bg-zinc-950 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                  ? "bg-white dark:bg-black text-emerald-600 dark:text-emerald-400 shadow-sm"
                   : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
@@ -358,7 +456,7 @@ export default function EventBroadcastEmailer() {
               onClick={() => setActiveTab("history")}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                 activeTab === "history"
-                  ? "bg-white dark:bg-zinc-950 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                  ? "bg-white dark:bg-black text-emerald-600 dark:text-emerald-400 shadow-sm"
                   : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
@@ -379,7 +477,7 @@ export default function EventBroadcastEmailer() {
             {/* Form Column */}
             <div className="lg:col-span-7 space-y-5">
               {/* Quick Template Fillers */}
-              <div className="p-4 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-2">
+              <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block">
                   1-Click Quick Templates
                 </span>
@@ -405,7 +503,7 @@ export default function EventBroadcastEmailer() {
 
               <form
                 onSubmit={handleSendBroadcast}
-                className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-5"
+                className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-5"
               >
                 {/* Target Audience — Rectangular cards, no pills */}
                 <div>
@@ -479,7 +577,13 @@ export default function EventBroadcastEmailer() {
                     required
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    placeholder="e.g. Web Development Workshop - Lab 2 Guidelines & GitHub Repo Link"
+                    placeholder={
+                      typeInfo.isSeminar
+                        ? "e.g. National AI Seminar - Keynote Commencing & Auditorium Gate Pass"
+                        : typeInfo.isWebinar
+                        ? "e.g. AI & Cloud Keynote - Live Broadcast Link & Session Instructions"
+                        : "e.g. Web Development Workshop - Lab 2 Guidelines & GitHub Repo Link"
+                    }
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
@@ -516,7 +620,13 @@ export default function EventBroadcastEmailer() {
                     type="text"
                     value={organizerName}
                     onChange={(e) => setOrganizerName(e.target.value)}
-                    placeholder="e.g. Workshop Operations Team"
+                    placeholder={
+                      typeInfo.isSeminar
+                        ? "e.g. Seminar Organizing Committee"
+                        : typeInfo.isWebinar
+                        ? "e.g. Webinar Host Operations"
+                        : "e.g. Workshop Operations Team"
+                    }
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
@@ -559,7 +669,7 @@ export default function EventBroadcastEmailer() {
               </div>
 
               {/* Styled Mock Email Container */}
-              <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm">
+              <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm">
                 <div className="bg-slate-100 dark:bg-zinc-900 px-4 py-3 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-sm bg-rose-400" />
@@ -571,7 +681,13 @@ export default function EventBroadcastEmailer() {
 
                 <div className="bg-emerald-700 p-5 text-white space-y-2">
                   <div className="inline-block px-2.5 py-0.5 rounded-md bg-white/20 text-[10px] font-bold tracking-wider uppercase">
-                    {typeInfo.isWorkshop ? "Workshop Official Notice" : "Hackathon Official Notice"}
+                    {typeInfo.isSeminar
+                      ? "Seminar Official Notice"
+                      : typeInfo.isWebinar
+                      ? "Webinar Keynote Notice"
+                      : typeInfo.isWorkshop
+                      ? "Workshop Official Notice"
+                      : "Hackathon Official Notice"}
                   </div>
                   <h3 className="text-base font-extrabold truncate">
                     {admin?.EventName || "Event Announcement"}
@@ -592,7 +708,7 @@ export default function EventBroadcastEmailer() {
                   </h4>
 
                   <p className="text-slate-600 dark:text-zinc-400 font-medium">
-                    Dear {typeInfo.isWorkshop ? "Workshop Attendee" : "Participant"},
+                    Dear {typeInfo.isSeminar || typeInfo.isWebinar ? "Delegate" : typeInfo.isWorkshop ? "Workshop Attendee" : "Participant"},
                   </p>
 
                   <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-mono text-[11px]">
@@ -615,7 +731,7 @@ export default function EventBroadcastEmailer() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm"
+            className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">

@@ -111,6 +111,8 @@ function EventInfo() {
         SecondaryTextColor: initialEvent?.SecondaryTextColor || '',
         TertiaryTextColor: initialEvent?.TertiaryTextColor || '',
         Posters: Array.isArray(initialEvent?.Posters) ? initialEvent.Posters : [],
+        AuditoriumVenue: initialEvent?.AuditoriumVenue || '',
+        MaxCapacity: initialEvent?.MaxCapacity || '',
     });
 
     const handleBack = () => {
@@ -188,6 +190,8 @@ function EventInfo() {
                 SecondaryTextColor: data.event.SecondaryTextColor || '',
                 TertiaryTextColor: data.event.TertiaryTextColor || '',
                 Posters: Array.isArray(data.event.Posters) ? data.event.Posters : [],
+                AuditoriumVenue: data.event.AuditoriumVenue || '',
+                MaxCapacity: data.event.MaxCapacity || '',
             });
         } catch (error) {
             console.error('Fetch event error:', error);
@@ -966,6 +970,37 @@ function EventInfo() {
                                             </p>
                                         </div>
                                     </div>
+
+                                    {(formData.EventType === 'Seminar' || formData.EventType === 'Conference') && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-50/20 dark:bg-emerald-950/20">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                    Auditorium / Hall Venue
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="AuditoriumVenue"
+                                                    value={formData.AuditoriumVenue || ''}
+                                                    onChange={handleInputChange}
+                                                    placeholder="e.g. Dr. APJ Abdul Kalam Auditorium"
+                                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                    Auditorium Seating Capacity (Max Seats)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    name="MaxCapacity"
+                                                    value={formData.MaxCapacity || ''}
+                                                    onChange={handleInputChange}
+                                                    placeholder="200"
+                                                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">

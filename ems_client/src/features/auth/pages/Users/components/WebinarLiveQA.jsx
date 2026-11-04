@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare,
@@ -7,13 +7,14 @@ import {
   HelpCircle,
   CheckCircle2,
   Pin,
-  Sparkles,
+
   User,
   Clock,
   Filter,
   Mic,
   Share2
 } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../../Hooks/useToast';
 
 export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
@@ -23,53 +24,66 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
   const [submitting, setSubmitting] = useState(false);
   const [filterMode, setFilterMode] = useState('top'); // 'top' | 'recent' | 'mine'
 
+  const currentUserId = user?.Id || user?.id || user?.UserId || null;
   const storageKey = `webinar_live_qa_${eventId}`;
 
-  // Default initial sample questions to give delegate an active live room feel
-  const initialQuestions = useMemo(() => [
-    {
-      id: 'q-sample-1',
-      authorName: 'Dr. Ramesh Kumar',
-      authorId: 101,
-      targetSpeaker: 'Keynote Speaker',
-      text: 'How can small organizations practically implement low-latency edge inference with limited on-premise compute?',
-      upvotes: 24,
-      upvotedBy: [],
-      status: 'answered',
-      createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
-      answer: 'Answered live during Session 1: Edge quantization models like INT8 or TensorRT with ONNX Runtime are recommended.'
-    },
-    {
-      id: 'q-sample-2',
-      authorName: 'Sneha Patel',
-      authorId: 102,
-      targetSpeaker: 'All Speakers & Panel',
-      text: 'Will the keynote presentation slide decks and benchmarks be made available right after the live stream concludes?',
-      upvotes: 18,
-      upvotedBy: [],
-      status: 'pinned',
-      createdAt: new Date(Date.now() - 15 * 60000).toISOString()
-    }
-  ], []);
+  const [questions, setQuestions] = useState([]);
 
-  const [questions, setQuestions] = useState(() => {
+  const fetchQuestions = useCallback(async () => {
+    if (!eventId) return;
+    try {
+      const url = currentUserId
+        ? `${API_BASE_URL}/api/webinars/${eventId}/questions?userId=${currentUserId}`
+        : `${API_BASE_URL}/api/webinars/${eventId}/questions`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.questions)) {
+          const mapped = data.questions.map((q) => ({
+            id: q.Id,
+            authorName: q.AuthorName,
+            authorId: q.UserId,
+            authorPhoto: q.AuthorPhoto,
+            targetSpeaker: q.TargetSpeaker,
+            text: q.QuestionText,
+            upvotes: q.Upvotes,
+            hasUpvoted: Boolean(q.HasUpvoted),
+            status: q.Status,
+            createdAt: q.CreatedAt,
+            answer: q.Answer,
+            answeredBy: q.AnsweredBy,
+            answeredAt: q.AnsweredAt
+          }));
+          setQuestions(mapped);
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(mapped));
+          } catch {}
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load live webinar questions from API, using fallback:', err);
+    }
+
+    // Fallback to localStorage if API unavailable
     try {
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setQuestions(parsed);
+        }
       }
     } catch {}
-    return initialQuestions;
-  });
+  }, [eventId, currentUserId, storageKey]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(questions));
-    } catch {}
-  }, [questions, storageKey]);
+    fetchQuestions();
+    const interval = setInterval(fetchQuestions, 10000);
+    return () => clearInterval(interval);
+  }, [fetchQuestions]);
 
-  const handlePostQuestion = (e) => {
+  const handlePostQuestion = async (e) => {
     if (e) e.preventDefault();
     const clean = questionText.trim();
     if (!clean) {
@@ -81,43 +95,69 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
       return;
     }
 
-    setSubmitting(true);
-    setTimeout(() => {
+    try {
+      setSubmitting(true);
+      const res = await fetch(`${API_BASE_URL}/api/webinars/${eventId}/questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          AuthorName: user?.Name || user?.name || user?.Username || 'Webinar Delegate',
+          UserId: currentUserId,
+          TargetSpeaker: targetSpeaker,
+          QuestionText: clean
+        })
+      });
+
+      if (res.ok) {
+        toast.success('Question submitted to Keynote Panel!');
+        setQuestionText('');
+        fetchQuestions();
+      } else {
+        toast.error('Could not submit question');
+      }
+    } catch {
+      // Local fallback
       const newQuestion = {
         id: `q-${Date.now()}`,
         authorName: user?.Name || user?.name || user?.Username || 'Webinar Delegate',
-        authorId: user?.Id || user?.id || user?.UserId || 999,
+        authorId: currentUserId || 999,
         targetSpeaker: targetSpeaker,
         text: clean,
         upvotes: 1,
-        upvotedBy: [user?.Id || user?.id || 999],
         status: 'open',
         createdAt: new Date().toISOString()
       };
-
       setQuestions((prev) => [newQuestion, ...prev]);
       setQuestionText('');
-      setSubmitting(false);
       toast.success('Question submitted to Keynote Panel!');
-    }, 300);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleToggleUpvote = (questionId) => {
-    const userId = user?.Id || user?.id || 999;
-    setQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id !== questionId) return q;
-        const alreadyUpvoted = (q.upvotedBy || []).includes(userId);
-        const upvotedBy = alreadyUpvoted
-          ? (q.upvotedBy || []).filter((id) => id !== userId)
-          : [...(q.upvotedBy || []), userId];
-        const upvotes = alreadyUpvoted ? Math.max(0, q.upvotes - 1) : q.upvotes + 1;
-        return { ...q, upvotes, upvotedBy };
-      })
-    );
-  };
+  const handleToggleUpvote = async (questionId) => {
+    try {
+      setQuestions((prev) =>
+        prev.map((q) => {
+          if (q.id !== questionId) return q;
+          const wasUpvoted = Boolean(q.hasUpvoted);
+          return {
+            ...q,
+            hasUpvoted: !wasUpvoted,
+            upvotes: wasUpvoted ? Math.max(1, q.upvotes - 1) : q.upvotes + 1
+          };
+        })
+      );
 
-  const currentUserId = user?.Id || user?.id || user?.UserId || 999;
+      await fetch(`${API_BASE_URL}/api/webinars/questions/${questionId}/upvote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUserId })
+      });
+    } catch (err) {
+      console.warn('Upvote error:', err);
+    }
+  };
 
   const filteredQuestions = useMemo(() => {
     let list = [...questions];
@@ -292,7 +332,7 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
                 {q.answer && (
                   <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15 text-xs text-slate-700 dark:text-zinc-300 space-y-1">
                     <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-[11px]">
-                      <Sparkles className="w-3 h-3" />
+                      
                       Speaker Response:
                     </span>
                     <p className="text-xs leading-relaxed">{q.answer}</p>

@@ -170,6 +170,10 @@ const createEvent = (req, res) => {
             }
 
             const newEventId = result.insertId;
+            if (req.body.AuditoriumVenue || req.body.MaxCapacity) {
+                const db = require('../../config/db');
+                db.query("UPDATE events SET AuditoriumVenue = COALESCE(?, AuditoriumVenue), MaxCapacity = COALESCE(?, MaxCapacity) WHERE Id = ?", [req.body.AuditoriumVenue || null, req.body.MaxCapacity || null, newEventId], () => {});
+            }
             const creatorAdminId = req.body.AdminId || req.body.adminId;
             if (creatorAdminId) {
                 const db = require('../../config/db');
@@ -218,21 +222,40 @@ const getEventById = (req, res) => {
 
     eventsService.getEventById(id, (err, result) => {
         if (err) {
+            console.warn(`getEventById temporary DB issue for event ${id}:`, err.message);
+            if (cachedEvents && cachedEvents.length > 0) {
+                const found = cachedEvents.find(e => String(e.Id) === String(id));
+                if (found) {
+                    return res.status(200).json({
+                        message: 'Event fetched successfully (cached fallback)',
+                        event: found
+                    });
+                }
+            }
             return res.status(500).json({
                 message: 'Failed to get event by id',
                 error: err.message
             });
         }
 
-        if (result.length === 0) {
+        if (!result || result.length === 0) {
             return res.status(404).json({
                 message: 'Event not found'
             });
         }
 
+        const ev = result[0];
+        // Keep cachedEvents in sync
+        if (cachedEvents && cachedEvents.length > 0) {
+            const idx = cachedEvents.findIndex(e => String(e.Id) === String(id));
+            if (idx !== -1) {
+                cachedEvents[idx] = { ...cachedEvents[idx], ...ev };
+            }
+        }
+
         return res.status(200).json({
             message: 'Event fetched successfully',
-            event: result[0]
+            event: ev
         });
     });
 };
@@ -410,6 +433,11 @@ const updateEvent = (req, res) => {
                 });
             }
 
+            if (req.body.AuditoriumVenue !== undefined || req.body.MaxCapacity !== undefined) {
+                const db = require('../../config/db');
+                db.query("UPDATE events SET AuditoriumVenue = COALESCE(?, AuditoriumVenue), MaxCapacity = COALESCE(?, MaxCapacity) WHERE Id = ?", [req.body.AuditoriumVenue || null, req.body.MaxCapacity || null, id], () => {});
+            }
+
             return res.status(200).json({
                 message: 'Event updated successfully'
             });
@@ -490,6 +518,12 @@ const updateVirtualStatus = (req, res) => {
                 error: err.message
             });
         }
+        if (cachedEvents && cachedEvents.length > 0) {
+            const idx = cachedEvents.findIndex(e => String(e.Id) === String(id));
+            if (idx !== -1) {
+                cachedEvents[idx].VirtualStatus = VirtualStatus;
+            }
+        }
         broadcastEvent(id, {
             type: 'VIRTUAL_STATUS_UPDATED',
             eventId: id,
@@ -512,6 +546,12 @@ const updateVirtualMeetUrl = (req, res) => {
                 message: 'Failed to update virtual meet url',
                 error: err.message
             });
+        }
+        if (cachedEvents && cachedEvents.length > 0) {
+            const idx = cachedEvents.findIndex(e => String(e.Id) === String(id));
+            if (idx !== -1) {
+                cachedEvents[idx].VirtualMeetUrl = VirtualMeetUrl || '';
+            }
         }
         broadcastEvent(id, {
             type: 'VIRTUAL_MEET_UPDATED',
@@ -552,6 +592,16 @@ const updateEventSettings = (req, res) => {
                 message: 'Failed to update event settings',
                 error: err.message
             });
+        }
+        if (cachedEvents && cachedEvents.length > 0) {
+            const idx = cachedEvents.findIndex(e => String(e.Id) === String(id));
+            if (idx !== -1) {
+                cachedEvents[idx] = {
+                    ...cachedEvents[idx],
+                    ...settings,
+                    ...(updated || {})
+                };
+            }
         }
         return res.status(200).json({
             message: 'Event settings updated successfully',

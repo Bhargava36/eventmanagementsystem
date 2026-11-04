@@ -189,6 +189,66 @@ const deleteFeedback = (req, res) => {
     });
 };
 
+// Webinar Q&A Controllers
+const getQuestions = (req, res) => {
+    const { eventId } = req.params;
+    const userId = req.query.userId || req.user?.id || null;
+    webinarServices.getWebinarQuestions(eventId, userId, (err, questions) => {
+        if (err) return res.status(500).json({ message: 'Error fetching webinar questions', error: err.message });
+        res.status(200).json({ questions: questions || [] });
+    });
+};
+
+const createQuestion = (req, res) => {
+    const { eventId } = req.params;
+    const { AuthorName, TargetSpeaker, QuestionText, UserId } = req.body;
+    if (!QuestionText || !QuestionText.trim()) {
+        return res.status(400).json({ message: 'Question text is required' });
+    }
+    webinarServices.createWebinarQuestion(
+        {
+            EventId: eventId,
+            UserId: UserId || req.user?.id || null,
+            AuthorName: AuthorName || 'Webinar Delegate',
+            TargetSpeaker: TargetSpeaker || 'All Speakers & Panel',
+            QuestionText: QuestionText.trim()
+        },
+        (err, created) => {
+            if (err) return res.status(500).json({ message: 'Error posting question', error: err.message });
+            res.status(201).json({ message: 'Question submitted successfully', question: created });
+        }
+    );
+};
+
+const upvoteQuestion = (req, res) => {
+    const { questionId } = req.params;
+    const { userId } = req.body;
+    webinarServices.upvoteWebinarQuestion(questionId, userId || req.user?.id || null, (err, result) => {
+        if (err) return res.status(500).json({ message: 'Error upvoting question', error: err.message });
+        res.status(200).json({ message: 'Upvote updated', ...result });
+    });
+};
+
+const updateQuestionStatus = (req, res) => {
+    const { questionId } = req.params;
+    const { Status, Answer, AnsweredBy } = req.body;
+    if (!Status || !['open', 'answered', 'pinned', 'dismissed'].includes(Status)) {
+        return res.status(400).json({ message: 'Valid status is required (open, answered, pinned, dismissed)' });
+    }
+    webinarServices.updateWebinarQuestionStatus(questionId, { Status, Answer, AnsweredBy }, (err, result) => {
+        if (err) return res.status(500).json({ message: 'Error updating question status', error: err.message });
+        res.status(200).json({ message: 'Question status updated successfully' });
+    });
+};
+
+const deleteQuestion = (req, res) => {
+    const { questionId } = req.params;
+    webinarServices.deleteWebinarQuestion(questionId, (err, result) => {
+        if (err) return res.status(500).json({ message: 'Error deleting question', error: err.message });
+        res.status(200).json({ message: 'Question deleted successfully' });
+    });
+};
+
 module.exports = {
     getSessions,
     createSession,
@@ -203,5 +263,11 @@ module.exports = {
     submitFeedback,
     getEventFeedback,
     getAllWebinarFeedback,
-    deleteFeedback
+    deleteFeedback,
+    getQuestions,
+    createQuestion,
+    upvoteQuestion,
+    updateQuestionStatus,
+    deleteQuestion
 };
+

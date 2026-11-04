@@ -106,7 +106,9 @@ export default function UserCompetitions() {
         const matchesType =
           selectedType === 'ALL' ||
           (selectedType === 'Hackathon'
-            ? (!eventTypeLower.includes('webinar') && !eventTypeLower.includes('workshop'))
+            ? (!eventTypeLower.includes('webinar') && !eventTypeLower.includes('workshop') && !eventTypeLower.includes('seminar') && !eventTypeLower.includes('conference'))
+            : selectedType === 'Seminar'
+            ? (eventTypeLower.includes('seminar') || eventTypeLower.includes('conference'))
             : eventTypeLower === selectedType.toLowerCase());
 
         return matchesSearch && matchesMode && matchesStatus && matchesType;
@@ -183,7 +185,7 @@ export default function UserCompetitions() {
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="relative overflow-hidden rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm"
+          className="relative overflow-hidden rounded-2xl p-6 sm:p-8 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm"
         >
           <WaveDots
             dotColor={theme === 'dark' ? 'rgba(16, 185, 129, 0.45)' : 'rgba(16, 185, 129, 0.3)'}
@@ -199,17 +201,17 @@ export default function UserCompetitions() {
             </p>
             <div className="pt-2 flex flex-wrap items-center gap-4 sm:gap-5 text-xs text-slate-500 dark:text-zinc-400 font-mono">
               <div><span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.total}</span><span>Events</span></div>
-              <div className="h-3 w-px bg-slate-200 dark:bg-zinc-800" />
+              <div className="h-3 w-px bg-slate-200 dark:border-zinc-800" />
               <div><span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.virtual}</span><span>Virtual</span></div>
-              <div className="h-3 w-px bg-slate-200 dark:bg-zinc-800" />
+              <div className="h-3 w-px bg-slate-200 dark:border-zinc-800" />
               <div><span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.physical}</span><span>Physical</span></div>
-              <div className="h-3 w-px bg-slate-200 dark:bg-zinc-800" />
+              <div className="h-3 w-px bg-slate-200 dark:border-zinc-800" />
               <div><span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.virtualAndPhysical}</span><span>Virtual &amp; Physical</span></div>
-              <div className="h-3 w-px bg-slate-200 dark:bg-zinc-800" />
+              <div className="h-3 w-px bg-slate-200 dark:border-zinc-800" />
               <div><span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.hybrid}</span><span>Hybrid</span></div>
               {stats.ongoing > 0 && (
                 <>
-                  <div className="h-3 w-px bg-slate-200 dark:bg-zinc-800" />
+                  <div className="h-3 w-px bg-slate-200 dark:border-zinc-800" />
                   <div><span className="text-emerald-600 dark:text-emerald-400 font-bold text-base mr-1.5">{stats.ongoing}</span><span>Live</span></div>
                 </>
               )}
@@ -222,9 +224,10 @@ export default function UserCompetitions() {
           <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto scrollbar-none">
             {[
               { id: 'ALL', label: `All Events (${events.length})`, icon: Layers },
+              { id: 'Seminar', label: `Seminars (${events.filter(e => (e.EventType || '').toLowerCase().match(/seminar|conference/)).length})`, icon: Building2 },
               { id: 'Webinar', label: `Webinars (${events.filter(e => (e.EventType || '').toLowerCase() === 'webinar').length})`, icon: Presentation },
               { id: 'Workshop', label: `Workshops (${events.filter(e => (e.EventType || '').toLowerCase() === 'workshop').length})`, icon: BookOpen },
-              { id: 'Hackathon', label: `Hackathons (${events.filter(e => !(e.EventType || '').toLowerCase().match(/webinar|workshop/)).length})`, icon: Trophy },
+              { id: 'Hackathon', label: `Hackathons (${events.filter(e => !(e.EventType || '').toLowerCase().match(/webinar|workshop|seminar|conference/)).length})`, icon: Trophy },
             ].map((tab) => {
               const isActive = selectedType === tab.id;
               const TabIcon = tab.icon;
@@ -239,11 +242,11 @@ export default function UserCompetitions() {
                   {isActive ? (
                     <motion.div
                       layoutId="userCompetitionsActiveTabFolder"
-                      className="absolute inset-0 rounded-t-2xl bg-white dark:bg-zinc-950 border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                      className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
                       transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                     >
                       {/* Seamless bottom mask */}
-                      <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-zinc-950 pointer-events-none z-20" />
+                      <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-20" />
                     </motion.div>
                   ) : (
                     <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
@@ -276,7 +279,7 @@ export default function UserCompetitions() {
           transition={{ duration: 0.35, delay: 0.08 }}
           className="space-y-3"
         >
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl rounded-tl-none bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl rounded-tl-none bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm">
             <div className="relative flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-zinc-400" />
               <input
@@ -298,15 +301,15 @@ export default function UserCompetitions() {
                 <SlidersHorizontal className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span className="text-slate-500 dark:text-zinc-500">Sort:</span>
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-transparent font-semibold text-slate-900 dark:text-white focus:outline-none cursor-pointer">
-                  <option value="date-asc"  className="bg-white dark:bg-zinc-950 text-slate-900 dark:text-white">Soonest</option>
-                  <option value="date-desc" className="bg-white dark:bg-zinc-950 text-slate-900 dark:text-white">Latest</option>
-                  <option value="name-asc"  className="bg-white dark:bg-zinc-950 text-slate-900 dark:text-white">Name</option>
-                  <option value="team-asc"  className="bg-white dark:bg-zinc-950 text-slate-900 dark:text-white">Team Size</option>
+                  <option value="date-asc"  className="bg-white dark:bg-black text-slate-900 dark:text-white">Soonest</option>
+                  <option value="date-desc" className="bg-white dark:bg-black text-slate-900 dark:text-white">Latest</option>
+                  <option value="name-asc"  className="bg-white dark:bg-black text-slate-900 dark:text-white">Name</option>
+                  <option value="team-asc"  className="bg-white dark:bg-black text-slate-900 dark:text-white">Team Size</option>
                 </select>
               </div>
 
               {hasActiveFilters && (
-                <button onClick={clearAllFilters} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-950/60 border border-rose-200 dark:border-rose-500/30 transition-all">
+                <button onClick={clearAllFilters} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-black hover:bg-rose-100 dark:hover:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 transition-all">
                   <X className="h-3.5 w-3.5" />Clear
                 </button>
               )}
@@ -335,7 +338,7 @@ export default function UserCompetitions() {
               </button>
             ))}
 
-            <div className="h-3 w-px bg-slate-200 dark:bg-zinc-800 mx-1.5 hidden sm:block" />
+            <div className="h-3 w-px bg-slate-200 dark:border-zinc-800 mx-1.5 hidden sm:block" />
 
             <span className="text-slate-500 dark:text-zinc-500 mr-1 flex items-center gap-1 font-medium">Status:</span>
             {[
@@ -356,7 +359,7 @@ export default function UserCompetitions() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-[450px] rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 flex flex-col justify-end space-y-3 animate-pulse shadow-sm">
+              <div key={i} className="h-[450px] rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-6 flex flex-col justify-end space-y-3 animate-pulse shadow-sm">
                 <div className="h-4 w-20 rounded bg-slate-200 dark:bg-zinc-800" />
                 <div className="h-7 w-3/4 rounded bg-slate-200 dark:bg-zinc-800" />
                 <div className="h-4 w-1/2 rounded bg-slate-200 dark:bg-zinc-800" />
@@ -364,7 +367,7 @@ export default function UserCompetitions() {
             ))}
           </div>
         ) : fetchError ? (
-          <div className="rounded-2xl p-8 border border-rose-200 dark:border-rose-500/25 bg-rose-50 dark:bg-rose-950/20 text-center space-y-3 max-w-lg mx-auto">
+          <div className="rounded-2xl p-8 border border-rose-200 dark:border-rose-500/25 bg-rose-50 dark:bg-black text-center space-y-3 max-w-lg mx-auto">
             <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto">
               <AlertCircle className="h-5 w-5" />
             </div>
@@ -398,7 +401,7 @@ export default function UserCompetitions() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: idx * 0.04 }}
                   onClick={() => navigate(`/user/events/${event.Id}`)}
-                  className="group relative h-[450px] sm:h-[460px] rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/50 shadow-sm hover:shadow-xl transition-all duration-400 ease-out select-none"
+                  className="group relative h-[450px] sm:h-[460px] rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/50 shadow-sm hover:shadow-xl transition-all duration-400 ease-out select-none"
                 >
                   {/* background */}
                   <div className="absolute inset-0 w-full h-full">
@@ -504,10 +507,10 @@ export default function UserCompetitions() {
                         <div className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-zinc-800/60">
                           <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 text-[11px]">
                             <Users className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                            <span>{typeInfo.isWebinar ? 'Pass Type' : typeInfo.isWorkshop ? 'Format' : 'Team Size'}</span>
+                            <span>{typeInfo.isSeminar || typeInfo.isWebinar ? 'Pass Type' : typeInfo.isWorkshop ? 'Format' : 'Team Size'}</span>
                           </span>
                           <span className="font-semibold text-slate-900 dark:text-white">
-                            {typeInfo.isWebinar ? 'Solo Delegate Pass' : typeInfo.isWorkshop ? 'Solo Attendee' : (event.TeamSize ? `${event.TeamSize} Members` : 'Flexible')}
+                            {typeInfo.isSeminar || typeInfo.isWebinar ? 'Solo Delegate Pass' : typeInfo.isWorkshop ? 'Solo Attendee' : (event.TeamSize ? `${event.TeamSize} Members` : 'Flexible')}
                           </span>
                         </div>
 
@@ -546,7 +549,7 @@ export default function UserCompetitions() {
                         onClick={(e) => handleActionClick(e, event)}
                         className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95"
                       >
-                        <span>{typeInfo.isWebinar ? 'Join Webinar' : typeInfo.isWorkshop ? 'Enroll' : 'Register'}</span>
+                        <span>{typeInfo.isSeminar ? 'Register as Delegate' : typeInfo.isWebinar ? 'Join Webinar' : typeInfo.isWorkshop ? 'Enroll' : 'Register'}</span>
                         <ArrowRight className="h-3.5 w-3.5 text-white" />
                       </button>
                     </div>

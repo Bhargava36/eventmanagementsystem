@@ -30,6 +30,7 @@ const feedbackRoutes = require("./src/modules/feedback/feedbackRoute");
 const platformFeedbackRoutes = require("./src/modules/platform_feedback/platformFeedbackRoute");
 const workshopRoutes = require("./src/modules/workshops/workshopRoute");
 const webinarRoutes = require("./src/modules/webinars/webinarRoute");
+const seminarRoutes = require("./src/modules/seminars/seminarRoute");
 
 const app = express();
 
@@ -71,6 +72,7 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/platform-feedback', platformFeedbackRoutes);
 app.use('/api/workshops', workshopRoutes);
 app.use('/api/webinars', webinarRoutes);
+app.use('/api/seminars', seminarRoutes);
 
 
 const http = require('http');

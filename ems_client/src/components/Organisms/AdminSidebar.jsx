@@ -32,9 +32,12 @@ import {
   Award,
   BookOpen,
   CalendarCheck,
+  CalendarDays,
   FileText,
   Podium,
   Mic,
+  Building2,
+  QrCode,
 } from 'lucide-react';
 import { GiTeamIdea } from "react-icons/gi";
 import { LuClipboardCheck,LuUserCheck } from "react-icons/lu";
@@ -362,14 +365,61 @@ const SidebarContent = ({
           badge: null,
           end: false,
         },
+        {
+          name: 'Live Q&A Moderation',
+          icon: MessageCircleQuestion,
+          path: '/admin/webinar/qa',
+          badge: null,
+          end: false,
+        },
       ]
       : []),
 
-    ...(showVirtual && !typeInfo.isWorkshop && !typeInfo.isWebinar
+    ...(typeInfo.isSeminar
+      ? [
+        {
+          name: 'Seminar Overview',
+          icon: Building2,
+          path: '/admin/seminar/overview',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Keynote Speakers',
+          icon: Mic,
+          path: '/admin/seminar/speakers',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Conference Agenda',
+          icon: CalendarDays,
+          path: '/admin/seminar/agenda',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Seminar Attendance',
+          icon: CalendarCheck,
+          path: '/admin/seminar/attendance',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Proceedings & Slides',
+          icon: FileText,
+          path: '/admin/seminar/resources',
+          badge: null,
+          end: false,
+        },
+      ]
+      : []),
+
+    ...(showVirtual && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar
       ? [
         {
           name: virtualTrackName,
-          icon: typeInfo.isSeminar ? Video : Radio,
+          icon: Radio,
           path: '/admin/virtual-event',
           badge: null,
           end: false,
@@ -388,7 +438,7 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(showPhysical && !typeInfo.isWorkshop && !typeInfo.isWebinar
+    ...(showPhysical && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar
       ? [
         {
           name: physicalTrackName,
@@ -423,7 +473,7 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(!typeInfo.isWorkshop && !typeInfo.isWebinar
+    ...(!typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar
       ? [
         {
           name: coreTeamLabel,

@@ -310,38 +310,46 @@ export function validateEventDates({
 }) {
   const prefix = trackName ? `[${trackName}] ` : '';
 
-  if (registrationStart && registrationEnd) {
-    const regS = new Date(registrationStart).getTime();
-    const regE = new Date(registrationEnd).getTime();
-    if (regS > regE) {
-      return `${prefix}Registration Start Date (From) must be before or on Registration Closing Date (To).`;
+  const toTimestamp = (val) => {
+    if (!val) return 0;
+    if (typeof val === 'string') {
+      const datePart = val.split('T')[0];
+      const parts = datePart.split('-');
+      if (parts.length === 3) {
+        const y = Number(parts[0]);
+        const m = Number(parts[1]);
+        const d = Number(parts[2]);
+        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+          return new Date(y, m - 1, d).getTime();
+        }
+      }
     }
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? 0 : new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  };
+
+  const regS = toTimestamp(registrationStart);
+  const regE = toTimestamp(registrationEnd);
+  const evS = toTimestamp(eventStart);
+  const evE = toTimestamp(eventEnd);
+
+  if (regS && regE && regS > regE) {
+    return `${prefix}Registration Start Date (From) must be before or on Registration Closing Date (To).`;
   }
 
-  if (eventStart && eventEnd) {
-    const evS = new Date(eventStart).getTime();
-    const evE = new Date(eventEnd).getTime();
-    if (evS > evE) {
-      return `${prefix}Event Start Date (From) must be before or on Event End Date (To).`;
-    }
+  if (evS && evE && evS > evE) {
+    return `${prefix}Event Start Date (From) must be before or on Event End Date (To).`;
   }
 
-  if (registrationEnd && eventStart) {
-    const regE = new Date(registrationEnd).getTime();
-    const evS = new Date(eventStart).getTime();
-    if (regE > evS) {
-      return `${prefix}Registration Closing Date must be on or before Event Start Date (Registrations must close before the event starts).`;
-    }
+  if (regE && evS && regE > evS) {
+    return `${prefix}Registration Closing Date must be on or before Event Start Date (Registrations must close before the event starts).`;
   }
 
-  if (registrationStart && eventStart) {
-    const regS = new Date(registrationStart).getTime();
-    const evS = new Date(eventStart).getTime();
-    if (regS > evS) {
-      return `${prefix}Registration Start Date must be before Event Start Date.`;
-    }
+  if (regS && evS && regS > evS) {
+    return `${prefix}Registration Start Date must be before Event Start Date.`;
   }
 
   return null;
 }
+
 

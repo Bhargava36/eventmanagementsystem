@@ -73,6 +73,12 @@ const WebinarAgendaPage = lazy(() => import('../features/auth/pages/Admin/Webina
 const WebinarResourcesPage = lazy(() => import('../features/auth/pages/Admin/WebinarResourcesPage'));
 const WebinarAttendancePage = lazy(() => import('../features/auth/pages/Admin/WebinarAttendancePage'));
 const WebinarSpeakersPage = lazy(() => import('../features/auth/pages/Admin/WebinarSpeakersPage'));
+const WebinarQAModeration = lazy(() => import('../features/auth/pages/Admin/WebinarQAModeration'));
+const SeminarOverviewPage = lazy(() => import('../features/auth/pages/Admin/SeminarOverviewPage'));
+const SeminarSpeakersPage = lazy(() => import('../features/auth/pages/Admin/SeminarSpeakersPage'));
+const SeminarAgendaPage = lazy(() => import('../features/auth/pages/Admin/SeminarAgendaPage'));
+const SeminarAttendancePage = lazy(() => import('../features/auth/pages/Admin/SeminarAttendancePage'));
+const SeminarResourcesPage = lazy(() => import('../features/auth/pages/Admin/SeminarResourcesPage'));
 
 // User Pages
 const UserSidebar = lazy(() => import('../components/Organisms/UserSidebar'));
@@ -214,6 +220,12 @@ function App() {
                 <Route path="webinar/resources" element={<WebinarResourcesPage />} />
                 <Route path="webinar/attendance" element={<WebinarAttendancePage />} />
                 <Route path="webinar/speakers" element={<WebinarSpeakersPage />} />
+                <Route path="webinar/qa" element={<WebinarQAModeration />} />
+                <Route path="seminar/overview" element={<SeminarOverviewPage />} />
+                <Route path="seminar/speakers" element={<SeminarSpeakersPage />} />
+                <Route path="seminar/agenda" element={<SeminarAgendaPage />} />
+                <Route path="seminar/attendance" element={<SeminarAttendancePage />} />
+                <Route path="seminar/resources" element={<SeminarResourcesPage />} />
               </Route>
             </Route>
 

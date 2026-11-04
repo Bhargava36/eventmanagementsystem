@@ -257,7 +257,7 @@ const submitWebinarFeedback = (data, callback) => {
             // Also mirror in main feedback table with Category='Webinar Experience' for platform-wide visibility
             const mirrorQuery = `
                 INSERT INTO feedback (UserName, EventName, Category, Rating, Comments, EventId, AdminId)
-                SELECT ?, e.EventName, 'Webinar Experience', ?, ?, ?, e.AdminId
+                SELECT ?, e.EventName, 'Webinar Experience', ?, ?, ?, (SELECT Id FROM event_admins WHERE EventId = e.Id LIMIT 1)
                 FROM events e
                 WHERE e.Id = ?
             `;
@@ -335,6 +335,117 @@ const deleteWebinarFeedback = (id, callback) => {
     });
 };
 
+// Webinar Live Q&A Services
+const getWebinarQuestions = (eventId, currentUserId = null, callback) => {
+    const query = `
+        SELECT 
+            wq.*,
+            COALESCE(u.Photo, NULL) AS AuthorPhoto,
+            EXISTS(
+                SELECT 1 FROM webinar_question_upvotes wqu 
+                WHERE wqu.QuestionId = wq.Id AND wqu.UserId = ?
+            ) AS HasUpvoted
+        FROM webinar_questions wq
+        LEFT JOIN users u ON wq.UserId = u.Id
+        WHERE wq.EventId = ? AND wq.Status != 'dismissed'
+        ORDER BY 
+            CASE WHEN wq.Status = 'pinned' THEN 0 ELSE 1 END ASC,
+            wq.Upvotes DESC,
+            wq.CreatedAt DESC
+    `;
+    db.query(query, [currentUserId || 0, eventId], (err, rows) => {
+        if (err) return callback(err, null);
+        return callback(null, rows || []);
+    });
+};
+
+const createWebinarQuestion = (data, callback) => {
+    const { EventId, UserId = null, AuthorName, TargetSpeaker = 'All Speakers & Panel', QuestionText } = data;
+    const query = `
+        INSERT INTO webinar_questions (EventId, UserId, AuthorName, TargetSpeaker, QuestionText, Upvotes, Status)
+        VALUES (?, ?, ?, ?, ?, 1, 'open')
+    `;
+    db.query(query, [EventId, UserId, AuthorName, TargetSpeaker, QuestionText], (err, result) => {
+        if (err) return callback(err, null);
+        if (UserId) {
+            db.query(
+                `INSERT IGNORE INTO webinar_question_upvotes (QuestionId, UserId) VALUES (?, ?)`,
+                [result.insertId, UserId],
+                () => {}
+            );
+        }
+        return callback(null, {
+            Id: result.insertId,
+            EventId,
+            UserId,
+            AuthorName,
+            TargetSpeaker,
+            QuestionText,
+            Upvotes: 1,
+            Status: 'open',
+            CreatedAt: new Date(),
+            HasUpvoted: 1
+        });
+    });
+};
+
+const upvoteWebinarQuestion = (questionId, userId, callback) => {
+    if (!userId) {
+        db.query(`UPDATE webinar_questions SET Upvotes = Upvotes + 1 WHERE Id = ?`, [questionId], (err) => {
+            if (err) return callback(err, null);
+            return callback(null, { upvoted: true });
+        });
+        return;
+    }
+
+    db.query(
+        `SELECT 1 FROM webinar_question_upvotes WHERE QuestionId = ? AND UserId = ?`,
+        [questionId, userId],
+        (err, exists) => {
+            if (err) return callback(err, null);
+            if (exists && exists.length > 0) {
+                db.query(`DELETE FROM webinar_question_upvotes WHERE QuestionId = ? AND UserId = ?`, [questionId, userId], () => {});
+                db.query(`UPDATE webinar_questions SET Upvotes = GREATEST(1, Upvotes - 1) WHERE Id = ?`, [questionId], () => {});
+                return callback(null, { upvoted: false });
+            } else {
+                db.query(`INSERT INTO webinar_question_upvotes (QuestionId, UserId) VALUES (?, ?)`, [questionId, userId], () => {});
+                db.query(`UPDATE webinar_questions SET Upvotes = Upvotes + 1 WHERE Id = ?`, [questionId], () => {});
+                return callback(null, { upvoted: true });
+            }
+        }
+    );
+};
+
+const updateWebinarQuestionStatus = (questionId, updateData, callback) => {
+    const { Status, Answer = null, AnsweredBy = null } = updateData;
+    const updates = ['Status = ?'];
+    const values = [Status];
+
+    if (Answer !== undefined) {
+        updates.push('Answer = ?');
+        values.push(Answer);
+        updates.push('AnsweredAt = NOW()');
+    }
+    if (AnsweredBy !== undefined) {
+        updates.push('AnsweredBy = ?');
+        values.push(AnsweredBy);
+    }
+
+    values.push(questionId);
+    const query = `UPDATE webinar_questions SET ${updates.join(', ')} WHERE Id = ?`;
+    db.query(query, values, (err, result) => {
+        if (err) return callback(err, null);
+        return callback(null, result);
+    });
+};
+
+const deleteWebinarQuestion = (questionId, callback) => {
+    db.query(`DELETE FROM webinar_questions WHERE Id = ?`, [questionId], (err, result) => {
+        if (err) return callback(err, null);
+        return callback(null, result);
+    });
+};
+
 module.exports = {
     getSessions,
     createSession,
@@ -349,5 +460,11 @@ module.exports = {
     submitWebinarFeedback,
     getEventFeedback,
     getAllWebinarFeedback,
-    deleteWebinarFeedback
+    deleteWebinarFeedback,
+    getWebinarQuestions,
+    createWebinarQuestion,
+    upvoteWebinarQuestion,
+    updateWebinarQuestionStatus,
+    deleteWebinarQuestion
 };
+
