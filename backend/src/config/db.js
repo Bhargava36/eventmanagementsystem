@@ -860,6 +860,32 @@ const migrationQueries = [
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_seminar_res_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS activity_logs (
+        Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        Level ENUM('INFO', 'WARN', 'ERROR', 'CRITICAL') DEFAULT 'INFO',
+        Category ENUM('AUTH', 'EVENT', 'TEAM', 'USER', 'ADMIN', 'SYSTEM', 'PAYMENT', 'SECURITY') DEFAULT 'SYSTEM',
+        Action VARCHAR(100) NOT NULL,
+        Message TEXT NOT NULL,
+        UserId INT DEFAULT NULL,
+        UserEmail VARCHAR(255) DEFAULT NULL,
+        UserRole VARCHAR(50) DEFAULT NULL,
+        TargetId VARCHAR(100) DEFAULT NULL,
+        TargetType VARCHAR(50) DEFAULT NULL,
+        IpAddress VARCHAR(64) DEFAULT NULL,
+        UserAgent TEXT DEFAULT NULL,
+        HttpMethod VARCHAR(10) DEFAULT NULL,
+        Endpoint VARCHAR(255) DEFAULT NULL,
+        StatusCode INT DEFAULT NULL,
+        ExecutionTimeMs INT DEFAULT NULL,
+        Metadata JSON DEFAULT NULL,
+        INDEX idx_logs_timestamp (Timestamp DESC),
+        INDEX idx_logs_level (Level),
+        INDEX idx_logs_category (Category),
+        INDEX idx_logs_user (UserId),
+        INDEX idx_logs_action (Action)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 

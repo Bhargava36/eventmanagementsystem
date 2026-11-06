@@ -42,6 +42,7 @@ const EventsDashboard = lazy(() => import('../features/auth/pages/SuperAdmin/Eve
 const SuperAdminProfile = lazy(() => import('../features/auth/pages/SuperAdmin/SuperAdminProfile'));
 const EventInfo = lazy(() => import('../features/auth/pages/SuperAdmin/EventInfo'));
 const AllUsersPage = lazy(() => import('../features/auth/pages/SuperAdmin/AllUsersPage'));
+const LogsDashboard = lazy(() => import('../features/auth/pages/SuperAdmin/LogsDashboard'));
 
 // Admin Pages
 const AdminSidebar = lazy(() => import('../components/Organisms/AdminSidebar'));
@@ -181,6 +182,7 @@ function App() {
                 <Route path="notification" element={<NotificationPage />} />
                 <Route path="events" element={<EventsDashboard />} />
                 <Route path="users" element={<AllUsersPage />} />
+                <Route path="logs" element={<LogsDashboard />} />
                 <Route path="profile" element={<SuperAdminProfile />} />
                 <Route path="eventinfo/:id" element={<EventInfo />} />
                 <Route path="profile/:id" element={<SuperAdminProfile />} />

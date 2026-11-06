@@ -31,12 +31,15 @@ const platformFeedbackRoutes = require("./src/modules/platform_feedback/platform
 const workshopRoutes = require("./src/modules/workshops/workshopRoute");
 const webinarRoutes = require("./src/modules/webinars/webinarRoute");
 const seminarRoutes = require("./src/modules/seminars/seminarRoute");
+const logsRoute = require("./src/modules/logs/logsRoute");
+const auditMiddleware = require("./src/middleware/auditMiddleware");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(auditMiddleware);
 
 // Serve uploaded files statically with explicit CORS (e.g. http://localhost:3000/uploads/images/...)
 app.use('/uploads', (req, res, next) => {
@@ -73,6 +76,8 @@ app.use('/api/platform-feedback', platformFeedbackRoutes);
 app.use('/api/workshops', workshopRoutes);
 app.use('/api/webinars', webinarRoutes);
 app.use('/api/seminars', seminarRoutes);
+app.use('/api/logs', logsRoute);
+app.use('/api/super_admin/logs', logsRoute);
 
 
 const http = require('http');

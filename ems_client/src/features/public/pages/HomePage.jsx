@@ -67,8 +67,7 @@ export default function HomePage() {
       {/* 3. The Builder Pathway: 4-Step Execution Blueprint with Scroll-driven Circuit */}
       <HowItWorksSection />
 
-      {/* 4. Domain Mastery: 3D Perspective Bento Grid */}
-      {/* <TechTracksBentoSection /> */}
+
 
       {/* 5. Physical & Virtual Operational Infrastructure with Live Simulators */}
       <LogisticsAutomationSection />
