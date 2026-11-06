@@ -886,6 +886,85 @@ const migrationQueries = [
         INDEX idx_logs_category (Category),
         INDEX idx_logs_user (UserId),
         INDEX idx_logs_action (Action)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS email_dispatch_logs (
+        Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        RecipientEmail VARCHAR(255) NOT NULL,
+        RecipientName VARCHAR(255) DEFAULT NULL,
+        Subject VARCHAR(255) NOT NULL,
+        EmailType VARCHAR(100) DEFAULT 'GENERAL',
+        Status ENUM('Delivered', 'Pending', 'Failed') DEFAULT 'Pending',
+        ErrorMessage TEXT DEFAULT NULL,
+        EventId INT DEFAULT NULL,
+        SenderAdminId INT DEFAULT NULL,
+        SentAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        RetryCount INT DEFAULT 0,
+        PayloadSnippet TEXT DEFAULT NULL,
+        INDEX idx_email_recipient (RecipientEmail),
+        INDEX idx_email_status (Status),
+        INDEX idx_email_type (EmailType),
+        INDEX idx_email_sent_at (SentAt DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS database_backups (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        Filename VARCHAR(255) NOT NULL,
+        SizeBytes BIGINT NOT NULL,
+        TotalTables INT NOT NULL,
+        TotalRows BIGINT NOT NULL,
+        Format VARCHAR(20) DEFAULT 'SQL',
+        CreatedBy VARCHAR(100) DEFAULT 'SuperAdmin',
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        Notes TEXT DEFAULT NULL,
+        INDEX idx_backup_created_at (CreatedAt DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS webhook_endpoints (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        Name VARCHAR(100) NOT NULL,
+        TargetUrl VARCHAR(500) NOT NULL,
+        Platform ENUM('DISCORD', 'SLACK', 'GENERIC') DEFAULT 'GENERIC',
+        Events TEXT NOT NULL,
+        SecretKey VARCHAR(255) DEFAULT NULL,
+        IsActive BOOLEAN DEFAULT TRUE,
+        EventId INT DEFAULT NULL,
+        LastTriggeredAt TIMESTAMP NULL DEFAULT NULL,
+        LastStatus INT NULL DEFAULT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_webhook_active (IsActive),
+        INDEX idx_webhook_platform (Platform)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS webhook_logs (
+        Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        WebhookId INT NOT NULL,
+        EventName VARCHAR(100) NOT NULL,
+        TargetUrl VARCHAR(500) NOT NULL,
+        Payload JSON DEFAULT NULL,
+        ResponseStatusCode INT DEFAULT NULL,
+        ResponseBody TEXT DEFAULT NULL,
+        ExecutionTimeMs INT DEFAULT NULL,
+        Status ENUM('SUCCESS', 'FAILED') DEFAULT 'SUCCESS',
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_whlogs_webhook (WebhookId),
+        INDEX idx_whlogs_status (Status),
+        INDEX idx_whlogs_created (CreatedAt DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS user_notifications (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        UserId INT DEFAULT NULL,
+        EventId INT DEFAULT NULL,
+        Title VARCHAR(255) NOT NULL,
+        Message TEXT NOT NULL,
+        Type VARCHAR(50) DEFAULT 'ANNOUNCEMENT',
+        LinkUrl VARCHAR(255) DEFAULT NULL,
+        IsRead BOOLEAN DEFAULT FALSE,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_notif_user (UserId),
+        INDEX idx_notif_read (IsRead),
+        INDEX idx_notif_created (CreatedAt DESC)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 

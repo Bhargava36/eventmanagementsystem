@@ -33,6 +33,10 @@ const webinarRoutes = require("./src/modules/webinars/webinarRoute");
 const seminarRoutes = require("./src/modules/seminars/seminarRoute");
 const logsRoute = require("./src/modules/logs/logsRoute");
 const auditMiddleware = require("./src/middleware/auditMiddleware");
+const emailDispatchRoute = require("./src/modules/email_dispatch/emailDispatchRoute");
+const backupRoute = require("./src/modules/backup/backupRoute");
+const webhookRoute = require("./src/modules/webhooks/webhookRoute");
+const notificationRoutes = require("./src/modules/notifications/notificationRoute");
 
 const app = express();
 
@@ -78,6 +82,10 @@ app.use('/api/webinars', webinarRoutes);
 app.use('/api/seminars', seminarRoutes);
 app.use('/api/logs', logsRoute);
 app.use('/api/super_admin/logs', logsRoute);
+app.use('/api/email-dispatch', emailDispatchRoute);
+app.use('/api/database-backups', backupRoute);
+app.use('/api/webhooks', webhookRoute);
+app.use('/api/notifications', notificationRoutes);
 
 
 const http = require('http');

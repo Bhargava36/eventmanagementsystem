@@ -1,5 +1,18 @@
 const nodemailer = require('nodemailer');
 
+const recordEmailLogSafe = (data) => {
+    try {
+        const { recordEmailLog } = require('../modules/email_dispatch/emailDispatchService');
+        if (recordEmailLog) recordEmailLog(data);
+        const { broadcastEvent } = require('./websocket');
+        if (broadcastEvent) {
+            broadcastEvent(null, { type: 'EMAIL_DISPATCHED', ...data });
+        }
+    } catch (e) {
+        // Safe fallback if module not loaded
+    }
+};
+
 // Create SMTP Transporter using environment variables or safe defaults
 const getTransporter = () => {
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
@@ -112,15 +125,37 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
     }
 
     const transporter = getTransporter();
-    const info = await transporter.sendMail({
-        from: fromAddress,
-        to: toEmail,
-        subject: `${otpCode} is your AYOJAN Verification code`,
-        text: `Your password reset code is: ${otpCode}. It expires in 10 minutes.`,
-        html
-    });
+    try {
+        const info = await transporter.sendMail({
+            from: fromAddress,
+            to: toEmail,
+            subject: `${otpCode} is your AYOJAN Verification code`,
+            text: `Your password reset code is: ${otpCode}. It expires in 10 minutes.`,
+            html
+        });
 
-    return { sent: true, mode: 'smtp', messageId: info.messageId };
+        recordEmailLogSafe({
+            recipientEmail: toEmail,
+            recipientName: userName,
+            subject: `${otpCode} is your AYOJAN Verification code`,
+            emailType: 'OTP',
+            status: 'Delivered',
+            payloadSnippet: `Password reset OTP: ${otpCode}`
+        });
+
+        return { sent: true, mode: 'smtp', messageId: info.messageId };
+    } catch (err) {
+        recordEmailLogSafe({
+            recipientEmail: toEmail,
+            recipientName: userName,
+            subject: `${otpCode} is your AYOJAN Verification code`,
+            emailType: 'OTP',
+            status: 'Failed',
+            errorMessage: err.message,
+            payloadSnippet: `Password reset OTP: ${otpCode}`
+        });
+        throw err;
+    }
 };
 
 /**
@@ -276,9 +311,30 @@ const sendEventBroadcastEmail = async ({
             text: `${subject}\n\nDear ${userName},\n\n${message}\n\n- ${organizerName}`,
             html
         });
+
+        recordEmailLogSafe({
+            recipientEmail: toEmail,
+            recipientName: userName,
+            subject: `[${eventName}] ${subject}`,
+            emailType: 'BROADCAST',
+            status: 'Delivered',
+            payloadSnippet: message ? message.slice(0, 160) : null
+        });
+
         return { sent: true, mode: 'smtp', messageId: info.messageId };
     } catch (err) {
         console.error(`Failed to send broadcast email to ${toEmail}:`, err.message);
+
+        recordEmailLogSafe({
+            recipientEmail: toEmail,
+            recipientName: userName,
+            subject: `[${eventName}] ${subject}`,
+            emailType: 'BROADCAST',
+            status: 'Failed',
+            errorMessage: err.message,
+            payloadSnippet: message ? message.slice(0, 160) : null
+        });
+
         return { sent: false, error: err.message };
     }
 };

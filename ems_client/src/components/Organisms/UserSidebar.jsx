@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { motion, LayoutGroup } from 'framer-motion';
 import ThemeToggle from './ThemeToggler';
+import NotificationBellDropdown from '../Molecules/NotificationBellDropdown';
 import useAuth from '../../Hooks/useAuth';
 import useToast from '../../Hooks/useToast';
 import { API_BASE_URL } from '@/lib/api';
@@ -310,25 +311,33 @@ const UserSidebar = () => {
         />
       </div>
 
-      <div className="flex-1 min-w-0 overflow-y-auto h-screen bg-gray-50 dark:bg-black transition-colors">
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-lg bg-emerald-700 dark:bg-emerald-500 text-white hover:bg-emerald-800 dark:hover:bg-emerald-600 transition-colors"
-          >
-            <PanelLeftOpen className="w-5 h-5" />
-          </button>
-          <div className="flex gap-2">
-            <div className="mt-2">{logoElement}</div>
-            <div className="flex flex-col">
-              <span className="font-bold text-sm tracking-wide text-gray-900 dark:text-white">
-                AYOJAN
-              </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400 tracking-widest">
-                EMS
-              </span>
+      <div className="flex-1 min-w-0 overflow-y-auto h-screen bg-gray-50 dark:bg-black transition-colors relative">
+        <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="p-2 rounded-lg bg-emerald-700 dark:bg-emerald-500 text-white hover:bg-emerald-800 dark:hover:bg-emerald-600 transition-colors"
+            >
+              <PanelLeftOpen className="w-5 h-5" />
+            </button>
+            <div className="flex gap-2">
+              <div className="mt-2">{logoElement}</div>
+              <div className="flex flex-col">
+                <span className="font-bold text-sm tracking-wide text-gray-900 dark:text-white">
+                  AYOJAN
+                </span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 tracking-widest">
+                  EMS
+                </span>
+              </div>
             </div>
           </div>
+          <NotificationBellDropdown align="right" />
+        </div>
+
+        {/* Floating Top-Right Notification Island on Desktop */}
+        <div className="hidden lg:flex fixed top-5 right-6 z-40 items-center">
+          <NotificationBellDropdown align="right" variant="floating" />
         </div>
 
         <Outlet />

@@ -242,7 +242,7 @@ export default function LogsDashboard() {
     <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 p-4 sm:p-6 lg:p-8 space-y-6">
       
       {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-gray-200 dark:border-zinc-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-gray-200 dark:border-gray-800">
         <div>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm">
@@ -267,7 +267,7 @@ export default function LogsDashboard() {
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
               isLive
                 ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                : 'bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:border-gray-300'
+                : 'bg-white dark:bg-black border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-300'
             }`}
           >
             <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-emerald-500 animate-ping' : 'bg-gray-400'}`} />
@@ -278,7 +278,7 @@ export default function LogsDashboard() {
           <button
             onClick={() => fetchLogs()}
             disabled={loading || refreshing}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-black border border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors shadow-sm disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing || loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
@@ -300,7 +300,7 @@ export default function LogsDashboard() {
       {/* TOP TELEMETRY METRIC CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: 24h Logs */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-4 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-gray-800 shadow-sm">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium">
             <span>24h Total Telemetry</span>
             <Activity className="w-4 h-4 text-emerald-500" />
@@ -315,7 +315,7 @@ export default function LogsDashboard() {
         </div>
 
         {/* Card 2: Error Rate */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-4 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-gray-800 shadow-sm">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium">
             <span>Error Frequency</span>
             <ShieldAlert className="w-4 h-4 text-rose-500" />
@@ -332,7 +332,7 @@ export default function LogsDashboard() {
         </div>
 
         {/* Card 3: Warnings */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-4 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-gray-800 shadow-sm">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium">
             <span>Security & Warnings</span>
             <AlertTriangle className="w-4 h-4 text-amber-500" />
@@ -347,7 +347,7 @@ export default function LogsDashboard() {
         </div>
 
         {/* Card 4: Avg API Response Time */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-4 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-gray-800 shadow-sm">
           <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium">
             <span>Avg Response Latency</span>
             <Clock className="w-4 h-4 text-blue-500" />
@@ -363,7 +363,7 @@ export default function LogsDashboard() {
       </div>
 
       {/* FILTER & SEARCH TOOLBAR */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm space-y-4">
+      <div className="p-4 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
           {/* Search Box */}
@@ -374,7 +374,7 @@ export default function LogsDashboard() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search action, message, email, IP, or endpoint..."
-              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
+              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 focus:outline-none focus:border-emerald-500 dark:focus:border-emerald-400 transition-colors"
             />
             {search && (
               <button
@@ -400,7 +400,7 @@ export default function LogsDashboard() {
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all ${
                     active
                       ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-zinc-700'
+                      : 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/15'
                   }`}
                 >
                   {lvl}
@@ -417,7 +417,7 @@ export default function LogsDashboard() {
                 setSelectedCategory(e.target.value);
                 setPage(1);
               }}
-              className="px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 font-medium"
+              className="px-3 py-2 text-xs rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 focus:outline-none focus:border-emerald-500 font-medium"
             >
               <option value="ALL">All Categories</option>
               <option value="AUTH">Authentication (AUTH)</option>
@@ -443,11 +443,11 @@ export default function LogsDashboard() {
       </div>
 
       {/* PAGINATED LOGS TABLE */}
-      <div className="rounded-2xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+      <div className="rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto min-h-[350px]">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-zinc-800 bg-gray-50/75 dark:bg-black/40 text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider text-[10px]">
+              <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-black/40 text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-3.5 px-4 w-44">Timestamp</th>
                 <th className="py-3.5 px-4 w-24">Level</th>
                 <th className="py-3.5 px-4 w-40">Category / Action</th>
@@ -457,7 +457,7 @@ export default function LogsDashboard() {
                 <th className="py-3.5 px-4 w-20 text-center">Inspect</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/60 font-mono">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800/60 font-mono">
               {loading && logs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-gray-400">
@@ -491,7 +491,7 @@ export default function LogsDashboard() {
                     <tr
                       key={log.Id}
                       onClick={() => setSelectedLog(log)}
-                      className="hover:bg-gray-50/80 dark:hover:bg-zinc-800/40 cursor-pointer transition-colors group"
+                      className="hover:bg-gray-50/80 dark:hover:bg-white/5 cursor-pointer transition-colors group"
                     >
                       {/* Timestamp */}
                       <td className="py-3 px-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">
@@ -584,7 +584,7 @@ export default function LogsDashboard() {
                             e.stopPropagation();
                             setSelectedLog(log);
                           }}
-                          className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-600 dark:text-gray-300 text-[11px] transition-colors"
+                          className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 dark:bg-white/10 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 text-[11px] transition-colors"
                         >
                           View
                         </button>
@@ -598,7 +598,7 @@ export default function LogsDashboard() {
         </div>
 
         {/* FULL-FEATURED PAGINATION BAR (Enterprise Grade) */}
-        <div className="p-4 border-t border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-black/30 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs font-sans">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-black/30 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs font-sans">
           
           {/* Summary & Limit Selector */}
           <div className="flex items-center flex-wrap gap-4 text-gray-500 dark:text-gray-400">
@@ -622,7 +622,7 @@ export default function LogsDashboard() {
                   setLimit(Number(e.target.value));
                   setPage(1);
                 }}
-                className="px-2 py-1 rounded-lg bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 font-medium text-gray-800 dark:text-gray-200"
+                className="px-2 py-1 rounded-lg bg-white dark:bg-white/10 border border-gray-200 dark:border-gray-700 font-medium text-gray-800 dark:text-gray-200"
               >
                 <option value={10}>10</option>
                 <option value={25}>25</option>
@@ -639,7 +639,7 @@ export default function LogsDashboard() {
               onClick={() => setPage(1)}
               disabled={page === 1}
               title="First page"
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-black disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <ChevronsLeft className="w-4 h-4" />
             </button>
@@ -649,7 +649,7 @@ export default function LogsDashboard() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               title="Previous page"
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-black disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -672,7 +672,7 @@ export default function LogsDashboard() {
                   className={`min-w-[32px] h-8 px-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     active
                       ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
+                      : 'bg-white dark:bg-black border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'
                   }`}
                 >
                   {p}
@@ -685,7 +685,7 @@ export default function LogsDashboard() {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages || totalPages === 0}
               title="Next page"
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-black disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -695,7 +695,7 @@ export default function LogsDashboard() {
               onClick={() => setPage(totalPages)}
               disabled={page === totalPages || totalPages === 0}
               title="Last page"
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-black disabled:opacity-30 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <ChevronsRight className="w-4 h-4" />
             </button>
@@ -710,11 +710,11 @@ export default function LogsDashboard() {
                 value={jumpPage}
                 onChange={(e) => setJumpPage(e.target.value)}
                 placeholder={String(page)}
-                className="w-12 px-2 py-1 text-center rounded-lg bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-xs focus:outline-none focus:border-emerald-500 font-bold"
+                className="w-12 px-2 py-1 text-center rounded-lg bg-white dark:bg-black border border-gray-200 dark:border-gray-800 text-xs focus:outline-none focus:border-emerald-500 font-bold"
               />
               <button
                 type="submit"
-                className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 text-xs font-semibold cursor-pointer"
+                className="px-2 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-white/10 text-xs font-semibold cursor-pointer"
               >
                 Go
               </button>
@@ -731,10 +731,10 @@ export default function LogsDashboard() {
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative w-full max-w-3xl max-h-[85vh] bg-white dark:bg-zinc-900 rounded-3xl border border-gray-200 dark:border-zinc-800 shadow-2xl flex flex-col overflow-hidden"
+              className="relative w-full max-w-3xl max-h-[85vh] bg-white dark:bg-black rounded-3xl border border-gray-200 dark:border-gray-800 shadow-2xl flex flex-col overflow-hidden"
             >
               {/* Drawer Header */}
-              <div className="p-5 border-b border-gray-200 dark:border-zinc-800 flex items-center justify-between">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`px-2.5 py-1 rounded-lg border text-xs font-black font-mono ${getLevelStyle(selectedLog.Level).badge}`}>
                     {selectedLog.Level}
@@ -752,14 +752,14 @@ export default function LogsDashboard() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleCopyJson(selectedLog)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-300 transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-700 dark:text-gray-300 transition-colors"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copied ? 'Copied!' : 'Copy JSON'}</span>
                   </button>
                   <button
                     onClick={() => setSelectedLog(null)}
-                    className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-500"
+                    className="p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -769,35 +769,35 @@ export default function LogsDashboard() {
               {/* Drawer Body */}
               <div className="p-6 overflow-y-auto space-y-5 text-xs font-sans">
                 {/* Message Banner */}
-                <div className="p-4 rounded-xl bg-gray-50 dark:bg-black/60 border border-gray-200 dark:border-zinc-800 text-sm leading-relaxed font-sans text-gray-800 dark:text-gray-200">
+                <div className="p-4 rounded-xl bg-gray-50 dark:bg-black/60 border border-gray-200 dark:border-gray-800 text-sm leading-relaxed font-sans text-gray-800 dark:text-gray-200">
                   {selectedLog.Message}
                 </div>
 
                 {/* Attribute Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-zinc-800/60">
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-gray-800/60">
                     <span className="text-[10px] text-gray-400 uppercase font-semibold">Category</span>
                     <p className="mt-1 font-bold font-mono text-emerald-600 dark:text-emerald-400">{selectedLog.Category}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-zinc-800/60">
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-gray-800/60">
                     <span className="text-[10px] text-gray-400 uppercase font-semibold">Actor Email</span>
                     <p className="mt-1 font-medium truncate" title={selectedLog.UserEmail || 'None'}>{selectedLog.UserEmail || 'System / Anonymous'}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-zinc-800/60">
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-gray-800/60">
                     <span className="text-[10px] text-gray-400 uppercase font-semibold">Role</span>
                     <p className="mt-1 font-medium capitalize">{selectedLog.UserRole || 'system'}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-zinc-800/60">
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-gray-800/60">
                     <span className="text-[10px] text-gray-400 uppercase font-semibold">Endpoint</span>
                     <p className="mt-1 font-mono text-[11px] truncate">{selectedLog.HttpMethod} {selectedLog.Endpoint || '—'}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-zinc-800/60">
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-gray-800/60">
                     <span className="text-[10px] text-gray-400 uppercase font-semibold">Status & Latency</span>
                     <p className="mt-1 font-mono font-bold">
                       {selectedLog.StatusCode ? `${selectedLog.StatusCode} OK` : '—'} {selectedLog.ExecutionTimeMs ? `(${selectedLog.ExecutionTimeMs}ms)` : ''}
                     </p>
                   </div>
-                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-zinc-800/60">
+                  <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-gray-800/60">
                     <span className="text-[10px] text-gray-400 uppercase font-semibold">IP Address</span>
                     <p className="mt-1 font-mono">{selectedLog.IpAddress || 'Internal'}</p>
                   </div>
@@ -807,7 +807,7 @@ export default function LogsDashboard() {
                 {selectedLog.UserAgent && (
                   <div>
                     <span className="text-[10px] text-gray-400 uppercase font-semibold block mb-1">User Agent</span>
-                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-zinc-800/60 font-mono text-[11px] break-all">
+                    <div className="p-3 rounded-xl bg-gray-50 dark:bg-black/40 border border-gray-200/60 dark:border-gray-800/60 font-mono text-[11px] break-all">
                       {selectedLog.UserAgent}
                     </div>
                   </div>
@@ -819,14 +819,14 @@ export default function LogsDashboard() {
                     <span className="text-[10px] text-gray-400 uppercase font-semibold">Parsed Payload & Metadata</span>
                     <span className="text-[10px] text-emerald-500 font-mono">JSON</span>
                   </div>
-                  <pre className="p-4 rounded-2xl bg-black text-emerald-400 border border-zinc-800 font-mono text-xs overflow-x-auto max-h-56 leading-relaxed">
+                  <pre className="p-4 rounded-2xl bg-black text-emerald-400 border border-gray-800 font-mono text-xs overflow-x-auto max-h-56 leading-relaxed">
                     {JSON.stringify(selectedLog.Metadata || { note: 'No extra metadata payload attached to this entry' }, null, 2)}
                   </pre>
                 </div>
               </div>
 
               {/* Drawer Footer */}
-              <div className="p-4 border-t border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-black/40 flex justify-end">
+              <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black/40 flex justify-end">
                 <button
                   onClick={() => setSelectedLog(null)}
                   className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer"
