@@ -39,6 +39,7 @@ import {
   Mic,
   Building2,
   QrCode,
+  Camera,
 } from 'lucide-react';
 import { GiTeamIdea } from "react-icons/gi";
 import { LuClipboardCheck,LuUserCheck } from "react-icons/lu";
@@ -235,7 +236,7 @@ const SidebarContent = ({
   const rawMode = adminData?.HackathonMode || user?.HackathonMode;
   const { showVirtual, showPhysical, isBoth } = getTrackVisibility(rawMode, adminData?.Location);
   const typeInfo = getEventTypeInfo(adminData?.EventType);
-  const isIndividual = isSoloTeamSize(adminData?.TeamSize || user?.TeamSize) || typeInfo.isWorkshop || typeInfo.isWebinar || typeInfo.isSeminar;
+  const isIndividual = isSoloTeamSize(adminData?.TeamSize || user?.TeamSize) || typeInfo.isWorkshop || typeInfo.isWebinar || typeInfo.isSeminar || typeInfo.isAlumni;
 
   // Track operation labels based on event type
   let virtualTrackName = isBoth ? 'Virtual Event' : 'Event Operations';
@@ -269,6 +270,8 @@ const SidebarContent = ({
     participantLabel = 'Registered Delegates';
   } else if (typeInfo.isSeminar) {
     participantLabel = 'Registered Delegates';
+  } else if (typeInfo.isAlumni) {
+    participantLabel = 'Registered Alumni';
   } else if (typeInfo.isCodingContest) {
     participantLabel = isIndividual ? 'Registered Contestants' : 'Contest Teams';
   } else {
@@ -416,7 +419,54 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(showVirtual && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar
+    ...(typeInfo.isAlumni
+      ? [
+        {
+          name: 'Reunion Overview',
+          icon: Building2,
+          path: '/admin/alumni/overview',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Reunion Agenda',
+          icon: CalendarDays,
+          path: '/admin/alumni/agenda',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Registrations & RSVPs',
+          icon: Users,
+          path: '/admin/alumni/registrations',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Gate & Food Scanner',
+          icon: QrCode,
+          path: '/admin/alumni/attendance',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Invite Dispatcher',
+          icon: Send,
+          path: '/admin/alumni/invites',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Memory Wall & Gallery',
+          icon: Camera,
+          path: '/admin/alumni/memories',
+          badge: null,
+          end: false,
+        },
+      ]
+      : []),
+
+    ...(showVirtual && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni
       ? [
         {
           name: virtualTrackName,
@@ -439,7 +489,7 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(showPhysical && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar
+    ...(showPhysical && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni
       ? [
         {
           name: physicalTrackName,
@@ -462,7 +512,7 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(hasEvaluators
+    ...(hasEvaluators && !typeInfo.isAlumni
       ? [
         {
           name: 'Evaluators',
@@ -474,7 +524,7 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(!typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar
+    ...(!typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni
       ? [
         {
           name: coreTeamLabel,
@@ -485,13 +535,17 @@ const SidebarContent = ({
         },
       ]
       : []),
-    {
-      name: participantLabel,
-      icon: typeInfo.isWebinar ? Radio : typeInfo.isWorkshop ? GraduationCap : Users,
-      path: '/admin/teams',
-      badge: null,
-      end: false,
-    },
+    ...(!typeInfo.isAlumni
+      ? [
+        {
+          name: participantLabel,
+          icon: typeInfo.isWebinar ? Radio : typeInfo.isWorkshop ? GraduationCap : Users,
+          path: '/admin/teams',
+          badge: null,
+          end: false,
+        },
+      ]
+      : []),
     {
       name: 'Broadcast Emailer',
       icon: Send,
@@ -605,7 +659,7 @@ const SidebarContent = ({
                 onClick={() => isMobile && setMobileOpen(false)}
                 className={`relative w-full flex items-center ${
                   !isMobile && collapsed ? 'justify-center px-5' : 'justify-between px-4'
-                } py-3 rounded-full cursor-pointer select-none transition-colors duration-200 ${
+                } py-3 rounded-xl cursor-pointer select-none transition-colors duration-200 ${
                   isCurrentActive
                     ? 'text-white'
                     : 'text-gray-700 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-500/10'
@@ -613,8 +667,8 @@ const SidebarContent = ({
               >
                 {isCurrentActive && (
                   <motion.span
-                    layoutId={isMobile ? 'admin-pill-mobile' : 'admin-pill-desktop'}
-                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-full shadow-md z-0"
+                    layoutId={isMobile ? 'admin-tab-mobile' : 'admin-tab-desktop'}
+                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-xl shadow-md z-0"
                     transition={{
                       type: 'spring',
                       stiffness: 350,
@@ -655,7 +709,7 @@ const SidebarContent = ({
           onClick={handleLogout}
           title={!isMobile && collapsed ? 'Logout' : ''}
           className={`w-full flex items-center ${!isMobile && collapsed ? 'justify-center' : 'gap-3'
-            } px-4 py-3 rounded-full transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer`}
+            } px-4 py-3 rounded-xl transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer`}
         >
           <LogOut className="w-5 h-5 shrink-0" />
           {canShowText && (

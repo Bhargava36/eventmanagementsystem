@@ -64,6 +64,7 @@ import PhysicalTeamPSActionCard from "../../../../components/Molecules/PhysicalT
 import UnifiedEventFeedbackCard from './components/UnifiedEventFeedbackCard';
 import WebinarLiveQA from './components/WebinarLiveQA';
 import SeminarDelegatePassCard from './components/SeminarDelegatePassCard';
+import AlumniDigitalPassCard from './components/AlumniDigitalPassCard';
 import ParticipantAttendanceView from './components/ParticipantAttendanceView';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../../../../lib/calendarUtils';
 
@@ -651,6 +652,7 @@ function TeamInfo() {
     const isWorkshop = typeInfo.isWorkshop;
     const isWebinar = typeInfo.isWebinar;
     const isSeminar = typeInfo.isSeminar;
+    const isAlumni = typeInfo.isAlumni;
     const isSessionBased = isWorkshop || isWebinar;
 
     const qrPassValue = isSessionBased
@@ -1014,7 +1016,7 @@ function TeamInfo() {
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 1.5: TEAM PASS & PUBLIC SCANNER QR CODE ── */}
             {/* ══════════════════════════════════════════════════════════════ */}
-            {!isSeminar && (
+            {!isSeminar && !isAlumni && (
                 <section
                     className="rounded-3xl border p-5 sm:p-6 bg-white dark:bg-zinc-950/90 border-slate-200/80 dark:border-zinc-800 shadow-sm relative overflow-hidden"
                     style={{
@@ -1164,7 +1166,15 @@ function TeamInfo() {
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 2: SEMINAR / WORKSHOP / WEBINAR LEARNING HUB ─── */}
             {/* ══════════════════════════════════════════════════════════════ */}
-            {isSeminar ? (
+            {isAlumni ? (
+                <div className="space-y-6">
+                    <AlumniDigitalPassCard
+                        eventId={team.EventId || eventId}
+                        user={user}
+                        team={team}
+                    />
+                </div>
+            ) : isSeminar ? (
                 <div className="space-y-6">
                     <SeminarDelegatePassCard
                         eventId={team.EventId || eventId}
@@ -1660,7 +1670,7 @@ function TeamInfo() {
                                                             <h3 className="text-base font-bold text-slate-900 dark:text-white">
                                                                 {round.roundName}
                                                             </h3>
-                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                                                                 Published
                                                             </span>
                                                         </div>
@@ -1935,7 +1945,7 @@ function TeamInfo() {
                     </div>
 
                     {/* Physical Event Choices (Accommodation & Food Booking) */}
-                    {canAccessServices && isApprovedPhysical &&
+                    {canAccessServices && isApprovedPhysical && !isAlumni &&
                         (serviceAvailability.accommodationEnabled || serviceAvailability.foodEnabled) && (() => {
                             const memberCount = Math.max(1, members.length || 1);
                             const pkgFee = Number(serviceAvailability.facilitiesPackageFee || 0);
@@ -2467,7 +2477,7 @@ function TeamInfo() {
                 </div>
             )}
 
-            {!isSeminar && !isWebinar && (
+            {!isSeminar && !isWebinar && !isAlumni && (
                 <motion.section {...fadeUp(0.16)}>
                     <UnifiedEventFeedbackCard 
                         eventId={eventId}

@@ -219,10 +219,11 @@ export function getEventTypeInfo(eventType = '') {
   const t = String(eventType || '').trim().toLowerCase();
   const isWorkshop = t.includes('workshop') || t.includes('bootcamp');
   const isWebinar = t.includes('webinar');
-  const isSeminar = (t.includes('seminar') || t.includes('conference') || t.includes('talk')) && !isWebinar;
+  const isSeminar = (t.includes('seminar') || t.includes('conference') || t.includes('talk')) && !isWebinar && !t.includes('alumni');
+  const isAlumni = t.includes('alumni') || t.includes('reunion');
   const isCodingContest = t.includes('coding') || t.includes('contest') || t.includes('competitive') || t.includes('challenge');
   const isTechFest = t.includes('fest') || t.includes('symposium');
-  const isHackathon = !isWorkshop && !isSeminar && !isCodingContest && !isTechFest && !isWebinar;
+  const isHackathon = !isWorkshop && !isSeminar && !isCodingContest && !isTechFest && !isWebinar && !isAlumni;
 
   let label = 'Event';
   let badgeColor = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20';
@@ -254,6 +255,14 @@ export function getEventTypeInfo(eventType = '') {
     agendaTerm = 'Keynote Speakers & Talk Schedule';
     submissionTerm = 'Paper / Presentation Upload';
     prizeTerm = 'Keynote Honor & Certificates';
+  } else if (isAlumni) {
+    label = 'Alumni Meet';
+    badgeColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+    participantTerm = 'Registered Alumni';
+    singleParticipantTerm = 'Alumnus';
+    agendaTerm = 'Reunion Agenda & Activities';
+    submissionTerm = 'Memories & Wall of Fame';
+    prizeTerm = 'Felicitations & Mementos';
   } else if (isCodingContest) {
     label = 'Coding Contest';
     participantTerm = 'Contestants & Teams';
@@ -291,6 +300,7 @@ export function getEventTypeInfo(eventType = '') {
     isSeminar,
     isCodingContest,
     isTechFest,
+    isAlumni,
     isHackathon,
   };
 }

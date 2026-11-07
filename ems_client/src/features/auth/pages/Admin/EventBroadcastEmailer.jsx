@@ -21,6 +21,16 @@ import { API_BASE_URL } from "@/lib/api";
 import useToast from "../../../../Hooks/useToast";
 import { getEventTypeInfo } from "../../../../lib/utils";
 
+const ALUMNI_CATEGORIES = [
+  { id: "Reunion Announcement", label: "Reunion Announcement" },
+  { id: "Gate Pass & Banquet", label: "Gate Pass & Banquet Entry" },
+  { id: "Reunion Schedule", label: "Reunion Schedule & Agenda" },
+  { id: "Nostalgia & Memories", label: "Memories Wall & Photos" },
+  { id: "Alumni Giving", label: "Endowment & Alumni Giving" },
+  { id: "Important Notice", label: "Important Notice" },
+  { id: "Emergency", label: "Urgent Notification" },
+];
+
 const WORKSHOP_CATEGORIES = [
   { id: "Announcement", label: "Announcement" },
   { id: "Important Alert", label: "Important Alert" },
@@ -64,7 +74,9 @@ export default function EventBroadcastEmailer() {
   const eventId = admin?.EventId || "";
   const typeInfo = getEventTypeInfo(admin?.EventType);
 
-  const CATEGORIES = typeInfo.isSeminar 
+  const CATEGORIES = typeInfo.isAlumni
+    ? ALUMNI_CATEGORIES
+    : typeInfo.isSeminar 
     ? SEMINAR_CATEGORIES 
     : typeInfo.isWebinar 
     ? WEBINAR_CATEGORIES 
@@ -74,7 +86,9 @@ export default function EventBroadcastEmailer() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [category, setCategory] = useState(
-    typeInfo.isSeminar 
+    typeInfo.isAlumni
+      ? "Reunion Announcement"
+      : typeInfo.isSeminar 
       ? "Keynote Announcement" 
       : typeInfo.isWebinar 
       ? "Live Broadcast Link" 
@@ -83,16 +97,55 @@ export default function EventBroadcastEmailer() {
   const [recipientFilter, setRecipientFilter] = useState("all");
   const [organizerName, setOrganizerName] = useState(
     admin?.AdminName 
-      ? `${admin.AdminName} (${typeInfo.isSeminar ? 'Conference Chair' : typeInfo.isWebinar ? 'Webinar Host' : typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})` 
-      : (typeInfo.isSeminar ? "Seminar Organizing Committee" : typeInfo.isWebinar ? "Webinar Organizing Team" : "Event Organizing Team")
+      ? `${admin.AdminName} (${typeInfo.isAlumni ? 'Alumni Relations Chair' : typeInfo.isSeminar ? 'Conference Chair' : typeInfo.isWebinar ? 'Webinar Host' : typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})` 
+      : (typeInfo.isAlumni ? "Alumni Relations & Homecoming Committee" : typeInfo.isSeminar ? "Seminar Organizing Committee" : typeInfo.isWebinar ? "Webinar Organizing Team" : "Event Organizing Team")
   );
 
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [broadcasts, setBroadcasts] = useState([]);
 
-  // Audience filters tailored for Seminar vs Webinar vs Workshop vs Hackathon
-  const recipientFilters = typeInfo.isSeminar
+  // Audience filters tailored for Alumni vs Seminar vs Webinar vs Workshop vs Hackathon
+  const recipientFilters = typeInfo.isAlumni
+    ? [
+        {
+          id: "all",
+          label: "All Registered Alumni",
+          desc: "Dispatches to every registered alumnus across all graduating batches.",
+          icon: Users,
+        },
+        {
+          id: "confirmed_rsvp",
+          label: "Confirmed RSVPs (Attending)",
+          desc: "Dispatches only to alumni who confirmed their attendance for Homecoming.",
+          icon: CheckCircle2,
+        },
+        {
+          id: "tentative_rsvp",
+          label: "Tentative RSVPs (Follow-up)",
+          desc: "Dispatches follow-up reminders to alumni whose attendance is tentative.",
+          icon: Clock,
+        },
+        {
+          id: "checked_in",
+          label: "Gate Checked-In Alumni",
+          desc: "Dispatches only to alumni who have physically checked in at the venue.",
+          icon: ShieldCheck,
+        },
+        {
+          id: "with_guests",
+          label: "Alumni with Family / Guests (+1)",
+          desc: "Dispatches banquet seat and family hospitality updates to alumni bringing guests.",
+          icon: UserCheck,
+        },
+        {
+          id: "absent",
+          label: "Pending / Gate Arrival Reminder",
+          desc: "Dispatches entry pass and welcome reminders to alumni not yet checked in.",
+          icon: Clock,
+        },
+      ]
+    : typeInfo.isSeminar
     ? [
         {
           id: "all",
@@ -177,7 +230,38 @@ export default function EventBroadcastEmailer() {
       ];
 
   // Quick 1-click broadcast templates
-  const quickTemplates = typeInfo.isSeminar
+  const quickTemplates = typeInfo.isAlumni
+    ? [
+        {
+          name: "Homecoming Welcome & Gate Pass",
+          cat: "Gate Pass & Banquet",
+          filter: "all",
+          sub: `${admin?.EventName || "Alumni Meet"} - Digital Gate Pass & Homecoming Schedule`,
+          msg: `Dear Distinguished Alumnus,\n\nWelcome back to campus! We are thrilled to host you for ${admin?.EventName || "Homecoming '26"}.\n\nPlease ensure you have your Digital Alumni Pass ready on your phone or printed for expedited check-in at the convention entrance.\n\nRegistration desk & welcome high tea opens 30 minutes prior to the inaugural session.\n\nWe look forward to reconnecting!`,
+        },
+        {
+          name: "Banquet Dinner & Seating",
+          cat: "Gate Pass & Banquet",
+          filter: "confirmed_rsvp",
+          sub: `${admin?.EventName || "Alumni Meet"} - Grand Reunion Banquet & Seating Arrangements`,
+          msg: `Dear Alumnus,\n\nThe Grand Homecoming Banquet Dinner will commence at 7:00 PM in the Main Convention Hall.\n\nReserved batch seating zones have been arranged for all graduating batches. If you are attending with family or guests (+1), our hospitality team will guide you to the family lounge.\n\nWe look forward to a memorable evening of nostalgia and celebration!`,
+        },
+        {
+          name: "Nostalgia Wall & Memories",
+          cat: "Nostalgia & Memories",
+          filter: "all",
+          sub: `${admin?.EventName || "Alumni Meet"} - Share Your Campus Memories & Vintage Photos`,
+          msg: `Dear Alumnus,\n\nHave vintage campus photographs, hostel memories, or batch stories you'd love to share? Our digital Alumni Memories Wall is now live!\n\nVisit your Alumni Hub to upload your favorite throwback pictures and browse snapshots shared by your batchmates.`,
+        },
+        {
+          name: "Post-Reunion Thank You & Photos",
+          cat: "Reunion Announcement",
+          filter: "checked_in",
+          sub: `${admin?.EventName || "Alumni Meet"} - Thank You for Making Homecoming '26 Unforgettable!`,
+          msg: `Dear Alumnus,\n\nThank you for returning home and celebrating ${admin?.EventName || "Homecoming '26"} with us! Your presence, camaraderie, and stories made this reunion extraordinary.\n\nThe official high-resolution photo gallery and batch group portraits are now available for viewing and download in your Alumni Portal.\n\nStay connected and see you at our next reunion!`,
+        },
+      ]
+    : typeInfo.isSeminar
     ? [
         {
           name: "Auditorium Gate Pass",
@@ -367,31 +451,97 @@ export default function EventBroadcastEmailer() {
   };
 
   const getCategoryBadgeClass = (cat) => {
-    switch (cat) {
-      case "Important Alert":
-      case "Important Notice":
-      case "Emergency":
-        return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30";
-      case "Schedule Update":
-      case "Conference Schedule":
-      case "Schedule & Timings":
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30";
-      case "Study Materials":
-      case "Slide Decks & Replays":
-      case "Proceedings & Slides":
-        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
-      case "Venue Information":
-      case "Auditorium & Gate Pass":
-        return "bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/30";
-      case "Keynote Announcement":
-      case "Speaker Spotlight":
-        return "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30";
-      case "Delegate Feedback":
-      case "Delegate Certificate":
-        return "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30";
-      default:
-        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30";
+    const c = String(cat || "").toLowerCase();
+    if (c.includes("emergency") || c.includes("urgent")) {
+      return "text-rose-600 dark:text-rose-400 font-bold";
     }
+    if (c.includes("important")) {
+      return "text-red-600 dark:text-red-400 font-bold";
+    }
+    if (c.includes("schedule") || c.includes("timings") || c.includes("timetable")) {
+      return "text-amber-600 dark:text-amber-400 font-bold";
+    }
+    if (c.includes("alert")) {
+      return "text-orange-600 dark:text-orange-400 font-bold";
+    }
+    if (c.includes("reunion") || c.includes("keynote") || c.includes("speaker") || c.includes("spotlight")) {
+      return "text-blue-600 dark:text-blue-400 font-bold";
+    }
+    if (c.includes("gate") || c.includes("banquet") || c.includes("venue") || c.includes("auditorium")) {
+      return "text-teal-600 dark:text-teal-400 font-bold";
+    }
+    if (c.includes("nostalgia") || c.includes("memories") || c.includes("study") || c.includes("slides") || c.includes("proceedings") || c.includes("replays")) {
+      return "text-sky-600 dark:text-sky-400 font-bold";
+    }
+    if (c.includes("giving") || c.includes("endowment") || c.includes("certificate") || c.includes("feedback")) {
+      return "text-purple-600 dark:text-purple-400 font-bold";
+    }
+    return "text-emerald-600 dark:text-emerald-400 font-bold";
+  };
+
+  const getCategoryHeaderStyle = (cat) => {
+    const c = String(cat || "").toLowerCase();
+    if (c.includes("emergency") || c.includes("urgent")) {
+      return {
+        bg: "bg-rose-700",
+        tag: "URGENT NOTIFICATION",
+        borderAccent: "border-l-rose-500",
+      };
+    }
+    if (c.includes("important")) {
+      return {
+        bg: "bg-red-700",
+        tag: "IMPORTANT NOTICE",
+        borderAccent: "border-l-red-500",
+      };
+    }
+    if (c.includes("schedule") || c.includes("timings") || c.includes("timetable")) {
+      return {
+        bg: "bg-amber-600",
+        tag: "SCHEDULE & TIMETABLE UPDATE",
+        borderAccent: "border-l-amber-500",
+      };
+    }
+    if (c.includes("alert")) {
+      return {
+        bg: "bg-orange-600",
+        tag: "ACTION REQUIRED",
+        borderAccent: "border-l-orange-500",
+      };
+    }
+    if (c.includes("reunion") || c.includes("keynote") || c.includes("speaker") || c.includes("spotlight")) {
+      return {
+        bg: "bg-blue-600",
+        tag: "OFFICIAL REUNION ANNOUNCEMENT",
+        borderAccent: "border-l-blue-500",
+      };
+    }
+    if (c.includes("gate") || c.includes("banquet") || c.includes("venue") || c.includes("auditorium")) {
+      return {
+        bg: "bg-teal-700",
+        tag: "GATE PASS & VENUE ENTRY",
+        borderAccent: "border-l-teal-500",
+      };
+    }
+    if (c.includes("nostalgia") || c.includes("memories") || c.includes("study") || c.includes("slides") || c.includes("proceedings") || c.includes("replays")) {
+      return {
+        bg: "bg-sky-600",
+        tag: "MEMORIES & RESOURCES",
+        borderAccent: "border-l-sky-500",
+      };
+    }
+    if (c.includes("giving") || c.includes("endowment") || c.includes("certificate") || c.includes("feedback")) {
+      return {
+        bg: "bg-purple-700",
+        tag: "ALUMNI GIVING & HONORS",
+        borderAccent: "border-l-purple-500",
+      };
+    }
+    return {
+      bg: "bg-emerald-700",
+      tag: "LIVE EVENT ANNOUNCEMENT",
+      borderAccent: "border-l-emerald-500",
+    };
   };
 
   return (
@@ -408,7 +558,9 @@ export default function EventBroadcastEmailer() {
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
               <Radio className="w-4 h-4 animate-pulse" />
               <span>
-                {typeInfo.isSeminar
+                {typeInfo.isAlumni
+                  ? "Alumni Homecoming Broadcasts"
+                  : typeInfo.isSeminar
                   ? "Conference & Seminar Broadcasts"
                   : typeInfo.isWebinar
                   ? "Webinar Keynote Broadcasts"
@@ -420,14 +572,18 @@ export default function EventBroadcastEmailer() {
               <span>{admin?.EventName || "Active Event"}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {typeInfo.isSeminar
+              {typeInfo.isAlumni
+                ? "Alumni Homecoming Broadcast Mailer"
+                : typeInfo.isSeminar
                 ? "Seminar Delegate Broadcast Mailer"
                 : typeInfo.isWebinar
                 ? "Webinar Delegate Broadcast Mailer"
                 : "Broadcast Emailer & Announcements"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
-              {typeInfo.isSeminar
+              {typeInfo.isAlumni
+                ? "Dispatch homecoming schedule updates, banquet details, digital entry passes, nostalgia links, and thank you notes directly to registered alumni."
+                : typeInfo.isSeminar
                 ? "Dispatch keynote announcements, gate entry instructions, conference proceedings, and participation certificates directly to registered delegates."
                 : typeInfo.isWebinar
                 ? "Dispatch live stream links, keynote announcements, slide decks, replays, and feedback requests to registered delegates."
@@ -578,7 +734,9 @@ export default function EventBroadcastEmailer() {
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder={
-                      typeInfo.isSeminar
+                      typeInfo.isAlumni
+                        ? "e.g. Grand Alumni Meet 2026 - Digital Gate Pass & Homecoming Schedule"
+                        : typeInfo.isSeminar
                         ? "e.g. National AI Seminar - Keynote Commencing & Auditorium Gate Pass"
                         : typeInfo.isWebinar
                         ? "e.g. AI & Cloud Keynote - Live Broadcast Link & Session Instructions"
@@ -621,7 +779,9 @@ export default function EventBroadcastEmailer() {
                     value={organizerName}
                     onChange={(e) => setOrganizerName(e.target.value)}
                     placeholder={
-                      typeInfo.isSeminar
+                      typeInfo.isAlumni
+                        ? "e.g. Alumni Relations & Homecoming Committee"
+                        : typeInfo.isSeminar
                         ? "e.g. Seminar Organizing Committee"
                         : typeInfo.isWebinar
                         ? "e.g. Webinar Host Operations"
@@ -673,21 +833,15 @@ export default function EventBroadcastEmailer() {
                 <div className="bg-slate-100 dark:bg-zinc-900 px-4 py-3 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-sm bg-rose-400" />
-                    <span className="w-2.5 h-2.5 rounded-sm bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-sm bg-slate-300 dark:bg-zinc-600" />
                     <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />
                   </div>
                   <span className="font-mono text-[10px]">smtp.ayojan-mail.com</span>
                 </div>
 
-                <div className="bg-emerald-700 p-5 text-white space-y-2">
-                  <div className="inline-block px-2.5 py-0.5 rounded-md bg-white/20 text-[10px] font-bold tracking-wider uppercase">
-                    {typeInfo.isSeminar
-                      ? "Seminar Official Notice"
-                      : typeInfo.isWebinar
-                      ? "Webinar Keynote Notice"
-                      : typeInfo.isWorkshop
-                      ? "Workshop Official Notice"
-                      : "Hackathon Official Notice"}
+                <div className={`${getCategoryHeaderStyle(category).bg} p-5 text-white space-y-1.5 transition-colors`}>
+                  <div className="text-[11px] font-extrabold tracking-wider uppercase text-white/90">
+                    {getCategoryHeaderStyle(category).tag}
                   </div>
                   <h3 className="text-base font-extrabold truncate">
                     {admin?.EventName || "Event Announcement"}
@@ -695,23 +849,19 @@ export default function EventBroadcastEmailer() {
                 </div>
 
                 <div className="p-5 space-y-4 text-xs">
-                  <span
-                    className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getCategoryBadgeClass(
-                      category
-                    )}`}
-                  >
-                    {category}
-                  </span>
+                  <div className={`text-xs font-bold uppercase tracking-wider ${getCategoryBadgeClass(category)}`}>
+                    • {category}
+                  </div>
 
                   <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
                     {subject || "Subject line preview will appear here..."}
                   </h4>
 
                   <p className="text-slate-600 dark:text-zinc-400 font-medium">
-                    Dear {typeInfo.isSeminar || typeInfo.isWebinar ? "Delegate" : typeInfo.isWorkshop ? "Workshop Attendee" : "Participant"},
+                    Dear {typeInfo.isAlumni ? "Distinguished Alumnus" : typeInfo.isSeminar || typeInfo.isWebinar ? "Delegate" : typeInfo.isWorkshop ? "Workshop Attendee" : "Participant"},
                   </p>
 
-                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-mono text-[11px]">
+                  <div className={`p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 border-l-4 ${getCategoryHeaderStyle(category).borderAccent} text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-mono text-[11px]`}>
                     {message || "Your broadcast announcement text will be formatted and delivered directly to the inbox of verified attendees."}
                   </div>
 
@@ -759,12 +909,8 @@ export default function EventBroadcastEmailer() {
                   <div key={b.Id} className="py-4 space-y-2 first:pt-0 last:pb-0">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                       <div className="flex items-center gap-2">
-                        <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getCategoryBadgeClass(
-                            b.Category
-                          )}`}
-                        >
-                          {b.Category}
+                        <span className={`text-[11px] font-bold uppercase tracking-wider ${getCategoryBadgeClass(b.Category)}`}>
+                          • {b.Category}
                         </span>
                         <h3 className="font-bold text-xs text-slate-900 dark:text-white">
                           {b.Subject}
@@ -783,7 +929,7 @@ export default function EventBroadcastEmailer() {
                     <div className="flex items-center gap-4 text-[11px] text-slate-500 pt-1">
                       <span className="flex items-center gap-1 text-emerald-600 font-bold">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        Dispatched to {b.RecipientCount} participant(s)
+                        Dispatched to {b.RecipientCount} {typeInfo.isAlumni ? "alumnus/alumni" : "participant(s)"}
                       </span>
                       <span>Target: <strong className="capitalize">{b.RecipientFilter}</strong></span>
                     </div>

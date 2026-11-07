@@ -615,9 +615,15 @@ const sendEventBroadcast = (EventId, { subject, message, category, recipientFilt
         if (recipientFilter === 'team_leads') {
             filterClause = " AND (LOWER(tm.Role) IN ('teamlead', 'team lead') OR tm.UserId = t.TeamLeadUserId)";
         } else if (recipientFilter === 'checked_in') {
-            filterClause = " AND (ea.Status = 'checked_in' OR sa.CheckInStatus = 'CheckedIn' OR wa.Status = 'checked_in' OR wsa.Status = 'checked_in')";
+            filterClause = " AND (ea.Status = 'checked_in' OR sa.CheckInStatus = 'CheckedIn' OR t.GateCheckInStatus = 'CheckedIn')";
         } else if (recipientFilter === 'absent' || recipientFilter === 'not_checked_in') {
-            filterClause = " AND (ea.Status IS NULL OR ea.Status != 'checked_in') AND (sa.CheckInStatus IS NULL OR sa.CheckInStatus != 'CheckedIn') AND (wa.Status IS NULL OR wa.Status != 'checked_in') AND (wsa.Status IS NULL OR wsa.Status != 'checked_in')";
+            filterClause = " AND (ea.Status IS NULL OR ea.Status != 'checked_in') AND (sa.CheckInStatus IS NULL OR sa.CheckInStatus != 'CheckedIn') AND (t.GateCheckInStatus IS NULL OR t.GateCheckInStatus != 'CheckedIn')";
+        } else if (recipientFilter === 'confirmed_rsvp' || recipientFilter === 'attending') {
+            filterClause = " AND (t.RsvpStatus = 'ATTENDING' OR t.RsvpStatus IS NULL)";
+        } else if (recipientFilter === 'tentative_rsvp') {
+            filterClause = " AND t.RsvpStatus = 'TENTATIVE'";
+        } else if (recipientFilter === 'with_guests') {
+            filterClause = " AND t.GuestCount > 0";
         }
 
         const query = `
@@ -632,8 +638,6 @@ const sendEventBroadcast = (EventId, { subject, message, category, recipientFilt
             INNER JOIN users u ON u.Id = COALESCE(tm.UserId, t.TeamLeadUserId)
             LEFT JOIN event_attendance ea ON ea.EventId = er.EventId AND ea.UserId = u.Id
             LEFT JOIN seminar_attendance sa ON sa.EventId = er.EventId AND sa.UserId = u.Id
-            LEFT JOIN webinar_attendance wa ON wa.EventId = er.EventId AND wa.UserId = u.Id
-            LEFT JOIN workshop_attendance wsa ON wsa.EventId = er.EventId AND wsa.UserId = u.Id
             WHERE er.EventId = ? AND er.Status = 'approved' ${filterClause}
             AND COALESCE(NULLIF(tm.MemberEmail, ''), u.Email) IS NOT NULL
         `;

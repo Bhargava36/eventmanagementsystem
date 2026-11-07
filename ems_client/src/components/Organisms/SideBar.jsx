@@ -237,7 +237,7 @@ const SidebarContent = ({
                 onClick={() => isMobile && setMobileOpen(false)}
                 className={`relative w-full flex items-center ${
                   !isMobile && collapsed ? 'justify-center' : 'justify-between'
-                } px-4 py-3 rounded-full cursor-pointer select-none transition-colors duration-200 ${
+                } px-4 py-3 rounded-xl cursor-pointer select-none transition-colors duration-200 ${
                   isCurrentActive
                     ? 'text-white'
                     : 'text-gray-700 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-500/10'
@@ -245,8 +245,8 @@ const SidebarContent = ({
               >
                 {isCurrentActive && (
                   <motion.span
-                    layoutId={isMobile ? 'superadmin-pill-mobile' : 'superadmin-pill-desktop'}
-                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-full shadow-md z-0"
+                    layoutId={isMobile ? 'superadmin-tab-mobile' : 'superadmin-tab-desktop'}
+                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-xl shadow-md z-0"
                     transition={{
                       type: 'spring',
                       stiffness: 350,
@@ -281,7 +281,7 @@ const SidebarContent = ({
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.1, delay: 0.1 }}
-                    className={`relative z-10 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    className={`relative z-10 text-xs font-semibold px-2 py-0.5 rounded-md ${
                       isCurrentActive
                         ? 'bg-white text-emerald-700'
                         : 'bg-white dark:bg-black text-emerald-700 dark:text-emerald-500'
@@ -305,7 +305,7 @@ const SidebarContent = ({
           title={!isMobile && collapsed ? 'Logout' : ''}
           className={`w-full flex items-center ${
             !isMobile && collapsed ? 'justify-center' : 'gap-3'
-          } px-4 py-3 rounded-full transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer`}
+          } px-4 py-3 rounded-xl transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer`}
         >
           <LogOut className="w-5 h-5 shrink-0" />
           {canShowText && (

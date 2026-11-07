@@ -64,7 +64,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 24px; }
         .container { max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        .header { background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 32px 24px; text-align: center; color: #ffffff; }
+        .header { background-color: #059669; padding: 32px 24px; text-align: center; color: #ffffff; }
         .header h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
         .header p { margin: 6px 0 0; font-size: 13px; opacity: 0.9; }
         .content { padding: 32px 28px; }
@@ -175,7 +175,6 @@ const sendPasswordResetSuccessEmail = async (toEmail, userName = 'Participant') 
         .container { max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; }
         .header { background: #059669; padding: 28px; text-align: center; color: #ffffff; }
         .content { padding: 32px 28px; }
-        .badge { display: inline-block; background: #dcfce7; color: #15803d; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 9999px; }
       </style>
     </head>
     <body>
@@ -226,15 +225,91 @@ const sendEventBroadcastEmail = async ({
 }) => {
     const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || `"${eventName}" <no-reply@eventmanagement.com>`;
 
-    const categoryBadgeColors = {
-        'Important Alert': { bg: '#fef2f2', text: '#dc2626', border: '#fecaca' },
-        'Schedule Update': { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' },
-        'Venue Information': { bg: '#f0fdf4', text: '#16a34a', border: '#bbf7d0' },
-        'Announcement': { bg: '#ecfdf5', text: '#059669', border: '#a7f3d0' },
-        'Emergency': { bg: '#fff1f2', text: '#e11d48', border: '#fecdd3' },
+    const getCategoryTheme = (cat) => {
+        const c = String(cat || '').toLowerCase().trim();
+
+        // 1. Emergency / Urgent (Solid Rose Red)
+        if (c.includes('emergency') || c.includes('urgent')) {
+            return {
+                headerBg: '#be123c',
+                tag: 'URGENT NOTIFICATION',
+                badge: { bg: '#fff1f2', text: '#e11d48', border: '#fecdd3' },
+                accentColor: '#e11d48'
+            };
+        }
+        // 2. Important Notice (Solid Crimson Red)
+        if (c.includes('important')) {
+            return {
+                headerBg: '#dc2626',
+                tag: 'IMPORTANT NOTICE',
+                badge: { bg: '#fef2f2', text: '#dc2626', border: '#fecaca' },
+                accentColor: '#dc2626'
+            };
+        }
+        // 3. Schedule & Agenda Updates (Solid Orange)
+        if (c.includes('schedule') || c.includes('timings') || c.includes('timetable')) {
+            return {
+                headerBg: '#ea580c',
+                tag: 'SCHEDULE & TIMETABLE UPDATE',
+                badge: { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa' },
+                accentColor: '#ea580c'
+            };
+        }
+        // 4. Action Alert (Solid Amber)
+        if (c.includes('alert')) {
+            return {
+                headerBg: '#d97706',
+                tag: 'ACTION REQUIRED',
+                badge: { bg: '#fffbeb', text: '#b45309', border: '#fde68a' },
+                accentColor: '#d97706'
+            };
+        }
+        // 5. Reunion / Keynote / Speaker Spotlight (Solid Royal Blue)
+        if (c.includes('reunion') || c.includes('keynote') || c.includes('speaker') || c.includes('spotlight')) {
+            return {
+                headerBg: '#2563eb',
+                tag: 'OFFICIAL REUNION ANNOUNCEMENT',
+                badge: { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
+                accentColor: '#2563eb'
+            };
+        }
+        // 6. Gate Pass / Banquet / Venue (Solid Teal)
+        if (c.includes('gate') || c.includes('banquet') || c.includes('venue') || c.includes('auditorium')) {
+            return {
+                headerBg: '#0d9488',
+                tag: 'GATE PASS & VENUE ENTRY',
+                badge: { bg: '#f0fdfa', text: '#0f766e', border: '#99f6e4' },
+                accentColor: '#0d9488'
+            };
+        }
+        // 7. Nostalgia & Memories / Slides / Code Materials (Solid Sky Blue)
+        if (c.includes('nostalgia') || c.includes('memories') || c.includes('study') || c.includes('slides') || c.includes('proceedings') || c.includes('replays')) {
+            return {
+                headerBg: '#0284c7',
+                tag: 'MEMORIES & RESOURCES',
+                badge: { bg: '#f0f9ff', text: '#0369a1', border: '#bae6fd' },
+                accentColor: '#0284c7'
+            };
+        }
+        // 8. Alumni Giving / Certificates / Feedback (Solid Purple)
+        if (c.includes('giving') || c.includes('endowment') || c.includes('certificate') || c.includes('feedback')) {
+            return {
+                headerBg: '#7c3aed',
+                tag: 'ALUMNI GIVING & HONORS',
+                badge: { bg: '#faf5ff', text: '#6d28d9', border: '#e9d5ff' },
+                accentColor: '#7c3aed'
+            };
+        }
+        // 9. Default Announcement (Solid Emerald Green)
+        return {
+            headerBg: '#059669',
+            tag: 'LIVE EVENT ANNOUNCEMENT',
+            badge: { bg: '#ecfdf5', text: '#047857', border: '#a7f3d0' },
+            accentColor: '#059669'
+        };
     };
 
-    const badgeStyle = categoryBadgeColors[category] || categoryBadgeColors['Announcement'];
+    const theme = getCategoryTheme(category);
 
     const formattedMessage = (message || '')
         .split('\n')
@@ -252,14 +327,14 @@ const sendEventBroadcastEmail = async ({
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 24px; }
         .container { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-        .header { background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 32px 28px; text-align: left; color: #ffffff; }
-        .header-tag { display: inline-block; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+        .header { background-color: ${theme.headerBg}; padding: 32px 28px; text-align: left; color: #ffffff; }
+        .header-tag { font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255, 255, 255, 0.92); margin-bottom: 8px; }
         .header h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
         .content { padding: 32px 28px; }
-        .badge { display: inline-block; background: ${badgeStyle.bg}; color: ${badgeStyle.text}; border: 1px solid ${badgeStyle.border}; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; }
+        .category-label { font-size: 12px; font-weight: 800; color: ${theme.accentColor}; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 14px; }
         .subject-box { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 16px; line-height: 1.4; }
         .greeting { font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 16px; }
-        .message-body { background: #f8fafc; border-radius: 14px; padding: 20px; border: 1px solid #f1f5f9; margin-bottom: 24px; }
+        .message-body { background: #f8fafc; border-radius: 14px; padding: 20px; border: 1px solid #f1f5f9; border-left: 4px solid ${theme.accentColor}; margin-bottom: 24px; }
         .organizer-card { border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 24px; font-size: 12px; color: #64748b; }
         .footer { text-align: center; padding: 20px; font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; background: #fafafa; }
       </style>
@@ -267,13 +342,11 @@ const sendEventBroadcastEmail = async ({
     <body>
       <div class="container">
         <div class="header">
-          <div class="header-tag">Live Event Broadcast</div>
+          <div class="header-tag">${theme.tag}</div>
           <h1>${eventName}</h1>
         </div>
         <div class="content">
-          <div>
-            <span class="badge">${category}</span>
-          </div>
+          <div class="category-label">&bull; ${category}</div>
           <div class="subject-box">${subject}</div>
           <div class="greeting">Dear ${userName || 'Participant'},</div>
           <div class="message-body">

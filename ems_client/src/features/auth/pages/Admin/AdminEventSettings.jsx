@@ -160,7 +160,9 @@ export default function AdminEventSettings() {
   });
 
   useEffect(() => {
-    if (typeInfo.isSeminar) {
+    if (typeInfo.isAlumni) {
+      setActiveTab('alumni_config');
+    } else if (typeInfo.isSeminar) {
       setActiveTab('seminar_config');
     } else if (typeInfo.isWebinar) {
       setActiveTab('webinar_config');
@@ -171,7 +173,7 @@ export default function AdminEventSettings() {
     } else if (isVirtualMode || isBothMode) {
       setActiveTab('virtual');
     }
-  }, [typeInfo.isSeminar, typeInfo.isWebinar, typeInfo.isWorkshop, isVirtualMode, isPhysicalMode, isBothMode]);
+  }, [typeInfo.isAlumni, typeInfo.isSeminar, typeInfo.isWebinar, typeInfo.isWorkshop, isVirtualMode, isPhysicalMode, isBothMode]);
 
   useEffect(() => {
     const handleEventUpdated = (e) => {
@@ -254,7 +256,9 @@ export default function AdminEventSettings() {
 
       setEventData(ev);
       const evType = getEventTypeInfo(ev.EventType);
-      if (evType.isSeminar) {
+      if (evType.isAlumni) {
+        setActiveTab('alumni_config');
+      } else if (evType.isSeminar) {
         setActiveTab('seminar_config');
       } else if (evType.isWebinar) {
         setActiveTab('webinar_config');
@@ -586,10 +590,18 @@ export default function AdminEventSettings() {
 
     const payload = { ...settingsForm };
 
-    // For webinars, workshops, and seminars, team size is 1 (individual delegate/attendee)
-    if (typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
+    // For alumni, webinars, workshops, and seminars, team size is 1 (individual alumnus/delegate/attendee)
+    if (typeInfo.isAlumni || typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
       payload.TeamSize = '1';
-      if (typeInfo.isWebinar) {
+      if (typeInfo.isAlumni) {
+        payload.HackathonMode = 'Physical';
+        if (!payload.Location || payload.Location.trim() === '') {
+          payload.Location = 'Main University Convention Center';
+        }
+        // Accommodation is strictly disabled for alumni events
+        payload.AccommodationEnabled = 0;
+        payload.AccommodationFee = 0;
+      } else if (typeInfo.isWebinar) {
         payload.HackathonMode = 'Virtual';
         if (!payload.Location || payload.Location.trim() === '') {
           payload.Location = 'Virtual Live Broadcast Room';
@@ -604,7 +616,7 @@ export default function AdminEventSettings() {
       payload.PhysicalRegistrationOpen = payload.RegistrationOpen;
       payload.VirtualRegistrationOpen = payload.RegistrationOpen;
 
-      // Force-sync track fields to match seminar/webinar/workshop fields so old dates don't linger
+      // Force-sync track fields to match alumni/seminar/webinar/workshop fields so old dates don't linger
       payload.VirtualRegistrationStart = payload.RegistrationStart;
       payload.PhysicalRegistrationStart = payload.RegistrationStart;
       payload.VirtualRegistrationEnd = payload.RegistrationEnd;
@@ -630,7 +642,7 @@ export default function AdminEventSettings() {
 
     // Validate Event and Registration dates accurately based on event type
     let regStart, regEnd, eventStart, eventEnd;
-    if (typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
+    if (typeInfo.isAlumni || typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
       regStart = payload.RegistrationStart || payload.PhysicalRegistrationStart;
       regEnd = payload.RegistrationEnd || payload.PhysicalRegistrationEnd;
       eventStart = payload.StartDate || payload.PhysicalStartDate;
@@ -1197,7 +1209,34 @@ export default function AdminEventSettings() {
           {/* Seamless Navigation Tabs */}
           <div className="relative pt-2">
             <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto">
-              {(typeInfo.isSeminar
+              {(typeInfo.isAlumni
+                ? [
+                    {
+                      id: 'alumni_config',
+                      label: 'Alumni Meet & Venue Controls',
+                      icon: Sliders,
+                      status: (settingsForm.RegistrationOpen === 1 || settingsForm.PhysicalRegistrationOpen === 1) ? 'RSVPs Open' : 'RSVPs Paused',
+                    },
+                    {
+                      id: 'reunion_policies',
+                      label: 'Reunion Policy & Welcome Guide',
+                      icon: FileText,
+                      status: null,
+                    },
+                    {
+                      id: 'sponsors',
+                      label: 'Partners & Benefactors',
+                      icon: Award,
+                      status: null,
+                    },
+                    {
+                      id: 'gallery',
+                      label: 'Homecoming Memories Gallery',
+                      icon: Camera,
+                      status: null,
+                    },
+                  ]
+                : typeInfo.isSeminar
                 ? [
                     {
                       id: 'seminar_config',
@@ -1349,12 +1388,12 @@ export default function AdminEventSettings() {
                       }`} />
                       <span>{tab.label}</span>
                       {tab.status && (
-                        <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                        <span className={`text-[11px] font-bold ${
                           tab.status === 'Open'
-                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
-                            : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-slate-400 dark:text-zinc-500'
                         }`}>
-                          {tab.status}
+                          • {tab.status}
                         </span>
                       )}
                     </span>
@@ -1383,20 +1422,22 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-bold flex items-center gap-1.5 ${
                         settingsForm.RegistrationOpen === 1
-                          ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
-                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-slate-500 dark:text-zinc-400'
                       }`}>
-                        {settingsForm.RegistrationOpen === 1 ? '• Registrations Open' : '• Registrations Paused'}
+                        <span className={`w-1.5 h-1.5 rounded-full ${settingsForm.RegistrationOpen === 1 ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                        {settingsForm.RegistrationOpen === 1 ? 'Registrations Open' : 'Registrations Paused'}
                       </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                      <span className={`text-xs font-bold flex items-center gap-1.5 ${
                         settingsForm.IsMeetActive === 1
-                          ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 animate-pulse'
-                          : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-slate-500 dark:text-zinc-400'
                       }`}>
-                        {settingsForm.IsMeetActive === 1 ? '• Broadcast Live' : '• Standby'}
+                        <span className={`w-1.5 h-1.5 rounded-full ${settingsForm.IsMeetActive === 1 ? 'bg-red-500 animate-pulse' : 'bg-slate-400'}`} />
+                        {settingsForm.IsMeetActive === 1 ? 'Broadcast Live' : 'Standby'}
                       </span>
                     </div>
                   </div>
@@ -1746,12 +1787,13 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                    <span className={`text-xs font-bold flex items-center gap-1.5 ${
                       settingsForm.RegistrationOpen === 1
-                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-500 dark:text-zinc-400'
                     }`}>
-                      {settingsForm.RegistrationOpen === 1 ? '● Registrations Open' : '● Registrations Paused'}
+                      <span className={`w-1.5 h-1.5 rounded-full ${settingsForm.RegistrationOpen === 1 ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      {settingsForm.RegistrationOpen === 1 ? 'Registrations Open' : 'Registrations Paused'}
                     </span>
                   </div>
 
@@ -2058,6 +2100,339 @@ export default function AdminEventSettings() {
                 </div>
               )}
 
+              {/* ALUMNI CONFIG TAB */}
+              {activeTab === 'alumni_config' && (
+                <div className="space-y-6">
+                  {/* Alumni Header Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Sliders className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Alumni Meet Controls &amp; Banquet Venue
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Configure alumni RSVP availability, homecoming dates, convention banquet hall, and digital gate passes.
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-bold flex items-center gap-1.5 ${
+                      settingsForm.RegistrationOpen === 1
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-500 dark:text-zinc-400'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${settingsForm.RegistrationOpen === 1 ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      {settingsForm.RegistrationOpen === 1 ? 'RSVPs Open' : 'RSVPs Paused'}
+                    </span>
+                  </div>
+
+                  {/* Alumni RSVP Registration Controls Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Alumni RSVP Registration Availability</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xl">
+                          When paused, alumni cannot register new RSVPs or download gate entry passes from the portal.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextVal = settingsForm.RegistrationOpen === 1 ? 0 : 1;
+                          setSettingsForm((prev) => ({
+                            ...prev,
+                            RegistrationOpen: nextVal,
+                            PhysicalRegistrationOpen: nextVal,
+                            VirtualRegistrationOpen: nextVal
+                          }));
+                        }}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 shrink-0 ${
+                          settingsForm.RegistrationOpen === 1
+                            ? 'bg-white dark:bg-black hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+                        }`}
+                      >
+                        {settingsForm.RegistrationOpen === 1 ? (
+                          <>
+                            <Lock className="h-4 w-4" />
+                            <span>Pause Alumni RSVPs</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="h-4 w-4" />
+                            <span>Resume / Open RSVPs</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Registration Dates */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>From: RSVP Opening Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="RegistrationStart"
+                          value={settingsForm.RegistrationStart ? settingsForm.RegistrationStart.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>To: RSVP Closing Deadline</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="RegistrationEnd"
+                          value={settingsForm.RegistrationEnd ? settingsForm.RegistrationEnd.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reunion Schedule & Banquet Venue Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Reunion Schedule &amp; Banquet Venue</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>From: Alumni Meet Start Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="StartDate"
+                          value={settingsForm.StartDate ? settingsForm.StartDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>To: Alumni Meet End Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="EndDate"
+                          value={settingsForm.EndDate ? settingsForm.EndDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 pt-2">
+                      <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>Banquet Hall Venue &amp; Campus Location</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="Location"
+                        placeholder="e.g. Main Convention Center, Platinum Banquet Hall, Campus East"
+                        value={settingsForm.Location || ''}
+                        onChange={handleInputChange}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Alumni Hospitality, Banquet Lunch & Digital Gate Passes */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>Reunion Hospitality &amp; Digital Passes</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
+                        Configure reunion banquet dinner service and QR digital entry badges. (Accommodation requests are strictly disabled for this alumni event).
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Gala Banquet & Lunch Service */}
+                      <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Utensils className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">Gala Banquet / Lunch Included</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={settingsForm.FoodEnabled === 1}
+                            onChange={(e) =>
+                              setSettingsForm((prev) => ({
+                                ...prev,
+                                FoodEnabled: e.target.checked ? 1 : 0
+                              }))
+                            }
+                            className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                          />
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                          Includes access to high tea, homecoming buffet lunch, and reunion dinner.
+                        </p>
+                        {settingsForm.FoodEnabled === 1 && (
+                          <div className="pt-2">
+                            <label className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium">Banquet Contribution Fee (INR - 0 for Complimentary)</label>
+                            <input
+                              type="number"
+                              name="FoodFee"
+                              value={settingsForm.FoodFee || 0}
+                              onChange={handleInputChange}
+                              className="w-full mt-1 px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-slate-900 dark:text-white outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ID Pass & Badge Generation */}
+                      <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">Digital Alumni Pass &amp; Badge</span>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={settingsForm.IDCardEnabled === 1}
+                            onChange={(e) =>
+                              setSettingsForm((prev) => ({
+                                ...prev,
+                                IDCardEnabled: e.target.checked ? 1 : 0
+                              }))
+                            }
+                            className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                          />
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                          Enables printable homecoming entry passes and QR scanner verification at entrance desks.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Alumni Giving / UPI ID */}
+                    <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800 space-y-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <IndianRupee className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Alumni Association / Voluntary Giving UPI ID</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="AdminUpiId"
+                          placeholder="e.g. alumni.giving@oksbi or reunion@upi"
+                          value={settingsForm.AdminUpiId || ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* REUNION POLICIES TAB */}
+              {activeTab === 'reunion_policies' && (
+                <div className="space-y-6">
+                  {/* Reunion Overview */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>About the Reunion &amp; Welcome Message</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Provide a warm welcome note from the Alumni Association and an overview of this year's homecoming themes.
+                    </p>
+                    <textarea
+                      name="Description"
+                      rows={5}
+                      placeholder="e.g. Welcome back to campus! The Grand Alumni Meet 2026 brings together alumni across all batches to reconnect with professors, batchmates, and campus traditions. Join us for a memorable weekend of nostalgia, camaraderie, and celebration..."
+                      value={settingsForm.Description || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+
+                  {/* Eligible Batches & Eligibility Guidelines */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Target Graduating Batches &amp; Cohort Eligibility</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Specify graduating year cohorts, milestone jubilee anniversary batches, and RSVP eligibility criteria.
+                    </p>
+                    <textarea
+                      name="Requirements"
+                      rows={4}
+                      placeholder="e.g.&#10;• Open to all graduates from Class of 2012 through Class of 2025.&#10;• Silver Jubilee special felicitation for the Class of 2001.&#10;• Prior RSVP registration is mandatory to ensure banquet catering arrangements."
+                      value={settingsForm.Requirements || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+
+                  {/* Family & Guest Policies (+1 Rules) */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Family &amp; Guest Policies (+1 Hospitality)</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Guidelines for spouse/children accompaniment, seating, campus parking, and check-in assistance.
+                    </p>
+                    <textarea
+                      name="Facilities"
+                      rows={4}
+                      placeholder="e.g.&#10;• Alumni are welcome to bring spouse and children (+1/family entry allowed).&#10;• Dedicated family lounge, photo booth, and child-friendly zone available at the venue.&#10;• Free valet and dedicated alumni parking available at South Gate plaza."
+                      value={settingsForm.Facilities || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+
+                  {/* Highlights & Reunion Souvenirs */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Award className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Reunion Highlights, Mementos &amp; Felicitations</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Highlight anniversary souvenirs, lapel pins, awards, and networking sessions.
+                    </p>
+                    <textarea
+                      name="Highlights"
+                      rows={4}
+                      placeholder="e.g.&#10;• Exclusive Homecoming Souvenir &amp; Silver Jubilee lapel pins for all attendees&#10;• Distinguished Alumni Achievement Awards ceremony&#10;• Networking gala banquet with university leadership and emeritus faculty"
+                      value={settingsForm.Highlights || ''}
+                      onChange={handleInputChange}
+                      className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* SEMINAR CONFIG TAB */}
               {activeTab === 'seminar_config' && (
                 <div className="space-y-6">
@@ -2076,12 +2451,13 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                    <span className={`text-xs font-bold flex items-center gap-1.5 ${
                       settingsForm.RegistrationOpen === 1
-                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-500 dark:text-zinc-400'
                     }`}>
-                      {settingsForm.RegistrationOpen === 1 ? '• Registrations Open' : '• Registrations Paused'}
+                      <span className={`w-1.5 h-1.5 rounded-full ${settingsForm.RegistrationOpen === 1 ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      {settingsForm.RegistrationOpen === 1 ? 'Registrations Open' : 'Registrations Paused'}
                     </span>
                   </div>
 
@@ -2438,12 +2814,13 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                    <span className={`text-xs font-bold flex items-center gap-1.5 ${
                       settingsForm.VirtualRegistrationOpen === 1
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-500 dark:text-zinc-400'
                     }`}>
-                      {settingsForm.VirtualRegistrationOpen === 1 ? '● Virtual Registrations Open' : '● Virtual Registrations Paused'}
+                      <span className={`w-1.5 h-1.5 rounded-full ${settingsForm.VirtualRegistrationOpen === 1 ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      {settingsForm.VirtualRegistrationOpen === 1 ? 'Virtual Registrations Open' : 'Virtual Registrations Paused'}
                     </span>
                   </div>
 
@@ -2618,12 +2995,13 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold w-fit ${
+                    <span className={`text-xs font-bold flex items-center gap-1.5 ${
                       settingsForm.PhysicalRegistrationOpen === 1
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700'
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-500 dark:text-zinc-400'
                     }`}>
-                      {settingsForm.PhysicalRegistrationOpen === 1 ? '● Physical Registrations Open' : '● Physical Registrations Paused'}
+                      <span className={`w-1.5 h-1.5 rounded-full ${settingsForm.PhysicalRegistrationOpen === 1 ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      {settingsForm.PhysicalRegistrationOpen === 1 ? 'Physical Registrations Open' : 'Physical Registrations Paused'}
                     </span>
                   </div>
 
@@ -2900,12 +3278,12 @@ export default function AdminEventSettings() {
                             <div>
                               <p className="text-xs font-bold text-slate-900 dark:text-white">{label}</p>
                               <p className="text-[11px] text-slate-400 mt-0.5">{desc}</p>
-                              <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              <span className={`inline-block mt-2 text-[11px] font-bold ${
                                 enabled
-                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-500'
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-slate-400 dark:text-zinc-500'
                               }`}>
-                                {enabled ? 'Enabled' : 'Disabled'}
+                                • {enabled ? 'Enabled' : 'Disabled'}
                               </span>
                             </div>
                             <button

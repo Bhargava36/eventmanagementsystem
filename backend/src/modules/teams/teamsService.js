@@ -311,6 +311,8 @@ const getTeamById = (id, callback) => {
     const query = `
         SELECT 
             t.Id, t.TeamName, t.TeamLeadUserId, t.TeamSize, t.College, t.State, t.EventId, t.CreatedAt, 
+            t.GraduationYear, t.CurrentCompany, t.Designation, t.City, t.LinkedinUrl, t.GuestCount, t.GuestNames, 
+            t.RsvpStatus, t.GateCheckInStatus, t.GateCheckInTime, t.FoodTokenScanned, t.FoodScannedTime,
             e.EventName, e.Description, e.Highlights, e.StartDate, e.EndDate, e.Location, e.EventType, e.EventStatus, 
             e.Posters, e.PrimaryColor, e.SecondaryColor, e.TertiaryColor, e.PrimaryTextColor, e.SecondaryTextColor, e.TertiaryTextColor,
             e.HackathonMode, e.Facilities, e.Requirements, e.TeamSize AS EventTeamSize,

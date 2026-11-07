@@ -292,6 +292,14 @@ function EventDetails() {
       TeamLeadCollege: loggedUser?.College || loggedUser?.college || '',
       TeamLeadState: loggedUser?.State || loggedUser?.state || '',
       TeamLeadPhoto: loggedUser?.Photo || '',
+      GraduationYear: loggedUser?.GraduationYear || '',
+      CurrentCompany: loggedUser?.CurrentCompany || '',
+      Designation: loggedUser?.Designation || '',
+      City: loggedUser?.City || '',
+      LinkedinUrl: loggedUser?.LinkedinUrl || '',
+      GuestCount: 0,
+      GuestNames: '',
+      RsvpStatus: 'ATTENDING'
     };
     return { TeamName: '', ...lead };
   });
@@ -638,6 +646,14 @@ function EventDetails() {
           Photo: m.Photo ? m.Photo.trim() : null
         })),
         ParticipationMode: registrationMode,
+        GraduationYear: formData.GraduationYear || '',
+        CurrentCompany: formData.CurrentCompany || '',
+        Designation: formData.Designation || '',
+        City: formData.City || '',
+        LinkedinUrl: formData.LinkedinUrl || '',
+        GuestCount: Number(formData.GuestCount) || 0,
+        GuestNames: formData.GuestNames || '',
+        RsvpStatus: formData.RsvpStatus || 'ATTENDING'
       };
       const teamResponse = await fetch(`${API_BASE_URL}/api/teams/create`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(teamPayload),
@@ -2136,6 +2152,87 @@ function EventDetails() {
                           </div>
                         </div>
                       </section>
+
+                      {eventTypeInfo.isAlumni && (
+                        <section className="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 shadow-sm dark:border-emerald-500/20 dark:bg-black space-y-4">
+                          <div className="flex items-center gap-2 border-b border-emerald-500/20 pb-3">
+                            <span className="text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">🎓 Alumni Reunion Credentials &amp; RSVP</span>
+                          </div>
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">Graduating Batch (Class of)</label>
+                              <input
+                                type="text"
+                                name="GraduationYear"
+                                value={formData.GraduationYear || ''}
+                                onChange={handleChange}
+                                placeholder="e.g. 2018"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-black dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">Current Organization / Startup</label>
+                              <input
+                                type="text"
+                                name="CurrentCompany"
+                                value={formData.CurrentCompany || ''}
+                                onChange={handleChange}
+                                placeholder="e.g. Google / Microsoft / Entrepreneur"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-black dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">Designation / Role</label>
+                              <input
+                                type="text"
+                                name="Designation"
+                                value={formData.Designation || ''}
+                                onChange={handleChange}
+                                placeholder="e.g. Senior Software Engineer"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-black dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">Current City</label>
+                              <input
+                                type="text"
+                                name="City"
+                                value={formData.City || ''}
+                                onChange={handleChange}
+                                placeholder="e.g. Hyderabad / Bengaluru / San Francisco"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-black dark:text-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">Accompanying Guests (+1 or Family)</label>
+                              <select
+                                name="GuestCount"
+                                value={formData.GuestCount || 0}
+                                onChange={handleChange}
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-black dark:text-white font-semibold"
+                              >
+                                <option value={0}>0 (Attending Solo)</option>
+                                <option value={1}>1 Guest (+1 / Spouse)</option>
+                                <option value={2}>2 Guests</option>
+                                <option value={3}>3 Guests</option>
+                              </select>
+                            </div>
+                            {Number(formData.GuestCount) > 0 && (
+                              <div>
+                                <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">Guest Name(s)</label>
+                                <input
+                                  type="text"
+                                  name="GuestNames"
+                                  value={formData.GuestNames || ''}
+                                  onChange={handleChange}
+                                  placeholder="e.g. Priya Sharma"
+                                  className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none focus:border-emerald-500 dark:border-white/10 dark:bg-black dark:text-white"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </section>
+                      )}
                     </>
                   )}
 

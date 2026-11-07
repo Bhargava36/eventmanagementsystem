@@ -97,11 +97,17 @@ export default function NotificationBellDropdown({
   // Real-time WebSocket listener
   useEffect(() => {
     let ws;
+    let isMounted = true;
     try {
       const wsUrl = API_BASE_URL.replace(/^http/, 'ws');
       ws = new WebSocket(wsUrl);
 
+      ws.onerror = () => {
+        // Silently handle any transient socket connection issues
+      };
+
       ws.onmessage = (event) => {
+        if (!isMounted) return;
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'NEW_NOTIFICATION') {
@@ -124,7 +130,18 @@ export default function NotificationBellDropdown({
     } catch (e) {}
 
     return () => {
-      if (ws) ws.close();
+      isMounted = false;
+      if (ws) {
+        ws.onerror = null;
+        if (ws.readyState === WebSocket.OPEN) {
+          try { ws.close(); } catch (_) {}
+        } else if (ws.readyState === WebSocket.CONNECTING) {
+          // Gracefully close only after handshake completes to prevent browser console warning
+          ws.onopen = () => {
+            try { ws.close(); } catch (_) {}
+          };
+        }
+      }
     };
   }, [userId]);
 
@@ -255,7 +272,7 @@ export default function NotificationBellDropdown({
           aria-label="Toggle notifications island"
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
-          className="relative px-3.5 py-2 rounded-full backdrop-blur-xl bg-white/70 dark:bg-black/90 border border-white/60 dark:border-white/10 shadow-[0_8px_25px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.45)] hover:border-emerald-500/40 dark:hover:border-emerald-500/40 text-gray-800 dark:text-gray-200 transition-all duration-300 flex items-center gap-2.5 cursor-pointer group select-none ring-1 ring-black/5 dark:ring-white/5"
+          className="relative px-3.5 py-2 rounded-2xl backdrop-blur-xl bg-white/70 dark:bg-black/90 border border-white/60 dark:border-white/10 shadow-[0_8px_25px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.45)] hover:border-emerald-500/40 dark:hover:border-emerald-500/40 text-gray-800 dark:text-gray-200 transition-all duration-300 flex items-center gap-2.5 cursor-pointer group select-none ring-1 ring-black/5 dark:ring-white/5"
         >
           <motion.div
             animate={isRinging ? { rotate: [0, 18, -18, 12, -12, 6, 0] } : {}}
@@ -276,7 +293,7 @@ export default function NotificationBellDropdown({
           </span>
 
           {unreadCount > 0 && (
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white font-black text-[10px] leading-none shadow-[0_0_12px_rgba(16,185,129,0.5)]">
+            <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white font-black text-[10px] leading-none shadow-[0_0_12px_rgba(16,185,129,0.5)]">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -288,7 +305,7 @@ export default function NotificationBellDropdown({
           aria-label="Toggle notifications"
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.94 }}
-          className="relative p-2.5 rounded-full backdrop-blur-md bg-white/50 dark:bg-black/90 hover:bg-white/80 dark:hover:bg-white/10 border border-white/50 dark:border-white/10 text-gray-700 dark:text-gray-300 transition-all duration-200 cursor-pointer select-none ring-1 ring-black/5 dark:ring-white/5"
+          className="relative p-2.5 rounded-xl backdrop-blur-md bg-white/50 dark:bg-black/90 hover:bg-white/80 dark:hover:bg-white/10 border border-white/50 dark:border-white/10 text-gray-700 dark:text-gray-300 transition-all duration-200 cursor-pointer select-none ring-1 ring-black/5 dark:ring-white/5"
         >
           <motion.div
             animate={isRinging ? { rotate: [0, 18, -18, 12, -12, 6, 0] } : {}}
@@ -339,7 +356,7 @@ export default function NotificationBellDropdown({
                   <h3 className="font-bold text-sm tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
                     Inbox
                     {unreadCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/25">
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/25">
                         {unreadCount} new
                       </span>
                     )}
@@ -351,7 +368,7 @@ export default function NotificationBellDropdown({
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllAsRead}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 transition-all cursor-pointer flex items-center gap-1.5"
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 transition-all cursor-pointer flex items-center gap-1.5"
                     title="Mark all notifications as read"
                   >
                     <CheckCheck className="w-3.5 h-3.5" />
@@ -360,7 +377,7 @@ export default function NotificationBellDropdown({
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                  className="p-1 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
                   title="Close (Esc)"
                 >
                   <X className="w-4 h-4" />
@@ -479,9 +496,9 @@ export default function NotificationBellDropdown({
                           {n.Message}
                         </p>
 
-                        {/* Action Link pill */}
+                        {/* Action Link */}
                         {n.LinkUrl && (
-                          <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                          <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
                             <span>Open Details</span>
                             <ArrowUpRight className="w-3 h-3" />
                           </div>

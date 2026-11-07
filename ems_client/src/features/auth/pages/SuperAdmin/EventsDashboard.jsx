@@ -236,6 +236,20 @@ function EventsDashboard() {
           if (!next.MaxCapacity) {
             next.MaxCapacity = 200;
           }
+        } else if (lower.includes('alumni')) {
+          next.TeamSize = '1';
+          if (!next.HackathonMode) {
+            next.HackathonMode = 'Physical';
+          }
+          if (!next.Location || next.Location === 'TBD' || next.Location === '-') {
+            next.Location = 'Main Campus Auditorium & Lawns';
+          }
+          if (!next.AuditoriumVenue) {
+            next.AuditoriumVenue = 'Main Campus Auditorium & Lawns';
+          }
+          if (!next.MaxCapacity) {
+            next.MaxCapacity = 300;
+          }
         } else if (lower.includes('workshop')) {
           if (!next.TeamSize || next.TeamSize === '2-4') {
             next.TeamSize = '1';
@@ -928,9 +942,19 @@ function EventsDashboard() {
                             <option value="Tech Fest">
                               Tech Fest
                             </option>
+                            <option value="Alumni Meet">
+                              Alumni Meet (Reunions, Networking & Distinguished Talks)
+                            </option>
                           </select>
                         </div>
                       </div>
+
+                      {formData.EventType === 'Alumni Meet' && (
+                        <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>Alumni Meet selected: Configured for campus reunions, solo alumni digital VIP pass with guests (+1), and banquet dining.</span>
+                        </div>
+                      )}
 
                       {formData.EventType === 'Webinar' && (
                         <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">

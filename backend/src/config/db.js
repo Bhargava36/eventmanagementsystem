@@ -965,6 +965,81 @@ const migrationQueries = [
         INDEX idx_notif_user (UserId),
         INDEX idx_notif_read (IsRead),
         INDEX idx_notif_created (CreatedAt DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS alumni_configs (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TargetBatches TEXT NULL,
+        AllowGuests BOOLEAN DEFAULT TRUE,
+        MaxGuests INT DEFAULT 1,
+        VenueHall VARCHAR(255) DEFAULT 'Main Campus Auditorium & Lawns',
+        DressCode VARCHAR(100) DEFAULT 'Smart Casual / Traditional',
+        WelcomeNote TEXT NULL,
+        AlumniFundLink VARCHAR(500) NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_alumni_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS alumni_speakers (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        Name VARCHAR(150) NOT NULL,
+        GraduationYear VARCHAR(50) NULL,
+        Branch VARCHAR(150) NULL,
+        Designation VARCHAR(150) NULL,
+        Company VARCHAR(150) NULL,
+        Topic VARCHAR(255) NULL,
+        Bio TEXT NULL,
+        PhotoUrl LONGTEXT NULL,
+        LinkedinUrl VARCHAR(255) NULL,
+        OrderIndex INT DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_alumni_spk_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS alumni_sessions (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        SessionTitle VARCHAR(255) NOT NULL,
+        SessionDate DATE NULL,
+        StartTime VARCHAR(50) NOT NULL,
+        EndTime VARCHAR(50) NOT NULL,
+        SpeakerName VARCHAR(150) NULL,
+        VenueHall VARCHAR(150) DEFAULT 'Main Auditorium',
+        Description TEXT NULL,
+        OrderIndex INT DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_alumni_sess_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS GraduationYear VARCHAR(50) NULL`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS CurrentCompany VARCHAR(150) NULL`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS Designation VARCHAR(150) NULL`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS City VARCHAR(100) NULL`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS LinkedinUrl VARCHAR(255) NULL`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS GuestCount INT DEFAULT 0`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS GuestNames TEXT NULL`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS RsvpStatus VARCHAR(50) DEFAULT 'ATTENDING'`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS GateCheckInStatus VARCHAR(50) DEFAULT 'Registered'`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS GateCheckInTime DATETIME NULL`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS FoodTokenScanned BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS FoodScannedTime DATETIME NULL`,
+
+    `CREATE TABLE IF NOT EXISTS alumni_memories (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        Title VARCHAR(255) NOT NULL,
+        MediaUrl LONGTEXT NOT NULL,
+        BatchYear VARCHAR(50) NULL,
+        UploadedBy VARCHAR(150) NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_alumni_mem_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 

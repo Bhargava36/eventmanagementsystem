@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 require('./src/config/db');
 
 const superAdminRoute = require("./src/modules/superAdmin/superAdminRoute");
@@ -31,6 +31,7 @@ const platformFeedbackRoutes = require("./src/modules/platform_feedback/platform
 const workshopRoutes = require("./src/modules/workshops/workshopRoute");
 const webinarRoutes = require("./src/modules/webinars/webinarRoute");
 const seminarRoutes = require("./src/modules/seminars/seminarRoute");
+const alumniRoutes = require("./src/modules/alumni/alumniRoute");
 const logsRoute = require("./src/modules/logs/logsRoute");
 const auditMiddleware = require("./src/middleware/auditMiddleware");
 const emailDispatchRoute = require("./src/modules/email_dispatch/emailDispatchRoute");
@@ -80,6 +81,7 @@ app.use('/api/platform-feedback', platformFeedbackRoutes);
 app.use('/api/workshops', workshopRoutes);
 app.use('/api/webinars', webinarRoutes);
 app.use('/api/seminars', seminarRoutes);
+app.use('/api/alumni', alumniRoutes);
 app.use('/api/logs', logsRoute);
 app.use('/api/super_admin/logs', logsRoute);
 app.use('/api/email-dispatch', emailDispatchRoute);

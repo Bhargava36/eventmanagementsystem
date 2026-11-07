@@ -286,7 +286,7 @@ export default function EventGalleryManager({ eventId }) {
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
                 Event Photo Gallery
               </h3>
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
                 {gallery.length} Photos
               </span>
             </div>

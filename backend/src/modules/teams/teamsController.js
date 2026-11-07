@@ -2,7 +2,25 @@ const teamsService = require('./teamsService');
 const db = require('../../config/db');
 
 const createTeam = (req, res) => {
-    const { TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, Members, ParticipationMode, TeamLeadPhoto, teamLeadPhoto } = req.body;
+    const { 
+        TeamName, 
+        TeamLeadEmail, 
+        TeamSize, 
+        EventId, 
+        MemberEmails, 
+        Members, 
+        ParticipationMode, 
+        TeamLeadPhoto, 
+        teamLeadPhoto,
+        GraduationYear,
+        CurrentCompany,
+        Designation,
+        City,
+        LinkedinUrl,
+        GuestCount,
+        GuestNames,
+        RsvpStatus
+    } = req.body;
     const membersData = Members || MemberEmails;
     const leadPhoto = TeamLeadPhoto || teamLeadPhoto || null;
 
@@ -11,6 +29,37 @@ const createTeam = (req, res) => {
                 return res.status(err.status || 500).json({
                     message: err.message
                 });
+            }
+
+            const teamId = result.teamId;
+            if (GraduationYear || CurrentCompany || Designation || City || LinkedinUrl || GuestCount !== undefined || GuestNames || RsvpStatus) {
+                const alumniUpdateSql = `
+                    UPDATE registered_teams SET
+                    GraduationYear = COALESCE(?, GraduationYear),
+                    CurrentCompany = COALESCE(?, CurrentCompany),
+                    Designation = COALESCE(?, Designation),
+                    City = COALESCE(?, City),
+                    LinkedinUrl = COALESCE(?, LinkedinUrl),
+                    GuestCount = COALESCE(?, GuestCount),
+                    GuestNames = COALESCE(?, GuestNames),
+                    RsvpStatus = COALESCE(?, RsvpStatus)
+                    WHERE Id = ?
+                `;
+                db.query(
+                    alumniUpdateSql,
+                    [
+                        GraduationYear || null,
+                        CurrentCompany || null,
+                        Designation || null,
+                        City || null,
+                        LinkedinUrl || null,
+                        GuestCount !== undefined ? Number(GuestCount) : null,
+                        GuestNames || null,
+                        RsvpStatus || 'ATTENDING',
+                        teamId
+                    ],
+                    () => {}
+                );
             }
 
             res.status(201).json({
