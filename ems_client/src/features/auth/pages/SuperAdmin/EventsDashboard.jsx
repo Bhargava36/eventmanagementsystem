@@ -156,7 +156,8 @@ function EventsDashboard() {
     TertiaryTextColor: '#FFFFFF',
     Posters: [],
     AuditoriumVenue: '',
-    MaxCapacity: 200
+    MaxCapacity: 200,
+    MaxAdmins: 3
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -946,6 +947,33 @@ function EventsDashboard() {
                               Alumni Meet (Reunions, Networking & Distinguished Talks)
                             </option>
                           </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Admin / Organizer Quota *
+                          </label>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            Max admins allowed for this event
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="number"
+                            name="MaxAdmins"
+                            min="1"
+                            max="50"
+                            value={formData.MaxAdmins || 3}
+                            onChange={handleChange}
+                            placeholder="e.g. 3, 5, 8"
+                            required
+                            className="w-32 px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-semibold"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            SuperAdmin can assign up to this number of organizers ({formData.MaxAdmins || 3}) for this event.
+                          </p>
                         </div>
                       </div>
 

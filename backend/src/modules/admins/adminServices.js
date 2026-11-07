@@ -3,14 +3,25 @@ const bcrypt = require('bcrypt');
 
 const createAdmin = async (AdminName, Email, Password, Mobile, EventId, callback) => {
     try {
-        const countQuery = "SELECT COUNT(*) AS adminCount FROM event_admins WHERE EventId = ?";
+        const countQuery = `
+            SELECT 
+                COALESCE(e.MaxAdmins, 5) AS maxAdmins, 
+                COUNT(ea.Id) AS adminCount 
+            FROM events e 
+            LEFT JOIN event_admins ea ON ea.EventId = e.Id 
+            WHERE e.Id = ? 
+            GROUP BY e.Id, e.MaxAdmins
+        `;
         db.query(countQuery, [EventId], async (countErr, countResult) => {
             if (countErr) {
                 return callback(countErr, null);
             }
 
-            if (countResult && countResult[0] && countResult[0].adminCount >= 5) {
-                const limitError = new Error("Maximum limit reached. An event can have up to 5 organizers/admins only.");
+            const maxAllowed = (countResult && countResult[0] && countResult[0].maxAdmins !== null) ? Number(countResult[0].maxAdmins) : 5;
+            const currentCount = (countResult && countResult[0] && countResult[0].adminCount) ? Number(countResult[0].adminCount) : 0;
+
+            if (currentCount >= maxAllowed) {
+                const limitError = new Error(`Admin limit reached. This event is configured for a maximum of ${maxAllowed} organizers/admins.`);
                 limitError.statusCode = 400;
                 return callback(limitError, null);
             }
@@ -235,15 +246,48 @@ const getAdminByEventId = (EventId, callback) => {
 };
 
 const assignEventToAdmin = (AdminId, EventId, Role = 'Organizer', callback) => {
-    // Ensure role is admin
-    const updateRoleQuery = "UPDATE users SET RoleId = 2, EventId = COALESCE(EventId, ?) WHERE Id = ?";
-    db.query(updateRoleQuery, [EventId, AdminId], (roleErr) => {
-        if (roleErr) return callback(roleErr, null);
+    // Check if already assigned
+    const checkExists = "SELECT Id FROM event_admins WHERE AdminId = ? AND EventId = ?";
+    db.query(checkExists, [AdminId, EventId], (chkErr, chkRows) => {
+        if (chkErr) return callback(chkErr, null);
+        if (chkRows && chkRows.length > 0) {
+            // Already assigned, just update role and user EventId
+            db.query("UPDATE users SET RoleId = 2, EventId = COALESCE(EventId, ?) WHERE Id = ?", [EventId, AdminId], () => {});
+            const eaQuery = "UPDATE event_admins SET Role = ? WHERE AdminId = ? AND EventId = ?";
+            return db.query(eaQuery, [Role, AdminId, EventId], callback);
+        }
 
-        const eaQuery = "INSERT INTO event_admins (AdminId, EventId, Role) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE Role = VALUES(Role)";
-        db.query(eaQuery, [AdminId, EventId, Role], (eaErr, res) => {
-            if (eaErr) return callback(eaErr, null);
-            return callback(null, res);
+        // Check event admin quota
+        const quotaQuery = `
+            SELECT 
+                COALESCE(e.MaxAdmins, 5) AS maxAdmins, 
+                COUNT(ea.Id) AS adminCount 
+            FROM events e 
+            LEFT JOIN event_admins ea ON ea.EventId = e.Id 
+            WHERE e.Id = ? 
+            GROUP BY e.Id, e.MaxAdmins
+        `;
+        db.query(quotaQuery, [EventId], (qErr, qRes) => {
+            if (qErr) return callback(qErr, null);
+            const maxAllowed = (qRes && qRes[0] && qRes[0].maxAdmins !== null) ? Number(qRes[0].maxAdmins) : 5;
+            const currentCount = (qRes && qRes[0] && qRes[0].adminCount) ? Number(qRes[0].adminCount) : 0;
+            if (currentCount >= maxAllowed) {
+                const limitError = new Error(`Admin limit reached. This event is configured for a maximum of ${maxAllowed} organizers/admins.`);
+                limitError.statusCode = 400;
+                return callback(limitError, null);
+            }
+
+            // Ensure role is admin and assign
+            const updateRoleQuery = "UPDATE users SET RoleId = 2, EventId = COALESCE(EventId, ?) WHERE Id = ?";
+            db.query(updateRoleQuery, [EventId, AdminId], (roleErr) => {
+                if (roleErr) return callback(roleErr, null);
+
+                const eaQuery = "INSERT INTO event_admins (AdminId, EventId, Role) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE Role = VALUES(Role)";
+                db.query(eaQuery, [AdminId, EventId, Role], (eaErr, res) => {
+                    if (eaErr) return callback(eaErr, null);
+                    return callback(null, res);
+                });
+            });
         });
     });
 };

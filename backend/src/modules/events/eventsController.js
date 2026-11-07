@@ -170,9 +170,10 @@ const createEvent = (req, res) => {
             }
 
             const newEventId = result.insertId;
-            if (req.body.AuditoriumVenue || req.body.MaxCapacity) {
+            if (req.body.AuditoriumVenue || req.body.MaxCapacity || req.body.MaxAdmins !== undefined) {
                 const db = require('../../config/db');
-                db.query("UPDATE events SET AuditoriumVenue = COALESCE(?, AuditoriumVenue), MaxCapacity = COALESCE(?, MaxCapacity) WHERE Id = ?", [req.body.AuditoriumVenue || null, req.body.MaxCapacity || null, newEventId], () => {});
+                const maxAdminsVal = req.body.MaxAdmins ? parseInt(req.body.MaxAdmins, 10) : 5;
+                db.query("UPDATE events SET AuditoriumVenue = COALESCE(?, AuditoriumVenue), MaxCapacity = COALESCE(?, MaxCapacity), MaxAdmins = COALESCE(?, MaxAdmins) WHERE Id = ?", [req.body.AuditoriumVenue || null, req.body.MaxCapacity || null, maxAdminsVal, newEventId], () => {});
             }
             const creatorAdminId = req.body.AdminId || req.body.adminId;
             if (creatorAdminId) {
@@ -433,9 +434,10 @@ const updateEvent = (req, res) => {
                 });
             }
 
-            if (req.body.AuditoriumVenue !== undefined || req.body.MaxCapacity !== undefined) {
+            if (req.body.AuditoriumVenue !== undefined || req.body.MaxCapacity !== undefined || req.body.MaxAdmins !== undefined) {
                 const db = require('../../config/db');
-                db.query("UPDATE events SET AuditoriumVenue = COALESCE(?, AuditoriumVenue), MaxCapacity = COALESCE(?, MaxCapacity) WHERE Id = ?", [req.body.AuditoriumVenue || null, req.body.MaxCapacity || null, id], () => {});
+                const maxAdminsVal = req.body.MaxAdmins !== undefined && req.body.MaxAdmins !== '' ? parseInt(req.body.MaxAdmins, 10) : null;
+                db.query("UPDATE events SET AuditoriumVenue = COALESCE(?, AuditoriumVenue), MaxCapacity = COALESCE(?, MaxCapacity), MaxAdmins = COALESCE(?, MaxAdmins) WHERE Id = ?", [req.body.AuditoriumVenue || null, req.body.MaxCapacity || null, maxAdminsVal, id], () => {});
             }
 
             return res.status(200).json({

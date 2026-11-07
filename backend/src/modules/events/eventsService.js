@@ -372,7 +372,8 @@ const updateEventSettings = (id, settings, callback) => {
         'Facilities',
         'Highlights',
         'AuditoriumVenue',
-        'MaxCapacity'
+        'MaxCapacity',
+        'MaxAdmins'
     ];
 
     // Auto-sync generic RegistrationStart/RegistrationEnd if track-specific ones were supplied

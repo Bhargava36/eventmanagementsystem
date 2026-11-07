@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '../../../../components/Organisms/Footer';
-import EventSponsorsManager from '../../../../components/Organisms/EventSponsorsManager';
-import EventGalleryManager from '../../../../components/Organisms/EventGalleryManager';
 
 import {
     ArrowLeft,
@@ -57,6 +55,12 @@ function EventInfo() {
     const [admins, setAdmins] = useState([]);
     const [adminLoading, setAdminLoading] = useState(true);
     const [adminSaving, setAdminSaving] = useState(false);
+    const [removingAdminId, setRemovingAdminId] = useState(null);
+    const [adminToRemove, setAdminToRemove] = useState(null);
+    const [showQuotaModal, setShowQuotaModal] = useState(false);
+    const [quotaInput, setQuotaInput] = useState(5);
+    const [quotaSaving, setQuotaSaving] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [existingAdminUser, setExistingAdminUser] = useState(null);
     const [checkingEmail, setCheckingEmail] = useState(false);
     
@@ -113,6 +117,7 @@ function EventInfo() {
         Posters: Array.isArray(initialEvent?.Posters) ? initialEvent.Posters : [],
         AuditoriumVenue: initialEvent?.AuditoriumVenue || '',
         MaxCapacity: initialEvent?.MaxCapacity || '',
+        MaxAdmins: initialEvent?.MaxAdmins || 5,
     });
 
     const handleBack = () => {
@@ -192,6 +197,7 @@ function EventInfo() {
                 Posters: Array.isArray(data.event.Posters) ? data.event.Posters : [],
                 AuditoriumVenue: data.event.AuditoriumVenue || '',
                 MaxCapacity: data.event.MaxCapacity || '',
+                MaxAdmins: data.event.MaxAdmins || 5,
             });
         } catch (error) {
             console.error('Fetch event error:', error);
@@ -259,11 +265,13 @@ function EventInfo() {
         }
     };
 
+    const maxAdmins = Number(formData.MaxAdmins || event?.MaxAdmins || 5);
+
     const handleCreateAdmin = async (e) => {
         e.preventDefault();
 
-        if (admins.length >= 3) {
-            toast.error('Maximum limit reached. An event can have up to 3 admins only.');
+        if (admins.length >= maxAdmins) {
+            toast.error(`Admin quota reached. This event is configured for a maximum of ${maxAdmins} admins only.`);
             return;
         }
 
@@ -322,6 +330,72 @@ function EventInfo() {
             toast.error(error.message || 'Failed to create admin');
         } finally {
             setAdminSaving(false);
+        }
+    };
+
+    const handleRemoveAdmin = (admin) => {
+        setAdminToRemove(admin);
+    };
+
+    const confirmRemoveAdmin = async () => {
+        if (!adminToRemove) return;
+        try {
+            setRemovingAdminId(adminToRemove.Id);
+            const res = await fetch(`${API_BASE_URL}/api/admin/${adminToRemove.Id}/event/${id}`, {
+                method: 'DELETE'
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || 'Failed to remove admin from event');
+            }
+
+            toast.success(data.message || 'Admin removed from event successfully');
+            setAdminToRemove(null);
+            await fetchAdmins();
+        } catch (error) {
+            console.error('Remove admin error:', error);
+            toast.error(error.message || 'Failed to remove admin from event');
+        } finally {
+            setRemovingAdminId(null);
+        }
+    };
+
+    const handleOpenQuotaModal = () => {
+        setQuotaInput(maxAdmins);
+        setShowQuotaModal(true);
+    };
+
+    const handleSaveQuota = async (e) => {
+        e?.preventDefault();
+        const parsed = parseInt(quotaInput, 10);
+        if (isNaN(parsed) || parsed < 1 || parsed > 50) {
+            toast.error('Please enter a valid number between 1 and 50');
+            return;
+        }
+        try {
+            setQuotaSaving(true);
+            const res = await fetch(`${API_BASE_URL}/api/events/${id}/settings`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ MaxAdmins: parsed })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to update quota');
+
+            // Instantly update local state so UI updates immediately without manual reload
+            setEvent((prev) => (prev ? { ...prev, MaxAdmins: parsed } : prev));
+            setFormData((prev) => ({ ...prev, MaxAdmins: parsed }));
+
+            toast.success(`Admin quota updated to ${parsed} organizers`);
+            setShowQuotaModal(false);
+
+            // Background refresh to keep all server fields in sync
+            await fetchEventById(true);
+        } catch (err) {
+            toast.error(err.message || 'Failed to update quota');
+        } finally {
+            setQuotaSaving(false);
         }
     };
 
@@ -624,15 +698,11 @@ function EventInfo() {
         }
     };
 
-    const handleDeleteEvent = async () => {
-        const confirmDelete = window.confirm(
-            'Are you sure you want to delete this event?'
-        );
+    const handleDeleteEvent = () => {
+        setShowDeleteModal(true);
+    };
 
-        if (!confirmDelete) {
-            return;
-        }
-
+    const confirmDeleteEvent = async () => {
         try {
             setDeleting(true);
 
@@ -652,7 +722,7 @@ function EventInfo() {
             }
 
             toast.success('Event deleted successfully');
-
+            setShowDeleteModal(false);
             navigate('/sidebar/events');
         } catch (error) {
             console.error('Delete event error:', error);
@@ -784,23 +854,27 @@ function EventInfo() {
                     </div>
 
                     <motion.button
-                        whileHover={{ scale: admins.length >= 3 ? 1 : 1.02 }}
-                        whileTap={{ scale: admins.length >= 3 ? 1 : 0.98 }}
+                        whileHover={{ scale: admins.length >= maxAdmins ? 1 : 1.02 }}
+                        whileTap={{ scale: admins.length >= maxAdmins ? 1 : 0.98 }}
                         onClick={() => {
-                            if (admins.length >= 3) {
-                                toast.error('Maximum limit reached. An event can have up to 3 admins only.');
+                            if (admins.length >= maxAdmins) {
+                                toast.error(`Admin quota reached (${admins.length}/${maxAdmins}). This event is configured for a maximum of ${maxAdmins} admins.`);
                                 return;
                             }
                             setShowAdminModal(true);
                         }}
-                        className={`w-full sm:w-auto flex items-center justify-center gap-2 border px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                            admins.length >= 3
+                        className={`w-full sm:w-auto flex items-center justify-center gap-2 border px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                            admins.length >= maxAdmins
                                 ? 'border-gray-300 dark:border-gray-800 text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 cursor-not-allowed opacity-80'
                                 : 'border-emerald-700 dark:border-emerald-500 text-emerald-700 dark:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 cursor-pointer shadow-sm'
                         }`}
                     >
                         <Plus className="w-4 h-4" />
-                        <span>{admins.length >= 3 ? 'Max Admins (3/3)' : `Create Admin (${admins.length}/3)`}</span>
+                        <span>
+                            {admins.length >= maxAdmins 
+                                ? `Admin Quota Full (${admins.length}/${maxAdmins})` 
+                                : `Add Admin (${admins.length}/${maxAdmins})`}
+                        </span>
                     </motion.button>
 
                 </div>
@@ -1003,6 +1077,30 @@ function EventInfo() {
                                     )}
 
                                     <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                                Admin / Organizer Quota (Max Allowed) *
+                                            </label>
+                                            <span className="text-[11px] text-gray-400">
+                                                Configurable limit for this event
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="number"
+                                            name="MaxAdmins"
+                                            min="1"
+                                            max="50"
+                                            value={formData.MaxAdmins || 5}
+                                            onChange={handleInputChange}
+                                            placeholder="5"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-semibold"
+                                        />
+                                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                                            SuperAdmin can assign up to this number of organizers to manage this event.
+                                        </p>
+                                    </div>
+
+                                    <div>
                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                             Hackathon / Participation Mode
                                         </label>
@@ -1134,12 +1232,6 @@ function EventInfo() {
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Event Sponsors Manager */}
-                                <EventSponsorsManager eventId={id} />
-
-                                {/* Event Season Gallery & Highlights Manager */}
-                                <EventGalleryManager eventId={id} />
 
                                 <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
                                     <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
@@ -2623,12 +2715,6 @@ function EventInfo() {
 
                         </motion.div>
 
-                        {/* Event Sponsors Manager in View Mode */}
-                        <EventSponsorsManager eventId={id} />
-
-                        {/* Season Archives & Highlights Gallery in View Mode */}
-                        <EventGalleryManager eventId={id} />
-
                     </div>
 
                     <div className="space-y-4 sm:space-y-6">
@@ -2718,6 +2804,18 @@ function EventInfo() {
 
                                 </div>
 
+                                <div className="flex justify-between gap-4">
+
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Admin Quota
+                                    </p>
+
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                        {maxAdmins} Organizers Max
+                                    </p>
+
+                                </div>
+
                             </div>
 
                         </motion.div>
@@ -2730,16 +2828,24 @@ function EventInfo() {
                         >
 
                             <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                                         Admins
                                     </h2>
-                                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-400">
-                                        {admins.length}/3 Assigned
+                                    <span className={`text-xs font-medium ${admins.length >= maxAdmins ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                        • {admins.length}/{maxAdmins} Assigned {admins.length >= maxAdmins ? '(Quota Full)' : ''}
                                     </span>
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenQuotaModal}
+                                        title="Adjust admin quota for this event"
+                                        className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                                    >
+                                        (Edit Quota)
+                                    </button>
                                 </div>
 
-                                {admins.length < 3 && (
+                                {admins.length < maxAdmins ? (
                                     <button
                                         type="button"
                                         onClick={() => setShowAdminModal(true)}
@@ -2748,6 +2854,10 @@ function EventInfo() {
                                         <Plus className="w-3.5 h-3.5" />
                                         <span>Add Admin</span>
                                     </button>
+                                ) : (
+                                    <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                                        • Quota Full
+                                    </span>
                                 )}
                             </div>
 
@@ -2770,22 +2880,22 @@ function EventInfo() {
                                     {admins.map((admin, idx) => (
 
                                         <motion.div
-                                            key={admin.Id || idx}
-                                            whileHover={{ x: 4 }}
+                                            key={admin?.Id ? `admin-${admin.Id}` : `admin-idx-${idx}`}
+                                            whileHover={{ x: 2 }}
                                             transition={{ duration: 0.2 }}
-                                            className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+                                            className="p-4 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800"
                                         >
 
-                                            <div className="flex items-center justify-between">
+                                            <div className="flex items-start justify-between gap-3">
 
-                                                <div className="min-w-0">
+                                                <div className="min-w-0 flex-1">
 
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                                                             {admin.AdminName || 'Event Admin'}
                                                         </p>
-                                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium">
-                                                            Admin #{idx + 1}
+                                                        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                                                            • #{idx + 1}
                                                         </span>
                                                     </div>
 
@@ -2793,21 +2903,38 @@ function EventInfo() {
                                                         {admin.Email}
                                                     </p>
 
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                                        {admin.Mobile}
-                                                    </p>
+                                                    {admin.Mobile && (
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                            {admin.Mobile}
+                                                        </p>
+                                                    )}
 
                                                 </div>
 
-                                                <div className="text-right shrink-0 ml-3">
+                                                <div className="text-right shrink-0 flex flex-col items-end">
 
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                        Event
+                                                    <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                                                        Role
                                                     </p>
 
-                                                    <p className="text-sm font-medium text-emerald-700 dark:text-emerald-500 truncate max-w-[140px]">
-                                                        {admin.EventName}
+                                                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 truncate max-w-[130px]">
+                                                        {admin.AdminEventRole || 'Organizer'}
                                                     </p>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveAdmin(admin)}
+                                                        disabled={removingAdminId === admin.Id}
+                                                        title={`Remove ${admin.AdminName || 'admin'} from this event`}
+                                                        className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors cursor-pointer disabled:opacity-50"
+                                                    >
+                                                        {removingAdminId === admin.Id ? (
+                                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="w-3 h-3" />
+                                                        )}
+                                                        <span>Remove</span>
+                                                    </button>
 
                                                 </div>
 
@@ -2993,8 +3120,9 @@ function EventInfo() {
 
             <AnimatePresence>
                 {showAdminModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+                    <div key="create-admin-modal-portal" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
                         <motion.div
+                            key="create-admin-backdrop"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
@@ -3003,6 +3131,7 @@ function EventInfo() {
                         />
 
                         <motion.div
+                            key="create-admin-panel"
                             initial={{ opacity: 0, scale: 0.95, y: 15 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -3015,12 +3144,12 @@ function EventInfo() {
                                         <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white font-['Syne']">
                                             Create Event Admin
                                         </h2>
-                                        <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                                            Slot {admins.length + 1} of 3
+                                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                            • Slot {admins.length + 1} of {maxAdmins}
                                         </span>
                                     </div>
                                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                        Assign an admin to manage {event?.EventName || 'this event'} (Up to 3 admins allowed)
+                                        Assign an admin to manage {event?.EventName || 'this event'} (Up to {maxAdmins} admins allowed)
                                     </p>
                                 </div>
                                 <button
@@ -3163,7 +3292,7 @@ function EventInfo() {
 
                                 <div className="flex items-center justify-between pt-4 mt-6 border-t border-gray-200 dark:border-gray-800">
                                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                                        Slots remaining: <strong className="text-emerald-600 dark:text-emerald-400">{Math.max(0, 3 - admins.length)}</strong>
+                                        Slots remaining: <strong className="text-emerald-600 dark:text-emerald-400">{Math.max(0, maxAdmins - admins.length)}</strong>
                                     </span>
 
                                     <div className="flex items-center gap-3">
@@ -3199,9 +3328,279 @@ function EventInfo() {
                     </div>
                 )}
 
-                {lightboxImage && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+                {/* Remove Admin Confirmation Modal */}
+                {adminToRemove && (
+                    <div key="remove-admin-modal-portal" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
                         <motion.div
+                            key="remove-admin-backdrop"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => !removingAdminId && setAdminToRemove(null)}
+                            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+                        />
+                        <motion.div
+                            key="remove-admin-panel"
+                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                            className="relative w-full max-w-md bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-2xl z-10"
+                        >
+                            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                                    <Trash2 className="w-5 h-5" />
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                                        Remove Admin from Event
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled={Boolean(removingAdminId)}
+                                    onClick={() => setAdminToRemove(null)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3 mb-6">
+                                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                                    Are you sure you want to remove <strong className="text-gray-900 dark:text-white font-semibold">{adminToRemove.AdminName || 'this organizer'}</strong> from managing this event?
+                                </p>
+                                <div className="p-3 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 text-xs space-y-1">
+                                    <p className="font-semibold text-gray-900 dark:text-white">{adminToRemove.AdminName}</p>
+                                    <p className="text-gray-500 dark:text-gray-400">{adminToRemove.Email}</p>
+                                    <p className="text-slate-400 text-[11px]">• Role: {adminToRemove.AdminEventRole || 'Organizer'}</p>
+                                </div>
+                                <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                                    • This admin will lose management access to this event immediately.
+                                </p>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100 dark:border-gray-800">
+                                <button
+                                    type="button"
+                                    disabled={Boolean(removingAdminId)}
+                                    onClick={() => setAdminToRemove(null)}
+                                    className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={Boolean(removingAdminId)}
+                                    onClick={confirmRemoveAdmin}
+                                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm disabled:opacity-60"
+                                >
+                                    {removingAdminId ? (
+                                        <>
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <span>Removing...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <span>Remove Admin</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
+                {/* Adjust Admin Quota Modal */}
+                {showQuotaModal && (
+                    <div key="adjust-quota-modal-portal" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+                        <motion.div
+                            key="adjust-quota-backdrop"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => !quotaSaving && setShowQuotaModal(false)}
+                            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+                        />
+                        <motion.div
+                            key="adjust-quota-panel"
+                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                            className="relative w-full max-w-md bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-2xl z-10"
+                        >
+                            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100 dark:border-gray-800">
+                                <div>
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                                        Adjust Admin Quota
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                        Configure maximum organizers for {event?.EventName}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled={quotaSaving}
+                                    onClick={() => setShowQuotaModal(false)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSaveQuota} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                                        Max Organizers Allowed *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="50"
+                                        required
+                                        value={quotaInput}
+                                        onChange={(e) => setQuotaInput(e.target.value)}
+                                        placeholder="e.g. 5"
+                                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-black text-gray-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
+                                    />
+                                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                        <span className="text-[11px] text-gray-400 mr-1">Presets:</span>
+                                        {[3, 4, 5, 6, 8, 10, 15].map((preset) => (
+                                            <button
+                                                key={preset}
+                                                type="button"
+                                                onClick={() => setQuotaInput(preset)}
+                                                className={`text-xs px-2.5 py-0.5 rounded-lg border cursor-pointer transition-colors ${
+                                                    Number(quotaInput) === preset
+                                                        ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 font-bold'
+                                                        : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:border-gray-400'
+                                                }`}
+                                            >
+                                                {preset}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="p-3 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 text-xs">
+                                    <p className="text-gray-600 dark:text-gray-400">
+                                        • Currently assigned: <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">{admins.length} Admins</strong>
+                                    </p>
+                                    <p className="text-gray-500 dark:text-gray-400 mt-0.5 text-[11px]">
+                                        SuperAdmin will be allowed to assign up to {quotaInput || 0} organizers for this event.
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100 dark:border-gray-800">
+                                    <button
+                                        type="button"
+                                        disabled={quotaSaving}
+                                        onClick={() => setShowQuotaModal(false)}
+                                        className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={quotaSaving}
+                                        className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm disabled:opacity-60"
+                                    >
+                                        {quotaSaving ? (
+                                            <>
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                <span>Saving...</span>
+                                            </>
+                                        ) : (
+                                            <span>Save Quota</span>
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+
+                {/* Delete Event Confirmation Modal */}
+                {showDeleteModal && (
+                    <div key="delete-event-modal-portal" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+                        <motion.div
+                            key="delete-event-backdrop"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => !deleting && setShowDeleteModal(false)}
+                            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+                        />
+                        <motion.div
+                            key="delete-event-panel"
+                            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                            className="relative w-full max-w-md bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-gray-800 shadow-2xl z-10"
+                        >
+                            <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-100 dark:border-gray-800">
+                                <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
+                                    <Trash2 className="w-5 h-5" />
+                                    <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                                        Delete Event Permanently
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled={deleting}
+                                    onClick={() => setShowDeleteModal(false)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors cursor-pointer"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-3 mb-6">
+                                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                                    Are you sure you want to permanently delete <strong className="text-gray-900 dark:text-white font-semibold">"{event?.EventName}"</strong>?
+                                </p>
+                                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 text-xs text-rose-700 dark:text-rose-300">
+                                    ⚠️ This action is irreversible. All registrations, tracks, schedules, and admin allocations tied to this event will be permanently deleted.
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100 dark:border-gray-800">
+                                <button
+                                    type="button"
+                                    disabled={deleting}
+                                    onClick={() => setShowDeleteModal(false)}
+                                    className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={deleting}
+                                    onClick={confirmDeleteEvent}
+                                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 text-white flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm disabled:opacity-60"
+                                >
+                                    {deleting ? (
+                                        <>
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            <span>Deleting Event...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <span>Yes, Delete Event</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
+                {lightboxImage && (
+                    <div key="lightbox-modal-portal" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+                        <motion.div
+                            key="lightbox-backdrop"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
@@ -3210,6 +3609,7 @@ function EventInfo() {
                         />
 
                         <motion.div
+                            key="lightbox-panel"
                             initial={{ scale: 0.92, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.92, opacity: 0 }}

@@ -69,13 +69,17 @@ export default function NotificationBellDropdown({
       if (userId) params.append('userId', String(userId));
 
       const res = await fetch(`${API_BASE_URL}/api/notifications?${params.toString()}`);
+      if (!res.ok) return;
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (data && data.success) {
         setNotifications(data.notifications || []);
         setUnreadCount(data.unreadCount || 0);
       }
     } catch (err) {
-      console.error('[NotificationBell] Fetch error:', err);
+      // Keep silent background polling quiet when server restarts or offline
+      if (!isSilent) {
+        console.warn('[NotificationBell] Could not load alerts:', err?.message || err);
+      }
     } finally {
       if (!isSilent) setLoading(false);
     }
@@ -86,60 +90,78 @@ export default function NotificationBellDropdown({
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Silent polling fallback every 10s
+  // Silent polling fallback every 15s
   useEffect(() => {
     const timer = setInterval(() => {
       fetchNotifications(true);
-    }, 10000);
+    }, 15000);
     return () => clearInterval(timer);
   }, [fetchNotifications]);
 
-  // Real-time WebSocket listener
+  // Real-time WebSocket listener with auto-reconnect backoff
   useEffect(() => {
-    let ws;
+    let ws = null;
     let isMounted = true;
-    try {
-      const wsUrl = API_BASE_URL.replace(/^http/, 'ws');
-      ws = new WebSocket(wsUrl);
+    let shouldClose = false;
+    let connectTimeout = null;
 
-      ws.onerror = () => {
-        // Silently handle any transient socket connection issues
-      };
+    const connectWs = () => {
+      if (!isMounted || shouldClose) return;
+      try {
+        const wsUrl = API_BASE_URL.replace(/^http/, 'ws');
+        ws = new WebSocket(wsUrl);
 
-      ws.onmessage = (event) => {
-        if (!isMounted) return;
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'NEW_NOTIFICATION') {
-            const notif = data.notification;
-            if (!notif.UserId || Number(notif.UserId) === Number(userId)) {
-              setNotifications((prev) => [notif, ...prev]);
-              setUnreadCount((prev) => prev + 1);
-
-              // Ring animation
-              setIsRinging(true);
-              setTimeout(() => setIsRinging(false), 1600);
-
-              // Floating live toast banner
-              setLiveToast(notif);
-              setTimeout(() => setLiveToast(null), 5500);
-            }
+        ws.onopen = () => {
+          if (shouldClose) {
+            try { ws.close(1000, 'Clean unmount'); } catch (_) {}
+            return;
           }
-        } catch (e) {}
-      };
-    } catch (e) {}
+        };
+
+        ws.onerror = () => {
+          // Silently handle any transient socket connection issues
+        };
+
+        ws.onclose = () => {
+          // Cleanly handle close
+        };
+
+        ws.onmessage = (event) => {
+          if (!isMounted || shouldClose) return;
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'NEW_NOTIFICATION') {
+              const notif = data.notification;
+              if (!notif.UserId || Number(notif.UserId) === Number(userId)) {
+                setNotifications((prev) => [notif, ...prev]);
+                setUnreadCount((prev) => prev + 1);
+
+                // Ring animation
+                setIsRinging(true);
+                setTimeout(() => setIsRinging(false), 1600);
+
+                // Floating live toast banner
+                setLiveToast(notif);
+                setTimeout(() => setLiveToast(null), 5500);
+              }
+            }
+          } catch (e) {}
+        };
+      } catch (e) {}
+    };
+
+    // Stagger connect slightly to avoid competing with initial HTTP render & strict mode double-mount
+    connectTimeout = setTimeout(connectWs, 300);
 
     return () => {
       isMounted = false;
+      shouldClose = true;
+      if (connectTimeout) clearTimeout(connectTimeout);
       if (ws) {
         ws.onerror = null;
+        ws.onmessage = null;
         if (ws.readyState === WebSocket.OPEN) {
-          try { ws.close(); } catch (_) {}
-        } else if (ws.readyState === WebSocket.CONNECTING) {
-          // Gracefully close only after handshake completes to prevent browser console warning
-          ws.onopen = () => {
-            try { ws.close(); } catch (_) {}
-          };
+          try { ws.close(1000, 'Clean unmount'); } catch (_) {}
         }
       }
     };
@@ -448,11 +470,12 @@ export default function NotificationBellDropdown({
                   </p>
                 </div>
               ) : (
-                filteredNotifications.map((n) => {
+                filteredNotifications.map((n, idx) => {
                   const meta = getCategoryMeta(n.Type);
+                  const notifKey = n?.Id != null && n?.Id !== '' ? `notif-${n.Id}` : `notif-idx-${idx}`;
                   return (
                     <motion.div
-                      key={n.Id}
+                      key={notifKey}
                       layout
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
