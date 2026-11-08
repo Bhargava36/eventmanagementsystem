@@ -625,6 +625,12 @@ const sendEventBroadcast = (EventId, { subject, message, category, recipientFilt
             filterClause = " AND t.RsvpStatus = 'TENTATIVE'";
         } else if (recipientFilter === 'with_guests') {
             filterClause = " AND t.GuestCount > 0";
+        } else if (recipientFilter === 'booth_allocated') {
+            filterClause = " AND peb.Id IS NOT NULL";
+        } else if (recipientFilter === 'submission_approved') {
+            filterClause = " AND pes.ReviewStatus = 'APPROVED'";
+        } else if (recipientFilter === 'changes_requested') {
+            filterClause = " AND pes.ReviewStatus = 'CHANGES_REQUESTED'";
         }
 
         const query = `
@@ -639,6 +645,8 @@ const sendEventBroadcast = (EventId, { subject, message, category, recipientFilt
             INNER JOIN users u ON u.Id = COALESCE(tm.UserId, t.TeamLeadUserId)
             LEFT JOIN event_attendance ea ON ea.EventId = er.EventId AND ea.UserId = u.Id
             LEFT JOIN seminar_attendance sa ON sa.EventId = er.EventId AND sa.UserId = u.Id
+            LEFT JOIN project_expo_submissions pes ON pes.TeamId = t.Id AND pes.EventId = er.EventId
+            LEFT JOIN project_expo_booths peb ON peb.AllocatedTeamId = t.Id AND peb.EventId = er.EventId
             WHERE er.EventId = ? AND er.Status = 'approved' ${filterClause}
             AND COALESCE(NULLIF(tm.MemberEmail, ''), u.Email) IS NOT NULL
         `;

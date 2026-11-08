@@ -28,6 +28,7 @@ import {
   FileText,
   Award,
   Camera,
+  Building2,
   User,
   QrCode,
   CreditCard,
@@ -160,7 +161,9 @@ export default function AdminEventSettings() {
   });
 
   useEffect(() => {
-    if (typeInfo.isAlumni) {
+    if (typeInfo.isProjectExpo) {
+      setActiveTab('expo_config');
+    } else if (typeInfo.isAlumni) {
       setActiveTab('alumni_config');
     } else if (typeInfo.isSeminar) {
       setActiveTab('seminar_config');
@@ -173,7 +176,7 @@ export default function AdminEventSettings() {
     } else if (isVirtualMode || isBothMode) {
       setActiveTab('virtual');
     }
-  }, [typeInfo.isAlumni, typeInfo.isSeminar, typeInfo.isWebinar, typeInfo.isWorkshop, isVirtualMode, isPhysicalMode, isBothMode]);
+  }, [typeInfo.isProjectExpo, typeInfo.isAlumni, typeInfo.isSeminar, typeInfo.isWebinar, typeInfo.isWorkshop, isVirtualMode, isPhysicalMode, isBothMode]);
 
   useEffect(() => {
     const handleEventUpdated = (e) => {
@@ -256,7 +259,9 @@ export default function AdminEventSettings() {
 
       setEventData(ev);
       const evType = getEventTypeInfo(ev.EventType);
-      if (evType.isAlumni) {
+      if (evType.isProjectExpo) {
+        setActiveTab('expo_config');
+      } else if (evType.isAlumni) {
         setActiveTab('alumni_config');
       } else if (evType.isSeminar) {
         setActiveTab('seminar_config');
@@ -590,8 +595,24 @@ export default function AdminEventSettings() {
 
     const payload = { ...settingsForm };
 
-    // For alumni, webinars, workshops, and seminars, team size is 1 (individual alumnus/delegate/attendee)
-    if (typeInfo.isAlumni || typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
+    if (typeInfo.isProjectExpo) {
+      if (!payload.HackathonMode) payload.HackathonMode = 'Physical';
+      if (!payload.Location || payload.Location.trim() === '') {
+        payload.Location = 'Main University Innovation & Expo Center';
+      }
+      payload.RegistrationOpen = settingsForm.RegistrationOpen !== undefined ? settingsForm.RegistrationOpen : 1;
+      payload.PhysicalRegistrationOpen = payload.RegistrationOpen;
+      payload.VirtualRegistrationOpen = payload.RegistrationOpen;
+
+      payload.VirtualRegistrationStart = payload.RegistrationStart;
+      payload.PhysicalRegistrationStart = payload.RegistrationStart;
+      payload.VirtualRegistrationEnd = payload.RegistrationEnd;
+      payload.PhysicalRegistrationEnd = payload.RegistrationEnd;
+      payload.VirtualStartDate = payload.StartDate;
+      payload.PhysicalStartDate = payload.StartDate;
+      payload.VirtualEndDate = payload.EndDate;
+      payload.PhysicalEndDate = payload.EndDate;
+    } else if (typeInfo.isAlumni || typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
       payload.TeamSize = '1';
       if (typeInfo.isAlumni) {
         payload.HackathonMode = 'Physical';
@@ -642,7 +663,7 @@ export default function AdminEventSettings() {
 
     // Validate Event and Registration dates accurately based on event type
     let regStart, regEnd, eventStart, eventEnd;
-    if (typeInfo.isAlumni || typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
+    if (typeInfo.isProjectExpo || typeInfo.isAlumni || typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
       regStart = payload.RegistrationStart || payload.PhysicalRegistrationStart;
       regEnd = payload.RegistrationEnd || payload.PhysicalRegistrationEnd;
       eventStart = payload.StartDate || payload.PhysicalStartDate;
@@ -1209,7 +1230,34 @@ export default function AdminEventSettings() {
           {/* Seamless Navigation Tabs */}
           <div className="relative pt-2">
             <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto">
-              {(typeInfo.isAlumni
+              {(typeInfo.isProjectExpo
+                ? [
+                    {
+                      id: 'expo_config',
+                      label: 'Project Expo & Stall Controls',
+                      icon: Sliders,
+                      status: (settingsForm.RegistrationOpen === 1 || settingsForm.PhysicalRegistrationOpen === 1) ? 'Open' : 'Paused',
+                    },
+                    {
+                      id: 'expo_guidelines',
+                      label: 'Exhibition Rules & Stall Policies',
+                      icon: FileText,
+                      status: null,
+                    },
+                    {
+                      id: 'sponsors',
+                      label: 'Expo Sponsors & Benefactors',
+                      icon: Award,
+                      status: null,
+                    },
+                    {
+                      id: 'gallery',
+                      label: 'Exhibition Photo Gallery',
+                      icon: Camera,
+                      status: null,
+                    },
+                  ]
+                : typeInfo.isAlumni
                 ? [
                     {
                       id: 'alumni_config',
@@ -1404,6 +1452,385 @@ export default function AdminEventSettings() {
 
             {/* Main Content Area */}
             <div className="bg-white dark:bg-black rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 space-y-6 relative z-0">
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {/* ── PROJECT EXPO CONFIG TAB ──────────────────────────────── */}
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {activeTab === 'expo_config' && (
+                <div className="space-y-6">
+                  {/* Expo Header Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Sliders className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Project Expo Controls &amp; Exhibition Venue
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Manage exhibition hall location, exhibitor registration deadlines, booth capacity, and digital entry passes.
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-bold flex items-center gap-1.5 ${
+                      settingsForm.RegistrationOpen === 1
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-slate-500 dark:text-zinc-400'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${settingsForm.RegistrationOpen === 1 ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                      {settingsForm.RegistrationOpen === 1 ? 'Registration Open' : 'Registration Paused'}
+                    </span>
+                  </div>
+
+                  {/* Quick Shortcuts to Expo Management Lifecycle */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/admin/expo/booths')}
+                      className="p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 shadow-sm transition-all text-left flex flex-col justify-between group cursor-pointer"
+                    >
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 w-fit mb-3 group-hover:scale-105 transition-transform">
+                        <Building2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          Stalls Matrix
+                        </h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Floor plan &amp; stall assignments
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate('/admin/expo/projects')}
+                      className="p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 shadow-sm transition-all text-left flex flex-col justify-between group cursor-pointer"
+                    >
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 w-fit mb-3 group-hover:scale-105 transition-transform">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          Submissions
+                        </h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Review abstracts &amp; repos
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate('/admin/expo/schedules')}
+                      className="p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 shadow-sm transition-all text-left flex flex-col justify-between group cursor-pointer"
+                    >
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 w-fit mb-3 group-hover:scale-105 transition-transform">
+                        <Clock className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          Jury Demo Slots
+                        </h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Presentation timetable &amp; juries
+                        </p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate('/admin/expo/results')}
+                      className="p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 shadow-sm transition-all text-left flex flex-col justify-between group cursor-pointer"
+                    >
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 w-fit mb-3 group-hover:scale-105 transition-transform">
+                        <Award className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          Results &amp; Awards
+                        </h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Declare winners &amp; cash prizes
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Registration Availability & Deadlines Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Exhibitor Registration Availability</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xl">
+                          When paused, new project teams and solo exhibitors cannot register or edit project abstracts.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextVal = settingsForm.RegistrationOpen === 1 ? 0 : 1;
+                          setSettingsForm((prev) => ({
+                            ...prev,
+                            RegistrationOpen: nextVal,
+                            PhysicalRegistrationOpen: nextVal,
+                            VirtualRegistrationOpen: nextVal
+                          }));
+                        }}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-2 shrink-0 ${
+                          settingsForm.RegistrationOpen === 1
+                            ? 'bg-white dark:bg-black hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 border border-slate-300 dark:border-zinc-700'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20'
+                        }`}
+                      >
+                        {settingsForm.RegistrationOpen === 1 ? (
+                          <>
+                            <Lock className="h-4 w-4" />
+                            <span>Pause Registrations</span>
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="h-4 w-4" />
+                            <span>Open Registrations</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Registration Dates */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>From: Registration Opening Date</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="RegistrationStart"
+                          value={settingsForm.RegistrationStart ? settingsForm.RegistrationStart.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>To: Registration Closing Deadline</span>
+                        </label>
+                        <input
+                          type="date"
+                          name="RegistrationEnd"
+                          value={settingsForm.RegistrationEnd ? settingsForm.RegistrationEnd.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Exhibition Venue & Schedule Card */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-4">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Exhibition Schedule &amp; Venue</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">Expo Start Date</label>
+                        <input
+                          type="date"
+                          name="StartDate"
+                          value={settingsForm.StartDate ? settingsForm.StartDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">Expo End Date</label>
+                        <input
+                          type="date"
+                          name="EndDate"
+                          value={settingsForm.EndDate ? settingsForm.EndDate.split('T')[0] : ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Exhibition Venue / Location Hall
+                        </label>
+                        <input
+                          type="text"
+                          name="Location"
+                          placeholder="e.g. University Tech Innovation Pavilion, Hall A &amp; Courtyard"
+                          value={settingsForm.Location || ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Allowed Team Size Configuration
+                        </label>
+                        <input
+                          type="text"
+                          name="TeamSize"
+                          placeholder="e.g. 1-4 (Supports individual or team of up to 4)"
+                          value={settingsForm.TeamSize || ''}
+                          onChange={handleInputChange}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-mono"
+                        />
+                        <p className="text-[11px] text-slate-400">
+                          Enter "1" for Solo only, "1-4" or "2-5" for team ranges.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stall Amenities & Facilities Provided */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-4">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Stall Amenities &amp; Hardware Support</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Facilities Provided at Each Stall
+                        </label>
+                        <textarea
+                          name="Facilities"
+                          rows={4}
+                          value={settingsForm.Facilities || ''}
+                          onChange={handleInputChange}
+                          placeholder="e.g. 1x Standard 230V Power Socket, 6x3 ft Exhibition Table, 2 Chairs, High-Speed Wi-Fi, A1 Poster Display Stand."
+                          className="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-none"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Exhibitor Requirements (What to Bring)
+                        </label>
+                        <textarea
+                          name="Requirements"
+                          rows={4}
+                          value={settingsForm.Requirements || ''}
+                          onChange={handleInputChange}
+                          placeholder="e.g. Working hardware prototype, extension power cord, laptop for presentation, printed project summary posters."
+                          className="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Save Settings Action Button */}
+                  <div className="flex justify-end pt-4">
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      <span>Save Project Expo Settings</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {/* ── PROJECT EXPO GUIDELINES TAB ──────────────────────────── */}
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {activeTab === 'expo_guidelines' && (
+                <div className="space-y-6">
+                  {/* Guidelines Header Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <FileText className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Exhibition Rules &amp; Stall Policies
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Publish exhibition timelines, prototype safety precautions, poster presentation guidelines, and jury review rules.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Day-of Expo Schedule & Highlights */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-4">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Expo Timeline &amp; Key Event Highlights</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      These highlights appear on the participant event pass and public exhibition page.
+                    </p>
+                    <textarea
+                      name="Highlights"
+                      rows={5}
+                      value={settingsForm.Highlights || ''}
+                      onChange={handleInputChange}
+                      placeholder="e.g. 08:30 AM: Stall Setup &amp; Verification | 10:00 AM: Inaugural Exhibition Showcase | 11:30 AM - 03:00 PM: Jury Evaluation Demo Slots | 03:30 PM: Public &amp; Industry Walkthrough | 05:00 PM: Grand Valedictory &amp; Awards"
+                      className="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-none"
+                    />
+                  </div>
+
+                  {/* Complete Expo Guidelines & Prototype Safety Rules */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-4">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Exhibition Guidelines &amp; Prototype Safety Regulations</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      Provide detailed information on acceptable prototype equipment, safety measures, poster sizing, and exhibition etiquette.
+                    </p>
+                    <textarea
+                      name="Description"
+                      rows={8}
+                      value={settingsForm.Description || ''}
+                      onChange={handleInputChange}
+                      placeholder="Enter detailed guidelines: e.g.
+1. All working prototypes must be tested prior to expo day.
+2. High-voltage hardware (>24V) must be properly insulated and enclosed.
+3. Drone or mobile robotics demonstrations must occur strictly within designated testing safety nets.
+4. Each team must keep at least one team member at the stall throughout public showcase hours.
+5. Code repositories and presentation decks must be uploaded before the submission window closes."
+                      className="w-full p-4 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs leading-relaxed text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y font-sans"
+                    />
+                  </div>
+
+                  {/* Save Guidelines Action Button */}
+                  <div className="flex justify-end pt-4">
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      <span>Save Exhibition Guidelines</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* WEBINAR CONFIG TAB */}
               {activeTab === 'webinar_config' && (
                 <div className="space-y-6">

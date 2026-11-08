@@ -274,6 +274,8 @@ const SidebarContent = ({
     participantLabel = 'Registered Alumni';
   } else if (typeInfo.isCodingContest) {
     participantLabel = isIndividual ? 'Registered Contestants' : 'Contest Teams';
+  } else if (typeInfo.isProjectExpo) {
+    participantLabel = 'Exhibiting Teams';
   } else {
     participantLabel = isIndividual ? 'Registered Participants' : 'Registered Teams';
   }
@@ -466,7 +468,54 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(showVirtual && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni
+    ...(typeInfo.isProjectExpo
+      ? [
+        {
+          name: 'Expo Studio & Domains',
+          icon: Sliders,
+          path: '/admin/expo/settings',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Project Submissions',
+          icon: FileText,
+          path: '/admin/expo/projects',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Booth / Stall Allocation',
+          icon: Building2,
+          path: '/admin/expo/booths',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Presentation Schedules',
+          icon: CalendarDays,
+          path: '/admin/expo/schedules',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Jury & Evaluation',
+          icon: LuClipboardCheck,
+          path: '/admin/expo/evaluation',
+          badge: null,
+          end: false,
+        },
+        {
+          name: 'Results & Winners',
+          icon: Trophy,
+          path: '/admin/expo/results',
+          badge: null,
+          end: false,
+        },
+      ]
+      : []),
+
+    ...(showVirtual && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni && !typeInfo.isProjectExpo
       ? [
         {
           name: virtualTrackName,
@@ -489,7 +538,7 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(showPhysical && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni
+    ...(showPhysical && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni && !typeInfo.isProjectExpo
       ? [
         {
           name: physicalTrackName,
@@ -512,7 +561,7 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(hasEvaluators && !typeInfo.isAlumni
+    ...(hasEvaluators && !typeInfo.isAlumni && !typeInfo.isProjectExpo
       ? [
         {
           name: 'Evaluators',
@@ -524,7 +573,7 @@ const SidebarContent = ({
       ]
       : []),
 
-    ...(!typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni
+    ...(!typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni && !typeInfo.isProjectExpo
       ? [
         {
           name: coreTeamLabel,

@@ -223,7 +223,8 @@ export function getEventTypeInfo(eventType = '') {
   const isAlumni = t.includes('alumni') || t.includes('reunion');
   const isCodingContest = t.includes('coding') || t.includes('contest') || t.includes('competitive') || t.includes('challenge');
   const isTechFest = t.includes('fest') || t.includes('symposium');
-  const isHackathon = !isWorkshop && !isSeminar && !isCodingContest && !isTechFest && !isWebinar && !isAlumni;
+  const isProjectExpo = t.includes('expo') || t.includes('exhibition');
+  const isHackathon = !isWorkshop && !isSeminar && !isCodingContest && !isTechFest && !isWebinar && !isAlumni && !isProjectExpo;
 
   let label = 'Event';
   let badgeColor = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20';
@@ -277,6 +278,14 @@ export function getEventTypeInfo(eventType = '') {
     agendaTerm = 'Fest Schedule & Competitions';
     submissionTerm = 'Competition Entries';
     prizeTerm = 'Trophies, Cash & Rewards';
+  } else if (isProjectExpo) {
+    label = 'Project Expo';
+    badgeColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
+    participantTerm = 'Exhibiting Teams';
+    singleParticipantTerm = 'Exhibitor';
+    agendaTerm = 'Expo Timelines & Demos';
+    submissionTerm = 'Project Abstract & Media';
+    prizeTerm = 'Awards & Mementos';
   } else {
     label = 'Hackathon';
     participantTerm = 'Hacking Teams';
@@ -301,6 +310,7 @@ export function getEventTypeInfo(eventType = '') {
     isCodingContest,
     isTechFest,
     isAlumni,
+    isProjectExpo,
     isHackathon,
   };
 }

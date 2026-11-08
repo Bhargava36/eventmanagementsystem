@@ -4,6 +4,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useTheme from '../../../../Hooks/useTheme';
 import useAuth from '../../../../Hooks/useAuth';
+import useToast from '../../../../Hooks/useToast';
 import FlipCountdown from '../../../../components/Molecules/FlipCountdown';
 import TrackTimelineSection from '../../../../components/Molecules/TrackTimelineSection';
 import EventMediaSlider from '../../../../components/Molecules/EventMediaSlider';
@@ -191,6 +192,7 @@ function EventDetails() {
   const location = useLocation();
   const { theme } = useTheme();
   const { user: authUser } = useAuth();
+  const toast = useToast();
 
   const loggedUser = authUser || (() => {
     try { return JSON.parse(localStorage.getItem('user') || 'null'); }
@@ -246,6 +248,8 @@ function EventDetails() {
   const [organizerStatements, setOrganizerStatements] = useState([]);
   const [participantStatement, setParticipantStatement] = useState(null);
   const [selectedStatement, setSelectedStatement] = useState(null);
+  const [expoDomains, setExpoDomains] = useState([]);
+  const [expoConfig, setExpoConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -299,7 +303,13 @@ function EventDetails() {
       LinkedinUrl: loggedUser?.LinkedinUrl || '',
       GuestCount: 0,
       GuestNames: '',
-      RsvpStatus: 'ATTENDING'
+      RsvpStatus: 'ATTENDING',
+      ProjectTitle: '',
+      ExpoDomainId: '',
+      ProjectAbstract: '',
+      ProjectTechStack: '',
+      ProjectGithubUrl: '',
+      ProjectDemoUrl: ''
     };
     return { TeamName: '', ...lead };
   });
@@ -418,6 +428,23 @@ function EventDetails() {
             .catch(() => { });
         }
 
+        const isExpoEvent = (evData.event?.EventType || '').toLowerCase().includes('expo');
+        if (isExpoEvent) {
+          fetch(`${API_BASE_URL}/api/project-expo/${id}/domains`)
+            .then((r) => r.json())
+            .then((dData) => {
+              if (dData?.domains) setExpoDomains(dData.domains);
+            })
+            .catch(() => { });
+
+          fetch(`${API_BASE_URL}/api/project-expo/${id}/config`)
+            .then((r) => r.json())
+            .then((cData) => {
+              if (cData?.config) setExpoConfig(cData.config);
+            })
+            .catch(() => { });
+        }
+
         if (evData.event?.Sponsors && (!sponsorsRes.value || !sponsorsRes.value.ok)) {
           setSponsors(evData.event.Sponsors);
         }
@@ -468,7 +495,7 @@ function EventDetails() {
   const handleRegisterClick = (mode = null) => {
     if (alreadyRegistered || registeredTeamsList.length > 0) {
       const existingTeam = registeredTeam || registeredTeamsList[0];
-      alert(`You are already registered for this event in team/pass "${existingTeam?.TeamName || 'Participant'}". Multiple registrations for the same event are not permitted.`);
+      toast.info(`You are already registered for this event in team/pass "${existingTeam?.TeamName || 'Participant'}". Multiple registrations for the same event are not permitted.`);
       if (existingTeam?.TeamId) {
         navigate(`/user/teamInfo/${existingTeam.TeamId}`);
       }
@@ -498,6 +525,12 @@ function EventDetails() {
       TeamLeadCollege: lead.TeamLeadCollege || prev.TeamLeadCollege || '',
       TeamLeadState: lead.TeamLeadState || prev.TeamLeadState || '',
       TeamLeadPhoto: lead.TeamLeadPhoto || prev.TeamLeadPhoto || '',
+      ProjectTitle: '',
+      ExpoDomainId: '',
+      ProjectAbstract: '',
+      ProjectTechStack: '',
+      ProjectGithubUrl: '',
+      ProjectDemoUrl: ''
     }));
   };
 
@@ -515,6 +548,12 @@ function EventDetails() {
       TeamLeadCollege: lead.TeamLeadCollege || '',
       TeamLeadState: lead.TeamLeadState || '',
       TeamLeadPhoto: lead.TeamLeadPhoto || '',
+      ProjectTitle: '',
+      ExpoDomainId: '',
+      ProjectAbstract: '',
+      ProjectTechStack: '',
+      ProjectGithubUrl: '',
+      ProjectDemoUrl: ''
     });
   };
 
@@ -539,7 +578,7 @@ function EventDetails() {
       const photoUrl = data.fileUrl || data.url;
       setFormData((prev) => ({ ...prev, TeamLeadPhoto: photoUrl }));
     } catch (err) {
-      alert(err.message || 'Failed to upload photo');
+      toast.error(err.message || 'Failed to upload photo');
     } finally {
       setUploadingLeadPhoto(false);
     }
@@ -561,7 +600,7 @@ function EventDetails() {
       const photoUrl = data.fileUrl || data.url;
       setMembers((prev) => prev.map((item, mi) => mi === index ? { ...item, Photo: photoUrl } : item));
     } catch (err) {
-      alert(err.message || 'Failed to upload member photo');
+      toast.error(err.message || 'Failed to upload member photo');
     } finally {
       setUploadingMemberIndex(null);
     }
@@ -600,10 +639,14 @@ function EventDetails() {
       handleSubmit();
       return;
     }
-    if (!formData.TeamName.trim()) { alert('Please enter team name.'); return; }
-    if (!teamSize) { alert('Please select team size.'); return; }
-    if (!formData.TeamLeadEmail.trim()) { alert('Please enter Team Lead registered email.'); return; }
-    if (!formData.TeamLeadEmail.includes('@')) { alert('Please enter a valid Team Lead email.'); return; }
+    if (!formData.TeamName.trim()) { toast.warning('Please enter team name.'); return; }
+    if (!teamSize) { toast.warning('Please select team size.'); return; }
+    if (!formData.TeamLeadEmail.trim()) { toast.warning('Please enter Team Lead registered email.'); return; }
+    if (!formData.TeamLeadEmail.includes('@')) { toast.warning('Please enter a valid Team Lead email.'); return; }
+    if (eventTypeInfo.isProjectExpo && !formData.ProjectTitle?.trim()) {
+      toast.warning('Please enter your Project Title for the Project Expo.');
+      return;
+    }
     setCurrentStep(2);
   };
 
@@ -611,21 +654,25 @@ function EventDetails() {
     if (e && e.preventDefault) e.preventDefault();
     if (submitting) return;
     const isSolo = Number(teamSize) === 1;
-    const effectiveTeamName = formData.TeamName.trim() || (isSolo ? `${formData.TeamLeadName || 'Solo'} (Individual)` : '');
+    const effectiveTeamName = formData.TeamName.trim() || (isSolo ? (formData.ProjectTitle?.trim() || `${formData.TeamLeadName || 'Solo'} (Individual)`) : '');
     if (!effectiveTeamName) {
-      alert(isSolo ? 'Please enter your attendee/display name.' : 'Please enter team name.');
+      toast.warning(isSolo ? 'Please enter your attendee/display name or project title.' : 'Please enter team name.');
       return;
     }
-    if (!teamSize) { alert('Please select registration size.'); return; }
-    if (!formData.TeamLeadEmail.trim()) { alert('Please enter registered email.'); return; }
-    if (!formData.TeamLeadEmail.includes('@')) { alert('Please enter a valid registered email.'); return; }
+    if (!teamSize) { toast.warning('Please select registration size.'); return; }
+    if (!formData.TeamLeadEmail.trim()) { toast.warning('Please enter registered email.'); return; }
+    if (!formData.TeamLeadEmail.includes('@')) { toast.warning('Please enter a valid registered email.'); return; }
+    if (eventTypeInfo.isProjectExpo && !formData.ProjectTitle?.trim()) {
+      toast.warning('Please enter your Project Title for the Project Expo.');
+      return;
+    }
     if (!isSolo) {
       for (let i = 0; i < members.length; i++) {
-        if (!members[i].Email.trim()) { alert(`Please enter email for Team Member ${i + 2}.`); return; }
-        if (!members[i].Email.includes('@')) { alert(`Please enter a valid email for Team Member ${i + 2}.`); return; }
+        if (!members[i].Email.trim()) { toast.warning(`Please enter email for Team Member ${i + 2}.`); return; }
+        if (!members[i].Email.includes('@')) { toast.warning(`Please enter a valid email for Team Member ${i + 2}.`); return; }
       }
     }
-    if (!id) { alert('Event ID is missing.'); return; }
+    if (!id) { toast.error('Event ID is missing.'); return; }
     try {
       setSubmitting(true);
       const teamPayload = {
@@ -634,7 +681,7 @@ function EventDetails() {
         TeamLeadPhoto: formData.TeamLeadPhoto || leadProfile.photo || null,
         TeamSize: Number(teamSize),
         ProblemStatementId: null,
-        Tech_Stack: null,
+        Tech_Stack: formData.ProjectTechStack || null,
         EventId: Number(id),
         MemberEmails: isSolo ? [] : members.map((m) => m.Email.trim()),
         Members: isSolo ? [] : members.map((m) => ({
@@ -675,8 +722,30 @@ function EventDetails() {
       const registrationData = await registrationResponse.json();
       if (!registrationResponse.ok) throw new Error(registrationData.message || 'Event registration failed');
 
+      // Create initial project expo submission if Project Expo
+      if (eventTypeInfo.isProjectExpo) {
+        try {
+          await fetch(`${API_BASE_URL}/api/project-expo/${id}/submissions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              TeamId: teamId,
+              DomainId: formData.ExpoDomainId ? Number(formData.ExpoDomainId) : null,
+              ProjectTitle: formData.ProjectTitle?.trim() || effectiveTeamName,
+              Abstract: formData.ProjectAbstract || '',
+              TechnologiesUsed: formData.ProjectTechStack || '',
+              GithubRepoUrl: formData.ProjectGithubUrl || '',
+              LiveDemoUrl: formData.ProjectDemoUrl || '',
+              SubmittedByUserId: loggedUser?.Id || loggedUser?.id
+            })
+          });
+        } catch (subErr) {
+          console.warn('Initial project expo submission recording failed:', subErr);
+        }
+      }
+
       const successTitle = isSolo ? 'Registration Successful' : 'Team Registered';
-      alert(`${successTitle} for ${registrationMode} ${eventTypeInfo.label}!\n\n${isSolo ? 'Registration ID' : 'Team ID'}: ${teamId}`);
+      toast.success(`${successTitle} for ${registrationMode} ${eventTypeInfo.label}! (${isSolo ? 'Pass' : 'Team'} #${teamId})`);
       const newRegTeam = {
         TeamName: effectiveTeamName,
         TeamId: teamId,
@@ -689,7 +758,7 @@ function EventDetails() {
       closeRegistration();
     } catch (err) {
       console.error('Registration error:', err);
-      alert(err.message || 'Registration failed');
+      toast.error(err.message || 'Registration failed');
     } finally {
       setSubmitting(false);
     }
@@ -898,6 +967,102 @@ function EventDetails() {
   const additionalPrizes = currentTrackPrizes.filter((p) => p !== firstPrizeObj && p !== secondPrizeObj && p !== thirdPrizeObj);
   const showPrizesSection = Boolean(prizes.length > 0 || event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney || activeTrackFallbackPool);
   const teamSizeOptions = getTeamSizeOptions();
+
+  const renderExpoFields = () => (
+    <section className="mt-5 rounded-2xl border border-emerald-500/20 bg-slate-50/50 dark:bg-black p-5 shadow-sm space-y-4">
+      <div className="flex items-center gap-2 border-b border-emerald-500/20 pb-3">
+        <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+        <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm tracking-tight">
+          Project Expo Details &amp; Proposed Work
+        </span>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">
+            Project Title <span className="text-rose-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="ProjectTitle"
+            value={formData.ProjectTitle || ''}
+            onChange={handleChange}
+            placeholder="e.g. NextGen Autonomous Drone Navigator or Smart Agri-IoT"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-zinc-800 dark:bg-black dark:text-white"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">
+            Expo Domain / Category
+          </label>
+          <select
+            name="ExpoDomainId"
+            value={formData.ExpoDomainId || ''}
+            onChange={handleChange}
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none focus:border-emerald-500 dark:border-zinc-800 dark:bg-black dark:text-white"
+          >
+            <option value="">Select Domain / Track</option>
+            {expoDomains.map((d) => (
+              <option key={d.Id} value={d.Id}>
+                {d.DomainName}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">
+            Technologies &amp; Hardware Used
+          </label>
+          <input
+            type="text"
+            name="ProjectTechStack"
+            value={formData.ProjectTechStack || ''}
+            onChange={handleChange}
+            placeholder="e.g. React, Node.js, Arduino, OpenCV, MQTT"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-zinc-800 dark:bg-black dark:text-white"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">
+            Project Abstract / Problem Statement
+          </label>
+          <textarea
+            name="ProjectAbstract"
+            rows={3}
+            value={formData.ProjectAbstract || ''}
+            onChange={handleChange}
+            placeholder="Brief summary of the problem addressed, solution architecture, and expected impact..."
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-zinc-800 dark:bg-black dark:text-white resize-none"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">
+            Source Code / Repo Link <span className="text-slate-400 font-normal text-[10px]">(Optional)</span>
+          </label>
+          <input
+            type="url"
+            name="ProjectGithubUrl"
+            value={formData.ProjectGithubUrl || ''}
+            onChange={handleChange}
+            placeholder="https://github.com/..."
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-zinc-800 dark:bg-black dark:text-white"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-slate-700 dark:text-gray-300">
+            Live Demo / Video Link <span className="text-slate-400 font-normal text-[10px]">(Optional)</span>
+          </label>
+          <input
+            type="url"
+            name="ProjectDemoUrl"
+            value={formData.ProjectDemoUrl || ''}
+            onChange={handleChange}
+            placeholder="https://..."
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-zinc-800 dark:bg-black dark:text-white"
+          />
+        </div>
+      </div>
+    </section>
+  );
 
   /* ─────────────────────────────────────────
      RENDER
@@ -1812,6 +1977,12 @@ function EventDetails() {
         </div>
       </div>
 
+      {/* ── EXPO FIELDS HELPER ── */}
+      {(() => {
+        // Internal helper to avoid re-mounting
+        return null;
+      })()}
+
       {/* ── REGISTRATION MODAL ── */}
       {showRegistration && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-6 sm:py-10">
@@ -2009,6 +2180,11 @@ function EventDetails() {
                           <label className="mb-2 block text-sm font-medium">State / Region</label>
                           <input type="text" name="TeamLeadState" value={formData.TeamLeadState} onChange={handleChange} placeholder="Enter state" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-emerald-500 dark:border-slate-700 dark:bg-[#090909] dark:text-white dark:placeholder:text-slate-500" />
                         </div>
+                        {eventTypeInfo.isProjectExpo && (
+                          <div className="sm:col-span-2">
+                            {renderExpoFields()}
+                          </div>
+                        )}
                       </div>
                     </section>
                   ) : (
@@ -2233,6 +2409,8 @@ function EventDetails() {
                           </div>
                         </section>
                       )}
+
+                      {eventTypeInfo.isProjectExpo && renderExpoFields()}
                     </>
                   )}
 

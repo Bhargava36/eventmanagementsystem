@@ -946,6 +946,9 @@ function EventsDashboard() {
                             <option value="Alumni Meet">
                               Alumni Meet (Reunions, Networking & Distinguished Talks)
                             </option>
+                            <option value="Project Expo">
+                              Project Expo (Exhibitions, Stalls & Working Prototypes)
+                            </option>
                           </select>
                         </div>
                       </div>
@@ -981,6 +984,13 @@ function EventsDashboard() {
                         <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>Alumni Meet selected: Configured for campus reunions, solo alumni digital VIP pass with guests (+1), and banquet dining.</span>
+                        </div>
+                      )}
+
+                      {formData.EventType === 'Project Expo' && (
+                        <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>Project Expo selected: Configured for project prototypes, booth/stall allocation, multi-domain tracks, and jury evaluation.</span>
                         </div>
                       )}
 

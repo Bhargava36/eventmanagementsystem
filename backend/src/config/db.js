@@ -1041,6 +1041,146 @@ const migrationQueries = [
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_alumni_mem_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS project_expo_configs (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL UNIQUE,
+        ParticipationType ENUM('Individual', 'Team', 'Both') DEFAULT 'Both',
+        MinTeamSize INT DEFAULT 1,
+        MaxTeamSize INT DEFAULT 4,
+        AllowedDepartments TEXT NULL,
+        AllowedBranches TEXT NULL,
+        AllowedYears TEXT NULL,
+        SubmissionDeadline DATETIME NULL,
+        MaxSubmissions INT DEFAULT 100,
+        TotalBooths INT DEFAULT 50,
+        BoothPrefix VARCHAR(20) DEFAULT 'STALL-',
+        PresentationDurationMinutes INT DEFAULT 15,
+        Guidelines TEXT NULL,
+        RequiredDocuments TEXT NULL,
+        Status ENUM('DRAFT', 'CONFIGURATION', 'PUBLISHED', 'REGISTRATION_OPEN', 'REGISTRATION_CLOSED', 'PROJECT_REVIEW', 'EVENT_READY', 'ONGOING', 'EVALUATION', 'RESULTS_PUBLISHED', 'COMPLETED') DEFAULT 'DRAFT',
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_pec_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS project_expo_domains (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        DomainName VARCHAR(255) NOT NULL,
+        Description TEXT NULL,
+        DisplayOrder INT DEFAULT 0,
+        INDEX idx_ped_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS project_expo_submissions (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TeamId INT NOT NULL,
+        DomainId INT NULL,
+        ProjectTitle VARCHAR(255) NOT NULL,
+        ProblemStatement TEXT NULL,
+        Abstract TEXT NULL,
+        ProposedSolution TEXT NULL,
+        TechnologiesUsed VARCHAR(500) NULL,
+        InnovationUniqueness TEXT NULL,
+        RealWorldApplications TEXT NULL,
+        GithubRepoUrl VARCHAR(500) NULL,
+        LiveDemoUrl VARCHAR(500) NULL,
+        PptUrl VARCHAR(500) NULL,
+        DocumentationUrl VARCHAR(500) NULL,
+        MediaUrls JSON NULL,
+        Status ENUM('NOT_SUBMITTED', 'DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'CHANGES_REQUESTED', 'APPROVED', 'REJECTED', 'FINALIZED') DEFAULT 'SUBMITTED',
+        AdminFeedback TEXT NULL,
+        SubmittedByUserId INT NULL,
+        SubmittedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_expo_team_sub (EventId, TeamId),
+        INDEX idx_pes_event (EventId),
+        INDEX idx_pes_team (TeamId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
+        FOREIGN KEY (DomainId) REFERENCES project_expo_domains(Id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS project_expo_booths (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        BoothNumber VARCHAR(50) NOT NULL,
+        LocationZone VARCHAR(100) NULL,
+        Status ENUM('AVAILABLE', 'RESERVED', 'ALLOCATED', 'OCCUPIED') DEFAULT 'AVAILABLE',
+        AllocatedTeamId INT NULL UNIQUE,
+        AllocatedAt DATETIME NULL,
+        Notes TEXT NULL,
+        INDEX idx_peb_event (EventId),
+        INDEX idx_peb_team (AllocatedTeamId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        FOREIGN KEY (AllocatedTeamId) REFERENCES registered_teams(Id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS project_expo_schedules (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TeamId INT NOT NULL,
+        SlotDate DATE NOT NULL,
+        StartTime TIME NOT NULL,
+        EndTime TIME NOT NULL,
+        RoomOrBooth VARCHAR(100) NULL,
+        JudgeId INT NULL,
+        Status ENUM('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'RESCHEDULED', 'CANCELLED') DEFAULT 'SCHEDULED',
+        INDEX idx_pesc_event (EventId),
+        INDEX idx_pesc_team (TeamId),
+        INDEX idx_pesc_judge (JudgeId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
+        FOREIGN KEY (JudgeId) REFERENCES evaluators(Id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS project_expo_criteria (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        CriteriaName VARCHAR(255) NOT NULL,
+        MaxMarks INT NOT NULL DEFAULT 25,
+        DisplayOrder INT DEFAULT 0,
+        INDEX idx_pecr_event (EventId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS project_expo_scores (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TeamId INT NOT NULL,
+        JudgeId INT NOT NULL,
+        CriteriaId INT NOT NULL,
+        Score DECIMAL(5, 2) NOT NULL DEFAULT 0.00,
+        Feedback TEXT NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_expo_score (TeamId, JudgeId, CriteriaId),
+        INDEX idx_pesc_ev (EventId),
+        INDEX idx_pesc_judge (JudgeId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
+        FOREIGN KEY (JudgeId) REFERENCES evaluators(Id) ON DELETE CASCADE,
+        FOREIGN KEY (CriteriaId) REFERENCES project_expo_criteria(Id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+
+    `CREATE TABLE IF NOT EXISTS project_expo_results (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TeamId INT NOT NULL,
+        Category VARCHAR(100) NOT NULL,
+        RankPosition INT NOT NULL DEFAULT 1,
+        TotalScore DECIMAL(6, 2) NOT NULL DEFAULT 0.00,
+        PrizeAmount VARCHAR(100) NULL,
+        IsPublished TINYINT(1) DEFAULT 0,
+        PublishedAt DATETIME NULL,
+        INDEX idx_per_event (EventId),
+        INDEX idx_per_team (TeamId),
+        FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
+        FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 

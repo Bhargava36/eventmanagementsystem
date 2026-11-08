@@ -60,6 +60,17 @@ const SEMINAR_CATEGORIES = [
   { id: "Emergency", label: "Urgent Notification" },
 ];
 
+const EXPO_CATEGORIES = [
+  { id: "Stall Allocation", label: "Stall & Booth Allocation" },
+  { id: "Presentation Schedule", label: "Demo Slot & Schedule" },
+  { id: "Submission Deadline", label: "Project Deliverables Deadline" },
+  { id: "Expo Guidelines", label: "Stall Setup & Hardware Guidelines" },
+  { id: "Jury Evaluation", label: "Jury Evaluation & Demo Round" },
+  { id: "Results & Awards", label: "Results & Awards Ceremony" },
+  { id: "Important Notice", label: "Important Notice" },
+  { id: "Emergency", label: "Urgent Notification" },
+];
+
 export default function EventBroadcastEmailer() {
   const toast = useToast();
 
@@ -74,7 +85,9 @@ export default function EventBroadcastEmailer() {
   const eventId = admin?.EventId || "";
   const typeInfo = getEventTypeInfo(admin?.EventType);
 
-  const CATEGORIES = typeInfo.isAlumni
+  const CATEGORIES = typeInfo.isProjectExpo
+    ? EXPO_CATEGORIES
+    : typeInfo.isAlumni
     ? ALUMNI_CATEGORIES
     : typeInfo.isSeminar 
     ? SEMINAR_CATEGORIES 
@@ -86,7 +99,9 @@ export default function EventBroadcastEmailer() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [category, setCategory] = useState(
-    typeInfo.isAlumni
+    typeInfo.isProjectExpo
+      ? "Stall Allocation"
+      : typeInfo.isAlumni
       ? "Reunion Announcement"
       : typeInfo.isSeminar 
       ? "Keynote Announcement" 
@@ -97,16 +112,55 @@ export default function EventBroadcastEmailer() {
   const [recipientFilter, setRecipientFilter] = useState("all");
   const [organizerName, setOrganizerName] = useState(
     admin?.AdminName 
-      ? `${admin.AdminName} (${typeInfo.isAlumni ? 'Alumni Relations Chair' : typeInfo.isSeminar ? 'Conference Chair' : typeInfo.isWebinar ? 'Webinar Host' : typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})` 
-      : (typeInfo.isAlumni ? "Alumni Relations & Homecoming Committee" : typeInfo.isSeminar ? "Seminar Organizing Committee" : typeInfo.isWebinar ? "Webinar Organizing Team" : "Event Organizing Team")
+      ? `${admin.AdminName} (${typeInfo.isProjectExpo ? 'Project Expo Director' : typeInfo.isAlumni ? 'Alumni Relations Chair' : typeInfo.isSeminar ? 'Conference Chair' : typeInfo.isWebinar ? 'Webinar Host' : typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})` 
+      : (typeInfo.isProjectExpo ? "Project Expo Organizing Committee" : typeInfo.isAlumni ? "Alumni Relations & Homecoming Committee" : typeInfo.isSeminar ? "Seminar Organizing Committee" : typeInfo.isWebinar ? "Webinar Organizing Team" : "Event Organizing Team")
   );
 
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [broadcasts, setBroadcasts] = useState([]);
 
-  // Audience filters tailored for Alumni vs Seminar vs Webinar vs Workshop vs Hackathon
-  const recipientFilters = typeInfo.isAlumni
+  // Audience filters tailored for Project Expo vs Alumni vs Seminar vs Webinar vs Workshop vs Hackathon
+  const recipientFilters = typeInfo.isProjectExpo
+    ? [
+        {
+          id: "all",
+          label: "All Exhibitor Teams & Solo Exhibitors",
+          desc: "Dispatches to all registered project expo teams and individual exhibitors.",
+          icon: Users,
+        },
+        {
+          id: "booth_allocated",
+          label: "Teams with Allocated Stalls / Booths",
+          desc: "Dispatches stall setup instructions and power/WiFi details to teams with an allocated stall.",
+          icon: ShieldCheck,
+        },
+        {
+          id: "submission_approved",
+          label: "Approved Project Submissions",
+          desc: "Dispatches demo slot timelines and preparation details to teams whose projects are approved.",
+          icon: CheckCircle2,
+        },
+        {
+          id: "changes_requested",
+          label: "Submissions Requiring Changes",
+          desc: "Dispatches rework alerts to teams requested to update abstract, repo, or demo links.",
+          icon: Clock,
+        },
+        {
+          id: "checked_in",
+          label: "Gate Checked-In Exhibitors (On-Premises)",
+          desc: "Dispatches live announcements to teams physically checked in at the expo hall.",
+          icon: UserCheck,
+        },
+        {
+          id: "absent",
+          label: "Pending Arrival / Not Yet Checked In",
+          desc: "Dispatches gate pass and arrival reminders to exhibitors who haven't checked in yet.",
+          icon: Clock,
+        },
+      ]
+    : typeInfo.isAlumni
     ? [
         {
           id: "all",
@@ -230,7 +284,38 @@ export default function EventBroadcastEmailer() {
       ];
 
   // Quick 1-click broadcast templates
-  const quickTemplates = typeInfo.isAlumni
+  const quickTemplates = typeInfo.isProjectExpo
+    ? [
+        {
+          name: "Stall Allocation & Setup",
+          cat: "Stall Allocation",
+          filter: "all",
+          sub: `${admin?.EventName || "Project Expo"} - Your Assigned Stall & Exhibition Hall Setup Instructions`,
+          msg: `Dear Exhibitors,\n\nCongratulations on qualifying for ${admin?.EventName || "our Project Expo"}!\n\nYour exhibition booth/stall has been allocated. Please review your assigned Stall Number and Zone on your Digital Expo Entry Pass in your dashboard.\n\nExhibitor stall setup begins 1 hour prior to gate opening. Power sockets and high-speed Wi-Fi will be provisioned at your stall.\n\nWe look forward to experiencing your innovation!`,
+        },
+        {
+          name: "Deliverables Deadline",
+          cat: "Submission Deadline",
+          filter: "all",
+          sub: `${admin?.EventName || "Project Expo"} - Final Submission Deadline for Code & Slides`,
+          msg: `Dear Project Leads,\n\nThis is a friendly reminder that the submission window for your project abstract, working GitHub repository link, live demo URL, and presentation slide deck closes shortly.\n\nPlease log into your Participant Dashboard to verify and lock in your project deliverables before the deadline.\n\nIncomplete submissions cannot be scheduled for jury evaluation.`,
+        },
+        {
+          name: "Jury Demo Timetable",
+          cat: "Presentation Schedule",
+          filter: "booth_allocated",
+          sub: `${admin?.EventName || "Project Expo"} - Jury Presentation Demo Slot Schedule Published`,
+          msg: `Hello Exhibitors,\n\nThe official jury evaluation schedule has been published! Each team has been allocated a dedicated 10-15 minute presentation and live prototype demo slot with our expert judges.\n\nPlease view your scheduled presentation time in your Expo Pass and ensure all team members and hardware prototypes are fully set up at your stall at least 15 minutes prior to your slot.`,
+        },
+        {
+          name: "Awards & Valedictory Ceremony",
+          cat: "Results & Awards",
+          filter: "checked_in",
+          sub: `${admin?.EventName || "Project Expo"} - Grand Finale & Awards Ceremony Announcement`,
+          msg: `Dear Participants and Mentors,\n\nJury evaluations for ${admin?.EventName || "Project Expo"} are now complete! We invite all exhibiting teams, judges, and visitors to the Main Auditorium for the Grand Valedictory Ceremony and Prize Distribution.\n\nTrophies, cash awards, and domain category honors will be presented to our winning innovators.\n\nSee you at the main stage!`,
+        },
+      ]
+    : typeInfo.isAlumni
     ? [
         {
           name: "Homecoming Welcome & Gate Pass",
@@ -495,11 +580,39 @@ export default function EventBroadcastEmailer() {
         borderAccent: "border-l-red-500",
       };
     }
-    if (c.includes("schedule") || c.includes("timings") || c.includes("timetable")) {
+    if (c.includes("stall") || c.includes("booth")) {
+      return {
+        bg: "bg-emerald-700",
+        tag: "STALL & BOOTH ALLOCATION",
+        borderAccent: "border-l-emerald-500",
+      };
+    }
+    if (c.includes("presentation") || c.includes("schedule") || c.includes("timings") || c.includes("timetable")) {
       return {
         bg: "bg-amber-600",
         tag: "SCHEDULE & TIMETABLE UPDATE",
         borderAccent: "border-l-amber-500",
+      };
+    }
+    if (c.includes("jury") || c.includes("evaluation") || c.includes("demo")) {
+      return {
+        bg: "bg-indigo-700",
+        tag: "JURY DEMO & EVALUATION",
+        borderAccent: "border-l-indigo-500",
+      };
+    }
+    if (c.includes("deadline") || c.includes("submission") || c.includes("deliverable")) {
+      return {
+        bg: "bg-orange-600",
+        tag: "DELIVERABLES DEADLINE",
+        borderAccent: "border-l-orange-500",
+      };
+    }
+    if (c.includes("awards") || c.includes("results")) {
+      return {
+        bg: "bg-emerald-800",
+        tag: "EXPO RESULTS & AWARDS",
+        borderAccent: "border-l-emerald-400",
       };
     }
     if (c.includes("alert")) {
@@ -558,7 +671,9 @@ export default function EventBroadcastEmailer() {
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
               <Radio className="w-4 h-4 animate-pulse" />
               <span>
-                {typeInfo.isAlumni
+                {typeInfo.isProjectExpo
+                  ? "Project Expo Broadcasts"
+                  : typeInfo.isAlumni
                   ? "Alumni Homecoming Broadcasts"
                   : typeInfo.isSeminar
                   ? "Conference & Seminar Broadcasts"
@@ -572,7 +687,9 @@ export default function EventBroadcastEmailer() {
               <span>{admin?.EventName || "Active Event"}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {typeInfo.isAlumni
+              {typeInfo.isProjectExpo
+                ? "Project Expo Exhibitor Broadcast Mailer"
+                : typeInfo.isAlumni
                 ? "Alumni Homecoming Broadcast Mailer"
                 : typeInfo.isSeminar
                 ? "Seminar Delegate Broadcast Mailer"
@@ -581,7 +698,9 @@ export default function EventBroadcastEmailer() {
                 : "Broadcast Emailer & Announcements"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-1">
-              {typeInfo.isAlumni
+              {typeInfo.isProjectExpo
+                ? "Dispatch stall allocations, project deliverable reminders, jury demo schedules, and valedictory awards announcements directly to exhibitors."
+                : typeInfo.isAlumni
                 ? "Dispatch homecoming schedule updates, banquet details, digital entry passes, nostalgia links, and thank you notes directly to registered alumni."
                 : typeInfo.isSeminar
                 ? "Dispatch keynote announcements, gate entry instructions, conference proceedings, and participation certificates directly to registered delegates."

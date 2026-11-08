@@ -65,6 +65,7 @@ import UnifiedEventFeedbackCard from './components/UnifiedEventFeedbackCard';
 import WebinarLiveQA from './components/WebinarLiveQA';
 import SeminarDelegatePassCard from './components/SeminarDelegatePassCard';
 import AlumniDigitalPassCard from './components/AlumniDigitalPassCard';
+import ProjectExpoParticipantCard from './components/ProjectExpoParticipantCard';
 import ParticipantAttendanceView from './components/ParticipantAttendanceView';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../../../../lib/calendarUtils';
 
@@ -653,6 +654,7 @@ function TeamInfo() {
     const isWebinar = typeInfo.isWebinar;
     const isSeminar = typeInfo.isSeminar;
     const isAlumni = typeInfo.isAlumni;
+    const isProjectExpo = typeInfo.isProjectExpo;
     const isSessionBased = isWorkshop || isWebinar;
 
     const qrPassValue = isSessionBased
@@ -1016,7 +1018,7 @@ function TeamInfo() {
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 1.5: TEAM PASS & PUBLIC SCANNER QR CODE ── */}
             {/* ══════════════════════════════════════════════════════════════ */}
-            {!isSeminar && !isAlumni && (
+            {!isSeminar && !isAlumni && !isProjectExpo && (
                 <section
                     className="rounded-3xl border p-5 sm:p-6 bg-white dark:bg-zinc-950/90 border-slate-200/80 dark:border-zinc-800 shadow-sm relative overflow-hidden"
                     style={{
@@ -1166,7 +1168,15 @@ function TeamInfo() {
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 2: SEMINAR / WORKSHOP / WEBINAR LEARNING HUB ─── */}
             {/* ══════════════════════════════════════════════════════════════ */}
-            {isAlumni ? (
+            {isProjectExpo ? (
+                <div className="space-y-6">
+                    <ProjectExpoParticipantCard
+                        eventId={team.EventId || eventId}
+                        user={user}
+                        team={team}
+                    />
+                </div>
+            ) : isAlumni ? (
                 <div className="space-y-6">
                     <AlumniDigitalPassCard
                         eventId={team.EventId || eventId}
@@ -2477,7 +2487,7 @@ function TeamInfo() {
                 </div>
             )}
 
-            {!isSeminar && !isWebinar && !isAlumni && (
+            {!isSeminar && !isWebinar && !isAlumni && !isProjectExpo && (
                 <motion.section {...fadeUp(0.16)}>
                     <UnifiedEventFeedbackCard 
                         eventId={eventId}

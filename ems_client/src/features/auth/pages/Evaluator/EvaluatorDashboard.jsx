@@ -27,7 +27,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuth from '../../../../Hooks/useAuth';
 import useTheme from '../../../../Hooks/useTheme';
 import useToast from '../../../../Hooks/useToast';
-import { getEventTheme } from '../../../../lib/utils';
+import { getEventTheme, getEventTypeInfo } from '../../../../lib/utils';
 import ThemeToggle from '../../../../components/Organisms/ThemeToggler';
 
 function EvaluatorDashboard() {
@@ -65,6 +65,10 @@ function EvaluatorDashboard() {
     return getEventTheme(eventData || {}, isDark);
   }, [eventData, isDark]);
 
+  const isProjectExpo = useMemo(() => {
+    return getEventTypeInfo(eventData?.EventType || '').isProjectExpo;
+  }, [eventData?.EventType]);
+
   // Fetch Event Data for Branding & Theme
   useEffect(() => {
     if (!eventId) return;
@@ -81,6 +85,30 @@ function EvaluatorDashboard() {
     if (!eventId) return;
     try {
       setLoadingRounds(true);
+      if (isProjectExpo) {
+        // Load expo criteria as round questions
+        const critRes = await fetch(`${API_BASE_URL}/api/project-expo/${eventId}/criteria`);
+        const critData = await critRes.json();
+        const questions = (critData?.criteria || []).map((c) => ({
+          Id: c.Id,
+          QuestionText: c.CriteriaName,
+          MaxMarks: c.MaxMarks,
+          Description: c.Description
+        }));
+        const expoRound = {
+          Id: 'expo',
+          RoundNumber: 1,
+          RoundOrder: 1,
+          RoundName: 'Project Expo Evaluation & Stall Review',
+          Description: 'Review exhibitor stall demo, technical execution, and rubrics',
+          IsOpen: 1,
+          AllowScoreEdit: 1,
+          questions
+        };
+        setRounds([expoRound]);
+        setSelectedRoundId('expo');
+        return;
+      }
       const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/rounds?track=${track}`);
       if (res.ok) {
         const json = await res.json();
@@ -96,13 +124,34 @@ function EvaluatorDashboard() {
     } finally {
       setLoadingRounds(false);
     }
-  }, [eventId, track, toast]);
+  }, [eventId, track, toast, isProjectExpo]);
 
   // Fetch Teams for this Event & Track
   const fetchTeams = useCallback(async () => {
     if (!eventId) return;
     try {
       setLoadingTeams(true);
+      if (isProjectExpo) {
+        const res = await fetch(`${API_BASE_URL}/api/project-expo/${eventId}/submissions`);
+        if (res.ok) {
+          const json = await res.json();
+          const subList = json.submissions || [];
+          setTeams(subList.map((s) => ({
+            Id: s.TeamId,
+            TeamName: s.TeamName || 'Exhibiting Team',
+            ProjectTitle: s.ProjectTitle || s.TeamName,
+            DomainName: s.DomainName,
+            BoothNumber: s.BoothNumber,
+            BoothZone: s.BoothZone,
+            TeamLeadName: s.LeaderName,
+            TeamSize: s.MemberCount || 1,
+            College: s.College || 'Institution',
+            ProblemStatementTitle: s.ProjectTitle,
+            ProblemStatement: s.Abstract
+          })));
+        }
+        return;
+      }
       const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/teams?track=${track}`);
       if (res.ok) {
         const json = await res.json();
@@ -115,12 +164,32 @@ function EvaluatorDashboard() {
     } finally {
       setLoadingTeams(false);
     }
-  }, [eventId, track, toast]);
+  }, [eventId, track, toast, isProjectExpo]);
 
   // Fetch Existing Scores for Selected Round
   const fetchRoundScores = useCallback(async (roundId) => {
     if (!roundId || !evaluator?.Id) return;
     try {
+      if (roundId === 'expo' || isProjectExpo) {
+        const res = await fetch(`${API_BASE_URL}/api/project-expo/${eventId}/scores?judgeId=${evaluator.Id}`);
+        if (res.ok) {
+          const json = await res.json();
+          const scoreList = json.scores || [];
+          const scoreMap = {};
+          scoreList.forEach((s) => {
+            if (!scoreMap[s.TeamId]) {
+              scoreMap[s.TeamId] = {
+                TotalScore: 0,
+                MaxPossibleScore: 100,
+                Feedback: s.Feedback
+              };
+            }
+            scoreMap[s.TeamId].TotalScore += Number(s.Score) || 0;
+          });
+          setScores(scoreMap);
+        }
+        return;
+      }
       const res = await fetch(`${API_BASE_URL}/api/evaluators/rounds/${roundId}/scores?evaluatorId=${evaluator.Id}`);
       if (res.ok) {
         const json = await res.json();
@@ -134,7 +203,7 @@ function EvaluatorDashboard() {
     } catch (err) {
       console.error('Failed to fetch existing scores:', err);
     }
-  }, [evaluator]);
+  }, [evaluator, eventId, isProjectExpo]);
 
   useEffect(() => {
     fetchRounds();
@@ -171,31 +240,36 @@ function EvaluatorDashboard() {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       const name = (team.TeamName || '').toLowerCase();
+      const proj = (team.ProjectTitle || '').toLowerCase();
       const lead = (team.TeamLeadName || '').toLowerCase();
       const college = (team.College || '').toLowerCase();
       const ps = (team.ProblemStatementTitle || team.ProblemStatement || '').toLowerCase();
+      const booth = (team.BoothNumber || '').toLowerCase();
+      const domain = (team.DomainName || '').toLowerCase();
 
-      return name.includes(q) || lead.includes(q) || college.includes(q) || ps.includes(q);
+      return name.includes(q) || proj.includes(q) || lead.includes(q) || college.includes(q) || ps.includes(q) || booth.includes(q) || domain.includes(q);
     });
   }, [teams, scores, statusFilter, searchQuery]);
 
   // Current Round Total Max Marks
   const roundMaxMarks = useMemo(() => {
+    if (isProjectExpo) return 100;
     if (!currentRound || !Array.isArray(currentRound.questions)) return 0;
     return currentRound.questions.reduce((sum, q) => sum + (Number(q.MaxMarks) || 0), 0);
-  }, [currentRound]);
+  }, [currentRound, isProjectExpo]);
 
   const handleNavigateToEvaluation = (team) => {
-    if (!currentRound) {
+    const targetRoundId = isProjectExpo ? 'expo' : (currentRound ? currentRound.Id : null);
+    if (!targetRoundId) {
       toast.error('Please select an active evaluation round first');
       return;
     }
     const isEvaluated = Boolean(scores[team.Id]);
-    if (currentRound.IsOpen === 0 && !isEvaluated) {
+    if (!isProjectExpo && currentRound && currentRound.IsOpen === 0 && !isEvaluated) {
       toast.error('This round is currently closed by the admin. Scores cannot be submitted.');
       return;
     }
-    navigate(`/evaluator/evaluate/${currentRound.Id}/${team.Id}`);
+    navigate(`/evaluator/evaluate/${targetRoundId}/${team.Id}`);
   };
 
   const handleLogout = () => {
@@ -634,9 +708,24 @@ function EvaluatorDashboard() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
-                            {team.TeamName || 'Unnamed Team'}
+                            {team.ProjectTitle || team.TeamName || 'Unnamed Team'}
                           </h3>
+                          {team.ProjectTitle && team.TeamName && team.ProjectTitle !== team.TeamName && (
+                            <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5">
+                              Team: {team.TeamName}
+                            </p>
+                          )}
                           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            {team.BoothNumber && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold uppercase tracking-wider">
+                                Stall: {team.BoothNumber}
+                              </span>
+                            )}
+                            {team.DomainName && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 font-bold">
+                                {team.DomainName}
+                              </span>
+                            )}
                             <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-zinc-700 font-medium">
                               {team.TeamSize || 1} Member{(team.TeamSize || 1) > 1 ? 's' : ''}
                             </span>

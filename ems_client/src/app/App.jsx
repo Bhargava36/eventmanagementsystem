@@ -87,6 +87,12 @@ const AlumniRegistrationsPage = lazy(() => import('../features/auth/pages/Admin/
 const AlumniAttendancePage = lazy(() => import('../features/auth/pages/Admin/AlumniAttendancePage'));
 const AlumniInvitesPage = lazy(() => import('../features/auth/pages/Admin/AlumniInvitesPage'));
 const AlumniMemoriesPage = lazy(() => import('../features/auth/pages/Admin/AlumniMemoriesPage'));
+const ProjectExpoSettingsPage = lazy(() => import('../features/auth/pages/Admin/ProjectExpoSettingsPage'));
+const ProjectExpoSubmissionsPage = lazy(() => import('../features/auth/pages/Admin/ProjectExpoSubmissionsPage'));
+const ProjectExpoBoothsPage = lazy(() => import('../features/auth/pages/Admin/ProjectExpoBoothsPage'));
+const ProjectExpoSchedulesPage = lazy(() => import('../features/auth/pages/Admin/ProjectExpoSchedulesPage'));
+const ProjectExpoEvaluationPage = lazy(() => import('../features/auth/pages/Admin/ProjectExpoEvaluationPage'));
+const ProjectExpoResultsPage = lazy(() => import('../features/auth/pages/Admin/ProjectExpoResultsPage'));
 
 // User Pages
 const UserSidebar = lazy(() => import('../components/Organisms/UserSidebar'));
@@ -246,6 +252,12 @@ function App() {
                 <Route path="alumni/attendance" element={<AlumniAttendancePage />} />
                 <Route path="alumni/invites" element={<AlumniInvitesPage />} />
                 <Route path="alumni/memories" element={<AlumniMemoriesPage />} />
+                <Route path="expo/settings" element={<ProjectExpoSettingsPage />} />
+                <Route path="expo/projects" element={<ProjectExpoSubmissionsPage />} />
+                <Route path="expo/booths" element={<ProjectExpoBoothsPage />} />
+                <Route path="expo/schedules" element={<ProjectExpoSchedulesPage />} />
+                <Route path="expo/evaluation" element={<ProjectExpoEvaluationPage />} />
+                <Route path="expo/results" element={<ProjectExpoResultsPage />} />
               </Route>
             </Route>
 

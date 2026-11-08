@@ -106,10 +106,11 @@ const createEvaluator = async (data, callback) => {
 
         try {
             const hashedPassword = await bcrypt.hash(Password, 10);
+            const plainPassword = (data.PlainTextPassword || Password || '').trim();
             const insertSql = `
                 INSERT INTO evaluators 
                 (EventId, RoleId, Name, Email, Username, Password, PlainTextPassword, Track, College, Role, EventRole, Status)
-                VALUES (?, 4, ?, ?, ?, ?, NULL, ?, ?, ?, ?, 'Active')
+                VALUES (?, 4, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')
             `;
             const params = [
                 EventId,
@@ -117,6 +118,7 @@ const createEvaluator = async (data, callback) => {
                 Email.trim(),
                 cleanUsername,
                 hashedPassword,
+                plainPassword || null,
                 cleanTrack,
                 College ? College.trim() : null,
                 cleanEventRole,

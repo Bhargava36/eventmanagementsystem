@@ -1007,7 +1007,7 @@ function EventInfo() {
                                                 className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                                             />
                                             <div className="flex flex-wrap gap-1.5 mt-2">
-                                                {['Hackathon', 'Workshop', 'Webinar', 'Tech Fest', 'Coding Contest', 'Seminar'].map((chip) => (
+                                                {['Hackathon', 'Project Expo', 'Workshop', 'Webinar', 'Tech Fest', 'Coding Contest', 'Seminar', 'Alumni Meet'].map((chip) => (
                                                     <button
                                                         key={chip}
                                                         type="button"
