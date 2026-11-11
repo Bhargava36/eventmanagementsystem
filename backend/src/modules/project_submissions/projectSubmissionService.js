@@ -1,11 +1,8 @@
 const db = require('../../config/db');
-
-/**
- * Get project submission for a specific team in an event
- */
+// Get project submission for a specific team in an event
 const getSubmissionByTeam = (eventId, teamId, callback) => {
     const query = `
-        SELECT 
+        SELECT
             s.*,
             t.TeamName,
             t.TeamLeadUserId,
@@ -25,13 +22,10 @@ const getSubmissionByTeam = (eventId, teamId, callback) => {
         return callback(null, results.length > 0 ? results[0] : null);
     });
 };
-
-/**
- * Get all project submissions for an event (Admin / Evaluator view)
- */
+// Get all project submissions for an event (Admin / Evaluator view)
 const getAllSubmissionsByEvent = (eventId, callback) => {
     const query = `
-        SELECT 
+        SELECT
             s.*,
             t.TeamName,
             t.TeamLeadUserId,
@@ -54,10 +48,7 @@ const getAllSubmissionsByEvent = (eventId, callback) => {
         return callback(null, results || []);
     });
 };
-
-/**
- * Submit or update project submission by team lead or team member
- */
+// Submit or update project submission by team lead or team member
 const submitProject = (eventId, teamId, userId, userRole, submissionData, callback) => {
     const {
         githubRepoUrl,
@@ -66,13 +57,11 @@ const submitProject = (eventId, teamId, userId, userRole, submissionData, callba
         techStack,
         description
     } = submissionData;
-
     if (!githubRepoUrl && !liveDemoUrl && !drivePptUrl) {
         const error = new Error('Please provide at least one link (GitHub Repo, Live Demo, or Presentation Deck).');
         error.status = 400;
         return callback(error);
     }
-
     // 1. Verify team belongs to event and get TeamLeadUserId
     db.query(
         'SELECT Id, TeamLeadUserId FROM registered_teams WHERE Id = ? AND EventId = ?',
@@ -84,9 +73,7 @@ const submitProject = (eventId, teamId, userId, userRole, submissionData, callba
                 error.status = 404;
                 return callback(error);
             }
-
             const team = teamResults[0];
-
             // Check authorization: Admin, Team Leader, or registered team member
             if (userRole === 'admin' || userRole === 'Admin') {
                 proceedSave();
@@ -112,7 +99,6 @@ const submitProject = (eventId, teamId, userId, userRole, submissionData, callba
                 unauth.status = 401;
                 return callback(unauth);
             }
-
             function proceedSave() {
                 // Find selected problem statement if any
                 db.query(
@@ -120,9 +106,7 @@ const submitProject = (eventId, teamId, userId, userRole, submissionData, callba
                     [eventId, teamId],
                     (psErr, psRows) => {
                         if (psErr) return callback(psErr);
-
                         const problemStatementId = psRows && psRows.length > 0 ? psRows[0].ProblemStatementId : null;
-
                         const upsertQuery = `
                             INSERT INTO hackathon_project_submissions (
                                 EventId, TeamId, ProblemStatementId,
@@ -141,7 +125,6 @@ const submitProject = (eventId, teamId, userId, userRole, submissionData, callba
                                 SubmittedByUserId = VALUES(SubmittedByUserId),
                                 UpdatedAt = NOW()
                         `;
-
                         db.query(
                             upsertQuery,
                             [
@@ -157,7 +140,6 @@ const submitProject = (eventId, teamId, userId, userRole, submissionData, callba
                             ],
                             (saveErr, saveRes) => {
                                 if (saveErr) return callback(saveErr);
-
                                 // Fetch the newly saved record
                                 getSubmissionByTeam(eventId, teamId, (fetchErr, record) => {
                                     if (fetchErr) return callback(null, { message: 'Project submitted successfully' });
@@ -174,7 +156,6 @@ const submitProject = (eventId, teamId, userId, userRole, submissionData, callba
         }
     );
 };
-
 module.exports = {
     getSubmissionByTeam,
     getAllSubmissionsByEvent,

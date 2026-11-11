@@ -22,10 +22,8 @@ import {
   Award,
   Sparkles
 } from 'lucide-react';
-
 export default function SeminarAgendaPage() {
   const toast = useToast();
-
   const admin = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -33,9 +31,7 @@ export default function SeminarAgendaPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [sessions, setSessions] = useState([]);
   const [speakers, setSpeakers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +40,6 @@ export default function SeminarAgendaPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
   const [saving, setSaving] = useState(false);
-
   const [formData, setFormData] = useState({
     SessionTitle: '',
     SessionDate: '',
@@ -57,7 +52,6 @@ export default function SeminarAgendaPage() {
     ResourcesUrl: '',
     OrderIndex: 0
   });
-
   const fetchData = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -66,7 +60,6 @@ export default function SeminarAgendaPage() {
         fetch(`${API_BASE_URL}/api/seminars/${eventId}/sessions`),
         fetch(`${API_BASE_URL}/api/seminars/${eventId}/speakers`)
       ]);
-
       if (sesRes.ok) {
         const sesData = await sesRes.json();
         setSessions(sesData.sessions || []);
@@ -82,11 +75,9 @@ export default function SeminarAgendaPage() {
       setLoading(false);
     }
   }, [eventId, toast]);
-
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
   // Extract distinct days list
   const daysList = useMemo(() => {
     const days = new Set([1]);
@@ -96,24 +87,20 @@ export default function SeminarAgendaPage() {
     });
     return Array.from(days).sort((a, b) => a - b);
   }, [sessions]);
-
   // Filter sessions by activeDay and search query
   const filteredSessions = useMemo(() => {
     return sessions.filter((s) => {
       const matchDay = Number(s.DayNumber || 1) === Number(activeDay);
       const q = searchQuery.toLowerCase().trim();
       if (!q) return matchDay;
-
       const matchSearch =
         (s.SessionTitle || '').toLowerCase().includes(q) ||
         (s.SpeakerName || '').toLowerCase().includes(q) ||
         (s.HallName || '').toLowerCase().includes(q) ||
         (s.Description || '').toLowerCase().includes(q);
-
       return matchDay && matchSearch;
     });
   }, [sessions, activeDay, searchQuery]);
-
   // Distinct halls count
   const hallsCount = useMemo(() => {
     const halls = new Set();
@@ -122,7 +109,6 @@ export default function SeminarAgendaPage() {
     });
     return halls.size || 1;
   }, [sessions]);
-
   const handleOpenModal = (session = null) => {
     if (session) {
       setEditingSession(session);
@@ -155,7 +141,6 @@ export default function SeminarAgendaPage() {
     }
     setIsModalOpen(true);
   };
-
   const handleSaveSession = async (e) => {
     e.preventDefault();
     if (!eventId) return;
@@ -163,22 +148,18 @@ export default function SeminarAgendaPage() {
       toast.error('Session Title is required');
       return;
     }
-
     try {
       setSaving(true);
       const url = editingSession
         ? `${API_BASE_URL}/api/seminars/sessions/${editingSession.Id}`
         : `${API_BASE_URL}/api/seminars/${eventId}/sessions`;
       const method = editingSession ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-
       if (!res.ok) throw new Error('Failed to save session');
-
       toast.success(editingSession ? 'Agenda slot updated' : 'Agenda slot scheduled');
       setIsModalOpen(false);
       fetchData();
@@ -189,7 +170,6 @@ export default function SeminarAgendaPage() {
       setSaving(false);
     }
   };
-
   const handleDeleteSession = async (id) => {
     if (!window.confirm('Delete this session slot from the agenda?')) return;
     try {
@@ -204,7 +184,6 @@ export default function SeminarAgendaPage() {
       toast.error('Could not delete session');
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 font-sans">
       {/* Header Banner */}
@@ -221,7 +200,6 @@ export default function SeminarAgendaPage() {
             Configure keynotes, paper discussions, tea breaks, and valedictory ceremony slots.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
           <button
             onClick={fetchData}
@@ -231,7 +209,6 @@ export default function SeminarAgendaPage() {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-500' : ''}`} />
           </button>
-
           <button
             onClick={() => handleOpenModal()}
             className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition cursor-pointer"
@@ -241,7 +218,6 @@ export default function SeminarAgendaPage() {
           </button>
         </div>
       </div>
-
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-5 shadow-sm space-y-1">
@@ -261,7 +237,6 @@ export default function SeminarAgendaPage() {
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{daysList.length}</p>
         </div>
       </div>
-
       {/* Website Signature Theme Folder Tabs for Multi-Day Agenda */}
       {daysList.length > 1 && (
         <div className="relative pt-2">
@@ -286,7 +261,6 @@ export default function SeminarAgendaPage() {
                   ) : (
                     <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
                   )}
-
                   <span
                     className={`relative z-20 flex items-center gap-2 transition-colors ${
                       isActive
@@ -307,7 +281,6 @@ export default function SeminarAgendaPage() {
           </div>
         </div>
       )}
-
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
@@ -320,13 +293,11 @@ export default function SeminarAgendaPage() {
             className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500 shadow-sm"
           />
         </div>
-
         <div className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-2 self-start sm:self-auto">
           <span className="w-2 h-2 rounded-full bg-emerald-500" />
           <span>Showing {filteredSessions.length} sessions on Day {activeDay}</span>
         </div>
       </div>
-
       {/* Agenda Timeline List */}
       {loading ? (
         <div className="flex items-center justify-center py-24 text-slate-400 dark:text-zinc-500 text-sm gap-3">
@@ -366,26 +337,22 @@ export default function SeminarAgendaPage() {
                 <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-mono font-bold text-base shrink-0">
                   {String(index + 1).padStart(2, '0')}
                 </div>
-
                 <div className="space-y-2 flex-1">
                   <div className="flex flex-wrap items-center gap-2.5">
                     <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-xs font-bold flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5" />
                       {session.StartTime} – {session.EndTime}
                     </span>
-
                     <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 text-xs font-semibold flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>{session.HallName || 'Main Auditorium'}</span>
                     </span>
-
                     {session.SessionDate && (
                       <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 text-[11px] font-mono">
                         {session.SessionDate.split('T')[0]}
                       </span>
                     )}
                   </div>
-
                   <div>
                     <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                       {session.SessionTitle}
@@ -396,7 +363,6 @@ export default function SeminarAgendaPage() {
                       </p>
                     )}
                   </div>
-
                   <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 dark:text-zinc-400 pt-1">
                     {session.SpeakerName && (
                       <div className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-zinc-200">
@@ -404,7 +370,6 @@ export default function SeminarAgendaPage() {
                         <span>Keynote: {session.SpeakerName}</span>
                       </div>
                     )}
-
                     {session.ResourcesUrl && (
                       <a
                         href={session.ResourcesUrl}
@@ -420,7 +385,6 @@ export default function SeminarAgendaPage() {
                   </div>
                 </div>
               </div>
-
               {/* Action Buttons */}
               <div className="flex items-center gap-2 self-end md:self-center shrink-0">
                 <button
@@ -442,7 +406,6 @@ export default function SeminarAgendaPage() {
           ))}
         </div>
       )}
-
       {/* Add / Edit Session Modal */}
       <AnimatePresence>
         {isModalOpen && (
@@ -474,7 +437,6 @@ export default function SeminarAgendaPage() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-
               <form onSubmit={handleSaveSession} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -489,7 +451,6 @@ export default function SeminarAgendaPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
                   />
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -503,7 +464,6 @@ export default function SeminarAgendaPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                       Start Time *
@@ -517,7 +477,6 @@ export default function SeminarAgendaPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                       End Time *
@@ -532,7 +491,6 @@ export default function SeminarAgendaPage() {
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -563,7 +521,6 @@ export default function SeminarAgendaPage() {
                       )}
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                       Auditorium Hall / Venue
@@ -577,7 +534,6 @@ export default function SeminarAgendaPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                     Presentation Deck / Slide URL (Optional)
@@ -590,7 +546,6 @@ export default function SeminarAgendaPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                     Session Abstract & Overview
@@ -603,7 +558,6 @@ export default function SeminarAgendaPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500 resize-none transition-all"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
                   <button
                     type="button"

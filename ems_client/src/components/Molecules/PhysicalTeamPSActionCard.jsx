@@ -17,13 +17,7 @@ import {
   X
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
-
-/**
- * PhysicalTeamPSActionCard
- * 
- * Rendered exclusively on participant EventRedirectPage for registered teams
- * to manage their problem statement selection (Organizer mode) or submission (Participant mode).
- */
+// PhysicalTeamPSActionCard Rendered exclusively on participant EventRedirectPage for registered teams
 export default function PhysicalTeamPSActionCard({
   event = {},
   eventTheme = {},
@@ -37,31 +31,24 @@ export default function PhysicalTeamPSActionCard({
   themes = []
 }) {
   if (!isRegistered || !registeredTeam) return null;
-
   const isHackathon = (event?.EventType || '').toLowerCase() === 'hackathon';
   if (!isHackathon) return null;
-
   const psMode = event?.PhysicalPSMode || 'organizer_provided';
   const isParticipantDefined = psMode === 'participant_defined';
-
   const isPSPublished = Boolean(
     event?.PhysicalPSPublished === 1 ||
     event?.PhysicalPSPublished === true ||
     event?.ProblemStatementsPublished === 1 ||
     event?.ProblemStatementsPublished === true
   );
-
   const [currentSelection, setCurrentSelection] = useState(selectedStatement);
   useEffect(() => {
     if (selectedStatement) setCurrentSelection(selectedStatement);
   }, [selectedStatement]);
-
   const [selectingId, setSelectingId] = useState(null);
-
   // Countdown timer for organizer statements selection
   const activeDeadline = event?.PhysicalPSSelectionDeadline || event?.PSSelectionDeadline;
   const [timerLeft, setTimerLeft] = useState(null);
-
   useEffect(() => {
     if (!activeDeadline) {
       setTimerLeft(null);
@@ -74,7 +61,6 @@ export default function PhysicalTeamPSActionCard({
       let targetMs = new Date(normalized).getTime();
       if (isNaN(targetMs)) targetMs = new Date(s).getTime();
       const diff = targetMs - now;
-
       if (diff <= 0) {
         setTimerLeft({ expired: true, hours: 0, minutes: 0, seconds: 0 });
       } else {
@@ -88,7 +74,6 @@ export default function PhysicalTeamPSActionCard({
     const interval = setInterval(checkTimer, 1000);
     return () => clearInterval(interval);
   }, [activeDeadline]);
-
   // Modal state for participant-defined mode
   const [modalOpen, setModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -101,7 +86,6 @@ export default function PhysicalTeamPSActionCard({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitSuccess, setSubmitSuccess] = useState('');
-
   const openModal = () => {
     setFormData({
       ThemeName: participantStatement?.ThemeName || (themes[0]?.ThemeName || ''),
@@ -114,7 +98,6 @@ export default function PhysicalTeamPSActionCard({
     setSubmitSuccess('');
     setModalOpen(true);
   };
-
   const handleModalSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     const teamId = registeredTeam.TeamId || registeredTeam.Id;
@@ -130,7 +113,6 @@ export default function PhysicalTeamPSActionCard({
       setSubmitError('Please provide a brief description of the problem and your solution.');
       return;
     }
-
     try {
       setSubmitting(true);
       setSubmitError('');
@@ -150,10 +132,8 @@ export default function PhysicalTeamPSActionCard({
           TechStack: formData.TechStack.trim()
         })
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to submit problem statement');
-
       setSubmitSuccess('Problem statement submitted successfully!');
       if (onParticipantStatementSaved) {
         onParticipantStatementSaved({
@@ -177,7 +157,6 @@ export default function PhysicalTeamPSActionCard({
       setSubmitting(false);
     }
   };
-
   const handleSelectStatement = async (ps) => {
     const teamId = registeredTeam.TeamId || registeredTeam.Id;
     if (!teamId) {
@@ -197,7 +176,6 @@ export default function PhysicalTeamPSActionCard({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to select problem statement');
-
       const locked = {
         ProblemStatementId: ps.Id,
         ProblemCode: ps.ProblemCode,
@@ -215,7 +193,6 @@ export default function PhysicalTeamPSActionCard({
       setSelectingId(null);
     }
   };
-
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#111613] p-5 sm:p-6 space-y-4 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
@@ -241,7 +218,6 @@ export default function PhysicalTeamPSActionCard({
             </p>
           </div>
         </div>
-
         {isParticipantDefined && (
           <button
             type="button"
@@ -254,7 +230,6 @@ export default function PhysicalTeamPSActionCard({
           </button>
         )}
       </div>
-
       {/* Participant-Defined Status */}
       {isParticipantDefined ? (
         participantStatement ? (
@@ -357,7 +332,6 @@ export default function PhysicalTeamPSActionCard({
                   </span>
                 )}
               </div>
-
               {/* Selection cards list */}
               <div className="space-y-2">
                 {organizerStatements.map((ps) => (
@@ -381,7 +355,6 @@ export default function PhysicalTeamPSActionCard({
                         <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2">{ps.Description}</p>
                       )}
                     </div>
-
                     <button
                       type="button"
                       disabled={selectingId === ps.Id || (timerLeft && timerLeft.expired)}
@@ -402,7 +375,6 @@ export default function PhysicalTeamPSActionCard({
           )
         )
       )}
-
       {/* Participant Submission Modal */}
       <AnimatePresence>
         {modalOpen && (
@@ -421,7 +393,6 @@ export default function PhysicalTeamPSActionCard({
                   <X className="h-4 w-4" />
                 </button>
               </div>
-
               {submitError && (
                 <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 text-xs">
                   {submitError}
@@ -432,7 +403,6 @@ export default function PhysicalTeamPSActionCard({
                   {submitSuccess}
                 </div>
               )}
-
               <form onSubmit={handleModalSubmit} className="space-y-3">
                 <div>
                   <label className="text-xs font-bold text-slate-500 block mb-1">Select Theme *</label>
@@ -446,7 +416,6 @@ export default function PhysicalTeamPSActionCard({
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="text-xs font-bold text-slate-500 block mb-1.5">Project Domain / Category *</label>
                   <div className="grid grid-cols-3 gap-2">
@@ -475,7 +444,6 @@ export default function PhysicalTeamPSActionCard({
                     })}
                   </div>
                 </div>
-
                 <div>
                   <label className="text-xs font-bold text-slate-500 block mb-1">Statement Title *</label>
                   <input
@@ -486,7 +454,6 @@ export default function PhysicalTeamPSActionCard({
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                   />
                 </div>
-
                 <div>
                   <label className="text-xs font-bold text-slate-500 block mb-1">Problem Description & Proposed Solution *</label>
                   <textarea
@@ -497,7 +464,6 @@ export default function PhysicalTeamPSActionCard({
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                   />
                 </div>
-
                 <div>
                   <label className="text-xs font-bold text-slate-500 block mb-1">Proposed Tech Stack</label>
                   <input
@@ -508,7 +474,6 @@ export default function PhysicalTeamPSActionCard({
                     className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-2 pt-2">
                   <button
                     type="button"

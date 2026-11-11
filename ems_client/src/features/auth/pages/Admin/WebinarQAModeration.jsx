@@ -21,29 +21,23 @@ import {
 import { API_BASE_URL } from '@/lib/api';
 import useAuth from '../../../../Hooks/useAuth';
 import useToast from '../../../../Hooks/useToast';
-
 export default function WebinarQAModeration() {
   const { user } = useAuth();
   const toast = useToast();
-
   const [eventsList, setEventsList] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [currentEvent, setCurrentEvent] = useState(null);
-
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
   // Filtration state
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'open' | 'pinned' | 'answered'
   const [speakerFilter, setSpeakerFilter] = useState('all');
-
   // Inline answering state
   const [activeAnswerId, setActiveAnswerId] = useState(null);
   const [answerText, setAnswerText] = useState('');
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
-
   // Initialize active event
   useEffect(() => {
     let isMounted = true;
@@ -51,7 +45,6 @@ export default function WebinarQAModeration() {
       try {
         const storedAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
         const adminEvId = storedAdmin?.EventId || user?.EventId;
-
         const res = await fetch(`${API_BASE_URL}/api/events`);
         if (res.ok && isMounted) {
           const data = await res.json();
@@ -60,10 +53,8 @@ export default function WebinarQAModeration() {
             const type = (e.EventType || '').toLowerCase();
             return type.includes('webinar');
           });
-
           const activeList = webinarEvents.length > 0 ? webinarEvents : list;
           setEventsList(activeList);
-
           const defaultId = adminEvId ? Number(adminEvId) : (activeList[0]?.Id || null);
           setSelectedEventId(defaultId);
         }
@@ -71,13 +62,11 @@ export default function WebinarQAModeration() {
         console.error('Error loading events for Q&A moderation:', err);
       }
     };
-
     initEvent();
     return () => {
       isMounted = false;
     };
   }, [user]);
-
   // Fetch questions for selected event
   const fetchQuestions = useCallback(async (showSpin = false) => {
     if (!selectedEventId || isNaN(Number(selectedEventId))) {
@@ -85,7 +74,6 @@ export default function WebinarQAModeration() {
       return;
     }
     if (showSpin) setRefreshing(true);
-
     try {
       // Fetch event info (decoupled)
       try {
@@ -97,7 +85,6 @@ export default function WebinarQAModeration() {
       } catch (evErr) {
         console.warn('Non-critical: could not refresh event info in Q&A:', evErr);
       }
-
       // Fetch questions
       const qRes = await fetch(`${API_BASE_URL}/api/webinars/${selectedEventId}/questions`);
       if (qRes.ok) {
@@ -114,7 +101,6 @@ export default function WebinarQAModeration() {
       setRefreshing(false);
     }
   }, [selectedEventId, toast]);
-
   useEffect(() => {
     fetchQuestions();
     const interval = setInterval(() => {
@@ -122,7 +108,6 @@ export default function WebinarQAModeration() {
     }, 12000);
     return () => clearInterval(interval);
   }, [fetchQuestions]);
-
   // Question moderation actions
   const handleTogglePin = async (question) => {
     const nextStatus = question.Status === 'pinned' ? 'open' : 'pinned';
@@ -144,19 +129,16 @@ export default function WebinarQAModeration() {
       toast.error('Network error updating question status');
     }
   };
-
   const handleOpenAnswer = (question) => {
     setActiveAnswerId(question.Id);
     setAnswerText(question.Answer || '');
   };
-
   const handleSaveAnswer = async (questionId) => {
     const cleanAnswer = answerText.trim();
     if (!cleanAnswer) {
       toast.error('Please enter an answer before submitting');
       return;
     }
-
     try {
       setSubmittingAnswer(true);
       const res = await fetch(`${API_BASE_URL}/api/webinars/questions/${questionId}/status`, {
@@ -168,7 +150,6 @@ export default function WebinarQAModeration() {
           AnsweredBy: user?.Name || user?.name || 'Session Moderator'
         })
       });
-
       if (res.ok) {
         setQuestions((prev) =>
           prev.map((q) =>
@@ -195,12 +176,10 @@ export default function WebinarQAModeration() {
       setSubmittingAnswer(false);
     }
   };
-
   const handleDeleteQuestion = async (questionId) => {
     if (!window.confirm('Are you sure you want to dismiss this question from the live panel?')) {
       return;
     }
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/webinars/questions/${questionId}`, {
         method: 'DELETE'
@@ -215,7 +194,6 @@ export default function WebinarQAModeration() {
       toast.error('Network error deleting question');
     }
   };
-
   // Distinct speakers list for filter
   const targetSpeakersList = useMemo(() => {
     const set = new Set();
@@ -224,7 +202,6 @@ export default function WebinarQAModeration() {
     });
     return Array.from(set);
   }, [questions]);
-
   // Counts
   const counts = useMemo(() => {
     return {
@@ -234,7 +211,6 @@ export default function WebinarQAModeration() {
       answered: questions.filter((q) => q.Status === 'answered').length
     };
   }, [questions]);
-
   // Filtered questions
   const filteredQuestions = useMemo(() => {
     return questions.filter((q) => {
@@ -256,7 +232,6 @@ export default function WebinarQAModeration() {
       return true;
     });
   }, [questions, statusFilter, speakerFilter, searchQuery]);
-
   const getTimeAgo = (dateValue) => {
     if (!dateValue) return 'Recently';
     const timestamp = new Date(dateValue).getTime();
@@ -269,7 +244,6 @@ export default function WebinarQAModeration() {
     if (hours < 24) return `${hours}h ago`;
     return new Date(timestamp).toLocaleDateString('en-IN');
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 p-4 sm:p-6 lg:p-10 space-y-6">
       {/* Top Header */}
@@ -293,7 +267,6 @@ export default function WebinarQAModeration() {
             Real-time delegate questions feed. Review audience inquiries, pin priority topics to the speaker stage, and broadcast verified panel answers.
           </p>
         </div>
-
         <div className="flex flex-wrap items-center gap-3">
           {eventsList.length > 1 && (
             <select
@@ -308,7 +281,6 @@ export default function WebinarQAModeration() {
               ))}
             </select>
           )}
-
           <button
             type="button"
             onClick={() => fetchQuestions(true)}
@@ -320,7 +292,6 @@ export default function WebinarQAModeration() {
           </button>
         </div>
       </div>
-
       {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <button
@@ -338,7 +309,6 @@ export default function WebinarQAModeration() {
           </div>
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-1.5">{counts.total}</p>
         </button>
-
         <button
           type="button"
           onClick={() => setStatusFilter('open')}
@@ -354,7 +324,6 @@ export default function WebinarQAModeration() {
           </div>
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-1.5">{counts.open}</p>
         </button>
-
         <button
           type="button"
           onClick={() => setStatusFilter('pinned')}
@@ -370,7 +339,6 @@ export default function WebinarQAModeration() {
           </div>
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-1.5">{counts.pinned}</p>
         </button>
-
         <button
           type="button"
           onClick={() => setStatusFilter('answered')}
@@ -387,7 +355,6 @@ export default function WebinarQAModeration() {
           <p className="text-2xl font-black text-slate-900 dark:text-white mt-1.5">{counts.answered}</p>
         </button>
       </div>
-
       {/* Main Content Container */}
       <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-hidden shadow-sm">
         {/* Controls Bar */}
@@ -413,7 +380,6 @@ export default function WebinarQAModeration() {
                 </button>
               )}
             </div>
-
             {/* Target Speaker Filter */}
             {targetSpeakersList.length > 0 && (
               <select
@@ -430,7 +396,6 @@ export default function WebinarQAModeration() {
               </select>
             )}
           </div>
-
           {/* Status Tabs */}
           <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 dark:border-zinc-900">
             <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
@@ -466,7 +431,6 @@ export default function WebinarQAModeration() {
             ))}
           </div>
         </div>
-
         {/* Question Feed */}
         {loading ? (
           <div className="flex flex-col items-center justify-center p-14 text-center">
@@ -492,7 +456,6 @@ export default function WebinarQAModeration() {
                 const isPinned = q.Status === 'pinned';
                 const isAnswered = q.Status === 'answered';
                 const isAnswering = activeAnswerId === q.Id;
-
                 return (
                   <motion.div
                     key={q.Id}
@@ -514,7 +477,6 @@ export default function WebinarQAModeration() {
                         <ThumbsUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                         <span className="text-xs font-black mt-1">{q.Upvotes || 1}</span>
                       </div>
-
                       {/* Question Details */}
                       <div className="flex-1 min-w-0 space-y-2">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -531,7 +493,6 @@ export default function WebinarQAModeration() {
                               @{q.TargetSpeaker || 'All Speakers'}
                             </span>
                           </div>
-
                           {/* Status Badge */}
                           <div>
                             {isPinned && (
@@ -546,12 +507,10 @@ export default function WebinarQAModeration() {
                             )}
                           </div>
                         </div>
-
                         {/* Question Text */}
                         <p className="text-sm font-semibold text-slate-800 dark:text-zinc-100 leading-relaxed">
                           {q.QuestionText}
                         </p>
-
                         {/* Existing Answer Box if already answered */}
                         {isAnswered && q.Answer && !isAnswering && (
                           <div className="mt-3 p-3.5 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-500/20 space-y-1">
@@ -567,7 +526,6 @@ export default function WebinarQAModeration() {
                             </p>
                           </div>
                         )}
-
                         {/* Inline Answer Composer */}
                         {isAnswering && (
                           <div className="mt-3 p-3.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 space-y-2.5">
@@ -604,7 +562,6 @@ export default function WebinarQAModeration() {
                             </div>
                           </div>
                         )}
-
                         {/* Moderation Actions */}
                         <div className="flex flex-wrap items-center gap-2 pt-2">
                           <button
@@ -619,7 +576,6 @@ export default function WebinarQAModeration() {
                             <Pin className="w-3.5 h-3.5" />
                             <span>{isPinned ? 'Unpin from Stage' : 'Pin to Stage'}</span>
                           </button>
-
                           <button
                             type="button"
                             onClick={() => handleOpenAnswer(q)}
@@ -628,7 +584,6 @@ export default function WebinarQAModeration() {
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>{isAnswered ? 'Edit Answer' : 'Answer Live'}</span>
                           </button>
-
                           <button
                             type="button"
                             onClick={() => handleDeleteQuestion(q.Id)}

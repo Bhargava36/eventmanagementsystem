@@ -19,14 +19,11 @@ import {
 import WaveBackground from "../../../components/Molecules/WaveBackground";
 import { API_BASE_URL } from "@/lib/api";
 import useToast from "../../../Hooks/useToast";
-
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
   const toast = useToast();
-
   // Wizard Steps: 'EMAIL' | 'OTP' | 'PASSWORD' | 'SUCCESS'
   const [step, setStep] = useState("EMAIL");
-
   // Form State
   const [email, setEmail] = useState("");
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""]);
@@ -35,12 +32,10 @@ export default function ForgotPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   // Focus states for input styling
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPassFocused, setIsPassFocused] = useState(false);
   const [isConfirmPassFocused, setIsConfirmPassFocused] = useState(false);
-
   // Status & feedback
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -49,14 +44,11 @@ export default function ForgotPasswordPage() {
   const [canResend, setCanResend] = useState(false);
   const [autoRedirectTimer, setAutoRedirectTimer] = useState(5);
   const [shakeCard, setShakeCard] = useState(false);
-
   const otpInputRefs = useRef([]);
-
   const triggerShake = () => {
     setShakeCard(true);
     setTimeout(() => setShakeCard(false), 500);
   };
-
   // Countdown timer for OTP Resend
   useEffect(() => {
     let timer;
@@ -73,7 +65,6 @@ export default function ForgotPasswordPage() {
     }
     return () => clearInterval(timer);
   }, [step, countdown]);
-
   // Countdown timer for automatic redirect on success
   useEffect(() => {
     let redirectInterval;
@@ -91,7 +82,6 @@ export default function ForgotPasswordPage() {
     }
     return () => clearInterval(redirectInterval);
   }, [step, navigate]);
-
   // Auto-focus first OTP box when entering OTP step
   useEffect(() => {
     if (step === "OTP") {
@@ -100,13 +90,11 @@ export default function ForgotPasswordPage() {
       }, 200);
     }
   }, [step]);
-
   // Step 1: Send OTP to Email via SMTP
   const handleSendOtp = async (e) => {
     e?.preventDefault();
     setError("");
     setSuccessMsg("");
-
     const trimmed = email.trim().toLowerCase();
     if (!trimmed) {
       setError("Please enter your registered email address.");
@@ -119,7 +107,6 @@ export default function ForgotPasswordPage() {
       triggerShake();
       return;
     }
-
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/users/forgot-password/send-otp`, {
@@ -127,12 +114,10 @@ export default function ForgotPasswordPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: trimmed }),
       });
-
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Failed to dispatch verification code.");
       }
-
       toast.success(data.message || "6-digit OTP code dispatched to your email!");
       setSuccessMsg(data.message || "Verification code dispatched successfully.");
       setCountdown(60);
@@ -147,7 +132,6 @@ export default function ForgotPasswordPage() {
       setLoading(false);
     }
   };
-
   // Resend OTP
   const handleResendOtp = async () => {
     if (!canResend || loading) return;
@@ -159,12 +143,10 @@ export default function ForgotPasswordPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
-
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Failed to resend verification code.");
       }
-
       toast.success("New verification code dispatched!");
       setSuccessMsg("A new 6-digit code has been sent to your email.");
       setCountdown(60);
@@ -179,7 +161,6 @@ export default function ForgotPasswordPage() {
       setLoading(false);
     }
   };
-
   // OTP Digits Handling
   const handleOtpChange = (index, value) => {
     const cleanVal = value.replace(/\D/g, "");
@@ -189,16 +170,13 @@ export default function ForgotPasswordPage() {
       setOtpDigits(updated);
       return;
     }
-
     const updated = [...otpDigits];
     updated[index] = cleanVal.slice(-1);
     setOtpDigits(updated);
-
     if (index < 5 && cleanVal) {
       otpInputRefs.current[index + 1]?.focus();
     }
   };
-
   const handleOtpKeyDown = (index, e) => {
     if (e.key === "Backspace" && !otpDigits[index] && index > 0) {
       otpInputRefs.current[index - 1]?.focus();
@@ -208,7 +186,6 @@ export default function ForgotPasswordPage() {
       otpInputRefs.current[index + 1]?.focus();
     }
   };
-
   const handleOtpPaste = (e) => {
     e.preventDefault();
     const pasted = e.clipboardData.getData("text").trim().replace(/\D/g, "");
@@ -218,20 +195,17 @@ export default function ForgotPasswordPage() {
       otpInputRefs.current[5]?.focus();
     }
   };
-
   // Step 2: Verify OTP
   const handleVerifyOtp = async (e) => {
     e?.preventDefault();
     setError("");
     setSuccessMsg("");
-
     const fullOtp = otpDigits.join("");
     if (fullOtp.length !== 6) {
       setError("Please enter the complete 6-digit verification code.");
       triggerShake();
       return;
     }
-
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/users/forgot-password/verify-otp`, {
@@ -242,12 +216,10 @@ export default function ForgotPasswordPage() {
           otp: fullOtp,
         }),
       });
-
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Invalid or expired verification code.");
       }
-
       toast.success("Verification successful!");
       setResetToken(data.resetToken || "");
       setStep("PASSWORD");
@@ -259,7 +231,6 @@ export default function ForgotPasswordPage() {
       setLoading(false);
     }
   };
-
   // Password rules validation
   const hasMinLength = newPassword.length >= 8;
   const hasUppercase = /[A-Z]/.test(newPassword);
@@ -267,13 +238,11 @@ export default function ForgotPasswordPage() {
   const hasNumber = /\d/.test(newPassword);
   const isPasswordValid = hasMinLength && hasUppercase && hasLowercase && hasNumber;
   const passwordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
-
   // Step 3: Reset Password
   const handleResetPassword = async (e) => {
     e?.preventDefault();
     setError("");
     setSuccessMsg("");
-
     if (!isPasswordValid) {
       setError("Please ensure your new password satisfies all security criteria.");
       triggerShake();
@@ -284,7 +253,6 @@ export default function ForgotPasswordPage() {
       triggerShake();
       return;
     }
-
     setLoading(true);
     try {
       const fullOtp = otpDigits.join("");
@@ -298,12 +266,10 @@ export default function ForgotPasswordPage() {
           newPassword,
         }),
       });
-
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Failed to update password.");
       }
-
       toast.success("Password updated successfully!");
       setStep("SUCCESS");
     } catch (err) {
@@ -314,7 +280,6 @@ export default function ForgotPasswordPage() {
       setLoading(false);
     }
   };
-
   return (
     <motion.div
       className="relative w-full min-h-screen overflow-hidden bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300 pt-28 sm:pt-32 lg:pt-36 pb-16"
@@ -322,14 +287,12 @@ export default function ForgotPasswordPage() {
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
       <WaveBackground />
-
       <div className="relative z-10 flex flex-col lg:flex-row mx-4 sm:mx-8 lg:mx-12 xl:mx-20 gap-8 lg:gap-14 items-center lg:items-start justify-center">
         {/* Left Side: Brand & Feature Highlights */}
         <div className="hidden lg:flex flex-col w-full lg:w-6/12 p-0 lg:p-6 xl:p-8">
           <p className="text-sm font-semibold tracking-widest text-emerald-700 dark:text-emerald-400 mb-4 uppercase">
             ACCOUNT RECOVERY
           </p>
-
           <h1 className="text-3xl lg:text-5xl font-bold tracking-tight">
             Reset Your Password
           </h1>
@@ -338,11 +301,9 @@ export default function ForgotPasswordPage() {
               Safely & Securely
             </span>
           </h1>
-
           <p className="text-gray-700 dark:text-gray-300 mt-4 lg:mt-6 text-base lg:text-lg leading-relaxed max-w-xl">
             Lost access to your account? Enter your registered email address and we'll immediately dispatch a secure 6-digit one-time passcode via SMTP protocol.
           </p>
-
           <div className="flex flex-col gap-4 lg:gap-5 mt-8">
             <div className="flex items-center gap-4 lg:gap-5">
               <div className="w-12 lg:w-14 h-12 lg:h-14 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0 flex items-center justify-center shadow-sm">
@@ -357,7 +318,6 @@ export default function ForgotPasswordPage() {
                 </p>
               </div>
             </div>
-
             <div className="flex items-center gap-4 lg:gap-5">
               <div className="w-12 lg:w-14 h-12 lg:h-14 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0 flex items-center justify-center shadow-sm">
                 <ShieldCheck className="w-6 h-6" />
@@ -371,7 +331,6 @@ export default function ForgotPasswordPage() {
                 </p>
               </div>
             </div>
-
             <div className="flex items-center gap-4 lg:gap-5">
               <div className="w-12 lg:w-14 h-12 lg:h-14 bg-gray-100 dark:bg-white/10 text-emerald-700 dark:text-emerald-500 p-3 rounded-xl shrink-0 flex items-center justify-center shadow-sm">
                 <Lock className="w-6 h-6" />
@@ -387,7 +346,6 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
         </div>
-
         {/* Right Side: Interactive 4-Step Card */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -420,7 +378,6 @@ export default function ForgotPasswordPage() {
               })}
             </div>
           </div>
-
           <motion.div
             animate={
               shakeCard
@@ -432,7 +389,6 @@ export default function ForgotPasswordPage() {
           >
             {/* Top Emerald hairline highlight */}
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600" />
-
             <AnimatePresence mode="wait">
               {/* STEP 1: ENTER EMAIL */}
               {step === "EMAIL" && (
@@ -456,7 +412,6 @@ export default function ForgotPasswordPage() {
                       </p>
                     </div>
                   </div>
-
                   {error && (
                     <motion.div
                       initial={{ opacity: 0, y: -6 }}
@@ -467,7 +422,6 @@ export default function ForgotPasswordPage() {
                       <span>{error}</span>
                     </motion.div>
                   )}
-
                   <form onSubmit={handleSendOtp} className="space-y-6">
                     <div className="relative">
                       <Mail
@@ -504,7 +458,6 @@ export default function ForgotPasswordPage() {
                         Registered Email Address
                       </label>
                     </div>
-
                     <button
                       type="submit"
                       disabled={loading || !email.trim()}
@@ -520,7 +473,6 @@ export default function ForgotPasswordPage() {
                       )}
                     </button>
                   </form>
-
                   <div className="mt-8 pt-5 border-t border-gray-200 dark:border-zinc-800 flex items-center justify-between text-xs">
                     <Link
                       to="/user/login"
@@ -535,7 +487,6 @@ export default function ForgotPasswordPage() {
                   </div>
                 </motion.div>
               )}
-
               {/* STEP 2: VERIFY OTP */}
               {step === "OTP" && (
                 <motion.div
@@ -558,7 +509,6 @@ export default function ForgotPasswordPage() {
                       </p>
                     </div>
                   </div>
-
                   <div className="mb-5 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between text-xs text-emerald-700 dark:text-emerald-400">
                     <div className="flex items-center gap-1.5 truncate max-w-[240px]">
                       <Mail className="w-3.5 h-3.5 shrink-0" />
@@ -575,7 +525,6 @@ export default function ForgotPasswordPage() {
                       Change
                     </button>
                   </div>
-
                   {error && (
                     <motion.div
                       initial={{ opacity: 0, y: -6 }}
@@ -586,7 +535,6 @@ export default function ForgotPasswordPage() {
                       <span>{error}</span>
                     </motion.div>
                   )}
-
                   <form onSubmit={handleVerifyOtp} className="space-y-6">
                     {/* 6 Digit Input Boxes */}
                     <div
@@ -611,7 +559,6 @@ export default function ForgotPasswordPage() {
                         />
                       ))}
                     </div>
-
                     <button
                       type="submit"
                       disabled={loading || otpDigits.join("").length !== 6}
@@ -627,7 +574,6 @@ export default function ForgotPasswordPage() {
                       )}
                     </button>
                   </form>
-
                   {/* Resend Actions */}
                   <div className="mt-8 pt-5 border-t border-gray-200 dark:border-zinc-800 flex items-center justify-between text-xs">
                     <button
@@ -638,7 +584,6 @@ export default function ForgotPasswordPage() {
                       <ArrowLeft className="w-3.5 h-3.5" />
                       Back
                     </button>
-
                     {canResend ? (
                       <button
                         type="button"
@@ -657,7 +602,6 @@ export default function ForgotPasswordPage() {
                   </div>
                 </motion.div>
               )}
-
               {/* STEP 3: NEW PASSWORD */}
               {step === "PASSWORD" && (
                 <motion.div
@@ -680,7 +624,6 @@ export default function ForgotPasswordPage() {
                       </p>
                     </div>
                   </div>
-
                   {error && (
                     <motion.div
                       initial={{ opacity: 0, y: -6 }}
@@ -691,7 +634,6 @@ export default function ForgotPasswordPage() {
                       <span>{error}</span>
                     </motion.div>
                   )}
-
                   <form onSubmit={handleResetPassword} className="space-y-6">
                     {/* New Password */}
                     <div className="relative">
@@ -732,7 +674,6 @@ export default function ForgotPasswordPage() {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-
                     {/* Confirm Password */}
                     <div className="relative">
                       <Lock
@@ -772,7 +713,6 @@ export default function ForgotPasswordPage() {
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
-
                     {/* Password Requirements Checklist */}
                     <div className="p-3 bg-white/70 dark:bg-zinc-900/70 border border-gray-200 dark:border-zinc-800 rounded-xl space-y-1.5 text-xs">
                       <p className="font-semibold text-gray-700 dark:text-gray-300 text-[11px] uppercase tracking-wider">
@@ -823,7 +763,6 @@ export default function ForgotPasswordPage() {
                         </div>
                       )}
                     </div>
-
                     <button
                       type="submit"
                       disabled={loading || !isPasswordValid || !passwordsMatch}
@@ -841,7 +780,6 @@ export default function ForgotPasswordPage() {
                   </form>
                 </motion.div>
               )}
-
               {/* STEP 4: SUCCESS */}
               {step === "SUCCESS" && (
                 <motion.div
@@ -860,7 +798,6 @@ export default function ForgotPasswordPage() {
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-sm mx-auto">
                     Your password has been successfully updated. A confirmation notice has been dispatched to your email.
                   </p>
-
                   <div className="mt-6 p-3 rounded-xl bg-gray-100 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-xs text-gray-600 dark:text-gray-400">
                     Redirecting to sign in automatically in{" "}
                     <strong className="text-emerald-700 dark:text-emerald-400 font-mono text-sm">
@@ -868,7 +805,6 @@ export default function ForgotPasswordPage() {
                     </strong>{" "}
                     seconds...
                   </div>
-
                   <div className="mt-5">
                     <Link
                       to="/user/login"

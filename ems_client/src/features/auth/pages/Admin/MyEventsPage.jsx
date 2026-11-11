@@ -24,11 +24,9 @@ import {
   Building2,
   Zap,
 } from 'lucide-react';
-
 export default function MyEventsPage() {
   const navigate = useNavigate();
   const toast = useToast();
-
   const [admin, setAdmin] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -36,34 +34,27 @@ export default function MyEventsPage() {
       return {};
     }
   });
-
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [switchingId, setSwitchingId] = useState(null);
-
   // Create Event Modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  
-
   const adminId = admin?.Id || admin?.id;
   const currentActiveEventId = admin?.EventId || admin?.eventId;
-
   // Fetch admin profile and all assigned events
   const fetchAdminEvents = async () => {
     if (!adminId) {
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       const res = await fetch(`${API_BASE_URL}/api/admin/${adminId}`);
       if (!res.ok) throw new Error('Failed to load events');
       const data = await res.json();
-
       let fetchedEvents = [];
       if (Array.isArray(data.events) && data.events.length > 0 && data.events[0]?.EventName && !data.events[0]?.AdminName) {
         fetchedEvents = data.events;
@@ -72,12 +63,9 @@ export default function MyEventsPage() {
       } else if (Array.isArray(data.events?.[0]?.events)) {
         fetchedEvents = data.events[0].events;
       }
-
       setEvents(fetchedEvents);
-
       const activeEventId = admin?.EventId || data.admin?.EventId;
       const activeEventObj = fetchedEvents.find((e) => Number(e.Id) === Number(activeEventId)) || fetchedEvents[0];
-
       // Keep localStorage in sync with full list
       const updatedAdmin = {
         ...admin,
@@ -99,11 +87,9 @@ export default function MyEventsPage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchAdminEvents();
   }, [adminId]);
-
   // Handle switching active event
   const handleSwitchEvent = async (targetEvent) => {
     if (!targetEvent) return;
@@ -112,9 +98,7 @@ export default function MyEventsPage() {
       navigate('/admin/dashboard');
       return;
     }
-
     setSwitchingId(targetEvent.Id);
-
     const updatedAdmin = {
       ...admin,
       EventId: targetEvent.Id,
@@ -123,10 +107,8 @@ export default function MyEventsPage() {
       EventType: targetEvent.EventType || 'Hackathon',
       Location: targetEvent.Location,
     };
-
     localStorage.setItem('admin', JSON.stringify(updatedAdmin));
     setAdmin(updatedAdmin);
-
     // Call backend switch-event to persist selection in users.EventId
     try {
       await fetch(`${API_BASE_URL}/api/admin/switch-event`, {
@@ -137,24 +119,19 @@ export default function MyEventsPage() {
     } catch (e) {
       console.warn('Backend switch failed:', e);
     }
-
     // Clear old caches
     try {
       localStorage.removeItem(`admin_dashboard_cache_${targetEvent.Id}`);
       localStorage.removeItem(`admin_dashboard_cache_${currentActiveEventId}`);
     } catch (e) {}
-
     // Notify all listeners
     window.dispatchEvent(new CustomEvent('admin-event-updated', { detail: targetEvent }));
-
     toast.success(`Switched workspace to: ${targetEvent.EventName}`);
-
     setTimeout(() => {
       navigate('/admin/dashboard');
       window.location.reload();
     }, 250);
   };
-
   // Filtered events
   const filteredEvents = useMemo(() => {
     return events.filter((ev) => {
@@ -162,9 +139,7 @@ export default function MyEventsPage() {
         (ev.EventName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (ev.EventType || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (ev.Location || '').toLowerCase().includes(searchQuery.toLowerCase());
-
       if (!matchesSearch) return false;
-
       if (activeFilter === 'all') return true;
       if (activeFilter === 'hackathons') {
         return (ev.EventType || '').toLowerCase() === 'hackathon';
@@ -178,7 +153,6 @@ export default function MyEventsPage() {
       return true;
     });
   }, [events, searchQuery, activeFilter]);
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-6 sm:p-10 transition-colors">
       {/* Top Header */}
@@ -196,7 +170,6 @@ export default function MyEventsPage() {
               Switch between workspaces, oversee multiple hackathons and workshops, or launch a new event effortlessly.
             </p>
           </div>
-
           <div className="flex items-center gap-3">
             <button
               onClick={fetchAdminEvents}
@@ -207,7 +180,6 @@ export default function MyEventsPage() {
             </button>
           </div>
         </div>
-
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm flex items-center justify-between">
@@ -223,7 +195,6 @@ export default function MyEventsPage() {
               <Layers className="w-6 h-6" />
             </div>
           </div>
-
           <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -237,7 +208,6 @@ export default function MyEventsPage() {
               <Zap className="w-6 h-6" />
             </div>
           </div>
-
           <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -253,7 +223,6 @@ export default function MyEventsPage() {
             </div>
           </div>
         </div>
-
         {/* Filters & Search */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 w-fit overflow-x-auto">
@@ -271,7 +240,6 @@ export default function MyEventsPage() {
               </button>
             ))}
           </div>
-
           <div className="relative min-w-[260px] sm:w-80">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
@@ -283,7 +251,6 @@ export default function MyEventsPage() {
             />
           </div>
         </div>
-
         {/* Events Grid */}
         {loading ? (
           <div className="py-20 text-center">
@@ -314,7 +281,6 @@ export default function MyEventsPage() {
             {filteredEvents.map((ev) => {
               const isActive = Number(ev.Id) === Number(currentActiveEventId);
               const typeInfo = getEventTypeInfo(ev.EventType);
-
               return (
                 <motion.div
                   key={ev.Id}
@@ -332,7 +298,6 @@ export default function MyEventsPage() {
                       <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border ${typeInfo.badgeColor}`}>
                         {typeInfo.label}
                       </span>
-
                       {isActive ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-emerald-600 text-white text-[10px] font-extrabold uppercase tracking-wider shadow-sm">
                           <CheckCircle2 className="w-3 h-3" />
@@ -344,11 +309,9 @@ export default function MyEventsPage() {
                         </span>
                       )}
                     </div>
-
                     <h3 className="text-xl font-extrabold text-slate-900 dark:text-white line-clamp-1 mb-2">
                       {ev.EventName}
                     </h3>
-
                     <div className="space-y-1.5 text-xs text-slate-500 dark:text-slate-400 mb-6">
                       <div className="flex items-center gap-2">
                         <Radio className="w-3.5 h-3.5 text-slate-400" />
@@ -371,7 +334,6 @@ export default function MyEventsPage() {
                       )}
                     </div>
                   </div>
-
                   {/* Actions */}
                   <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center gap-2">
                     {isActive ? (
@@ -398,7 +360,6 @@ export default function MyEventsPage() {
                         )}
                       </button>
                     )}
-
                     <button
                       onClick={() => {
                         handleSwitchEvent(ev);
@@ -416,9 +377,7 @@ export default function MyEventsPage() {
           </div>
         )}
       </div>
-
       {/* Host New Event Modal */}
-      
     </div>
   );
 }

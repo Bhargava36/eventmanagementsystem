@@ -1,5 +1,4 @@
 const feedbackService = require('./feedbackService');
-
 const createFeedback = (req, res) => {
     const { name, eventName, eventId, category, rating, comments } = req.body;
     if (!name?.trim() || (!eventName?.trim() && !eventId) || rating === undefined || rating === null) {
@@ -39,7 +38,6 @@ const createFeedback = (req, res) => {
         });
     });
 };
-
 const getAllFeedback = (req, res) => {
     feedbackService.getAllFeedback((err, feedback) => {
         if (err) {
@@ -55,7 +53,6 @@ const getAllFeedback = (req, res) => {
         });
     });
 };
-
 const getFeedbackByAdmin = (req, res) => {
     const adminId = Number(req.params.adminId);
     if (!Number.isInteger(adminId) || adminId <= 0) {
@@ -77,7 +74,6 @@ const getFeedbackByAdmin = (req, res) => {
         });
     });
 };
-
 const getFeedbackById = (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
@@ -103,7 +99,6 @@ const getFeedbackById = (req, res) => {
         });
     });
 };
-
 const getFeedbackByEvent = (req, res) => {
     const eventId = Number(req.params.eventId);
     if (!Number.isInteger(eventId) || eventId <= 0) {
@@ -125,7 +120,6 @@ const getFeedbackByEvent = (req, res) => {
         });
     });
 };
-
 const deleteFeedback = (req, res) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {
@@ -145,7 +139,6 @@ const deleteFeedback = (req, res) => {
         });
     });
 };
-
 module.exports = {
     createFeedback,
     getAllFeedback,

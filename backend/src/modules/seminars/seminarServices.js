@@ -1,10 +1,9 @@
 const db = require('../../config/db');
-
 // --- Speakers ---
 const getSpeakers = (eventId, callback) => {
     const query = `
-        SELECT * FROM seminar_speakers 
-        WHERE EventId = ? 
+        SELECT * FROM seminar_speakers
+        WHERE EventId = ?
         ORDER BY OrderIndex ASC, Id ASC
     `;
     db.query(query, [eventId], (err, results) => {
@@ -12,7 +11,6 @@ const getSpeakers = (eventId, callback) => {
         return callback(null, results);
     });
 };
-
 const createSpeaker = (data, callback) => {
     const {
         EventId,
@@ -25,13 +23,11 @@ const createSpeaker = (data, callback) => {
         LinkedinUrl = '',
         OrderIndex = 0
     } = data;
-
     const query = `
-        INSERT INTO seminar_speakers 
+        INSERT INTO seminar_speakers
         (EventId, Name, Designation, Organization, Topic, Bio, PhotoUrl, LinkedinUrl, OrderIndex)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
     db.query(
         query,
         [EventId, Name, Designation, Organization, Topic, Bio, PhotoUrl, LinkedinUrl, OrderIndex],
@@ -41,7 +37,6 @@ const createSpeaker = (data, callback) => {
         }
     );
 };
-
 const updateSpeaker = (speakerId, data, callback) => {
     const {
         Name,
@@ -53,7 +48,6 @@ const updateSpeaker = (speakerId, data, callback) => {
         LinkedinUrl,
         OrderIndex
     } = data;
-
     const query = `
         UPDATE seminar_speakers SET
             Name = COALESCE(?, Name),
@@ -66,7 +60,6 @@ const updateSpeaker = (speakerId, data, callback) => {
             OrderIndex = COALESCE(?, OrderIndex)
         WHERE Id = ?
     `;
-
     db.query(
         query,
         [Name, Designation, Organization, Topic, Bio, PhotoUrl, LinkedinUrl, OrderIndex, speakerId],
@@ -76,7 +69,6 @@ const updateSpeaker = (speakerId, data, callback) => {
         }
     );
 };
-
 const deleteSpeaker = (speakerId, callback) => {
     const query = `DELETE FROM seminar_speakers WHERE Id = ?`;
     db.query(query, [speakerId], (err, result) => {
@@ -84,12 +76,11 @@ const deleteSpeaker = (speakerId, callback) => {
         return callback(null, result);
     });
 };
-
 // --- Sessions / Agenda ---
 const getSessions = (eventId, callback) => {
     const query = `
-        SELECT * FROM seminar_sessions 
-        WHERE EventId = ? 
+        SELECT * FROM seminar_sessions
+        WHERE EventId = ?
         ORDER BY OrderIndex ASC, StartTime ASC, Id ASC
     `;
     db.query(query, [eventId], (err, results) => {
@@ -97,7 +88,6 @@ const getSessions = (eventId, callback) => {
         return callback(null, results);
     });
 };
-
 const createSession = (data, callback) => {
     const {
         EventId,
@@ -112,13 +102,11 @@ const createSession = (data, callback) => {
         ResourcesUrl = '',
         OrderIndex = 0
     } = data;
-
     const query = `
-        INSERT INTO seminar_sessions 
+        INSERT INTO seminar_sessions
         (EventId, SessionTitle, SessionDate, DayNumber, StartTime, EndTime, SpeakerName, HallName, Description, ResourcesUrl, OrderIndex)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
     db.query(
         query,
         [EventId, SessionTitle, SessionDate, DayNumber, StartTime, EndTime, SpeakerName, HallName, Description, ResourcesUrl, OrderIndex],
@@ -128,7 +116,6 @@ const createSession = (data, callback) => {
         }
     );
 };
-
 const updateSession = (sessionId, data, callback) => {
     const {
         SessionTitle,
@@ -142,7 +129,6 @@ const updateSession = (sessionId, data, callback) => {
         ResourcesUrl,
         OrderIndex
     } = data;
-
     const query = `
         UPDATE seminar_sessions SET
             SessionTitle = COALESCE(?, SessionTitle),
@@ -157,7 +143,6 @@ const updateSession = (sessionId, data, callback) => {
             OrderIndex = COALESCE(?, OrderIndex)
         WHERE Id = ?
     `;
-
     db.query(
         query,
         [SessionTitle, SessionDate, DayNumber, StartTime, EndTime, SpeakerName, HallName, Description, ResourcesUrl, OrderIndex, sessionId],
@@ -167,7 +152,6 @@ const updateSession = (sessionId, data, callback) => {
         }
     );
 };
-
 const deleteSession = (sessionId, callback) => {
     const query = `DELETE FROM seminar_sessions WHERE Id = ?`;
     db.query(query, [sessionId], (err, result) => {
@@ -175,7 +159,6 @@ const deleteSession = (sessionId, callback) => {
         return callback(null, result);
     });
 };
-
 // --- Delegates & Attendance ---
 const getDelegates = (eventId, callback) => {
     const query = `
@@ -207,12 +190,10 @@ const getDelegates = (eventId, callback) => {
         return callback(null, results || []);
     });
 };
-
 const checkInDelegate = ({ eventId, userId, teamId, checkInBy = 'Admin Gate', status = 'CheckedIn' }, callback) => {
     const isPresent = status === 'CheckedIn' || status === 'checked_in' || status === 'present';
     const isAbsent = status === 'Absent' || status === 'absent';
     const finalStatus = isPresent ? 'CheckedIn' : isAbsent ? 'Absent' : 'Registered';
-
     const query = `
         INSERT INTO seminar_attendance (EventId, UserId, TeamId, CheckInStatus, CheckInTime, CheckInBy)
         VALUES (?, ?, ?, ?, ${isPresent ? 'NOW()' : 'NULL'}, ?)
@@ -226,7 +207,6 @@ const checkInDelegate = ({ eventId, userId, teamId, checkInBy = 'Admin Gate', st
         return callback(null, result);
     });
 };
-
 const submitFeedback = ({ eventId, userId, rating, comments }, callback) => {
     const query = `
         INSERT INTO seminar_attendance (EventId, UserId, FeedbackSubmitted, FeedbackRating, FeedbackComments)
@@ -238,7 +218,6 @@ const submitFeedback = ({ eventId, userId, rating, comments }, callback) => {
     `;
     db.query(query, [eventId, userId, rating || 5, comments || ''], (err, result) => {
         if (err) return callback(err, null);
-
         // Mirror directly into central feedback table
         const mirrorQuery = `
             INSERT INTO feedback (UserName, EventName, Category, Rating, Comments, EventId, AdminId)
@@ -250,15 +229,13 @@ const submitFeedback = ({ eventId, userId, rating, comments }, callback) => {
                 Comments = VALUES(Comments)
         `;
         db.query(mirrorQuery, [rating || 5, comments || '', userId, eventId], () => {});
-
         return callback(null, result);
     });
 };
-
 const issueCertificate = ({ eventId, userId }, callback) => {
     const query = `
-        UPDATE seminar_attendance 
-        SET CertificateIssued = TRUE 
+        UPDATE seminar_attendance
+        SET CertificateIssued = TRUE
         WHERE EventId = ? AND UserId = ?
     `;
     db.query(query, [eventId, userId], (err, result) => {
@@ -266,12 +243,11 @@ const issueCertificate = ({ eventId, userId }, callback) => {
         return callback(null, result);
     });
 };
-
 // --- Resources ---
 const getResources = (eventId, callback) => {
     const query = `
-        SELECT * FROM seminar_resources 
-        WHERE EventId = ? 
+        SELECT * FROM seminar_resources
+        WHERE EventId = ?
         ORDER BY Id DESC
     `;
     db.query(query, [eventId], (err, results) => {
@@ -279,7 +255,6 @@ const getResources = (eventId, callback) => {
         return callback(null, results);
     });
 };
-
 const createResource = (data, callback) => {
     const { EventId, Title, ResourceType = 'Slides', ResourceUrl, Description = '' } = data;
     const query = `
@@ -291,7 +266,6 @@ const createResource = (data, callback) => {
         return callback(null, { insertId: result.insertId, ...data });
     });
 };
-
 const deleteResource = (resourceId, callback) => {
     const query = `DELETE FROM seminar_resources WHERE Id = ?`;
     db.query(query, [resourceId], (err, result) => {
@@ -299,7 +273,6 @@ const deleteResource = (resourceId, callback) => {
         return callback(null, result);
     });
 };
-
 const updateResource = (resourceId, data, callback) => {
     const { Title, ResourceType, ResourceUrl, Description = '' } = data;
     const query = `
@@ -315,7 +288,6 @@ const updateResource = (resourceId, data, callback) => {
         return callback(null, result);
     });
 };
-
 module.exports = {
     getSpeakers,
     createSpeaker,

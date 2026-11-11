@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X } from 'lucide-react';
-
 function PasswordStrengthMeter({ password = '', showDetails = true }) {
   const rules = [
     { id: 'length', label: '8+ characters', test: (p) => p.length >= 8 },
@@ -10,18 +9,14 @@ function PasswordStrengthMeter({ password = '', showDetails = true }) {
     { id: 'number', label: 'Number (0-9)', test: (p) => /[0-9]/.test(p) },
     { id: 'special', label: 'Special symbol (!@#$...)', test: (p) => /[^A-Za-z0-9]/.test(p) }
   ];
-
   const results = rules.map((r) => ({
     ...r,
     passed: r.test(password)
   }));
-
   const passedCount = results.filter((r) => r.passed).length;
-
   let strengthLabel = 'Very Weak';
   let strengthColor = 'bg-rose-500 text-rose-500';
   let progressWidth = '20%';
-
   if (!password) {
     progressWidth = '0%';
     strengthLabel = 'Enter password';
@@ -43,9 +38,7 @@ function PasswordStrengthMeter({ password = '', showDetails = true }) {
     strengthLabel = 'Strong';
     strengthColor = 'bg-emerald-500 text-emerald-600 dark:text-emerald-400';
   }
-
   if (!password) return null;
-
   return (
     <div className="w-full space-y-2 mt-2 select-none">
       <div className="flex items-center justify-between text-xs">
@@ -61,7 +54,6 @@ function PasswordStrengthMeter({ password = '', showDetails = true }) {
           {strengthLabel}
         </motion.span>
       </div>
-
       <div className="w-full h-1.5 rounded-md bg-slate-200 dark:bg-zinc-800 overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
@@ -70,7 +62,6 @@ function PasswordStrengthMeter({ password = '', showDetails = true }) {
           className={`h-full rounded-md ${strengthColor.split(' ')[0]}`}
         />
       </div>
-
       {showDetails && (
         <AnimatePresence>
           <motion.div
@@ -113,5 +104,4 @@ function PasswordStrengthMeter({ password = '', showDetails = true }) {
     </div>
   );
 }
-
 export default PasswordStrengthMeter;

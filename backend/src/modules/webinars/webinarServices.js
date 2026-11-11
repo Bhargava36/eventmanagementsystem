@@ -1,10 +1,9 @@
 const db = require('../../config/db');
-
 // Sessions (Keynotes, Panels & Virtual Broadcasts)
 const getSessions = (eventId, callback) => {
     const query = `
-        SELECT * FROM webinar_sessions 
-        WHERE EventId = ? 
+        SELECT * FROM webinar_sessions
+        WHERE EventId = ?
         ORDER BY DayNumber ASC, StartTime ASC, Id ASC
     `;
     db.query(query, [eventId], (err, results) => {
@@ -12,7 +11,6 @@ const getSessions = (eventId, callback) => {
         return callback(null, results);
     });
 };
-
 const createSession = (data, callback) => {
     const {
         EventId,
@@ -30,13 +28,11 @@ const createSession = (data, callback) => {
         ResourcesUrl = null,
         DisplayOrder = 0
     } = data;
-
     const query = `
-        INSERT INTO webinar_sessions 
+        INSERT INTO webinar_sessions
         (EventId, SessionTitle, DayNumber, SessionDate, StartTime, EndTime, SpeakerName, SpeakerDesignation, SpeakerCompany, SpeakerPhoto, VenueOrMeetLink, Description, ResourcesUrl, DisplayOrder)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
     db.query(
         query,
         [EventId, SessionTitle, DayNumber, SessionDate, StartTime, EndTime, SpeakerName, SpeakerDesignation, SpeakerCompany, SpeakerPhoto, VenueOrMeetLink, Description, ResourcesUrl, DisplayOrder],
@@ -46,7 +42,6 @@ const createSession = (data, callback) => {
         }
     );
 };
-
 const updateSession = (sessionId, data, callback) => {
     const {
         SessionTitle,
@@ -63,9 +58,8 @@ const updateSession = (sessionId, data, callback) => {
         ResourcesUrl,
         DisplayOrder
     } = data;
-
     const query = `
-        UPDATE webinar_sessions 
+        UPDATE webinar_sessions
         SET SessionTitle = COALESCE(?, SessionTitle),
             DayNumber = COALESCE(?, DayNumber),
             SessionDate = COALESCE(?, SessionDate),
@@ -81,7 +75,6 @@ const updateSession = (sessionId, data, callback) => {
             DisplayOrder = COALESCE(?, DisplayOrder)
         WHERE Id = ?
     `;
-
     db.query(
         query,
         [SessionTitle, DayNumber, SessionDate, StartTime, EndTime, SpeakerName, SpeakerDesignation, SpeakerCompany, SpeakerPhoto, VenueOrMeetLink, Description, ResourcesUrl, DisplayOrder, sessionId],
@@ -91,7 +84,6 @@ const updateSession = (sessionId, data, callback) => {
         }
     );
 };
-
 const deleteSession = (sessionId, callback) => {
     const query = `DELETE FROM webinar_sessions WHERE Id = ?`;
     db.query(query, [sessionId], (err, result) => {
@@ -99,12 +91,11 @@ const deleteSession = (sessionId, callback) => {
         return callback(null, result);
     });
 };
-
 // Resources (Decks, Replay Videos, Whitepapers & Delegate Handouts)
 const getResources = (eventId, callback) => {
     const query = `
-        SELECT * FROM webinar_resources 
-        WHERE EventId = ? 
+        SELECT * FROM webinar_resources
+        WHERE EventId = ?
         ORDER BY Id DESC
     `;
     db.query(query, [eventId], (err, results) => {
@@ -112,7 +103,6 @@ const getResources = (eventId, callback) => {
         return callback(null, results);
     });
 };
-
 const createResource = (data, callback) => {
     const {
         EventId,
@@ -122,18 +112,15 @@ const createResource = (data, callback) => {
         Description = null,
         SessionId = null
     } = data;
-
     const query = `
         INSERT INTO webinar_resources (EventId, Title, ResourceType, ResourceUrl, Description, SessionId)
         VALUES (?, ?, ?, ?, ?, ?)
     `;
-
     db.query(query, [EventId, Title, ResourceType, ResourceUrl, Description, SessionId], (err, result) => {
         if (err) return callback(err, null);
         return callback(null, { insertId: result.insertId, ...data });
     });
 };
-
 const deleteResource = (resourceId, callback) => {
     const query = `DELETE FROM webinar_resources WHERE Id = ?`;
     db.query(query, [resourceId], (err, result) => {
@@ -141,7 +128,6 @@ const deleteResource = (resourceId, callback) => {
         return callback(null, result);
     });
 };
-
 // Attendance
 const getAttendance = (eventId, dayNumber = 1, sessionSlot = 'Morning', callback) => {
     const query = `
@@ -161,23 +147,20 @@ const getAttendance = (eventId, dayNumber = 1, sessionSlot = 'Morning', callback
         FROM registered_teams rt
         JOIN registered_team_members tm ON tm.TeamId = rt.Id
         LEFT JOIN users u ON tm.UserId = u.Id
-        LEFT JOIN event_attendance ea ON ea.EventId = rt.EventId 
-            AND ea.UserId = tm.UserId 
-            AND ea.DayNumber = ? 
+        LEFT JOIN event_attendance ea ON ea.EventId = rt.EventId
+            AND ea.UserId = tm.UserId
+            AND ea.DayNumber = ?
             AND ea.SessionSlot = ?
         WHERE rt.EventId = ?
         ORDER BY tm.Id ASC
     `;
-
     const allRecordsQuery = `
         SELECT ea.UserId, ea.DayNumber, ea.SessionSlot, ea.Status, ea.CheckInTime
         FROM event_attendance ea
         WHERE ea.EventId = ?
     `;
-
     db.query(query, [dayNumber, sessionSlot, dayNumber, sessionSlot, eventId], (err, results) => {
         if (err) return callback(err, null, null);
-        
         db.query(allRecordsQuery, [eventId], (aErr, allRecords) => {
             if (aErr) {
                 return callback(null, results, []);
@@ -186,13 +169,12 @@ const getAttendance = (eventId, dayNumber = 1, sessionSlot = 'Morning', callback
         });
     });
 };
-
 const markAttendance = (eventId, userId, status, markedBy, dayNumber = 1, sessionSlot = 'Morning', attendanceDate = null, callback) => {
     const checkInTime = status === 'checked_in' ? new Date() : null;
     const query = `
         INSERT INTO event_attendance (EventId, UserId, Status, CheckInTime, CheckedInBy, DayNumber, SessionSlot, AttendanceDate)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
+        ON DUPLICATE KEY UPDATE
             Status = VALUES(Status),
             CheckInTime = VALUES(CheckInTime),
             CheckedInBy = VALUES(CheckedInBy),
@@ -204,16 +186,15 @@ const markAttendance = (eventId, userId, status, markedBy, dayNumber = 1, sessio
         return callback(null, result);
     });
 };
-
 const getUserAttendance = (eventId, userId, callback) => {
     const query = `
-        SELECT 
-            ea.UserId, 
-            ea.DayNumber, 
-            ea.SessionSlot, 
-            ea.Status, 
-            ea.CheckInTime, 
-            ea.Remarks, 
+        SELECT
+            ea.UserId,
+            ea.DayNumber,
+            ea.SessionSlot,
+            ea.Status,
+            ea.CheckInTime,
+            ea.Remarks,
             ea.AttendanceDate
         FROM event_attendance ea
         WHERE ea.EventId = ? AND ea.UserId = ?
@@ -224,7 +205,6 @@ const getUserAttendance = (eventId, userId, callback) => {
         return callback(null, results || []);
     });
 };
-
 // Webinar Delegate Feedback
 const submitWebinarFeedback = (data, callback) => {
     const {
@@ -241,19 +221,16 @@ const submitWebinarFeedback = (data, callback) => {
         Comments,
         Suggestions = null
     } = data;
-
     const query = `
-        INSERT INTO webinar_feedback 
+        INSERT INTO webinar_feedback
         (EventId, UserId, UserName, UserEmail, UserPhoto, KeynoteRating, AudioVideoRating, ContentQuality, OverallRating, FavoriteSpeaker, Comments, Suggestions)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
     db.query(
         query,
         [EventId, UserId, UserName, UserEmail, UserPhoto, KeynoteRating, AudioVideoRating, ContentQuality, OverallRating, FavoriteSpeaker, Comments, Suggestions],
         (err, result) => {
             if (err) return callback(err, null);
-
             // Also mirror in main feedback table with Category='Webinar Experience' for platform-wide visibility
             const mirrorQuery = `
                 INSERT INTO feedback (UserName, EventName, Category, Rating, Comments, EventId, AdminId)
@@ -262,7 +239,6 @@ const submitWebinarFeedback = (data, callback) => {
                 WHERE e.Id = ?
             `;
             db.query(mirrorQuery, [UserName, OverallRating, Comments, EventId, EventId], () => {});
-
             return callback(null, {
                 insertId: result.insertId,
                 ...data,
@@ -271,10 +247,9 @@ const submitWebinarFeedback = (data, callback) => {
         }
     );
 };
-
 const getEventFeedback = (eventId, callback) => {
     const query = `
-        SELECT 
+        SELECT
             wf.*,
             COALESCE(u.Photo, wf.UserPhoto) AS Photo
         FROM webinar_feedback wf
@@ -282,9 +257,8 @@ const getEventFeedback = (eventId, callback) => {
         WHERE wf.EventId = ?
         ORDER BY wf.CreatedAt DESC
     `;
-
     const statsQuery = `
-        SELECT 
+        SELECT
             COUNT(*) AS TotalFeedbacks,
             ROUND(AVG(OverallRating), 1) AS AvgOverall,
             ROUND(AVG(KeynoteRating), 1) AS AvgKeynote,
@@ -293,10 +267,8 @@ const getEventFeedback = (eventId, callback) => {
         FROM webinar_feedback
         WHERE EventId = ?
     `;
-
     db.query(query, [eventId], (err, results) => {
         if (err) return callback(err, null, null);
-
         db.query(statsQuery, [eventId], (sErr, statsResult) => {
             const stats = (statsResult && statsResult[0]) || {
                 TotalFeedbacks: results.length,
@@ -309,10 +281,9 @@ const getEventFeedback = (eventId, callback) => {
         });
     });
 };
-
 const getAllWebinarFeedback = (callback) => {
     const query = `
-        SELECT 
+        SELECT
             wf.*,
             e.EventName,
             COALESCE(u.Photo, wf.UserPhoto) AS Photo
@@ -326,7 +297,6 @@ const getAllWebinarFeedback = (callback) => {
         return callback(null, results);
     });
 };
-
 const deleteWebinarFeedback = (id, callback) => {
     const query = `DELETE FROM webinar_feedback WHERE Id = ?`;
     db.query(query, [id], (err, result) => {
@@ -334,21 +304,20 @@ const deleteWebinarFeedback = (id, callback) => {
         return callback(null, result);
     });
 };
-
 // Webinar Live Q&A Services
 const getWebinarQuestions = (eventId, currentUserId = null, callback) => {
     const query = `
-        SELECT 
+        SELECT
             wq.*,
             COALESCE(u.Photo, NULL) AS AuthorPhoto,
             EXISTS(
-                SELECT 1 FROM webinar_question_upvotes wqu 
+                SELECT 1 FROM webinar_question_upvotes wqu
                 WHERE wqu.QuestionId = wq.Id AND wqu.UserId = ?
             ) AS HasUpvoted
         FROM webinar_questions wq
         LEFT JOIN users u ON wq.UserId = u.Id
         WHERE wq.EventId = ? AND wq.Status != 'dismissed'
-        ORDER BY 
+        ORDER BY
             CASE WHEN wq.Status = 'pinned' THEN 0 ELSE 1 END ASC,
             wq.Upvotes DESC,
             wq.CreatedAt DESC
@@ -358,7 +327,6 @@ const getWebinarQuestions = (eventId, currentUserId = null, callback) => {
         return callback(null, rows || []);
     });
 };
-
 const createWebinarQuestion = (data, callback) => {
     const { EventId, UserId = null, AuthorName, TargetSpeaker = 'All Speakers & Panel', QuestionText } = data;
     const query = `
@@ -388,7 +356,6 @@ const createWebinarQuestion = (data, callback) => {
         });
     });
 };
-
 const upvoteWebinarQuestion = (questionId, userId, callback) => {
     if (!userId) {
         db.query(`UPDATE webinar_questions SET Upvotes = Upvotes + 1 WHERE Id = ?`, [questionId], (err) => {
@@ -397,7 +364,6 @@ const upvoteWebinarQuestion = (questionId, userId, callback) => {
         });
         return;
     }
-
     db.query(
         `SELECT 1 FROM webinar_question_upvotes WHERE QuestionId = ? AND UserId = ?`,
         [questionId, userId],
@@ -415,12 +381,10 @@ const upvoteWebinarQuestion = (questionId, userId, callback) => {
         }
     );
 };
-
 const updateWebinarQuestionStatus = (questionId, updateData, callback) => {
     const { Status, Answer = null, AnsweredBy = null } = updateData;
     const updates = ['Status = ?'];
     const values = [Status];
-
     if (Answer !== undefined) {
         updates.push('Answer = ?');
         values.push(Answer);
@@ -430,7 +394,6 @@ const updateWebinarQuestionStatus = (questionId, updateData, callback) => {
         updates.push('AnsweredBy = ?');
         values.push(AnsweredBy);
     }
-
     values.push(questionId);
     const query = `UPDATE webinar_questions SET ${updates.join(', ')} WHERE Id = ?`;
     db.query(query, values, (err, result) => {
@@ -438,14 +401,12 @@ const updateWebinarQuestionStatus = (questionId, updateData, callback) => {
         return callback(null, result);
     });
 };
-
 const deleteWebinarQuestion = (questionId, callback) => {
     db.query(`DELETE FROM webinar_questions WHERE Id = ?`, [questionId], (err, result) => {
         if (err) return callback(err, null);
         return callback(null, result);
     });
 };
-
 module.exports = {
     getSessions,
     createSession,
@@ -467,4 +428,3 @@ module.exports = {
     updateWebinarQuestionStatus,
     deleteWebinarQuestion
 };
-

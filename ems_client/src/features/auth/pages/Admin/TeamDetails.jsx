@@ -33,7 +33,6 @@ import {
 import { getEventTypeInfo, isSoloTeamSize } from '@/lib/utils';
 import TeamCardCanvas from './TeamCardCanvas';
 import ParticipantIdCanvas from './ParticipantIdCanvas';
-
 function TeamDetails() {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -42,33 +41,26 @@ function TeamDetails() {
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(false);
     const [problemStatement, setProblemStatement] = useState(null);
-
     // Modals
     const [showTeamCardModal, setShowTeamCardModal] = useState(false);
     const [showProblemDetailsModal, setShowProblemDetailsModal] = useState(false);
     const [selectedMemberForId, setSelectedMemberForId] = useState(null);
-
     useEffect(() => {
         if (!id) {
             setError('Team ID is missing');
             setLoading(false);
             return;
         }
-
         const fetchTeam = async () => {
             try {
                 setLoading(true);
                 setError('');
-
                 const res = await fetch(`${API_BASE_URL}/api/teams/${id}`);
-
                 if (!res.ok) {
                     throw new Error('Failed to fetch team details');
                 }
-
                 const data = await res.json();
                 setTeam(data.team || null);
-
                 if (data.team?.EventId) {
                     fetch(`${API_BASE_URL}/api/problem-statements/event/${data.team.EventId}/team/${id}/participant-statement`)
                         .then((r) => (r.ok ? r.json() : null))
@@ -108,14 +100,11 @@ function TeamDetails() {
                 setLoading(false);
             }
         };
-
         fetchTeam();
     }, [id]);
-
     const handleBack = () => {
         navigate('/admin/teams');
     };
-
     if (loading) {
         return (
             <div className="bg-gray-50 dark:bg-black min-h-screen p-8 flex items-center justify-center">
@@ -125,14 +114,12 @@ function TeamDetails() {
             </div>
         );
     }
-
     if (error || !team) {
         return (
             <div className="bg-gray-50 dark:bg-black min-h-screen p-8 flex flex-col items-center justify-center gap-4">
                 <p className="text-sm font-semibold text-red-500">
                     {error || 'Team not found'}
                 </p>
-
                 <button
                     onClick={handleBack}
                     className="px-4 py-2 rounded-lg bg-emerald-700 text-white text-xs font-semibold hover:bg-emerald-600 transition-colors"
@@ -142,25 +129,20 @@ function TeamDetails() {
             </div>
         );
     }
-
     const members = Array.isArray(team.members) ? team.members : [];
-
     const teamLead =
         members.find(m =>
             (m.Role || '').toLowerCase().replace(/\s/g, '') === 'teamlead' ||
             (m.Role || '').toLowerCase().includes('lead')
         ) || members[0];
-
     const participationMode = String(
         team.ParticipationMode || ''
     ).trim().toLowerCase();
-
     const isPhysicalEvent = [
         'physical',
         'both',
         'hybrid'
     ].includes(participationMode);
-
     const registeredDate = team.CreatedAt
         ? new Date(team.CreatedAt).toLocaleDateString('en-IN', {
               day: '2-digit',
@@ -168,20 +150,16 @@ function TeamDetails() {
               year: 'numeric'
           })
         : 'Registered';
-
     const getInitial = (name) =>
         name?.trim().charAt(0).toUpperCase() || '?';
-
     const accommodationStatus =
         team.AccommodationStatus ??
         team.Accommodation ??
         team.AccommodationRequired;
-
     const foodStatus =
         team.FoodStatus ??
         team.FoodPreference ??
         team.Food;
-
     const adminData = JSON.parse(localStorage.getItem('adminData') || '{}');
     const eventType = team.EventType || team.Category || adminData?.EventType || '';
     const typeInfo = getEventTypeInfo(eventType);
@@ -190,10 +168,8 @@ function TeamDetails() {
     const isIndividual = isSoloTeamSize(team.TeamSize) || isWebinar || isWorkshop;
     const idPrefix = isWebinar ? 'DEL' : isWorkshop ? 'ATT' : 'TEAM';
     const idLabel = isWebinar ? 'Delegate ID' : isWorkshop ? 'Attendee ID' : 'Team ID';
-
     const handleCopy = async () => {
         if (!team?.Id) return;
-
         try {
             await navigator.clipboard.writeText(`${idPrefix}-${team.Id}`);
             setCopied(true);
@@ -202,7 +178,6 @@ function TeamDetails() {
             console.error('Unable to copy ID:', err);
         }
     };
-
     return (
         <motion.div
             initial={{ opacity: 0, y: 14 }}
@@ -219,7 +194,6 @@ function TeamDetails() {
                     Back to {typeInfo.participantTerm || 'Registered Teams'}
                 </button>
             </div>
-
             {/* Header Banner */}
             <div className="bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden mb-6">
                 <div className="p-4 sm:p-6 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
@@ -240,7 +214,6 @@ function TeamDetails() {
                                     </span>
                                 )}
                             </div>
-
                             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">
                                 {team.College
                                     ? `${team.College}, ${team.State || ''}`
@@ -248,7 +221,6 @@ function TeamDetails() {
                                     ? 'Registered for keynote sessions & live stream.'
                                     : 'Building solutions, creating impact.'}
                             </p>
-
                             <div className="flex items-center gap-2">
                                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-md border ${
                                     isWebinar
@@ -257,7 +229,6 @@ function TeamDetails() {
                                 }`}>
                                     {idLabel}: {idPrefix}-{team.Id}
                                 </span>
-
                                 <button
                                     onClick={handleCopy}
                                     title={`Copy ${idLabel}`}
@@ -270,7 +241,6 @@ function TeamDetails() {
                             </div>
                         </div>
                     </div>
-
                     <div className="flex flex-wrap items-center gap-3 sm:gap-4 border-t xl:border-t-0 border-gray-200 dark:border-zinc-800 pt-4 xl:pt-0">
                         {/* Quick Stats */}
                         <div className="flex items-center gap-3 pr-2 sm:pr-4 border-r border-gray-200 dark:border-zinc-800">
@@ -283,9 +253,7 @@ function TeamDetails() {
                                     {registeredDate}
                                 </span>
                             </div>
-
                             <div className="w-px h-6 bg-gray-200 dark:bg-zinc-800 mx-1" />
-
                             <div className="flex flex-col items-start gap-0.5">
                                 <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                                     <Users className="w-3.5 h-3.5" />
@@ -296,7 +264,6 @@ function TeamDetails() {
                                 </span>
                             </div>
                         </div>
-
                         {/* Webinar Specific Action Buttons */}
                         {isWebinar ? (
                             <>
@@ -309,7 +276,6 @@ function TeamDetails() {
                                     <CalendarCheck className="w-3.5 h-3.5" />
                                     <span>Attendance Tracker</span>
                                 </button>
-
                                 <button
                                     type="button"
                                     onClick={() => navigate('/admin/webinar/agenda')}
@@ -319,7 +285,6 @@ function TeamDetails() {
                                     <Radio className="w-3.5 h-3.5 text-emerald-400" />
                                     <span>Keynote Agenda</span>
                                 </button>
-
                                 <button
                                     type="button"
                                     onClick={() => navigate('/admin/webinar/resources')}
@@ -341,7 +306,6 @@ function TeamDetails() {
                                     <CalendarCheck className="w-3.5 h-3.5" />
                                     <span>Attendance Tracker</span>
                                 </button>
-
                                 <button
                                     type="button"
                                     onClick={() => navigate('/admin/workshop/agenda')}
@@ -351,7 +315,6 @@ function TeamDetails() {
                                     <Presentation className="w-3.5 h-3.5 text-emerald-400" />
                                     <span>Curriculum Agenda</span>
                                 </button>
-
                                 <button
                                     type="button"
                                     onClick={() => setSelectedMemberForId(teamLead || members[0])}
@@ -374,7 +337,6 @@ function TeamDetails() {
                                     <IdCard className="w-3.5 h-3.5" />
                                     <span>Download Team Card</span>
                                 </button>
-
                                 {/* Action: Visual Designer for Team Card */}
                                 <button
                                     type="button"
@@ -385,7 +347,6 @@ function TeamDetails() {
                                     <Palette className="w-3.5 h-3.5 text-emerald-400" />
                                     <span>Design Card</span>
                                 </button>
-
                                 {/* Action 2: Download Member ID Passes (A6 Format) */}
                                 <button
                                     type="button"
@@ -401,7 +362,6 @@ function TeamDetails() {
                     </div>
                 </div>
             </div>
-
             {/* Main Content Layout */}
             {isWebinar ? (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
@@ -413,7 +373,6 @@ function TeamDetails() {
                                 Delegate Profile
                             </h2>
                         </div>
-
                         <div className="space-y-4 text-xs sm:text-sm">
                             <div className="flex items-start justify-between">
                                 <span className="text-gray-500 dark:text-zinc-400">Delegate Name</span>
@@ -421,28 +380,24 @@ function TeamDetails() {
                                     {teamLead?.UserName || team.TeamName}
                                 </span>
                             </div>
-
                             <div className="flex items-start justify-between">
                                 <span className="text-gray-500 dark:text-zinc-400">Contact Email</span>
                                 <span className="font-semibold text-gray-900 dark:text-white text-right break-all">
                                     {teamLead?.Email || team.Email || 'Not specified'}
                                 </span>
                             </div>
-
                             <div className="flex items-start justify-between">
                                 <span className="text-gray-500 dark:text-zinc-400">College / Company</span>
                                 <span className="font-semibold text-gray-900 dark:text-white text-right">
                                     {team.College || teamLead?.College || 'Independent Delegate'}
                                 </span>
                             </div>
-
                             <div className="flex items-start justify-between">
                                 <span className="text-gray-500 dark:text-zinc-400">Registration Mode</span>
                                 <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-right">
                                     Virtual Live Stream
                                 </span>
                             </div>
-
                             <div className="flex items-start justify-between">
                                 <span className="text-gray-500 dark:text-zinc-400">Seat Type</span>
                                 <span className="font-semibold text-gray-900 dark:text-white text-right">
@@ -451,7 +406,6 @@ function TeamDetails() {
                             </div>
                         </div>
                     </div>
-
                     {/* Card 2: Webinar Program */}
                     <div className="bg-white dark:bg-black rounded-xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
                         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100 dark:border-zinc-800">
@@ -460,7 +414,6 @@ function TeamDetails() {
                                 Enrolled Webinar
                             </h2>
                         </div>
-
                         <div className="p-4 rounded-xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 mb-4">
                             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
                                 {team.EventName || adminData?.EventName || 'Interactive Live Webinar'}
@@ -469,7 +422,6 @@ function TeamDetails() {
                                 {team.Location ? `Broadcast Platform: ${team.Location}` : 'Virtual Broadcast Room with Interactive Q&A'}
                             </p>
                         </div>
-
                         <div className="space-y-3 text-xs">
                             <div className="flex justify-between py-1 border-b border-gray-100 dark:border-zinc-800">
                                 <span className="text-gray-400">Enrollment Status:</span>
@@ -491,7 +443,6 @@ function TeamDetails() {
                             </div>
                         </div>
                     </div>
-
                     {/* Card 3: Webinar Management Shortcuts */}
                     <div className="bg-white dark:bg-black rounded-xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1 flex flex-col justify-between">
                         <div>
@@ -501,12 +452,10 @@ function TeamDetails() {
                                     Webinar Hub Actions
                                 </h2>
                             </div>
-
                             <p className="text-xs text-gray-600 dark:text-zinc-400 mb-4 leading-relaxed">
                                 Direct administrative controls for this webinar's keynote schedule, speaker panel, and real-time attendance verification.
                             </p>
                         </div>
-
                         <div className="space-y-2.5">
                             <button
                                 type="button"
@@ -519,7 +468,6 @@ function TeamDetails() {
                                 </span>
                                 <ArrowLeft className="w-3.5 h-3.5 rotate-180 opacity-70" />
                             </button>
-
                             <button
                                 type="button"
                                 onClick={() => navigate('/admin/webinar/agenda')}
@@ -531,7 +479,6 @@ function TeamDetails() {
                                 </span>
                                 <ArrowLeft className="w-3.5 h-3.5 rotate-180 opacity-70" />
                             </button>
-
                             <button
                                 type="button"
                                 onClick={() => navigate('/admin/webinar/resources')}
@@ -545,7 +492,6 @@ function TeamDetails() {
                             </button>
                         </div>
                     </div>
-
                     {/* Full Width Delegate Credential Card */}
                     <div className="bg-white dark:bg-black rounded-xl p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1 lg:col-span-3">
                         <div className="flex flex-wrap items-center justify-between gap-4 mb-5 pb-4 border-b border-gray-100 dark:border-zinc-800">
@@ -564,7 +510,6 @@ function TeamDetails() {
                                 Pass: DEL-{team.Id}
                             </span>
                         </div>
-
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800">
                                 <span className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Delegate Name</span>
@@ -573,7 +518,6 @@ function TeamDetails() {
                                 </p>
                                 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1 inline-block">Solo Delegate</span>
                             </div>
-
                             <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800">
                                 <span className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Email Address</span>
                                 <p className="text-sm font-bold text-gray-900 dark:text-white mt-1 break-all">
@@ -581,7 +525,6 @@ function TeamDetails() {
                                 </p>
                                 <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 inline-block">Broadcast Access Granted</span>
                             </div>
-
                             <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800">
                                 <span className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Affiliation</span>
                                 <p className="text-sm font-bold text-gray-900 dark:text-white mt-1 truncate">
@@ -591,7 +534,6 @@ function TeamDetails() {
                                     {team.State || 'Delegate'}
                                 </span>
                             </div>
-
                             <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800">
                                 <span className="text-[11px] text-gray-500 dark:text-zinc-400 font-medium">Enrolled Date</span>
                                 <p className="text-sm font-bold text-gray-900 dark:text-white mt-1">
@@ -611,7 +553,6 @@ function TeamDetails() {
                                 {isWorkshop ? 'Attendee Information' : 'Team Information'}
                             </h2>
                         </div>
-
                         <div className="space-y-4">
                             <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                                 <UserCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
@@ -620,7 +561,6 @@ function TeamDetails() {
                                     {teamLead?.UserName || 'Not assigned'}
                                 </span>
                             </div>
-
                             <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                                 <Building className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
                                 <span className="text-gray-500 dark:text-gray-400">College / University</span>
@@ -628,7 +568,6 @@ function TeamDetails() {
                                     {team.College || teamLead?.College || 'Not available'}
                                 </span>
                             </div>
-
                             <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                                 <Mail className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
                                 <span className="text-gray-500 dark:text-gray-400">Contact Email</span>
@@ -636,7 +575,6 @@ function TeamDetails() {
                                     {teamLead?.Email || 'Not available'}
                                 </span>
                             </div>
-
                             <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                                 <Layers className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
                                 <span className="text-gray-500 dark:text-gray-400">Mode</span>
@@ -644,36 +582,29 @@ function TeamDetails() {
                                     {team.ParticipationMode || 'General'}
                                 </span>
                             </div>
-
                             {/* Physical event only: Accommodation and Food */}
                             {isPhysicalEvent && (
                                 <>
                                     <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                                         <BedDouble className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
-
                                         <span className="text-gray-500 dark:text-gray-400">
                                             Accommodation
                                         </span>
-
                                         <span className="font-medium text-emerald-600 dark:text-emerald-400 break-words">
                                             {accommodationStatus || 'Not configured'}
                                         </span>
                                     </div>
-
                                     <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                                         <Utensils className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
-
                                         <span className="text-gray-500 dark:text-gray-400">
                                             Food
                                         </span>
-
                                         <span className="font-medium text-emerald-600 dark:text-emerald-400 break-words">
                                             {foodStatus || 'Not configured'}
                                         </span>
                                     </div>
                                 </>
                             )}
-
                             {problemStatement && (
                                 <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm pt-2">
                                     <Lightbulb className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
@@ -695,7 +626,6 @@ function TeamDetails() {
                                     </div>
                                 </div>
                             )}
-
                             <div className="grid grid-cols-[30px_minmax(100px,1fr)_2fr] items-start text-xs sm:text-sm">
                                 <Users className="w-4 h-4 text-emerald-700 dark:text-emerald-500 mt-0.5" />
                                 <span className="text-gray-500 dark:text-gray-400">{isIndividual ? 'Capacity' : 'Team Size'}</span>
@@ -705,23 +635,19 @@ function TeamDetails() {
                             </div>
                         </div>
                     </div>
-
                     {/* Event Information */}
                     <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
                         <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 sm:mb-5">
                             Registered Event
                         </h2>
-
                         <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg p-4 mb-4">
                             <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 mb-3 dark:text-emerald-400 flex items-center justify-center shrink-0">
                                 <Lightbulb className="w-4 h-4" />
                             </div>
-
                             <div>
                                 <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1">
                                     {team.EventName || 'Event'}
                                 </h3>
-
                                 <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
                                     {team.Location
                                         ? `Location: ${team.Location}`
@@ -729,7 +655,6 @@ function TeamDetails() {
                                 </p>
                             </div>
                         </div>
-
                         <div className="space-y-2.5 text-xs text-gray-600 dark:text-gray-300 pt-1">
                             <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800">
                                 <span className="text-gray-400">Registration Status:</span>
@@ -737,7 +662,6 @@ function TeamDetails() {
                                     {team.RegistrationStatus || 'Approved'}
                                 </span>
                             </div>
-
                             <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-zinc-800">
                                 <span className="text-gray-400">State:</span>
                                 <span className="font-semibold text-gray-800 dark:text-gray-200">
@@ -746,13 +670,11 @@ function TeamDetails() {
                             </div>
                         </div>
                     </div>
-
                     {/* Team Lead Card */}
                     <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1">
                         <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 sm:mb-5">
                             {isWorkshop ? 'Attendee Profile' : 'Team Lead'}
                         </h2>
-
                         {teamLead ? (
                             <>
                                 <div className="flex items-start gap-3 sm:gap-4 mb-5">
@@ -767,28 +689,23 @@ function TeamDetails() {
                                             {getInitial(teamLead.UserName)}
                                         </div>
                                     )}
-
                                     <div className="min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
                                             <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white truncate">
                                                 {teamLead.UserName}
                                             </h3>
-
                                             <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500 px-2 py-0.5 rounded-full font-medium">
                                                 {isWorkshop ? 'Attendee' : 'Leader'}
                                             </span>
                                         </div>
-
                                         <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate mb-1">
                                             {teamLead.Email}
                                         </p>
-
                                         <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 truncate">
                                             {teamLead.College || 'College not provided'}
                                         </p>
                                     </div>
                                 </div>
-
                                 <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-black p-3 rounded-lg border border-gray-100 dark:border-zinc-800">
                                     <div>
                                         <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
@@ -798,7 +715,6 @@ function TeamDetails() {
                                             {teamLead.Gender || 'N/A'}
                                         </p>
                                     </div>
-
                                     <div>
                                         <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">
                                             {isPhysicalEvent ? 'Assigned Room' : 'Participation'}
@@ -817,7 +733,6 @@ function TeamDetails() {
                             </p>
                         )}
                     </div>
-
                     {/* Team Members Table with Assigned Rooms & ID Pass buttons */}
                     <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm col-span-1 lg:col-span-2 xl:col-span-3">
                         <div className="flex flex-wrap items-center justify-between gap-4 mb-4 sm:mb-5">
@@ -832,7 +747,6 @@ function TeamDetails() {
                                 </p>
                             </div>
                         </div>
-
                         <div className="overflow-x-auto">
                             <table className="w-full text-xs sm:text-sm min-w-[700px]">
                                 <thead>
@@ -846,7 +760,6 @@ function TeamDetails() {
                                         <th className="pb-3 font-medium text-right">Actions</th>
                                     </tr>
                                 </thead>
-
                                 <tbody>
                                     {members.length === 0 ? (
                                         <tr>
@@ -859,7 +772,6 @@ function TeamDetails() {
                                             const isLead = (member.Role || '')
                                                 .toLowerCase()
                                                 .includes('lead');
-
                                             return (
                                                 <tr
                                                     key={member.UserId ? `user-${member.UserId}` : member.TeamMemberId ? `tm-${member.TeamMemberId}` : `member-${i}`}
@@ -882,13 +794,11 @@ function TeamDetails() {
                                                                     {getInitial(member.UserName)}
                                                                 </div>
                                                             )}
-
                                                             <span className="font-semibold text-gray-900 dark:text-white">
                                                                 {member.UserName}
                                                             </span>
                                                         </div>
                                                     </td>
-
                                                     <td className="py-3 sm:py-4">
                                                         <span className={`text-[10px] px-2.5 py-1 rounded-full font-medium ${
                                                             isLead
@@ -898,11 +808,9 @@ function TeamDetails() {
                                                             {isWorkshop ? 'Attendee' : isLead ? 'Team Lead' : 'Member'}
                                                         </span>
                                                     </td>
-
                                                     <td className="py-3 sm:py-4 text-gray-600 dark:text-gray-300">
                                                         {member.Gender || 'Male'}
                                                     </td>
-
                                                     {/* Assigned Room Details */}
                                                     {isPhysicalEvent && (
                                                         <td className="py-3 sm:py-4">
@@ -922,15 +830,12 @@ function TeamDetails() {
                                                             )}
                                                         </td>
                                                     )}
-
                                                     <td className="py-3 sm:py-4 text-gray-600 dark:text-gray-300 font-medium">
                                                         {member.College || 'N/A'}
                                                     </td>
-
                                                     <td className="py-3 sm:py-4 text-gray-500 dark:text-gray-400">
                                                         {member.Email || 'N/A'}
                                                     </td>
-
                                                     {/* Actions: View / Download Member ID Pass */}
                                                     <td className="py-3 sm:py-4 text-right">
                                                         <button
@@ -953,7 +858,6 @@ function TeamDetails() {
                     </div>
                 </div>
             )}
-
             <AnimatePresence>
                 {showProblemDetailsModal && problemStatement && (
                     <div
@@ -994,7 +898,6 @@ function TeamDetails() {
                                     <X className="h-5 w-5" />
                                 </button>
                             </div>
-
                             <div className="space-y-4">
                                 <div>
                                     <span className="block whitespace-pre-wrap break-words text-xs text-slate-500 dark:text-zinc-400">
@@ -1003,7 +906,6 @@ function TeamDetails() {
                                         </strong>
                                     </span>
                                 </div>
-
                                 <div className="space-y-2 border-t border-gray-200 pt-4 dark:border-zinc-800">
                                     {problemStatement.theme && (
                                         <span className="block text-xs text-slate-500 dark:text-zinc-400">
@@ -1022,7 +924,6 @@ function TeamDetails() {
                     </div>
                 )}
             </AnimatePresence>
-
             {/* MODAL 1: TEAM CARD DOWNLOAD & PREVIEW (LANDSCAPE CYBER FORMAT) */}
             <AnimatePresence>
                 {showTeamCardModal && (
@@ -1049,7 +950,6 @@ function TeamDetails() {
                                         High-resolution desk tent card for hackathon table placement & evaluations.
                                     </p>
                                 </div>
-
                                 <button
                                     type="button"
                                     onClick={() => setShowTeamCardModal(false)}
@@ -1058,13 +958,11 @@ function TeamDetails() {
                                     <X className="h-5 w-5" />
                                 </button>
                             </div>
-
                             <TeamCardCanvas team={team} event={team} eventId={team?.EventId} />
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
-
             {/* MODAL 2: MEMBER ID CARD PREVIEW & DOWNLOAD (STANDARD A6 SIZE) */}
             <AnimatePresence>
                 {selectedMemberForId && (
@@ -1091,7 +989,6 @@ function TeamDetails() {
                                         Standard ISO 216 A6 Sheet (105 × 148 mm @ 300 DPI)
                                     </p>
                                 </div>
-
                                 <button
                                     type="button"
                                     onClick={() => setSelectedMemberForId(null)}
@@ -1100,7 +997,6 @@ function TeamDetails() {
                                     <X className="h-5 w-5" />
                                 </button>
                             </div>
-
                             {/* Member Switcher Tabs */}
                             {members.length > 1 && (
                                 <div className="mb-3 flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
@@ -1124,7 +1020,6 @@ function TeamDetails() {
                                     })}
                                 </div>
                             )}
-
                             <div className="mx-auto w-full max-w-[340px]">
                                 <ParticipantIdCanvas
                                     participant={{
@@ -1144,5 +1039,4 @@ function TeamDetails() {
         </motion.div>
     );
 }
-
 export default TeamDetails;

@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
@@ -21,11 +20,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
-
 export default function OrganizerCtaSection() {
   const containerRef = useRef(null);
   const isInView = useInView(containerRef, { once: false, margin: "-60px" });
-
   // Mouse tracking for ambient laser glow
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const handleMouseMove = (e) => {
@@ -35,7 +32,6 @@ export default function OrganizerCtaSection() {
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setMousePos({ x, y });
   };
-
   // Station 1: Turnstile Gate Scan Simulator State
   const [scanCount, setScanCount] = useState(148);
   const [isScanning, setIsScanning] = useState(false);
@@ -45,7 +41,6 @@ export default function OrganizerCtaSection() {
     track: "AI & Neural Systems",
     status: "PASS_VERIFIED",
   });
-
   const triggerScan = () => {
     if (isScanning) return;
     setIsScanning(true);
@@ -62,7 +57,6 @@ export default function OrganizerCtaSection() {
       setIsScanning(false);
     }, 450);
   };
-
   // Station 2: Live Jury Rubric Interactive Sliders State
   const [scores, setScores] = useState({
     tech: 94,
@@ -72,7 +66,6 @@ export default function OrganizerCtaSection() {
   const compositeScore = (
     (scores.tech * 0.4 + scores.ux * 0.3 + scores.impact * 0.3)
   ).toFixed(1);
-
   // Station 3: Emergency Dispatch & Broadcast Simulator State
   const [dispatchLog, setDispatchLog] = useState([
     {
@@ -95,7 +88,6 @@ export default function OrganizerCtaSection() {
     },
   ]);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
-
   const triggerBroadcast = () => {
     if (isBroadcasting) return;
     setIsBroadcasting(true);
@@ -112,14 +104,12 @@ export default function OrganizerCtaSection() {
       setIsBroadcasting(false);
     }, 500);
   };
-
   // Database Stats
   const [stats, setStats] = useState({
     eventsCount: 6,
     collegesCount: 4,
     buildersCount: 44,
   });
-
   useEffect(() => {
     let isMounted = true;
     const fetchStats = async () => {
@@ -149,7 +139,6 @@ export default function OrganizerCtaSection() {
       isMounted = false;
     };
   }, []);
-
   return (
     <section
       id="command"
@@ -160,35 +149,18 @@ export default function OrganizerCtaSection() {
       {/* ======================================================== */}
       {/* 1. EDGE-TO-EDGE AMBIENT HORIZON & GLOWING MATRIX         */}
       {/* ======================================================== */}
-      
       {/* Top 100% Width Laser Horizon Accent Line */}
-     
       {/* Interactive Cursor Spotlight (spans edge to edge across entire screen) */}
-      {/* <div
-        className="pointer-events-none absolute -inset-px transition-opacity duration-500 opacity-60 dark:opacity-80"
-        style={{
-          background: `radial-gradient(1000px circle at ${mousePos.x}% ${mousePos.y}%, rgba(16, 185, 129, 0.12), transparent 45%)`,
-        }}
-      /> */}
-
+      {/* Unused template component */}
       {/* Subtle Perspective Cyber Grid Background */}
-      {/* <div
-        className="absolute inset-0 pointer-events-none opacity-[0.035] dark:opacity-[0.06]"
-        style={{
-          backgroundImage: `linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)`,
-          backgroundSize: "48px 48px",
-        }}
-      /> */}
-
+      {/* Unused template component */}
       {/* Ambient Radial Depth Lights */}
       <div className="absolute top-1/4 -left-32 w-96 h-96 bg-emerald-500/15 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute top-1/3 -right-32 w-96 h-96 bg-teal-500/15 rounded-full blur-[140px] pointer-events-none" />
-
       {/* ======================================================== */}
       {/* 2. CENTER STAGE: MONUMENTAL CINEMATIC HERO CTA           */}
       {/* ======================================================== */}
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-        
         {/* Grand Headline with Cinematic Blur Reveal */}
         <motion.h2
           initial={{ opacity: 0, y: 25, filter: 'blur(8px)' }}
@@ -201,7 +173,6 @@ export default function OrganizerCtaSection() {
             From Concept to Crowds.
           </span>
         </motion.h2>
-
         {/* Subtitle */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -211,7 +182,6 @@ export default function OrganizerCtaSection() {
         >
           The authoritative operating system engineered for university chapters, tech clubs, and enterprise hosts. Automate participant registrations, issue NFC-compatible gate passes, coordinate hostel lodging, and execute multi-round jury scoring on one unified bridge.
         </motion.p>
-
         {/* High-Impact Conversion Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -226,7 +196,6 @@ export default function OrganizerCtaSection() {
             <span>Create Your Event</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Link>
-
           <Link
             to="/admin/login"
             className="w-full sm:w-auto px-8 py-4 rounded-full border border-slate-300 dark:border-white/20 bg-white/80 dark:bg-white/5 hover:bg-slate-200/70 dark:hover:bg-white/10 text-slate-800 dark:text-white font-semibold text-sm tracking-wide backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 shadow-sm"
@@ -234,7 +203,6 @@ export default function OrganizerCtaSection() {
             Organizer Portal Sign In
           </Link>
         </motion.div>
-
         {/* Key Operational Badges */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -255,14 +223,11 @@ export default function OrganizerCtaSection() {
             <span>Zero-Variance Rubric Consensus</span>
           </div>
         </motion.div>
-
       </div>
-
       {/* ======================================================== */}
       {/* 3. FULL-WIDTH PANORAMIC 3-STATION INTERACTIVE COCKPIT    */}
       {/* ======================================================== */}
       <div className="relative z-10  w-full md:max-w-[80%] mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20">
-        
         {/* Terminal Header Bar with Animated Node Status */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -289,10 +254,8 @@ export default function OrganizerCtaSection() {
             <span>SYSTEMS NOMINAL</span>
           </div>
         </motion.div>
-
         {/* 3 Full-Width Side-by-Side Interactive Terminals */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-20 sm:gap-8">
-          
           {/* -------------------------------------------------------- */}
           {/* TERMINAL 01: Turnstile Gate QR Scanner Simulation        */}
           {/* -------------------------------------------------------- */}
@@ -315,7 +278,6 @@ export default function OrganizerCtaSection() {
                   GATE B-02
                 </span>
               </div>
-
               {/* Simulated ID Card with Laser Scanner */}
               <div className="relative rounded-xl bg-slate-50 dark:bg-black/70 border border-slate-200 dark:border-white/10 p-4 overflow-hidden">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/10 text-[10px] font-mono text-slate-500 dark:text-zinc-400">
@@ -324,7 +286,6 @@ export default function OrganizerCtaSection() {
                     {recentPass.status}
                   </span>
                 </div>
-
                 <div className="flex items-center gap-4 py-3">
                   <div className="relative w-16 h-16 rounded-lg bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
                     <QrCode className="w-full h-full text-slate-800 dark:text-white opacity-85" />
@@ -347,7 +308,6 @@ export default function OrganizerCtaSection() {
                     </div>
                   </div>
                 </div>
-
                 <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-white/10 text-[11px] font-mono text-slate-500 dark:text-zinc-400">
                   <span>Throughput: 0.14s</span>
                   <span className="font-bold text-slate-800 dark:text-white">
@@ -356,7 +316,6 @@ export default function OrganizerCtaSection() {
                 </div>
               </div>
             </div>
-
             <div className="pt-4 mt-2">
               <button
                 onClick={triggerScan}
@@ -368,7 +327,6 @@ export default function OrganizerCtaSection() {
               </button>
             </div>
           </motion.div>
-
           {/* -------------------------------------------------------- */}
           {/* TERMINAL 02: Interactive Jury Rubric Consensus Engine    */}
           {/* -------------------------------------------------------- */}
@@ -396,7 +354,6 @@ export default function OrganizerCtaSection() {
                   </span>
                 </div>
               </div>
-
               {/* Interactive Scoring Sliders */}
               <div className="space-y-3 rounded-xl bg-slate-50 dark:bg-black/70 border border-slate-200 dark:border-white/10 p-4">
                 {/* Criterion 1: Technical Rigor */}
@@ -414,7 +371,6 @@ export default function OrganizerCtaSection() {
                     className="w-full accent-emerald-500 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-lg cursor-pointer"
                   />
                 </div>
-
                 {/* Criterion 2: Architecture & UX */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs font-medium">
@@ -430,7 +386,6 @@ export default function OrganizerCtaSection() {
                     className="w-full accent-teal-500 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-lg cursor-pointer"
                   />
                 </div>
-
                 {/* Criterion 3: Practical Impact */}
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs font-medium">
@@ -448,7 +403,6 @@ export default function OrganizerCtaSection() {
                 </div>
               </div>
             </div>
-
             <div className="pt-4 mt-2 flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-zinc-400 border-t border-slate-200 dark:border-white/10">
               <span className="flex items-center gap-1.5">
                 <Lock className="w-3.5 h-3.5 text-emerald-500" />
@@ -459,7 +413,6 @@ export default function OrganizerCtaSection() {
               </span>
             </div>
           </motion.div>
-
           {/* -------------------------------------------------------- */}
           {/* TERMINAL 03: Omni-Channel Live Emergency Broadcast Dispatch */}
           {/* -------------------------------------------------------- */}
@@ -480,7 +433,6 @@ export default function OrganizerCtaSection() {
                 </div>
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
               </div>
-
               {/* Simulated Live Broadcast Queue */}
               <div className="space-y-2.5 rounded-xl bg-slate-50 dark:bg-black/70 border border-slate-200 dark:border-white/10 p-3.5">
                 {dispatchLog.map((log) => (
@@ -503,7 +455,6 @@ export default function OrganizerCtaSection() {
                 ))}
               </div>
             </div>
-
             <div className="pt-4 mt-2">
               <button
                 onClick={triggerBroadcast}
@@ -515,16 +466,11 @@ export default function OrganizerCtaSection() {
               </button>
             </div>
           </motion.div>
-
         </div>
-
       </div>
-
       {/* ======================================================== */}
       {/* 4. EDGE-TO-EDGE 100% WIDTH CONTINUOUS TELEMETRY TICKER    */}
       {/* ======================================================== */}
-      
-
     </section>
   );
 }

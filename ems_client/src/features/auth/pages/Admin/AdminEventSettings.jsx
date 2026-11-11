@@ -55,11 +55,22 @@ import EventSponsorsManager from '../../../../components/Organisms/EventSponsors
 import EventGalleryManager from '../../../../components/Organisms/EventGalleryManager';
 import { getTrackVisibility, isSoloTeamSize, validateEventDates, getEventTypeInfo } from '../../../../lib/utils';
 
+const EXPO_LIFECYCLE_STEPS = [
+  { id: 'DRAFT', label: 'Draft' },
+  { id: 'CONFIGURATION', label: 'Configured' },
+  { id: 'REGISTRATION_OPEN', label: 'Registration Open' },
+  { id: 'PROJECT_REVIEW', label: 'Dossier Review' },
+  { id: 'EVENT_READY', label: 'Floor Ready' },
+  { id: 'ONGOING', label: 'Live Expo' },
+  { id: 'EVALUATION', label: 'Jury Evaluation' },
+  { id: 'RESULTS_PUBLISHED', label: 'Results Published' },
+  { id: 'COMPLETED', label: 'Valedictory Done' }
+];
+
 export default function AdminEventSettings() {
   const navigate = useNavigate();
   const toast = useToast();
   const { user } = useAuth();
-
   const storedAdmin = (() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -67,7 +78,6 @@ export default function AdminEventSettings() {
       return {};
     }
   })();
-
   const [currentEventId, setCurrentEventId] = useState(() => {
     try {
       const stored = JSON.parse(localStorage.getItem('admin') || '{}');
@@ -76,9 +86,7 @@ export default function AdminEventSettings() {
       return user?.EventId || null;
     }
   });
-
   const adminEventId = currentEventId || storedAdmin?.EventId || user?.EventId || null;
-
   const [eventsList, setEventsList] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState(currentEventId ? Number(currentEventId) : null);
   const [eventData, setEventData] = useState(null);
@@ -89,6 +97,26 @@ export default function AdminEventSettings() {
   const [uploadingTeamBg, setUploadingTeamBg] = useState(false);
   const [activeTab, setActiveTab] = useState('physical'); // 'virtual' | 'physical' | 'general' | 'workshop_config' | 'prerequisites'
 
+  // Project Expo specific config & domains state
+  const [expoConfig, setExpoConfig] = useState({
+    ParticipationType: 'Both',
+    MinTeamSize: 1,
+    MaxTeamSize: 4,
+    AllowedDepartments: [],
+    AllowedBranches: [],
+    AllowedYears: [],
+    SubmissionDeadline: '',
+    MaxSubmissions: 50,
+    TotalBooths: 20,
+    BoothPrefix: 'STALL-',
+    PresentationDurationMinutes: 15,
+    Guidelines: '',
+    RequiredDocuments: '',
+    Status: 'CONFIGURATION'
+  });
+  const [expoDomains, setExpoDomains] = useState([]);
+  const [newDomainName, setNewDomainName] = useState('');
+  const [savingExpoStatus, setSavingExpoStatus] = useState(false);
   // Editable settings form state
   const [settingsForm, setSettingsForm] = useState({
     EventName: '',
@@ -128,9 +156,7 @@ export default function AdminEventSettings() {
     PhysicalPSSelectionDeadline: null,
     PhysicalPSMaxTeamsPerStatement: 5
   });
-
   const typeInfo = getEventTypeInfo(eventData?.EventType || storedAdmin?.EventType);
-
   // Track visibility is controlled strictly by the event's configured HackathonMode.
   const {
     mode: currentMode,
@@ -143,7 +169,6 @@ export default function AdminEventSettings() {
     eventData?.HackathonMode || settingsForm.HackathonMode,
     eventData?.Location
   );
-
   // Track Timelines State
   const [timelines, setTimelines] = useState([]);
   const [loadingTimelines, setLoadingTimelines] = useState(false);
@@ -151,7 +176,6 @@ export default function AdminEventSettings() {
   const [editingTimelineId, setEditingTimelineId] = useState(null);
   const [savingTimeline, setSavingTimeline] = useState(false);
   const [showTimelineForm, setShowTimelineForm] = useState(false);
-
   const [timelineForm, setTimelineForm] = useState({
     Track: isPhysicalMode ? 'Physical' : 'Virtual',
     TimelineDate: '',
@@ -159,7 +183,6 @@ export default function AdminEventSettings() {
     Description: '',
     OrderIndex: 1
   });
-
   useEffect(() => {
     if (typeInfo.isProjectExpo) {
       setActiveTab('expo_config');
@@ -177,7 +200,6 @@ export default function AdminEventSettings() {
       setActiveTab('virtual');
     }
   }, [typeInfo.isProjectExpo, typeInfo.isAlumni, typeInfo.isSeminar, typeInfo.isWebinar, typeInfo.isWorkshop, isVirtualMode, isPhysicalMode, isBothMode]);
-
   useEffect(() => {
     const handleEventUpdated = (e) => {
       try {
@@ -192,7 +214,6 @@ export default function AdminEventSettings() {
         console.error('Error handling admin-event-updated in AdminEventSettings:', err);
       }
     };
-
     window.addEventListener('admin-event-updated', handleEventUpdated);
     window.addEventListener('storage', handleEventUpdated);
     return () => {
@@ -200,10 +221,8 @@ export default function AdminEventSettings() {
       window.removeEventListener('storage', handleEventUpdated);
     };
   }, []);
-
   useEffect(() => {
     let isMounted = true;
-
     const init = async () => {
       try {
         setLoading(true);
@@ -239,14 +258,11 @@ export default function AdminEventSettings() {
         if (isMounted) setLoading(false);
       }
     };
-
     init();
-
     return () => {
       isMounted = false;
     };
   }, [currentEventId]);
-
   const loadEventSettings = async (id) => {
     const targetId = id || currentEventId;
     if (!targetId) return;
@@ -256,7 +272,6 @@ export default function AdminEventSettings() {
       if (!res.ok) throw new Error('Failed to load event details');
       const data = await res.json();
       const ev = Array.isArray(data) ? data[0] : (data.event || data);
-
       setEventData(ev);
       const evType = getEventTypeInfo(ev.EventType);
       if (evType.isProjectExpo) {
@@ -324,6 +339,51 @@ export default function AdminEventSettings() {
         PhysicalPSSelectionDeadline: ev.PhysicalPSSelectionDeadline || null,
         PhysicalPSMaxTeamsPerStatement: ev.PhysicalPSMaxTeamsPerStatement || 5
       });
+
+      // Load Project Expo specific configuration & domains
+      if (evType.isProjectExpo) {
+        try {
+          const [cfgRes, domRes] = await Promise.all([
+            fetch(`${API_BASE_URL}/api/project-expo/${targetId}/config`),
+            fetch(`${API_BASE_URL}/api/project-expo/${targetId}/domains`)
+          ]);
+          const cfgData = await cfgRes.json();
+          const domData = await domRes.json();
+          if (cfgData.success && cfgData.config) {
+            const pType = cfgData.config.ParticipationType || 'Both';
+            let minSz = parseInt(cfgData.config.MinTeamSize, 10);
+            let maxSz = parseInt(cfgData.config.MaxTeamSize, 10);
+            if (pType === 'Individual') {
+              minSz = 1;
+              maxSz = 1;
+            } else if (pType === 'Team') {
+              minSz = Math.max(2, isNaN(minSz) ? 2 : minSz);
+              maxSz = Math.max(minSz, isNaN(maxSz) ? 4 : maxSz);
+            } else {
+              minSz = Math.max(1, isNaN(minSz) ? 1 : minSz);
+              maxSz = Math.max(minSz, isNaN(maxSz) ? 4 : maxSz);
+            }
+            setExpoConfig({
+              ...cfgData.config,
+              ParticipationType: pType,
+              MinTeamSize: minSz,
+              MaxTeamSize: maxSz,
+              SubmissionDeadline: cfgData.config.SubmissionDeadline
+                ? cfgData.config.SubmissionDeadline.split('T')[0]
+                : ''
+            });
+            setSettingsForm(prev => ({
+              ...prev,
+              TeamSize: minSz === maxSz ? `${minSz}` : `${minSz}-${maxSz}`
+            }));
+          }
+          if (domData.success && Array.isArray(domData.domains)) {
+            setExpoDomains(domData.domains);
+          }
+        } catch (expoErr) {
+          console.warn('Could not load project expo config/domains:', expoErr);
+        }
+      }
     } catch (err) {
       console.error(err);
       toast.error(err.message || 'Could not load event settings');
@@ -332,6 +392,72 @@ export default function AdminEventSettings() {
     }
   };
 
+  const handleUpdateExpoStatus = async (newStatus) => {
+    const targetId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
+    if (!targetId) return;
+    try {
+      setSavingExpoStatus(true);
+      const res = await fetch(`${API_BASE_URL}/api/project-expo/${targetId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Status transition failed');
+      }
+      setExpoConfig((prev) => ({ ...prev, Status: newStatus }));
+      toast.success(`Expo lifecycle updated to ${newStatus}`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to update status');
+    } finally {
+      setSavingExpoStatus(false);
+    }
+  };
+
+  const handleAddDomain = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const targetId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
+    if (!newDomainName.trim() || !targetId) return;
+    const updated = [...expoDomains, { DomainName: newDomainName.trim() }];
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/project-expo/${targetId}/domains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domains: updated })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to add domain');
+      }
+      toast.success(`Added "${newDomainName.trim()}"`);
+      setNewDomainName('');
+      setExpoDomains(data.domains || updated);
+    } catch (err) {
+      toast.error(err.message || 'Error adding domain');
+    }
+  };
+
+  const handleRemoveDomain = async (index) => {
+    const targetId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
+    if (!targetId) return;
+    const updated = expoDomains.filter((_, idx) => idx !== index);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/project-expo/${targetId}/domains`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domains: updated })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to remove domain');
+      }
+      toast.success('Domain removed');
+      setExpoDomains(data.domains || updated);
+    } catch (err) {
+      toast.error(err.message || 'Error removing domain');
+    }
+  };
   const handleUploadAdminQr = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -354,7 +480,6 @@ export default function AdminEventSettings() {
       setUploadingAdminQr(false);
     }
   };
-
   const handleUploadIdBg = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -377,7 +502,6 @@ export default function AdminEventSettings() {
       setUploadingIdBg(false);
     }
   };
-
   const handleUploadTeamBg = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -400,7 +524,6 @@ export default function AdminEventSettings() {
       setUploadingTeamBg(false);
     }
   };
-
   const loadTimelines = async (eventId) => {
     if (!eventId) return;
     try {
@@ -416,7 +539,6 @@ export default function AdminEventSettings() {
       setLoadingTimelines(false);
     }
   };
-
   const handleTimelineInputChange = (e) => {
     const { name, value } = e.target;
     setTimelineForm((prev) => ({
@@ -424,7 +546,6 @@ export default function AdminEventSettings() {
       [name]: value
     }));
   };
-
   const handleEditTimeline = (item) => {
     setEditingTimelineId(item.Id);
     setTimelineForm({
@@ -436,7 +557,6 @@ export default function AdminEventSettings() {
     });
     setShowTimelineForm(true);
   };
-
   const handleCancelTimelineEdit = () => {
     setEditingTimelineId(null);
     setShowTimelineForm(false);
@@ -448,7 +568,6 @@ export default function AdminEventSettings() {
       OrderIndex: (timelines.length || 0) + 1
     });
   };
-
   const handleSaveTimeline = async (e) => {
     if (e) e.preventDefault();
     const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
@@ -460,7 +579,6 @@ export default function AdminEventSettings() {
       toast.error('Please enter a milestone heading/title');
       return;
     }
-
     try {
       setSavingTimeline(true);
       if (editingTimelineId) {
@@ -483,7 +601,6 @@ export default function AdminEventSettings() {
         if (!res.ok) throw new Error('Failed to create timeline milestone');
         toast.success('New milestone added successfully!');
       }
-
       handleCancelTimelineEdit();
       setShowTimelineForm(false);
       await loadTimelines(targetEventId);
@@ -494,7 +611,6 @@ export default function AdminEventSettings() {
       setSavingTimeline(false);
     }
   };
-
   const handleDeleteTimeline = async (id) => {
     if (!window.confirm('Are you sure you want to delete this timeline milestone?')) return;
     const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
@@ -510,7 +626,6 @@ export default function AdminEventSettings() {
       toast.error(err.message || 'Error deleting milestone');
     }
   };
-
   const handleToggle = async (key) => {
     const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
     if (!targetEventId) {
@@ -519,30 +634,25 @@ export default function AdminEventSettings() {
     }
     const currentVal = settingsForm[key];
     const newVal = currentVal === 1 ? 0 : 1;
-
     // Immediately update local state
     setSettingsForm((prev) => ({
       ...prev,
       [key]: newVal
     }));
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/events/${targetEventId}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: newVal })
       });
-
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.message || 'Failed to update track status');
       }
-
       const resData = await res.json();
       if (resData.event) {
         setEventData(resData.event);
       }
-
       const trackName =
         key === 'VirtualRegistrationOpen'
           ? 'Virtual Track'
@@ -557,7 +667,6 @@ export default function AdminEventSettings() {
           : key === 'PhysicalPSPublished'
           ? 'Physical Problem Statements'
           : 'All Registrations';
-
       if (key === 'PhysicalPSPublished') {
         toast.success(newVal === 1 ? 'Physical Problem Statements published to participants!' : 'Physical Problem Statements unpublished (draft).');
       } else if (key.endsWith('Enabled')) {
@@ -577,7 +686,6 @@ export default function AdminEventSettings() {
       toast.error(err.message || 'Error updating registration status');
     }
   };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setSettingsForm((prev) => ({
@@ -585,17 +693,25 @@ export default function AdminEventSettings() {
       [name]: value
     }));
   };
-
   const handleSave = async () => {
     const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
     if (!targetEventId) {
       toast.error('Please select an event first');
       return;
     }
-
     const payload = { ...settingsForm };
-
     if (typeInfo.isProjectExpo) {
+      if (expoConfig.ParticipationType === 'Individual') {
+        payload.TeamSize = '1';
+      } else if (expoConfig.ParticipationType === 'Team') {
+        const min = Math.max(2, expoConfig.MinTeamSize || 2);
+        const max = Math.max(min, expoConfig.MaxTeamSize || 4);
+        payload.TeamSize = min === max ? `${min}` : `${min}-${max}`;
+      } else {
+        const min = Math.max(1, expoConfig.MinTeamSize || 1);
+        const max = Math.max(min, expoConfig.MaxTeamSize || 4);
+        payload.TeamSize = min === max ? `${min}` : `${min}-${max}`;
+      }
       if (!payload.HackathonMode) payload.HackathonMode = 'Physical';
       if (!payload.Location || payload.Location.trim() === '') {
         payload.Location = 'Main University Innovation & Expo Center';
@@ -603,7 +719,6 @@ export default function AdminEventSettings() {
       payload.RegistrationOpen = settingsForm.RegistrationOpen !== undefined ? settingsForm.RegistrationOpen : 1;
       payload.PhysicalRegistrationOpen = payload.RegistrationOpen;
       payload.VirtualRegistrationOpen = payload.RegistrationOpen;
-
       payload.VirtualRegistrationStart = payload.RegistrationStart;
       payload.PhysicalRegistrationStart = payload.RegistrationStart;
       payload.VirtualRegistrationEnd = payload.RegistrationEnd;
@@ -636,7 +751,6 @@ export default function AdminEventSettings() {
       payload.RegistrationOpen = settingsForm.RegistrationOpen !== undefined ? settingsForm.RegistrationOpen : 1;
       payload.PhysicalRegistrationOpen = payload.RegistrationOpen;
       payload.VirtualRegistrationOpen = payload.RegistrationOpen;
-
       // Force-sync track fields to match alumni/seminar/webinar/workshop fields so old dates don't linger
       payload.VirtualRegistrationStart = payload.RegistrationStart;
       payload.PhysicalRegistrationStart = payload.RegistrationStart;
@@ -646,7 +760,6 @@ export default function AdminEventSettings() {
       payload.PhysicalStartDate = payload.StartDate;
       payload.VirtualEndDate = payload.EndDate;
       payload.PhysicalEndDate = payload.EndDate;
-
       if (payload.IsMeetActive === 1) {
         payload.VirtualStatus = 'LIVE';
       } else if (payload.IsMeetActive === 0 && payload.VirtualStatus === 'LIVE') {
@@ -660,7 +773,6 @@ export default function AdminEventSettings() {
         return;
       }
     }
-
     // Validate Event and Registration dates accurately based on event type
     let regStart, regEnd, eventStart, eventEnd;
     if (typeInfo.isProjectExpo || typeInfo.isAlumni || typeInfo.isWebinar || typeInfo.isWorkshop || typeInfo.isSeminar) {
@@ -684,7 +796,6 @@ export default function AdminEventSettings() {
       eventStart = payload.StartDate;
       eventEnd = payload.EndDate;
     }
-
     const dateErr = validateEventDates({
       registrationStart: regStart,
       registrationEnd: regEnd,
@@ -695,7 +806,6 @@ export default function AdminEventSettings() {
       toast.error(dateErr);
       return;
     }
-
     try {
       setSaving(true);
       const res = await fetch(`${API_BASE_URL}/api/events/${targetEventId}/settings`, {
@@ -703,12 +813,10 @@ export default function AdminEventSettings() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.message || 'Failed to update settings');
       }
-
       const resData = await res.json();
       if (resData.event) {
         setEventData(resData.event);
@@ -721,12 +829,24 @@ export default function AdminEventSettings() {
         } catch (e) {}
       }
 
+      // Also persist Project Expo specific configurations
+      if (typeInfo.isProjectExpo) {
+        try {
+          await fetch(`${API_BASE_URL}/api/project-expo/${targetEventId}/config`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(expoConfig)
+          });
+        } catch (expoSaveErr) {
+          console.warn('Failed to save project expo specific config:', expoSaveErr);
+        }
+      }
+
       // Invalidate admin dashboard cache and notify views
       try {
         localStorage.removeItem(`admin_dashboard_cache_${targetEventId}`);
       } catch (e) {}
       window.dispatchEvent(new Event('admin-event-updated'));
-
       toast.success('Event settings updated successfully!');
     } catch (err) {
       console.error(err);
@@ -735,7 +855,6 @@ export default function AdminEventSettings() {
       setSaving(false);
     }
   };
-
   const renderCardBackgroundsSection = () => (
     <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
       <div className="flex items-center gap-3">
@@ -751,7 +870,6 @@ export default function AdminEventSettings() {
           </p>
         </div>
       </div>
-
       <div className="grid gap-6 md:grid-cols-2 pt-2">
         {/* ID Card Background (A6 Portrait) */}
         <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-5 space-y-4">
@@ -768,7 +886,6 @@ export default function AdminEventSettings() {
               A6 Portrait
             </span>
           </div>
-
           <div className="flex items-center gap-4">
             <div className="w-24 h-32 rounded-xl border-2 border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 flex items-center justify-center overflow-hidden shrink-0">
               {settingsForm.IdCardBackground ? (
@@ -784,7 +901,6 @@ export default function AdminEventSettings() {
                 </div>
               )}
             </div>
-
             <div className="flex-1 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition shadow-sm">
@@ -808,7 +924,6 @@ export default function AdminEventSettings() {
                     className="hidden"
                   />
                 </label>
-
                 <button
                   type="button"
                   onClick={() => navigate(selectedEventId ? `/admin/id-card-designer?eventId=${selectedEventId}` : '/admin/id-card-designer')}
@@ -819,7 +934,6 @@ export default function AdminEventSettings() {
                   <span>Visual ID Studio</span>
                 </button>
               </div>
-
               {settingsForm.IdCardBackground && (
                 <button
                   type="button"
@@ -829,14 +943,12 @@ export default function AdminEventSettings() {
                   Reset to Default Theme
                 </button>
               )}
-
               <p className="text-[11px] text-slate-400 leading-relaxed">
                 Replaces the ID pass background with your custom branding or institution artwork.
               </p>
             </div>
           </div>
         </div>
-
         {/* Team Card Background (Desk Landscape) */}
         <div className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -852,7 +964,6 @@ export default function AdminEventSettings() {
               Landscape
             </span>
           </div>
-
           <div className="flex items-center gap-4">
             <div className="w-36 h-24 rounded-xl border-2 border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 flex items-center justify-center overflow-hidden shrink-0">
               {settingsForm.TeamCardBackground ? (
@@ -868,7 +979,6 @@ export default function AdminEventSettings() {
                 </div>
               )}
             </div>
-
             <div className="flex-1 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <label className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 text-white text-xs font-bold cursor-pointer transition shadow-sm">
@@ -892,7 +1002,6 @@ export default function AdminEventSettings() {
                     className="hidden"
                   />
                 </label>
-
                 <button
                   type="button"
                   onClick={() => {
@@ -919,7 +1028,6 @@ export default function AdminEventSettings() {
                   )}
                 </button>
               </div>
-
               {settingsForm.TeamCardBackground && (
                 <button
                   type="button"
@@ -929,7 +1037,6 @@ export default function AdminEventSettings() {
                   Reset to Default Theme
                 </button>
               )}
-
               <p className="text-[11px] text-slate-400 leading-relaxed">
                 Custom graphic template for desk team cards during presentations and table placement.
               </p>
@@ -939,14 +1046,11 @@ export default function AdminEventSettings() {
       </div>
     </div>
   );
-
   const renderTimelineSection = (trackName) => {
     const trackTimelines = timelines
       .filter((t) => t.Track === trackName)
       .sort((a, b) => (a.OrderIndex || 0) - (b.OrderIndex || 0));
-
     const isPhysical = trackName === 'Physical';
-
     return (
       <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-zinc-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -963,7 +1067,6 @@ export default function AdminEventSettings() {
               </p>
             </div>
           </div>
-
           <button
             type="button"
             onClick={() => {
@@ -987,7 +1090,6 @@ export default function AdminEventSettings() {
             <span>{showTimelineForm && timelineForm.Track === trackName ? 'Close Form' : `Add ${trackName} Milestone`}</span>
           </button>
         </div>
-
         {/* Collapsible Milestone Editor Form */}
         <AnimatePresence>
           {showTimelineForm && timelineForm.Track === trackName && (
@@ -1017,7 +1119,6 @@ export default function AdminEventSettings() {
                     <X className="w-4 h-4" />
                   </button>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Milestone Date / Day</label>
@@ -1030,7 +1131,6 @@ export default function AdminEventSettings() {
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                     />
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Milestone Title / Heading *</label>
                     <input
@@ -1043,7 +1143,6 @@ export default function AdminEventSettings() {
                       className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                     />
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Order / Sequence Index</label>
                     <input
@@ -1056,7 +1155,6 @@ export default function AdminEventSettings() {
                     />
                   </div>
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600 dark:text-zinc-400">Description / Details</label>
                   <textarea
@@ -1068,7 +1166,6 @@ export default function AdminEventSettings() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-2.5 pt-2">
                   <button
                     type="button"
@@ -1090,7 +1187,6 @@ export default function AdminEventSettings() {
             </motion.div>
           )}
         </AnimatePresence>
-
         {/* Milestones List */}
         {loadingTimelines ? (
           <div className="py-8 text-center text-slate-400 text-xs">
@@ -1132,7 +1228,6 @@ export default function AdminEventSettings() {
                     )}
                   </div>
                 </div>
-
                 <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
                   <button
                     type="button"
@@ -1158,7 +1253,6 @@ export default function AdminEventSettings() {
       </div>
     );
   };
-
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto text-slate-800 dark:text-zinc-100">
       {/* Page Header */}
@@ -1179,7 +1273,6 @@ export default function AdminEventSettings() {
           </div>
         </div>
       </div>
-
       {loading || (!eventData && (adminEventId || selectedEventId)) ? (
         <div className="p-12 text-center text-slate-400 dark:text-zinc-500 text-sm">
           <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2 text-emerald-500" />
@@ -1206,7 +1299,6 @@ export default function AdminEventSettings() {
                 Mode: <strong className="text-slate-700 dark:text-zinc-300">{eventData.HackathonMode || settingsForm.HackathonMode || 'Not specified'}</strong> • Status: <strong className="text-slate-700 dark:text-zinc-300">{eventData.EventStatus || 'Active'}</strong>
               </p>
             </div>
-
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -1226,7 +1318,6 @@ export default function AdminEventSettings() {
               </button>
             </div>
           </div>
-
           {/* Seamless Navigation Tabs */}
           <div className="relative pt-2">
             <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto">
@@ -1237,6 +1328,12 @@ export default function AdminEventSettings() {
                       label: 'Project Expo & Stall Controls',
                       icon: Sliders,
                       status: (settingsForm.RegistrationOpen === 1 || settingsForm.PhysicalRegistrationOpen === 1) ? 'Open' : 'Paused',
+                    },
+                    {
+                      id: 'expo_domains',
+                      label: 'Technical Domains & Tracks',
+                      icon: Layers,
+                      status: expoDomains.length > 0 ? `${expoDomains.length} Tracks` : null,
                     },
                     {
                       id: 'expo_guidelines',
@@ -1404,7 +1501,6 @@ export default function AdminEventSettings() {
               ).map((tab) => {
                 const isActive = activeTab === tab.id;
                 const TabIcon = tab.icon;
-
                 return (
                   <button
                     key={tab.id}
@@ -1423,7 +1519,6 @@ export default function AdminEventSettings() {
                     ) : (
                       <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0" />
                     )}
-
                     <span className={`relative z-20 flex items-center gap-2 transition-colors ${
                       isActive
                         ? 'text-slate-900 dark:text-white font-bold'
@@ -1436,12 +1531,12 @@ export default function AdminEventSettings() {
                       }`} />
                       <span>{tab.label}</span>
                       {tab.status && (
-                        <span className={`text-[11px] font-bold ${
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold border ${
                           tab.status === 'Open'
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-slate-400 dark:text-zinc-500'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                            : 'bg-slate-200/60 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border-slate-300/40 dark:border-zinc-700'
                         }`}>
-                          • {tab.status}
+                          {tab.status}
                         </span>
                       )}
                     </span>
@@ -1449,7 +1544,6 @@ export default function AdminEventSettings() {
                 );
               })}
             </div>
-
             {/* Main Content Area */}
             <div className="bg-white dark:bg-black rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 space-y-6 relative z-0">
               {/* ══════════════════════════════════════════════════════════════ */}
@@ -1468,7 +1562,7 @@ export default function AdminEventSettings() {
                           Project Expo Controls &amp; Exhibition Venue
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-                          Manage exhibition hall location, exhibitor registration deadlines, booth capacity, and digital entry passes.
+                          Manage exhibition lifecycle status, floor stalls, exhibitor eligibility, submission deadlines, and venue rules.
                         </p>
                       </div>
                     </div>
@@ -1480,6 +1574,45 @@ export default function AdminEventSettings() {
                       <span className={`w-1.5 h-1.5 rounded-full ${settingsForm.RegistrationOpen === 1 ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                       {settingsForm.RegistrationOpen === 1 ? 'Registration Open' : 'Registration Paused'}
                     </span>
+                  </div>
+
+                  {/* ── EVENT LIFECYCLE PROGRESS PIPELINE ── */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-200/60 dark:border-zinc-800">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                          <Milestone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Event Lifecycle Pipeline</span>
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Click any stage to transition the operational status for this exhibition
+                        </p>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-xl border border-emerald-500/20">
+                        Current Status: {expoConfig.Status || 'CONFIGURATION'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                      {EXPO_LIFECYCLE_STEPS.map((step, idx) => {
+                        const isCurrent = (expoConfig.Status || 'CONFIGURATION') === step.id;
+                        return (
+                          <button
+                            key={step.id}
+                            type="button"
+                            disabled={savingExpoStatus}
+                            onClick={() => handleUpdateExpoStatus(step.id)}
+                            className={`p-3.5 rounded-2xl border text-left cursor-pointer transition-all ${
+                              isCurrent
+                                ? 'border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs'
+                                : 'border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 text-slate-600 dark:text-zinc-400 bg-white dark:bg-zinc-900/40'
+                            }`}
+                          >
+                            <p className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 mb-0.5">Stage 0{idx + 1}</p>
+                            <p className="text-xs font-semibold">{step.label}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Quick Shortcuts to Expo Management Lifecycle */}
@@ -1501,7 +1634,6 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </button>
-
                     <button
                       type="button"
                       onClick={() => navigate('/admin/expo/projects')}
@@ -1519,7 +1651,6 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </button>
-
                     <button
                       type="button"
                       onClick={() => navigate('/admin/expo/schedules')}
@@ -1537,7 +1668,6 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </button>
-
                     <button
                       type="button"
                       onClick={() => navigate('/admin/expo/results')}
@@ -1563,13 +1693,12 @@ export default function AdminEventSettings() {
                       <div>
                         <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                           <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                          <span>Exhibitor Registration Availability</span>
+                          <span>Exhibitor Registration &amp; Submission Deadlines</span>
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 max-w-xl">
                           When paused, new project teams and solo exhibitors cannot register or edit project abstracts.
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={() => {
@@ -1616,7 +1745,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -1631,6 +1759,36 @@ export default function AdminEventSettings() {
                         />
                       </div>
                     </div>
+
+                    {/* Project Submission Deadline & Cap */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Dossier Submission Deadline</span>
+                        </label>
+                        <input
+                          type="date"
+                          value={expoConfig.SubmissionDeadline || ''}
+                          onChange={(e) => setExpoConfig(prev => ({ ...prev, SubmissionDeadline: e.target.value }))}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                          <Target className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Max Project Submissions Cap</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="300"
+                          value={expoConfig.MaxSubmissions || 50}
+                          onChange={(e) => setExpoConfig(prev => ({ ...prev, MaxSubmissions: parseInt(e.target.value, 10) || 50 }))}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Exhibition Venue & Schedule Card */}
@@ -1639,7 +1797,6 @@ export default function AdminEventSettings() {
                       <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>Exhibition Schedule &amp; Venue</span>
                     </h3>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">Expo Start Date</label>
@@ -1651,7 +1808,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">Expo End Date</label>
                         <input
@@ -1663,7 +1819,6 @@ export default function AdminEventSettings() {
                         />
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
@@ -1678,34 +1833,178 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
-                          Allowed Team Size Configuration
+                          Participation Type
                         </label>
-                        <input
-                          type="text"
-                          name="TeamSize"
-                          placeholder="e.g. 1-4 (Supports individual or team of up to 4)"
-                          value={settingsForm.TeamSize || ''}
-                          onChange={handleInputChange}
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-mono"
-                        />
-                        <p className="text-[11px] text-slate-400">
-                          Enter "1" for Solo only, "1-4" or "2-5" for team ranges.
-                        </p>
+                        <select
+                          value={expoConfig.ParticipationType || 'Both'}
+                          onChange={(e) => {
+                            const pType = e.target.value;
+                            if (pType === 'Individual') {
+                              setExpoConfig(prev => ({
+                                ...prev,
+                                ParticipationType: pType,
+                                MinTeamSize: 1,
+                                MaxTeamSize: 1
+                              }));
+                              setSettingsForm(prev => ({ ...prev, TeamSize: '1' }));
+                            } else if (pType === 'Team') {
+                              // Team Exhibition Only: Min must be at least 2
+                              const currentMax = Math.max(2, expoConfig.MaxTeamSize || 4);
+                              const currentMin = 2;
+                              setExpoConfig(prev => ({
+                                ...prev,
+                                ParticipationType: pType,
+                                MinTeamSize: currentMin,
+                                MaxTeamSize: currentMax
+                              }));
+                              setSettingsForm(prev => ({
+                                ...prev,
+                                TeamSize: currentMin === currentMax ? `${currentMin}` : `${currentMin}-${currentMax}`
+                              }));
+                            } else {
+                              // Both (Individual Solo & Teams): Min resets to 1 so solo can participate
+                              const currentMax = Math.max(1, expoConfig.MaxTeamSize || 4);
+                              const currentMin = 1;
+                              setExpoConfig(prev => ({
+                                ...prev,
+                                ParticipationType: pType,
+                                MinTeamSize: currentMin,
+                                MaxTeamSize: currentMax
+                              }));
+                              setSettingsForm(prev => ({
+                                ...prev,
+                                TeamSize: currentMin === currentMax ? `${currentMin}` : `${currentMin}-${currentMax}`
+                              }));
+                            }
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-medium cursor-pointer"
+                        >
+                          <option value="Both">Both (Individual Solo &amp; Teams)</option>
+                          <option value="Team">Team Exhibition Only (Min 2 Members)</option>
+                          <option value="Individual">Individual Solo Only (1 Member)</option>
+                        </select>
                       </div>
                     </div>
+
+                    {expoConfig.ParticipationType !== 'Individual' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center justify-between">
+                            <span>Min Team Members</span>
+                            <span className="text-[11px] text-slate-400 font-normal">
+                              {expoConfig.ParticipationType === 'Team' ? 'Min 2 for Team Only' : 'Starts from 1 (Solo allowed)'}
+                            </span>
+                          </label>
+                          <input
+                            type="number"
+                            min={expoConfig.ParticipationType === 'Team' ? 2 : 1}
+                            max="10"
+                            value={expoConfig.MinTeamSize ?? (expoConfig.ParticipationType === 'Team' ? 2 : 1)}
+                            onChange={(e) => {
+                              const floor = expoConfig.ParticipationType === 'Team' ? 2 : 1;
+                              const minVal = Math.max(floor, parseInt(e.target.value, 10) || floor);
+                              const maxVal = Math.max(minVal, expoConfig.MaxTeamSize || minVal);
+                              setExpoConfig(prev => ({ ...prev, MinTeamSize: minVal, MaxTeamSize: maxVal }));
+                              setSettingsForm(prev => ({ ...prev, TeamSize: minVal === maxVal ? `${minVal}` : `${minVal}-${maxVal}` }));
+                            }}
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-mono"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center justify-between">
+                            <span>Max Team Members</span>
+                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                              Effective Range: {(expoConfig.MinTeamSize || (expoConfig.ParticipationType === 'Team' ? 2 : 1)) === (expoConfig.MaxTeamSize || 4)
+                                ? `${expoConfig.MinTeamSize || (expoConfig.ParticipationType === 'Team' ? 2 : 1)} Members`
+                                : expoConfig.ParticipationType === 'Team'
+                                  ? `${expoConfig.MinTeamSize || 2} to ${expoConfig.MaxTeamSize || 4} Members (Team Only)`
+                                  : `${expoConfig.MinTeamSize || 1} to ${expoConfig.MaxTeamSize || 4} Members`}
+                            </span>
+                          </label>
+                          <input
+                            type="number"
+                            min={expoConfig.ParticipationType === 'Team' ? 2 : 1}
+                            max="10"
+                            value={expoConfig.MaxTeamSize || (expoConfig.ParticipationType === 'Team' ? 4 : 4)}
+                            onChange={(e) => {
+                              const floor = expoConfig.ParticipationType === 'Team' ? 2 : 1;
+                              const maxVal = Math.max(floor, parseInt(e.target.value, 10) || floor);
+                              const minVal = Math.min(Math.max(floor, expoConfig.MinTeamSize || floor), maxVal);
+                              setExpoConfig(prev => ({ ...prev, MinTeamSize: minVal, MaxTeamSize: maxVal }));
+                              setSettingsForm(prev => ({ ...prev, TeamSize: minVal === maxVal ? `${minVal}` : `${minVal}-${maxVal}` }));
+                            }}
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-mono"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 text-xs text-slate-600 dark:text-zinc-400 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <span>Solo Exhibition selected — Team size is locked to <strong>1 Member (Solo)</strong> per project.</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Stall Amenities & Facilities Provided */}
+                  {/* Stall Parameters, Hardware Amenities & Requirements Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-4">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span>Stall Amenities &amp; Hardware Support</span>
+                      <span>Stall Capacity, Presentation Pitch &amp; Hardware Support</span>
                     </h3>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Total Exhibition Stalls
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="300"
+                          value={expoConfig.TotalBooths || 25}
+                          onChange={(e) => setExpoConfig(prev => ({ ...prev, TotalBooths: parseInt(e.target.value, 10) || 25 }))}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Stall Code Prefix
+                        </label>
+                        <input
+                          type="text"
+                          value={expoConfig.BoothPrefix || 'STALL-'}
+                          onChange={(e) => setExpoConfig(prev => ({ ...prev, BoothPrefix: e.target.value }))}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-mono"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                          Pitch Duration (Minutes)
+                        </label>
+                        <input
+                          type="number"
+                          min="5"
+                          max="60"
+                          value={expoConfig.PresentationDurationMinutes || 15}
+                          onChange={(e) => setExpoConfig(prev => ({ ...prev, PresentationDurationMinutes: parseInt(e.target.value, 10) || 15 }))}
+                          className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5 pt-2">
+                      <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                        Required Documents Checklist (CSV)
+                      </label>
+                      <input
+                        type="text"
+                        value={expoConfig.RequiredDocuments || ''}
+                        onChange={(e) => setExpoConfig(prev => ({ ...prev, RequiredDocuments: e.target.value }))}
+                        placeholder="e.g. Project Abstract (PDF), Final Presentation (PPT), Working Demo Video"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                           Facilities Provided at Each Stall
@@ -1719,7 +2018,6 @@ export default function AdminEventSettings() {
                           className="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-none"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                           Exhibitor Requirements (What to Bring)
@@ -1745,12 +2043,98 @@ export default function AdminEventSettings() {
                       className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer flex items-center gap-2 disabled:opacity-50"
                     >
                       {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                      <span>Save Project Expo Settings</span>
+                      <span>Save All Project Expo Settings</span>
                     </button>
                   </div>
                 </div>
               )}
 
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {/* ── PROJECT EXPO DOMAINS TAB ─────────────────────────────── */}
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {activeTab === 'expo_domains' && (
+                <div className="space-y-6">
+                  {/* Domains Header Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <Layers className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                          Technical Domains &amp; Innovation Tracks
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                          Define exhibition tracks for categorization, project submissions, and jury scoring specialization.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-xl border border-emerald-500/20">
+                      {expoDomains.length} Active Tracks
+                    </span>
+                  </div>
+
+                  {/* Add New Domain Form */}
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-4">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Create New Innovation Domain</span>
+                    </h3>
+                    <form onSubmit={handleAddDomain} className="flex flex-col sm:flex-row items-center gap-3">
+                      <input
+                        type="text"
+                        placeholder="e.g. Biomedical Devices, Quantum Computing, Agritech &amp; Sustainability"
+                        value={newDomainName}
+                        onChange={(e) => setNewDomainName(e.target.value)}
+                        className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition w-full"
+                      />
+                      <button
+                        type="submit"
+                        className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition cursor-pointer flex items-center justify-center gap-2 shrink-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Add Domain</span>
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Existing Domains Grid */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Current Exhibition Tracks ({expoDomains.length})
+                    </h3>
+                    {expoDomains.length === 0 ? (
+                      <div className="p-8 text-center rounded-2xl border border-slate-200 dark:border-zinc-800 text-slate-500 dark:text-zinc-400 text-xs">
+                        No domains created yet. Add your first exhibition track above.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {expoDomains.map((dom, idx) => (
+                          <div
+                            key={dom.Id || idx}
+                            className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 flex items-center justify-between gap-3 shadow-xs hover:border-emerald-500/40 transition group"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                              <span className="font-semibold text-xs text-slate-900 dark:text-white truncate">
+                                {dom.DomainName}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDomain(idx)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition cursor-pointer shrink-0"
+                              title={`Delete ${dom.DomainName}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               {/* ══════════════════════════════════════════════════════════════ */}
               {/* ── PROJECT EXPO GUIDELINES TAB ──────────────────────────── */}
               {/* ══════════════════════════════════════════════════════════════ */}
@@ -1772,7 +2156,6 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Day-of Expo Schedule & Highlights */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-4">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1791,7 +2174,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-none"
                     />
                   </div>
-
                   {/* Complete Expo Guidelines & Prototype Safety Rules */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-4">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1815,7 +2197,6 @@ export default function AdminEventSettings() {
                       className="w-full p-4 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs leading-relaxed text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y font-sans"
                     />
                   </div>
-
                   {/* Save Guidelines Action Button */}
                   <div className="flex justify-end pt-4">
                     <button
@@ -1830,7 +2211,6 @@ export default function AdminEventSettings() {
                   </div>
                 </div>
               )}
-
               {/* WEBINAR CONFIG TAB */}
               {activeTab === 'webinar_config' && (
                 <div className="space-y-6">
@@ -1868,7 +2248,6 @@ export default function AdminEventSettings() {
                       </span>
                     </div>
                   </div>
-
                   {/* Webinar Registration Controls Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1881,7 +2260,6 @@ export default function AdminEventSettings() {
                           When paused, new delegates cannot register for this webinar keynote on the public portal.
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={() => {
@@ -1912,7 +2290,6 @@ export default function AdminEventSettings() {
                         )}
                       </button>
                     </div>
-
                     {/* Registration Dates */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
                       <div className="space-y-1.5">
@@ -1928,7 +2305,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -1944,14 +2320,12 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Webinar Schedule Dates Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>Webinar Broadcast Schedule</span>
                     </h3>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
@@ -1965,7 +2339,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                           Webinar End Date *
@@ -1980,7 +2353,6 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Live Stream Room Controls Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-zinc-800">
@@ -1993,24 +2365,20 @@ export default function AdminEventSettings() {
                           Broadcast channel link for confirmed delegates. Accepts YouTube Live, Zoom Webinar, Google Meet, or Microsoft Teams.
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={async () => {
                           const nextVal = settingsForm.IsMeetActive === 1 ? 0 : 1;
                           const nextStatus = nextVal === 1 ? 'LIVE' : 'NOT_STARTED';
-
                           if (nextVal === 1 && (!settingsForm.VirtualMeetUrl || !settingsForm.VirtualMeetUrl.trim())) {
                             toast.error('Please enter a valid Live Stream / Meeting URL before going live.');
                             return;
                           }
-
                           setSettingsForm((prev) => ({
                             ...prev,
                             IsMeetActive: nextVal,
                             VirtualStatus: nextStatus
                           }));
-
                           const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
                           if (targetEventId) {
                             try {
@@ -2046,7 +2414,6 @@ export default function AdminEventSettings() {
                         <span>{settingsForm.IsMeetActive === 1 ? 'End Live Broadcast (Set Standby)' : 'Go Live / Broadcast On-Air'}</span>
                       </button>
                     </div>
-
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center justify-between">
                         <span>Live Stream / Meeting URL</span>
@@ -2075,7 +2442,6 @@ export default function AdminEventSettings() {
                       </p>
                     </div>
                   </div>
-
                   {/* ID Card Pass Toggle */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2088,7 +2454,6 @@ export default function AdminEventSettings() {
                           Allow registered delegates to generate their verified digital webinar pass with security QR code.
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={() => handleToggle('IDCardEnabled')}
@@ -2104,7 +2469,6 @@ export default function AdminEventSettings() {
                   </div>
                 </div>
               )}
-
               {/* KEYNOTE SETTINGS TAB */}
               {activeTab === 'keynote_settings' && (
                 <div className="space-y-6">
@@ -2124,7 +2488,6 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Webinar Title & Overview */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-4">
                     <div className="space-y-1.5">
@@ -2140,7 +2503,6 @@ export default function AdminEventSettings() {
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-bold"
                       />
                     </div>
-
                     <div className="space-y-1.5">
                       <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                         Webinar Overview &amp; Abstract *
@@ -2155,7 +2517,6 @@ export default function AdminEventSettings() {
                       />
                     </div>
                   </div>
-
                   {/* Keynote Highlights & Agenda */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2174,7 +2535,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
                     />
                   </div>
-
                   {/* Joining Guidelines & Technical Requirements */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2195,7 +2555,6 @@ export default function AdminEventSettings() {
                   </div>
                 </div>
               )}
-
               {/* WORKSHOP CONFIG TAB */}
               {activeTab === 'workshop_config' && (
                 <div className="space-y-6">
@@ -2223,7 +2582,6 @@ export default function AdminEventSettings() {
                       {settingsForm.RegistrationOpen === 1 ? 'Registrations Open' : 'Registrations Paused'}
                     </span>
                   </div>
-
                   {/* Workshop Registration Controls Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2236,7 +2594,6 @@ export default function AdminEventSettings() {
                           When paused, new participants cannot register for this workshop on the public event portal.
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={() => {
@@ -2267,7 +2624,6 @@ export default function AdminEventSettings() {
                         )}
                       </button>
                     </div>
-
                     {/* Registration Dates */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
                       <div className="space-y-1.5">
@@ -2283,7 +2639,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -2299,14 +2654,12 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Workshop Schedule & Delivery Mode Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>Workshop Dates &amp; Delivery Mode</span>
                     </h3>
-
                     {/* Schedule Dates */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
@@ -2321,7 +2674,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                           Workshop End Date *
@@ -2335,7 +2687,6 @@ export default function AdminEventSettings() {
                         />
                       </div>
                     </div>
-
                     {/* Mode Selector */}
                     <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-zinc-800">
                       <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
@@ -2369,7 +2720,6 @@ export default function AdminEventSettings() {
                         })}
                       </div>
                     </div>
-
                     {/* Venue & Meet Link Inputs */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                       <div className="space-y-1.5">
@@ -2386,7 +2736,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                           <Video className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -2403,7 +2752,6 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Workshop Description Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2419,7 +2767,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
                     />
                   </div>
-
                   {/* ID Card Pass Toggle */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2431,7 +2778,6 @@ export default function AdminEventSettings() {
                           Allow registered attendees to download their official workshop entry pass with QR code verification.
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={() => handleToggle('IDCardEnabled')}
@@ -2447,7 +2793,6 @@ export default function AdminEventSettings() {
                   </div>
                 </div>
               )}
-
               {/* WORKSHOP PREREQUISITES TAB */}
               {activeTab === 'prerequisites' && (
                 <div className="space-y-6">
@@ -2467,7 +2812,6 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Required Software & Tools */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2486,7 +2830,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition font-mono resize-y"
                     />
                   </div>
-
                   {/* Hardware & Laptop Guidelines */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2505,7 +2848,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
                     />
                   </div>
-
                   {/* Key Learning Outcomes & Takeaways */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2526,7 +2868,6 @@ export default function AdminEventSettings() {
                   </div>
                 </div>
               )}
-
               {/* ALUMNI CONFIG TAB */}
               {activeTab === 'alumni_config' && (
                 <div className="space-y-6">
@@ -2554,7 +2895,6 @@ export default function AdminEventSettings() {
                       {settingsForm.RegistrationOpen === 1 ? 'RSVPs Open' : 'RSVPs Paused'}
                     </span>
                   </div>
-
                   {/* Alumni RSVP Registration Controls Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2567,7 +2907,6 @@ export default function AdminEventSettings() {
                           When paused, alumni cannot register new RSVPs or download gate entry passes from the portal.
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={() => {
@@ -2598,7 +2937,6 @@ export default function AdminEventSettings() {
                         )}
                       </button>
                     </div>
-
                     {/* Registration Dates */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
                       <div className="space-y-1.5">
@@ -2614,7 +2952,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -2630,14 +2967,12 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Reunion Schedule & Banquet Venue Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>Reunion Schedule &amp; Banquet Venue</span>
                     </h3>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
@@ -2652,7 +2987,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -2667,7 +3001,6 @@ export default function AdminEventSettings() {
                         />
                       </div>
                     </div>
-
                     <div className="space-y-1.5 pt-2">
                       <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -2683,7 +3016,6 @@ export default function AdminEventSettings() {
                       />
                     </div>
                   </div>
-
                   {/* Alumni Hospitality, Banquet Lunch & Digital Gate Passes */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
                     <div>
@@ -2695,7 +3027,6 @@ export default function AdminEventSettings() {
                         Configure reunion banquet dinner service and QR digital entry badges. (Accommodation requests are strictly disabled for this alumni event).
                       </p>
                     </div>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Gala Banquet & Lunch Service */}
                       <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
@@ -2732,7 +3063,6 @@ export default function AdminEventSettings() {
                           </div>
                         )}
                       </div>
-
                       {/* ID Pass & Badge Generation */}
                       <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
                         <div className="flex items-center justify-between">
@@ -2757,7 +3087,6 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-
                     {/* Alumni Giving / UPI ID */}
                     <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800 space-y-3">
                       <div className="space-y-1.5">
@@ -2778,7 +3107,6 @@ export default function AdminEventSettings() {
                   </div>
                 </div>
               )}
-
               {/* REUNION POLICIES TAB */}
               {activeTab === 'reunion_policies' && (
                 <div className="space-y-6">
@@ -2800,7 +3128,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
                     />
                   </div>
-
                   {/* Eligible Batches & Eligibility Guidelines */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2819,7 +3146,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
                     />
                   </div>
-
                   {/* Family & Guest Policies (+1 Rules) */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2838,7 +3164,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
                     />
                   </div>
-
                   {/* Highlights & Reunion Souvenirs */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -2859,7 +3184,6 @@ export default function AdminEventSettings() {
                   </div>
                 </div>
               )}
-
               {/* SEMINAR CONFIG TAB */}
               {activeTab === 'seminar_config' && (
                 <div className="space-y-6">
@@ -2887,7 +3211,6 @@ export default function AdminEventSettings() {
                       {settingsForm.RegistrationOpen === 1 ? 'Registrations Open' : 'Registrations Paused'}
                     </span>
                   </div>
-
                   {/* Seminar Registration Controls Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -2900,7 +3223,6 @@ export default function AdminEventSettings() {
                           When paused, new delegates cannot sign up or acquire tickets for this conference on the public portal.
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={() => {
@@ -2931,7 +3253,6 @@ export default function AdminEventSettings() {
                         )}
                       </button>
                     </div>
-
                     {/* Registration Dates */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
                       <div className="space-y-1.5">
@@ -2947,7 +3268,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -2963,14 +3283,12 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Seminar Schedule & Auditorium Venue Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>Conference Schedule &amp; Auditorium Venue</span>
                     </h3>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
@@ -2985,7 +3303,6 @@ export default function AdminEventSettings() {
                           className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -3000,7 +3317,6 @@ export default function AdminEventSettings() {
                         />
                       </div>
                     </div>
-
                     <div className="space-y-1.5 pt-2">
                       <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -3016,7 +3332,6 @@ export default function AdminEventSettings() {
                       />
                     </div>
                   </div>
-
                   {/* Delegate Campus Services & ID Badge Generation */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-5">
                     <div>
@@ -3028,7 +3343,6 @@ export default function AdminEventSettings() {
                         Configure guest room accommodation, conference lunch/high tea tokens, and digital delegate badge passes.
                       </p>
                     </div>
-
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {/* Accommodation */}
                       <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
@@ -3062,7 +3376,6 @@ export default function AdminEventSettings() {
                           </div>
                         )}
                       </div>
-
                       {/* Food & Meals */}
                       <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
                         <div className="flex items-center justify-between">
@@ -3095,7 +3408,6 @@ export default function AdminEventSettings() {
                           </div>
                         )}
                       </div>
-
                       {/* ID Card Generation */}
                       <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-3">
                         <div className="flex items-center justify-between">
@@ -3120,7 +3432,6 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-
                     {/* On-Spot UPI Payments */}
                     <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800 space-y-3">
                       <div className="space-y-1.5">
@@ -3141,7 +3452,6 @@ export default function AdminEventSettings() {
                   </div>
                 </div>
               )}
-
               {/* CONFERENCE GUIDELINES TAB */}
               {activeTab === 'conference_guidelines' && (
                 <div className="space-y-6">
@@ -3163,7 +3473,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
                     />
                   </div>
-
                   {/* Conference Subject Tracks & Keynote Themes */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -3182,7 +3491,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
                     />
                   </div>
-
                   {/* Delegate Guidelines & Auditorium Etiquette */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -3201,7 +3509,6 @@ export default function AdminEventSettings() {
                       className="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition resize-y"
                     />
                   </div>
-
                   {/* Highlights & Delegate Takeaways */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3">
                     <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -3222,7 +3529,6 @@ export default function AdminEventSettings() {
                   </div>
                 </div>
               )}
-
               {/* TAB 1: VIRTUAL TRACK SETTINGS */}
               {activeTab === 'virtual' && (
                 <div className="space-y-6">
@@ -3250,7 +3556,6 @@ export default function AdminEventSettings() {
                       {settingsForm.VirtualRegistrationOpen === 1 ? 'Virtual Registrations Open' : 'Virtual Registrations Paused'}
                     </span>
                   </div>
-
                   {/* Virtual Registration Controls Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -3263,7 +3568,6 @@ export default function AdminEventSettings() {
                           When paused, new participants cannot sign up or submit team registrations for the Virtual Track on the public portal.
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={() => handleToggle('VirtualRegistrationOpen')}
@@ -3286,7 +3590,6 @@ export default function AdminEventSettings() {
                         )}
                       </button>
                     </div>
-
                     {/* Virtual Registration and Event Dates (From & To) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
                       <div className="space-y-1.5">
@@ -3343,7 +3646,6 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Virtual Hackathon Meeting & Live Status */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-4">
                     <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200/60 dark:border-zinc-800">
@@ -3359,7 +3661,6 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
@@ -3377,7 +3678,6 @@ export default function AdminEventSettings() {
                           Participants with approved virtual registrations can join via this link when live.
                         </p>
                       </div>
-
                       <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                           Virtual Stage Status
@@ -3398,12 +3698,10 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Virtual Track Timelines Section */}
                   {renderTimelineSection('Virtual')}
                 </div>
               )}
-
               {/* TAB 2: PHYSICAL TRACK SETTINGS */}
               {activeTab === 'physical' && (
                 <div className="space-y-6">
@@ -3431,7 +3729,6 @@ export default function AdminEventSettings() {
                       {settingsForm.PhysicalRegistrationOpen === 1 ? 'Physical Registrations Open' : 'Physical Registrations Paused'}
                     </span>
                   </div>
-
                   {/* Physical Registration Controls Card */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -3444,7 +3741,6 @@ export default function AdminEventSettings() {
                           When paused, new participants cannot sign up for the physical on-campus hackathon track.
                         </p>
                       </div>
-
                       <button
                         type="button"
                         onClick={() => handleToggle('PhysicalRegistrationOpen')}
@@ -3467,7 +3763,6 @@ export default function AdminEventSettings() {
                         )}
                       </button>
                     </div>
-
                     {/* Physical Registration and Event Dates (From & To) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200/60 dark:border-zinc-800">
                       <div className="space-y-1.5">
@@ -3523,7 +3818,6 @@ export default function AdminEventSettings() {
                         />
                       </div>
                     </div>
-
                     {/* Problem Statement Mode for Physical Hackathons */}
                     {(eventData?.EventType || '').toLowerCase() === 'hackathon' && (
                       <div className="pt-4 border-t border-slate-200/60 dark:border-zinc-800 space-y-3">
@@ -3557,7 +3851,6 @@ export default function AdminEventSettings() {
                               Organizers define problem statements; teams select from the official list.
                             </span>
                           </button>
-
                           <button
                             type="button"
                             onClick={() => setSettingsForm((prev) => ({ ...prev, PhysicalPSMode: 'participant_defined' }))}
@@ -3579,7 +3872,6 @@ export default function AdminEventSettings() {
                             </span>
                           </button>
                         </div>
-
                         {/* When Organizer-Provided is selected: Problem Statement Publishing, Live Release & Timer */}
                         {settingsForm.PhysicalPSMode === 'organizer_provided' && (
                           <div className="mt-4 p-5 rounded-2xl bg-slate-100/70 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 space-y-4">
@@ -3599,7 +3891,6 @@ export default function AdminEventSettings() {
                                     : 'Statements are in DRAFT. Physical participants only see Themes in advance; problem statements remain hidden until you publish them at the event kickoff.'}
                                 </p>
                               </div>
-
                               <button
                                 type="button"
                                 onClick={() => handleToggle('PhysicalPSPublished')}
@@ -3612,7 +3903,6 @@ export default function AdminEventSettings() {
                                 {settingsForm.PhysicalPSPublished === 1 ? 'Close & Unpublish Statements' : '🚀 Publish Statements Now at Event'}
                               </button>
                             </div>
-
                             {/* Selection Deadline & Max Teams Row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div className="space-y-1.5">
@@ -3652,7 +3942,6 @@ export default function AdminEventSettings() {
                                   ))}
                                 </div>
                               </div>
-
                               <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1">
                                   <Users className="h-3.5 w-3.5 text-blue-600" />
@@ -3678,7 +3967,6 @@ export default function AdminEventSettings() {
                       </div>
                     )}
                   </div>
-
                   {/* Physical Campus Services Toggles */}
                   <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/60 space-y-4">
                     <div>
@@ -3689,7 +3977,6 @@ export default function AdminEventSettings() {
                         Enable or disable hostel accommodation requests, meal token distribution, and ID card generation for on-campus participants.
                       </p>
                     </div>
-
                     <div className="grid gap-4 md:grid-cols-3 pt-1">
                       {[
                         ['AccommodationEnabled', 'Accommodation & Stay', 'Enables lodging requests and room allocations'],
@@ -3734,7 +4021,6 @@ export default function AdminEventSettings() {
                         );
                       })}
                     </div>
-
                     {/* Facility Pricing & Payment Configuration (Shown when Food or Accommodation is enabled) */}
                     {(settingsForm.AccommodationEnabled === 1 || settingsForm.FoodEnabled === 1) && (
                       <div className="mt-4 pt-5 border-t border-slate-200/80 dark:border-zinc-800 space-y-5">
@@ -3753,7 +4039,6 @@ export default function AdminEventSettings() {
                             </div>
                           </div>
                         </div>
-
                         {/* Pricing Inputs */}
                         <div className="grid gap-4 sm:grid-cols-3">
                           {settingsForm.AccommodationEnabled === 1 && (
@@ -3776,7 +4061,6 @@ export default function AdminEventSettings() {
                               <p className="text-[10px] text-slate-400">Hostel room fee per night per attendee</p>
                             </div>
                           )}
-
                           {settingsForm.FoodEnabled === 1 && (
                             <div className="space-y-1.5 p-3.5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800">
                               <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300">
@@ -3797,7 +4081,6 @@ export default function AdminEventSettings() {
                               <p className="text-[10px] text-slate-400">Daily food tokens package fee</p>
                             </div>
                           )}
-
                           <div className="space-y-1.5 p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/20">
                             <label className="block text-xs font-bold text-emerald-800 dark:text-emerald-300">
                               Total Package Fee (₹ / person)
@@ -3821,7 +4104,6 @@ export default function AdminEventSettings() {
                             <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Total payable per member for full stay &amp; food</p>
                           </div>
                         </div>
-
                         {/* Admin Payment Collection Info */}
                         <div className="grid gap-4 md:grid-cols-2 pt-1">
                           <div className="space-y-3 p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800">
@@ -3838,7 +4120,6 @@ export default function AdminEventSettings() {
                               className="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500 font-mono"
                             />
                             <p className="text-[10px] text-slate-400">Teams will see this UPI ID to transfer payment directly</p>
-
                             <div className="pt-2">
                               <label className="block text-xs font-bold text-slate-900 dark:text-white mb-1.5">
                                 Payment Instructions &amp; Bank Details
@@ -3853,7 +4134,6 @@ export default function AdminEventSettings() {
                               />
                             </div>
                           </div>
-
                           {/* Admin Payment QR Code */}
                           <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 flex flex-col justify-between space-y-3">
                             <div>
@@ -3865,7 +4145,6 @@ export default function AdminEventSettings() {
                                 Upload your UPI or bank QR code screenshot so teams can scan and pay seamlessly.
                               </p>
                             </div>
-
                             <div className="flex items-center gap-4">
                               <div className="relative w-24 h-24 rounded-2xl border-2 border-dashed border-slate-300 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden shrink-0">
                                 {settingsForm.AdminPaymentQr ? (
@@ -3883,7 +4162,6 @@ export default function AdminEventSettings() {
                                   </div>
                                 )}
                               </div>
-
                               <div className="space-y-2 flex-1">
                                 <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-sm transition">
                                   <Upload className="w-3.5 h-3.5" />
@@ -3912,15 +4190,12 @@ export default function AdminEventSettings() {
                       </div>
                     )}
                   </div>
-
                   {/* ID Card & Team Card Custom Backgrounds */}
                   {renderCardBackgroundsSection()}
-
                   {/* Physical Track Timelines Section */}
                   {renderTimelineSection('Physical')}
                 </div>
               )}
-
               {/* TAB 3: GENERAL & POLICY RULES */}
               {activeTab === 'general' && (
                 <div className="space-y-6">
@@ -3939,7 +4214,6 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-
                     <button
                       type="button"
                       onClick={handleSave}
@@ -3950,7 +4224,6 @@ export default function AdminEventSettings() {
                       <span>Save Settings</span>
                     </button>
                   </div>
-
                   {/* Event Story & About the Challenge */}
                   <div className="bg-slate-50/50 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-4">
                     <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200/60 dark:border-zinc-800">
@@ -3966,7 +4239,6 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-
                     <div className="space-y-2 pt-1">
                       <textarea
                         name="Description"
@@ -3982,7 +4254,6 @@ export default function AdminEventSettings() {
                       </div>
                     </div>
                   </div>
-
                   {/* Team Formation Rules & Size Policy */}
                   <div className="bg-slate-50/50 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 space-y-4">
                     <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200/60 dark:border-zinc-800">
@@ -3998,7 +4269,6 @@ export default function AdminEventSettings() {
                         </p>
                       </div>
                     </div>
-
                     <div className="space-y-4 pt-1">
                       <div>
                         <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-2">
@@ -4019,7 +4289,6 @@ export default function AdminEventSettings() {
                             <User className="w-4 h-4" />
                             <span>Individual (Solo)</span>
                           </button>
-
                           <button
                             type="button"
                             onClick={() => {
@@ -4038,7 +4307,6 @@ export default function AdminEventSettings() {
                           </button>
                         </div>
                       </div>
-
                       {/* Team Configuration Block */}
                       {!isSoloTeamSize(settingsForm.TeamSize) ? (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 rounded-2xl bg-slate-50/50 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800">
@@ -4046,7 +4314,6 @@ export default function AdminEventSettings() {
                             <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block">
                               Team Size Rule (Minimum 2 Members)
                             </label>
-                            
                             {/* Preset Buttons */}
                             <div className="grid grid-cols-2 gap-2">
                               <button
@@ -4094,7 +4361,6 @@ export default function AdminEventSettings() {
                                 Fixed: 2 Members
                               </button>
                             </div>
-
                             <div>
                               <input
                                 type="text"
@@ -4111,7 +4377,6 @@ export default function AdminEventSettings() {
                               </p>
                             </div>
                           </div>
-
                           <div className="md:col-span-2 p-4 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 space-y-2">
                             <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-zinc-200">
                               <ShieldCheck className="h-4 w-4 text-emerald-500" />
@@ -4140,18 +4405,15 @@ export default function AdminEventSettings() {
                       )}
                     </div>
                   </div>
-
                   {/* ID Card & Team Card Custom Backgrounds */}
                   {renderCardBackgroundsSection()}
                 </div>
               )}
-
               {activeTab === 'sponsors' && (
                 <div className="p-6 sm:p-8">
                   <EventSponsorsManager eventId={selectedEventId} />
                 </div>
               )}
-
               {activeTab === 'gallery' && (
                 <div className="p-6 sm:p-8">
                   <EventGalleryManager eventId={selectedEventId} />
@@ -4159,7 +4421,6 @@ export default function AdminEventSettings() {
               )}
             </div>
           </div>
-
           {/* Bottom Save Bar */}
           <div className="p-4 rounded-2xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 flex items-center justify-between">
             <span className="text-xs text-slate-500 dark:text-zinc-400">

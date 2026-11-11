@@ -36,7 +36,6 @@ import {
   ExternalLink,
   Check,
 } from 'lucide-react';
-
 function AccomodationRedirectPage() {
   const navigate = useNavigate();
   const { eventId: routeEventId } = useParams();
@@ -48,24 +47,20 @@ function AccomodationRedirectPage() {
       return '';
     }
   })();
-
   // Core Data
   const [activeTab, setActiveTab] = useState('rooms'); // 'rooms' | 'blocks' | 'requests'
   const [blocks, setBlocks] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [requestedStudents, setRequestedStudents] = useState([]);
   const [event, setEvent] = useState(null);
-
   // Loading & Error States
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
   const [genderFilter, setGenderFilter] = useState('all'); // 'all' | 'Boys' | 'Girls'
   const [selectedBlockFilter, setSelectedBlockFilter] = useState('all');
-
   // Block Modal Form
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [editingBlockId, setEditingBlockId] = useState(null);
@@ -76,7 +71,6 @@ function AccomodationRedirectPage() {
     Gender: 'Boys',
     Description: '',
   });
-
   // Room Modal Form
   const [showRoomModal, setShowRoomModal] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState(null);
@@ -90,11 +84,9 @@ function AccomodationRedirectPage() {
     gender: 'Boys',
     status: 'Available',
   });
-
   // Room Details / Inspection Modal
   const [inspectingRoom, setInspectingRoom] = useState(null);
   const [deallocatingUserId, setDeallocatingUserId] = useState(null);
-
   // Allocation Modal & State (Room to Multiple Students)
   const [allocatingRoom, setAllocatingRoom] = useState(null);
   const [eligibleStudents, setEligibleStudents] = useState([]);
@@ -102,7 +94,6 @@ function AccomodationRedirectPage() {
   const [studentSearch, setStudentSearch] = useState('');
   const [allocating, setAllocating] = useState(false);
   const [allocationError, setAllocationError] = useState('');
-
   // Single Student Room Assignment Modal & Filter State (Direct from Requests)
   const [assigningStudent, setAssigningStudent] = useState(null);
   const [targetRoomId, setTargetRoomId] = useState('');
@@ -111,7 +102,6 @@ function AccomodationRedirectPage() {
   const [requestSearch, setRequestSearch] = useState('');
   const [requestStatusFilter, setRequestStatusFilter] = useState('all'); // 'all' | 'awaiting' | 'allocated'
   const [requestGenderFilter, setRequestGenderFilter] = useState('all'); // 'all' | 'male' | 'female'
-
   // Facility Bookings & Payments State
   const [facilityBookings, setFacilityBookings] = useState([]);
   const [bookingSearch, setBookingSearch] = useState('');
@@ -119,7 +109,6 @@ function AccomodationRedirectPage() {
   const [actionModalBooking, setActionModalBooking] = useState(null); // { booking, newStatus, remarks }
   const [updatingBookingStatus, setUpdatingBookingStatus] = useState(false);
   const [adminProofModalUrl, setAdminProofModalUrl] = useState(null);
-
   // Helper Getters
   const getRoomId = (room) => room.Id ?? room.id;
   const getRoomNumber = (room) => room.room_num ?? 'N/A';
@@ -132,7 +121,6 @@ function AccomodationRedirectPage() {
   const getRoomGender = (room) => String(room.BlockGender || room.Gender || room.gender || '').trim();
   const isBoysRoom = (room) => ['boys', 'boy', 'male', 'm'].includes(getRoomGender(room).toLowerCase());
   const isGirlsRoom = (room) => ['girls', 'girl', 'female', 'f'].includes(getRoomGender(room).toLowerCase());
-
   const getRoomStatus = (room) => {
     const capacity = getCapacity(room);
     const occupied = getOccupiedCount(room);
@@ -142,7 +130,6 @@ function AccomodationRedirectPage() {
     if (occupied > 0) return 'Partially Filled';
     return 'Available';
   };
-
   const formatDateTime = (timestamp) => {
     if (!timestamp) return 'Time not recorded';
     const parsed = new Date(timestamp);
@@ -156,7 +143,6 @@ function AccomodationRedirectPage() {
       hour12: true,
     });
   };
-
   const formatDate = (date) => {
     if (!date) return 'N/A';
     const parsed = new Date(date);
@@ -167,13 +153,11 @@ function AccomodationRedirectPage() {
       year: 'numeric',
     });
   };
-
   // Fetch all Accommodation Data
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-
       const [blocksRes, roomsRes, eventRes, requestsRes, bookingsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/accommodation/blocks${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`),
         fetch(`${API_BASE_URL}/api/accommodation${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`),
@@ -181,29 +165,24 @@ function AccomodationRedirectPage() {
         eventId ? fetch(`${API_BASE_URL}/api/physical-services/events/${encodeURIComponent(eventId)}/accommodation-participants`) : Promise.resolve(null),
         eventId ? fetch(`${API_BASE_URL}/api/physical-services/events/${encodeURIComponent(eventId)}/facility-bookings`) : Promise.resolve(null),
       ]);
-
       const [blocksData, roomsData] = await Promise.all([
         blocksRes.json().catch(() => ({})),
         roomsRes.json().catch(() => ({})),
       ]);
-
       if (blocksRes.ok && Array.isArray(blocksData.data)) {
         setBlocks(blocksData.data);
       }
       if (roomsRes.ok && Array.isArray(roomsData.data)) {
         setRooms(roomsData.data);
       }
-
       if (eventRes && eventRes.ok) {
         const evData = await eventRes.json().catch(() => ({}));
         setEvent(evData.event || evData.data || evData);
       }
-
       if (requestsRes && requestsRes.ok) {
         const reqData = await requestsRes.json().catch(() => ({}));
         setRequestedStudents(Array.isArray(reqData.participants) ? reqData.participants : []);
       }
-
       if (bookingsRes && bookingsRes.ok) {
         const bData = await bookingsRes.json().catch(() => ({}));
         setFacilityBookings(Array.isArray(bData.bookings) ? bData.bookings : []);
@@ -215,7 +194,6 @@ function AccomodationRedirectPage() {
       setLoading(false);
     }
   }, [eventId]);
-
   const handleUpdateBookingStatus = async (teamId, status, remarks = '') => {
     if (!eventId || !teamId) return;
     setUpdatingBookingStatus(true);
@@ -237,11 +215,9 @@ function AccomodationRedirectPage() {
       setUpdatingBookingStatus(false);
     }
   };
-
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
   // Block Handlers
   const openAddBlockModal = () => {
     setEditingBlockId(null);
@@ -253,7 +229,6 @@ function AccomodationRedirectPage() {
     setBlockError('');
     setShowBlockModal(true);
   };
-
   const openEditBlockModal = (block) => {
     setEditingBlockId(block.Id);
     setBlockForm({
@@ -264,7 +239,6 @@ function AccomodationRedirectPage() {
     setBlockError('');
     setShowBlockModal(true);
   };
-
   const handleSaveBlock = async (e) => {
     e.preventDefault();
     if (!blockForm.BlockName.trim()) {
@@ -278,7 +252,6 @@ function AccomodationRedirectPage() {
         ? `${API_BASE_URL}/api/accommodation/blocks/${editingBlockId}`
         : `${API_BASE_URL}/api/accommodation/blocks`;
       const method = editingBlockId ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -289,12 +262,10 @@ function AccomodationRedirectPage() {
           Description: blockForm.Description.trim(),
         }),
       });
-
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(data.message || 'Failed to save hostel block.');
       }
-
       setSuccessMessage(editingBlockId ? 'Block updated successfully.' : 'New block created successfully.');
       setShowBlockModal(false);
       await fetchData();
@@ -304,7 +275,6 @@ function AccomodationRedirectPage() {
       setBlockSaving(false);
     }
   };
-
   const handleDeleteBlock = async (block) => {
     if (!window.confirm(`Are you sure you want to delete "${block.BlockName}"? This will delete all rooms inside this block.`)) {
       return;
@@ -323,7 +293,6 @@ function AccomodationRedirectPage() {
       alert(err.message || 'Could not delete block.');
     }
   };
-
   // Room Handlers
   const openAddRoomModal = (defaultBlockId = null) => {
     if (blocks.length === 0) {
@@ -332,11 +301,9 @@ function AccomodationRedirectPage() {
       openAddBlockModal();
       return;
     }
-
     const selectedBlock = defaultBlockId
       ? blocks.find((b) => String(b.Id) === String(defaultBlockId)) || blocks[0]
       : blocks[0];
-
     setEditingRoomId(null);
     setRoomForm({
       BlockId: String(selectedBlock.Id),
@@ -349,7 +316,6 @@ function AccomodationRedirectPage() {
     setRoomError('');
     setShowRoomModal(true);
   };
-
   const openEditRoomModal = (room) => {
     setEditingRoomId(room.Id);
     setRoomForm({
@@ -363,7 +329,6 @@ function AccomodationRedirectPage() {
     setRoomError('');
     setShowRoomModal(true);
   };
-
   const handleRoomBlockChange = (e) => {
     const chosenBlockId = e.target.value;
     const chosenBlock = blocks.find((b) => String(b.Id) === String(chosenBlockId));
@@ -373,7 +338,6 @@ function AccomodationRedirectPage() {
       gender: chosenBlock ? chosenBlock.Gender : prev.gender,
     }));
   };
-
   const handleSaveRoom = async (e) => {
     e.preventDefault();
     if (!roomForm.roomNumber.trim()) {
@@ -385,7 +349,6 @@ function AccomodationRedirectPage() {
       setRoomError('Capacity must be at least 1.');
       return;
     }
-
     setRoomSaving(true);
     setRoomError('');
     try {
@@ -393,10 +356,8 @@ function AccomodationRedirectPage() {
         ? `${API_BASE_URL}/api/accommodation/${editingRoomId}`
         : `${API_BASE_URL}/api/accommodation`;
       const method = editingRoomId ? 'PUT' : 'POST';
-
       const existingRoom = editingRoomId ? rooms.find((r) => r.Id === editingRoomId) : null;
       const occupied = existingRoom ? getOccupiedCount(existingRoom) : 0;
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -411,12 +372,10 @@ function AccomodationRedirectPage() {
           Status: roomForm.status,
         }),
       });
-
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(data.message || 'Failed to save room.');
       }
-
       setSuccessMessage(editingRoomId ? 'Room updated successfully.' : 'Room created successfully.');
       setShowRoomModal(false);
       await fetchData();
@@ -426,14 +385,12 @@ function AccomodationRedirectPage() {
       setRoomSaving(false);
     }
   };
-
   const handleDeleteRoom = async (room) => {
     if (getOccupiedCount(room) > 0) {
       alert('This room has active student allocations. Please deallocate all students before deleting.');
       return;
     }
     if (!window.confirm(`Delete room "${room.room_num}"?`)) return;
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/accommodation/${room.Id}`, {
         method: 'DELETE',
@@ -449,16 +406,13 @@ function AccomodationRedirectPage() {
       alert(err.message || 'Failed to delete room.');
     }
   };
-
   // Inspect Room Details (Who & When)
   const openInspectRoom = (room) => {
     setInspectingRoom(room);
   };
-
   // Deallocate Student from Room
   const handleDeallocateStudent = async (roomId, userId, studentName) => {
     if (!window.confirm(`Remove ${studentName || 'this participant'} from this room?`)) return;
-
     try {
       setDeallocatingUserId(userId);
       const res = await fetch(`${API_BASE_URL}/api/accommodation/${roomId}/allocate/${userId}`, {
@@ -468,10 +422,8 @@ function AccomodationRedirectPage() {
       if (!res.ok) {
         throw new Error(data.message || 'Failed to deallocate student.');
       }
-
       setSuccessMessage(`${studentName} removed from room.`);
       await fetchData();
-
       // Refresh inspected room
       const refreshedRooms = await fetch(`${API_BASE_URL}/api/accommodation${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`).then((r) => r.json());
       if (Array.isArray(refreshedRooms.data)) {
@@ -484,12 +436,10 @@ function AccomodationRedirectPage() {
       setDeallocatingUserId(null);
     }
   };
-
   // Student Allocation Flow (Strict Gender Enforcement)
   const openAllocateModal = (room) => {
     const isBoys = isBoysRoom(room);
     const isGirls = isGirlsRoom(room);
-
     // Filter requested students:
     // 1. Must NOT already be allocated to any room
     // 2. MUST match the room's gender (Male for Boys block, Female for Girls block)
@@ -497,31 +447,25 @@ function AccomodationRedirectPage() {
     rooms.forEach((r) => {
       (r.participants || []).forEach((p) => alreadyAllocatedUserIds.add(String(p.UserId)));
     });
-
     const eligible = requestedStudents.filter((student) => {
       const uId = String(student.UserId);
       if (alreadyAllocatedUserIds.has(uId)) return false;
-
       const sGender = String(student.Gender || '').toLowerCase().trim();
       const isStudentMale = ['male', 'boy', 'boys', 'm'].includes(sGender);
       const isStudentFemale = ['female', 'girl', 'girls', 'f'].includes(sGender);
-
       if (isBoys) return isStudentMale;
       if (isGirls) return isStudentFemale;
       return true;
     });
-
     setAllocatingRoom(room);
     setEligibleStudents(eligible);
     setSelectedStudents([]);
     setStudentSearch('');
     setAllocationError('');
   };
-
   const toggleStudentSelection = (student) => {
     const uId = String(student.UserId);
     const capacityLeft = Math.max(0, getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom));
-
     setSelectedStudents((current) => {
       if (current.includes(uId)) {
         return current.filter((id) => id !== uId);
@@ -534,13 +478,11 @@ function AccomodationRedirectPage() {
       return [...current, uId];
     });
   };
-
   const handleSaveAllocation = async () => {
     if (!allocatingRoom || selectedStudents.length === 0) {
       setAllocationError('Please select at least one student.');
       return;
     }
-
     setAllocating(true);
     setAllocationError('');
     try {
@@ -552,16 +494,13 @@ function AccomodationRedirectPage() {
           studentIds: selectedStudents.map(Number),
         }),
       });
-
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(data.message || 'Failed to allocate students.');
       }
-
       setSuccessMessage('Students successfully allocated to room.');
       setAllocatingRoom(null);
       await fetchData();
-
       // If we were inspecting, refresh inspected room
       if (inspectingRoom?.Id === allocatingRoom.Id) {
         const refreshedRooms = await fetch(`${API_BASE_URL}/api/accommodation${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ''}`).then((r) => r.json());
@@ -576,14 +515,12 @@ function AccomodationRedirectPage() {
       setAllocating(false);
     }
   };
-
   // Direct Student Room Assignment Handlers (From Requests Tab)
   const openAssignStudentModal = (student) => {
     setAssigningStudent(student);
     setTargetRoomId(student.AccommodationId ? String(student.AccommodationId) : '');
     setAssignRoomError('');
   };
-
   const handleConfirmSingleStudentAssignment = async (e) => {
     e.preventDefault();
     if (!targetRoomId) {
@@ -591,7 +528,6 @@ function AccomodationRedirectPage() {
       return;
     }
     if (!assigningStudent) return;
-
     setIsAssigningRoom(true);
     setAssignRoomError('');
     try {
@@ -601,7 +537,6 @@ function AccomodationRedirectPage() {
           method: 'DELETE',
         });
       }
-
       const res = await fetch(`${API_BASE_URL}/api/accommodation/${targetRoomId}/allocate`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -610,12 +545,10 @@ function AccomodationRedirectPage() {
           studentIds: [assigningStudent.UserId],
         }),
       });
-
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(data.message || 'Failed to assign room.');
       }
-
       setSuccessMessage(`Assigned ${assigningStudent.ParticipantName} to room successfully.`);
       setAssigningStudent(null);
       await fetchData();
@@ -625,7 +558,6 @@ function AccomodationRedirectPage() {
       setIsAssigningRoom(false);
     }
   };
-
   // Filtered Rooms Computation
   const filteredRooms = rooms.filter((room) => {
     const matchesSearch = [
@@ -637,30 +569,24 @@ function AccomodationRedirectPage() {
       .join(' ')
       .toLowerCase()
       .includes(searchTerm.toLowerCase().trim());
-
     const matchesGender =
       genderFilter === 'all'
         ? true
         : genderFilter === 'Boys'
         ? isBoysRoom(room)
         : isGirlsRoom(room);
-
     const matchesBlock =
       selectedBlockFilter === 'all'
         ? true
         : String(room.BlockId) === String(selectedBlockFilter);
-
     return matchesSearch && matchesGender && matchesBlock;
   });
-
   const totalCapacity = rooms.reduce((sum, r) => sum + getCapacity(r), 0);
   const totalOccupied = rooms.reduce((sum, r) => sum + getOccupiedCount(r), 0);
   const totalAvailableBeds = Math.max(0, totalCapacity - totalOccupied);
-
   return (
     <main className="min-h-screen w-full bg-slate-50 dark:bg-black font-sans text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8">
       <div className="mx-auto w-full max-w-7xl space-y-6">
-
         {/* Back Link & Navigation */}
         <div className="flex items-center justify-between">
           <button
@@ -671,9 +597,7 @@ function AccomodationRedirectPage() {
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Physical Event Hub</span>
           </button>
-
         </div>
-
         {/* Alerts */}
         {error && (
           <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 text-sm flex items-center justify-between">
@@ -683,7 +607,6 @@ function AccomodationRedirectPage() {
             </button>
           </div>
         )}
-
         {successMessage && (
           <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-sm flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -695,7 +618,6 @@ function AccomodationRedirectPage() {
             </button>
           </div>
         )}
-
         {/* Banner */}
         <section className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
@@ -712,7 +634,6 @@ function AccomodationRedirectPage() {
                 </p>
               </div>
             </div>
-
             <div className="flex flex-wrap items-center gap-4 pt-2 text-xs text-slate-500 dark:text-zinc-400">
               <span className="font-bold text-slate-800 dark:text-zinc-200">
                 {event?.EventName || 'Physical Hackathon Hub'}
@@ -729,7 +650,6 @@ function AccomodationRedirectPage() {
               </span>
             </div>
           </div>
-
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
@@ -749,7 +669,6 @@ function AccomodationRedirectPage() {
             </button>
           </div>
         </section>
-
         {/* Global Stats */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm">
@@ -764,7 +683,6 @@ function AccomodationRedirectPage() {
               {blocks.filter((b) => b.Gender === 'Boys').length} Boys • {blocks.filter((b) => b.Gender === 'Girls').length} Girls
             </p>
           </div>
-
           <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-medium">
               <span>Configured Rooms</span>
@@ -777,7 +695,6 @@ function AccomodationRedirectPage() {
               {rooms.filter(isBoysRoom).length} Boys rooms • {rooms.filter(isGirlsRoom).length} Girls rooms
             </p>
           </div>
-
           <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm">
             <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-medium">
               <span>Bed Occupancy</span>
@@ -790,7 +707,6 @@ function AccomodationRedirectPage() {
               {totalAvailableBeds} beds available
             </p>
           </div>
-
           <div
             onClick={() => setActiveTab('requests')}
             className={`p-5 rounded-2xl border bg-white dark:bg-black shadow-sm cursor-pointer transition group ${
@@ -816,7 +732,6 @@ function AccomodationRedirectPage() {
             </p>
           </div>
         </section>
-
         {/* Seamless Navigation Tabs */}
         <div className="relative pt-2">
           <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto">
@@ -840,7 +755,6 @@ function AccomodationRedirectPage() {
             ].map((tab) => {
               const isActive = activeTab === tab.id;
               const TabIcon = tab.icon;
-
               return (
                 <button
                   key={tab.id}
@@ -859,7 +773,6 @@ function AccomodationRedirectPage() {
                   ) : (
                     <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0" />
                   )}
-
                   <span className={`relative z-20 flex items-center gap-2 transition-colors ${
                     isActive
                       ? 'text-slate-900 dark:text-white font-bold'
@@ -886,10 +799,8 @@ function AccomodationRedirectPage() {
               );
             })}
           </div>
-
           {/* Main Tab Content Card */}
           <div className="bg-white dark:bg-black rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm p-5 sm:p-6 space-y-6 relative z-0">
-
             {/* TAB 1: ROOMS DIRECTORY */}
             {activeTab === 'rooms' && (
               <div className="space-y-6">
@@ -919,7 +830,6 @@ function AccomodationRedirectPage() {
                     </button>
                   </div>
                 )}
-
                 {/* Search & Filter Bar */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
                   <div className="relative flex-1 max-w-md">
@@ -932,7 +842,6 @@ function AccomodationRedirectPage() {
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                     />
                   </div>
-
                   <div className="flex flex-wrap items-center gap-3">
                     {/* Gender Filter */}
                     <div className="flex items-center rounded-xl bg-slate-100 dark:bg-zinc-900 p-1 border border-slate-200 dark:border-zinc-800">
@@ -958,7 +867,6 @@ function AccomodationRedirectPage() {
                         <Venus className="w-3 h-3" /> Girls
                       </button>
                     </div>
-
                     {/* Block Filter */}
                     <select
                       value={selectedBlockFilter}
@@ -974,7 +882,6 @@ function AccomodationRedirectPage() {
                     </select>
                   </div>
                 </div>
-
                 {/* Rooms Grid */}
                 {loading ? (
                   <div className="py-16 text-center text-slate-400 text-sm">
@@ -1001,7 +908,6 @@ function AccomodationRedirectPage() {
                       const isBoys = isBoysRoom(room);
                       const isGirls = isGirlsRoom(room);
                       const isFull = available === 0;
-
                       return (
                         <div
                           key={room.Id}
@@ -1033,7 +939,6 @@ function AccomodationRedirectPage() {
                                 {room.Type || 'Standard Room'}
                               </p>
                             </div>
-
                             <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
                               status === 'Fully Occupied'
                                 ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
@@ -1044,7 +949,6 @@ function AccomodationRedirectPage() {
                               {status}
                             </span>
                           </div>
-
                           {/* Capacity Meter */}
                           <div className="space-y-1.5 pt-1">
                             <div className="flex items-center justify-between text-xs font-semibold">
@@ -1068,7 +972,6 @@ function AccomodationRedirectPage() {
                               />
                             </div>
                           </div>
-
                           {/* Quick Allocated Students Snippet */}
                           {occupied > 0 ? (
                             <div className="pt-2 border-t border-slate-100 dark:border-zinc-800 text-xs">
@@ -1082,7 +985,6 @@ function AccomodationRedirectPage() {
                               No students currently allocated.
                             </div>
                           )}
-
                           {/* Room Actions */}
                           <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
                             <div className="flex items-center gap-1.5">
@@ -1112,7 +1014,6 @@ function AccomodationRedirectPage() {
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
-
                             {!isFull && (
                               <button
                                 type="button"
@@ -1131,7 +1032,6 @@ function AccomodationRedirectPage() {
                 )}
               </div>
             )}
-
             {/* TAB 2: HOSTEL BLOCKS */}
             {activeTab === 'blocks' && (
               <div className="space-y-6">
@@ -1153,7 +1053,6 @@ function AccomodationRedirectPage() {
                     <span>Create Hostel Block</span>
                   </button>
                 </div>
-
                 {blocks.length === 0 ? (
                   <div className="py-16 text-center text-slate-400 dark:text-zinc-500">
                     <Building2 className="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-zinc-700" />
@@ -1177,7 +1076,6 @@ function AccomodationRedirectPage() {
                       const totalCap = blockRooms.reduce((sum, r) => sum + getCapacity(r), 0);
                       const totalOcc = blockRooms.reduce((sum, r) => sum + getOccupiedCount(r), 0);
                       const totalAvail = Math.max(0, totalCap - totalOcc);
-
                       return (
                         <div
                           key={block.Id}
@@ -1202,7 +1100,6 @@ function AccomodationRedirectPage() {
                                 </p>
                               )}
                             </div>
-
                             <div className="flex items-center gap-1">
                               <button
                                 type="button"
@@ -1222,7 +1119,6 @@ function AccomodationRedirectPage() {
                               </button>
                             </div>
                           </div>
-
                           {/* Stats in Block */}
                           <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-white dark:bg-black border border-slate-200/80 dark:border-zinc-800 text-center">
                             <div>
@@ -1244,7 +1140,6 @@ function AccomodationRedirectPage() {
                               </p>
                             </div>
                           </div>
-
                           {/* Action Button */}
                           <button
                             type="button"
@@ -1261,7 +1156,6 @@ function AccomodationRedirectPage() {
                 )}
               </div>
             )}
-
             {/* TAB 3: FOOD & ACCOMMODATION REQUESTS MANAGEMENT */}
             {activeTab === 'requests' && (
               <div className="space-y-6">
@@ -1288,7 +1182,6 @@ function AccomodationRedirectPage() {
                     </span>
                   </div>
                 </div>
-
                 {/* Filter and Search Toolbar */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800/80">
                   <div className="relative flex-1 max-w-md">
@@ -1301,7 +1194,6 @@ function AccomodationRedirectPage() {
                       className="w-full pl-10 pr-4 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                     />
                   </div>
-
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Status filter buttons */}
                     <div className="flex items-center p-1 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800">
@@ -1345,7 +1237,6 @@ function AccomodationRedirectPage() {
                         </span>
                       </button>
                     </div>
-
                     {/* Gender filter */}
                     <select
                       value={requestGenderFilter}
@@ -1358,7 +1249,6 @@ function AccomodationRedirectPage() {
                     </select>
                   </div>
                 </div>
-
                 {requestedStudents.length === 0 ? (
                   <div className="py-16 text-center text-slate-400 dark:text-zinc-500">
                     <Utensils className="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-zinc-700" />
@@ -1373,15 +1263,12 @@ function AccomodationRedirectPage() {
                     const sGender = String(student.Gender || '').toLowerCase().trim();
                     const isMale = ['male', 'boy', 'boys', 'm'].includes(sGender);
                     const isFemale = ['female', 'girl', 'girls', 'f'].includes(sGender);
-
                     // Status filter
                     if (requestStatusFilter === 'awaiting' && isAllocated) return false;
                     if (requestStatusFilter === 'allocated' && !isAllocated) return false;
-
                     // Gender filter
                     if (requestGenderFilter === 'male' && !isMale) return false;
                     if (requestGenderFilter === 'female' && !isFemale) return false;
-
                     // Search filter
                     if (requestSearch.trim()) {
                       const text = [
@@ -1399,10 +1286,8 @@ function AccomodationRedirectPage() {
                         .toLowerCase();
                       if (!text.includes(requestSearch.toLowerCase().trim())) return false;
                     }
-
                     return true;
                   });
-
                   if (filteredRequests.length === 0) {
                     return (
                       <div className="py-12 text-center text-slate-400 dark:text-zinc-500 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl">
@@ -1421,7 +1306,6 @@ function AccomodationRedirectPage() {
                       </div>
                     );
                   }
-
                   return (
                     <div className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-zinc-800">
                       <table className="w-full text-left text-xs min-w-[850px]">
@@ -1441,7 +1325,6 @@ function AccomodationRedirectPage() {
                             const isAllocated = Boolean(student.AccommodationAllocated || student.AccommodationId);
                             const isMale = ['male', 'boy', 'boys', 'm'].includes(String(student.Gender || '').toLowerCase());
                             const isFemale = ['female', 'girl', 'girls', 'f'].includes(String(student.Gender || '').toLowerCase());
-
                             return (
                               <tr key={`${student.TeamId}-${student.UserId}`} className="hover:bg-slate-50/60 dark:hover:bg-zinc-900/40 transition">
                                 <td className="py-3.5 px-3.5">
@@ -1547,7 +1430,6 @@ function AccomodationRedirectPage() {
                 })()}
               </div>
             )}
-
             {/* TAB 4: FACILITY BOOKINGS & PAYMENT VERIFICATION */}
             {activeTab === 'bookings' && (
               <div className="space-y-6">
@@ -1574,7 +1456,6 @@ function AccomodationRedirectPage() {
                     </span>
                   </div>
                 </div>
-
                 {/* Search & Filter Bar */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50 dark:bg-zinc-900/40 p-3 rounded-2xl border border-slate-200 dark:border-zinc-800">
                   <div className="relative flex-1 min-w-[220px]">
@@ -1587,7 +1468,6 @@ function AccomodationRedirectPage() {
                       className="w-full pl-9 pr-3 py-2 text-xs bg-white dark:bg-black rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
-
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
                     {['all', 'Pending', 'Approved', 'Rejected'].map((statusKey) => (
                       <button
@@ -1605,7 +1485,6 @@ function AccomodationRedirectPage() {
                     ))}
                   </div>
                 </div>
-
                 {/* Table or Cards */}
                 {(() => {
                   const filtered = facilityBookings.filter((b) => {
@@ -1621,7 +1500,6 @@ function AccomodationRedirectPage() {
                     }
                     return true;
                   });
-
                   if (filtered.length === 0) {
                     return (
                       <div className="py-16 text-center rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/20">
@@ -1635,7 +1513,6 @@ function AccomodationRedirectPage() {
                       </div>
                     );
                   }
-
                   return (
                     <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
                       <table className="w-full text-left text-xs">
@@ -1664,7 +1541,6 @@ function AccomodationRedirectPage() {
                                   {b.MemberCount} Member{b.MemberCount === 1 ? '' : 's'}
                                 </span>
                               </td>
-
                               <td className="py-3.5 px-4 space-y-1">
                                 <div className="flex items-center gap-1.5">
                                   <BedDouble className="w-3.5 h-3.5 text-emerald-500" />
@@ -1679,13 +1555,11 @@ function AccomodationRedirectPage() {
                                   </span>
                                 </div>
                               </td>
-
                               <td className="py-3.5 px-4">
                                 <span className="font-black text-sm text-emerald-600 dark:text-emerald-400">
                                   ₹{Number(b.TotalAmount || 0)}
                                 </span>
                               </td>
-
                               <td className="py-3.5 px-4">
                                 <div className="font-mono text-xs font-bold text-slate-800 dark:text-zinc-200 bg-slate-100 dark:bg-zinc-900 px-2 py-1 rounded-md inline-block">
                                   {b.PaymentRefId || 'No UTR ID'}
@@ -1696,7 +1570,6 @@ function AccomodationRedirectPage() {
                                   </p>
                                 )}
                               </td>
-
                               <td className="py-3.5 px-4">
                                 {b.PaymentReceiptUrl ? (
                                   <button
@@ -1711,7 +1584,6 @@ function AccomodationRedirectPage() {
                                   <span className="text-xs text-slate-400 italic">No receipt</span>
                                 )}
                               </td>
-
                               <td className="py-3.5 px-4">
                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider border ${
                                   b.BookingStatus === 'Approved'
@@ -1735,7 +1607,6 @@ function AccomodationRedirectPage() {
                                   </p>
                                 )}
                               </td>
-
                               <td className="py-3.5 px-4 text-right">
                                 <div className="inline-flex items-center gap-1.5">
                                   {b.BookingStatus !== 'Approved' && (
@@ -1775,9 +1646,7 @@ function AccomodationRedirectPage() {
             )}
           </div>
         </div>
-
       </div>
-
       {/* MODAL 1: ADD / EDIT HOSTEL BLOCK */}
       <AnimatePresence>
         {showBlockModal && (
@@ -1808,13 +1677,11 @@ function AccomodationRedirectPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               {blockError && (
                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 text-xs">
                   {blockError}
                 </div>
               )}
-
               <form onSubmit={handleSaveBlock} className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
@@ -1829,7 +1696,6 @@ function AccomodationRedirectPage() {
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                     Designated Gender *
@@ -1851,7 +1717,6 @@ function AccomodationRedirectPage() {
                       <Mars className="w-4 h-4" />
                       <span className="text-xs">Boys Block (Male)</span>
                     </label>
-
                     <label className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition ${
                       blockForm.Gender === 'Girls'
                         ? 'border-rose-500 bg-rose-50/30 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 font-bold'
@@ -1870,7 +1735,6 @@ function AccomodationRedirectPage() {
                     </label>
                   </div>
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                     Description / Location Details
@@ -1883,7 +1747,6 @@ function AccomodationRedirectPage() {
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 resize-none"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-3">
                   <button
                     type="button"
@@ -1906,7 +1769,6 @@ function AccomodationRedirectPage() {
           </div>
         )}
       </AnimatePresence>
-
       {/* MODAL 2: ADD / EDIT ROOM */}
       <AnimatePresence>
         {showRoomModal && (
@@ -1937,13 +1799,11 @@ function AccomodationRedirectPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               {roomError && (
                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 text-xs">
                   {roomError}
                 </div>
               )}
-
               <form onSubmit={handleSaveRoom} className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
@@ -1963,7 +1823,6 @@ function AccomodationRedirectPage() {
                     ))}
                   </select>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
@@ -1978,7 +1837,6 @@ function AccomodationRedirectPage() {
                       className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                     />
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                       Bed Capacity *
@@ -1993,7 +1851,6 @@ function AccomodationRedirectPage() {
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
@@ -2007,7 +1864,6 @@ function AccomodationRedirectPage() {
                       className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                     />
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                       Room Status
@@ -2022,7 +1878,6 @@ function AccomodationRedirectPage() {
                     </select>
                   </div>
                 </div>
-
                 {/* Designated Gender Info */}
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 text-xs flex items-center justify-between">
                   <span className="text-slate-500 dark:text-zinc-400 font-medium">Designated For:</span>
@@ -2031,7 +1886,6 @@ function AccomodationRedirectPage() {
                     <span>{roomForm.gender === 'Boys' ? 'Boys Only (Male Candidates)' : 'Girls Only (Female Candidates)'}</span>
                   </span>
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-3">
                   <button
                     type="button"
@@ -2054,7 +1908,6 @@ function AccomodationRedirectPage() {
           </div>
         )}
       </AnimatePresence>
-
       {/* MODAL 3: ROOM DETAILS & ALLOCATION INSPECTION (WHO & WHEN DETAILS) */}
       <AnimatePresence>
         {inspectingRoom && (
@@ -2091,7 +1944,6 @@ function AccomodationRedirectPage() {
                     {inspectingRoom.Type || 'Standard'} • Capacity: {getCapacity(inspectingRoom)} Beds • {getOccupiedCount(inspectingRoom)} Occupied
                   </p>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => setInspectingRoom(null)}
@@ -2100,7 +1952,6 @@ function AccomodationRedirectPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               {/* Occupancy Bar */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold">
@@ -2118,7 +1969,6 @@ function AccomodationRedirectPage() {
                   />
                 </div>
               </div>
-
               {/* Allocated Students Section */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -2141,7 +1991,6 @@ function AccomodationRedirectPage() {
                     </button>
                   )}
                 </div>
-
                 {(inspectingRoom.participants || []).length === 0 ? (
                   <div className="py-8 text-center text-slate-400 dark:text-zinc-500 border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl">
                     <BedDouble className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-zinc-700" />
@@ -2186,7 +2035,6 @@ function AccomodationRedirectPage() {
                             </div>
                           </div>
                         </div>
-
                         {/* Deallocate button */}
                         <button
                           type="button"
@@ -2207,7 +2055,6 @@ function AccomodationRedirectPage() {
                   </div>
                 )}
               </div>
-
               <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-zinc-800">
                 <button
                   type="button"
@@ -2221,7 +2068,6 @@ function AccomodationRedirectPage() {
           </div>
         )}
       </AnimatePresence>
-
       {/* MODAL 4: STRICT GENDER-BASED ALLOCATION MODAL */}
       <AnimatePresence>
         {allocatingRoom && (
@@ -2255,7 +2101,6 @@ function AccomodationRedirectPage() {
                     Remaining capacity: <strong className="text-emerald-600 dark:text-emerald-400">{Math.max(0, getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom))} bed(s)</strong> available.
                   </p>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => setAllocatingRoom(null)}
@@ -2264,7 +2109,6 @@ function AccomodationRedirectPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               {/* STRICT GENDER POLICY BANNER */}
               <div className={`p-3.5 rounded-2xl border text-xs flex items-center gap-3 ${
                 isBoysRoom(allocatingRoom)
@@ -2285,13 +2129,11 @@ function AccomodationRedirectPage() {
                   </p>
                 </div>
               </div>
-
               {allocationError && (
                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 text-xs">
                   {allocationError}
                 </div>
               )}
-
               {/* Student Filter Search */}
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -2303,7 +2145,6 @@ function AccomodationRedirectPage() {
                   className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                 />
               </div>
-
               {/* Candidate Selection List */}
               <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                 {eligibleStudents
@@ -2322,7 +2163,6 @@ function AccomodationRedirectPage() {
                     const isSelected = selectedStudents.includes(String(student.UserId));
                     const capacityLeft = Math.max(0, getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom));
                     const disabled = !isSelected && selectedStudents.length >= capacityLeft;
-
                     return (
                       <div
                         key={student.UserId}
@@ -2357,7 +2197,6 @@ function AccomodationRedirectPage() {
                             </p>
                           </div>
                         </div>
-
                         {isSelected && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white">
                             Selected
@@ -2366,7 +2205,6 @@ function AccomodationRedirectPage() {
                       </div>
                     );
                   })}
-
                 {eligibleStudents.length === 0 && (
                   <div className="py-8 text-center text-slate-400 dark:text-zinc-500">
                     <p className="text-xs font-bold">
@@ -2378,13 +2216,11 @@ function AccomodationRedirectPage() {
                   </div>
                 )}
               </div>
-
               {/* Modal Footer */}
               <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-zinc-800">
                 <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
                   Selected: <strong className="text-slate-900 dark:text-white">{selectedStudents.length}</strong> / {Math.max(0, getCapacity(allocatingRoom) - getOccupiedCount(allocatingRoom))} beds
                 </span>
-
                 <div className="flex items-center gap-2.5">
                   <button
                     type="button"
@@ -2408,7 +2244,6 @@ function AccomodationRedirectPage() {
           </div>
         )}
       </AnimatePresence>
-
       {/* MODAL 5: ASSIGN / CHANGE ROOM FOR INDIVIDUAL PARTICIPANT */}
       <AnimatePresence>
         {assigningStudent && (
@@ -2434,7 +2269,6 @@ function AccomodationRedirectPage() {
                     </p>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => setAssigningStudent(null)}
@@ -2443,7 +2277,6 @@ function AccomodationRedirectPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               {/* Student Details Card */}
               <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
                 <div className="space-y-0.5">
@@ -2474,20 +2307,17 @@ function AccomodationRedirectPage() {
                   </span>
                 </div>
               </div>
-
               {assignRoomError && (
                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 text-xs">
                   {assignRoomError}
                 </div>
               )}
-
               {/* Room Selection */}
               <form onSubmit={handleConfirmSingleStudentAssignment} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                     Select Available Room in {['male', 'boy', 'boys', 'm'].includes(String(assigningStudent.Gender || '').toLowerCase()) ? 'Boys' : 'Girls'} Block:
                   </label>
-
                   {(() => {
                     const isStudentMale = ['male', 'boy', 'boys', 'm'].includes(String(assigningStudent.Gender || '').toLowerCase());
                     const eligibleRooms = rooms.filter((r) => {
@@ -2498,7 +2328,6 @@ function AccomodationRedirectPage() {
                       const isCurrentRoom = String(r.Id) === String(assigningStudent.AccommodationId);
                       return bedsAvailable > 0 || isCurrentRoom;
                     });
-
                     if (eligibleRooms.length === 0) {
                       return (
                         <div className="py-8 text-center border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl p-4 space-y-2">
@@ -2523,14 +2352,12 @@ function AccomodationRedirectPage() {
                         </div>
                       );
                     }
-
                     return (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[300px] overflow-y-auto pr-1">
                         {eligibleRooms.map((room) => {
                           const bedsLeft = Math.max(0, getCapacity(room) - getOccupiedCount(room));
                           const isSelected = String(room.Id) === String(targetRoomId);
                           const isCurrent = String(room.Id) === String(assigningStudent.AccommodationId);
-
                           return (
                             <div
                               key={room.Id}
@@ -2561,7 +2388,6 @@ function AccomodationRedirectPage() {
                                   className="accent-emerald-600 mt-0.5"
                                 />
                               </div>
-
                               <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100 dark:border-zinc-900">
                                 <span className={`font-bold ${bedsLeft > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
                                   {bedsLeft} free bed{bedsLeft !== 1 ? 's' : ''}
@@ -2583,7 +2409,6 @@ function AccomodationRedirectPage() {
                     );
                   })()}
                 </div>
-
                 {/* Footer Buttons */}
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
                   <button
@@ -2607,7 +2432,6 @@ function AccomodationRedirectPage() {
           </div>
         )}
       </AnimatePresence>
-
       {/* MODAL 5: BOOKING ACTION / REJECTION REMARKS */}
       <AnimatePresence>
         {actionModalBooking && (
@@ -2636,7 +2460,6 @@ function AccomodationRedirectPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-1.5">
                   Reason for Rejection *
@@ -2650,7 +2473,6 @@ function AccomodationRedirectPage() {
                   className="w-full p-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-rose-500"
                 />
               </div>
-
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
                 <button
                   type="button"
@@ -2673,7 +2495,6 @@ function AccomodationRedirectPage() {
           </div>
         )}
       </AnimatePresence>
-
       {/* MODAL 6: ADMIN RECEIPT ZOOM PREVIEW */}
       <AnimatePresence>
         {adminProofModalUrl && (
@@ -2728,9 +2549,7 @@ function AccomodationRedirectPage() {
           </div>
         )}
       </AnimatePresence>
-
     </main>
   );
 }
-
 export default AccomodationRedirectPage;

@@ -1,16 +1,16 @@
 const teamsService = require('./teamsService');
 const db = require('../../config/db');
-
+const { recordMutation } = require('../security/auditService');
 const createTeam = (req, res) => {
-    const { 
-        TeamName, 
-        TeamLeadEmail, 
-        TeamSize, 
-        EventId, 
-        MemberEmails, 
-        Members, 
-        ParticipationMode, 
-        TeamLeadPhoto, 
+    const {
+        TeamName,
+        TeamLeadEmail,
+        TeamSize,
+        EventId,
+        MemberEmails,
+        Members,
+        ParticipationMode,
+        TeamLeadPhoto,
         teamLeadPhoto,
         GraduationYear,
         CurrentCompany,
@@ -23,14 +23,12 @@ const createTeam = (req, res) => {
     } = req.body;
     const membersData = Members || MemberEmails;
     const leadPhoto = TeamLeadPhoto || teamLeadPhoto || null;
-
     teamsService.createTeam( TeamName, TeamLeadEmail, TeamSize, EventId, membersData, ParticipationMode, leadPhoto, (err, result) => {
             if (err) {
                 return res.status(err.status || 500).json({
                     message: err.message
                 });
             }
-
             const teamId = result.teamId;
             if (GraduationYear || CurrentCompany || Designation || City || LinkedinUrl || GuestCount !== undefined || GuestNames || RsvpStatus) {
                 const alumniUpdateSql = `
@@ -61,7 +59,16 @@ const createTeam = (req, res) => {
                     () => {}
                 );
             }
-
+            recordMutation({
+                actor: req.user,
+                module: 'teams',
+                action: 'CREATE_TEAM',
+                entityType: 'team',
+                entityId: teamId,
+                eventId: EventId,
+                newState: { TeamName, TeamLeadEmail, TeamSize, ParticipationMode },
+                req
+            });
             res.status(201).json({
                 message: "Team created successfully",
                 teamId: result.teamId
@@ -69,7 +76,6 @@ const createTeam = (req, res) => {
         }
     );
 };
-
 const getAllTeams = (req, res) => {
     teamsService.getAllTeams((err, result) => {
         if (err) {
@@ -78,17 +84,14 @@ const getAllTeams = (req, res) => {
                 error: err.message
             });
         }
-
         res.status(200).json({
             message: 'Teams fetched successfully',
             teams: result
         });
     });
 };
-
 const getTeamById = (req, res) => {
     const id = req.params.id;
-
     teamsService.getTeamById(id, (err, result) => {
         if (err) {
             return res.status(500).json({
@@ -96,23 +99,19 @@ const getTeamById = (req, res) => {
                 error: err.message
             });
         }
-
         if (result.length === 0) {
             return res.status(404).json({
                 message: 'Team not found'
             });
         }
-
         res.status(200).json({
             message: 'Team fetched successfully',
             team: result[0]
         });
     });
 };
-
 const getTeamByCollege = (req, res) => {
     const clg = req.params.clg;
-
     teamsService.getTeamByCollege(clg, (err, result) => {
         if (err) {
             return res.status(500).json({
@@ -120,17 +119,14 @@ const getTeamByCollege = (req, res) => {
                 error: err.message
             });
         }
-
         res.status(200).json({
             message: 'Teams fetched successfully',
             teams: result
         });
     });
 };
-
 const getTeamByState = (req, res) => {
     const state = req.params.state;
-
     teamsService.getTeamByState(state, (err, result) => {
         if (err) {
             return res.status(500).json({
@@ -138,17 +134,14 @@ const getTeamByState = (req, res) => {
                 error: err.message
             });
         }
-
         res.status(200).json({
             message: 'Teams fetched successfully',
             teams: result
         });
     });
 };
-
 const getTeamByProblem = (req, res) => {
     const id = req.params.id;
-
     teamsService.getTeamByStatement(id, (err, result) => {
         if (err) {
             return res.status(500).json({
@@ -156,17 +149,14 @@ const getTeamByProblem = (req, res) => {
                 error: err.message
             });
         }
-
         res.status(200).json({
             message: 'Teams fetched successfully',
             teams: result
         });
     });
 };
-
 const getTeamByTech = (req, res) => {
     const tech = req.params.tech;
-
     teamsService.getTeamByTech(tech, (err, result) => {
         if (err) {
             return res.status(500).json({
@@ -174,14 +164,12 @@ const getTeamByTech = (req, res) => {
                 error: err.message
             });
         }
-
         res.status(200).json({
             message: 'Teams fetched successfully',
             teams: result
         });
     });
 };
-
 const getTeamsCount = (req, res) => {
     teamsService.getTeamsCount((err, result) => {
         if (err) {
@@ -190,14 +178,12 @@ const getTeamsCount = (req, res) => {
                 error: err.message
             });
         }
-
         res.status(200).json({
             message: 'Teams count fetched successfully',
             count: result.teamsCount
         });
     });
 };
-
 const getMembersCount = (req, res) => {
     teamsService.getMembersCount((err, result) => {
         if (err) {
@@ -206,7 +192,6 @@ const getMembersCount = (req, res) => {
                 error: err.message
             });
         }
-
         res.status(200).json({
             message: 'Members count fetched successfully',
             count: result.registeredMembersCount || result.totalMembersCount || 0,
@@ -216,22 +201,17 @@ const getMembersCount = (req, res) => {
         });
     });
 };
-
 const getTeamCountByEvent = (req, res) => {
-
     const eventId = req.params.eventId;
-
     teamsService.getTeamCountByEvent(
         eventId,
         (err, result) => {
-
             if (err) {
                 return res.status(500).json({
                     message: "Failed to get team count by event",
                     error: err.message
                 });
             }
-
             return res.status(200).json({
                 message: "Team count fetched successfully",
                 count: result.teamCount
@@ -239,16 +219,13 @@ const getTeamCountByEvent = (req, res) => {
         }
     );
 };
-
 const getMyTeams = (req, res) => {
     const userId = req.params.userId;
-
     if (!userId) {
         return res.status(400).json({
             message: 'User ID is required'
         });
     }
-
     teamsService.getMyTeams(userId, (err, result) => {
         if (err) {
             return res.status(500).json({
@@ -256,38 +233,31 @@ const getMyTeams = (req, res) => {
                 error: err.message
             });
         }
-
         res.status(200).json({
             teams: result
         });
     });
 };
-
 const getTeamInfo = (req, res) => {
     const { teamId, userId } = req.params;
-
     if (!teamId || !userId) {
         return res.status(400).json({
             message: 'Team ID and User ID are required'
         });
     }
-
     teamsService.getTeamInfo(teamId, userId, (err, result) => {
         if (err) {
             console.error('Get team info error:', err);
-
             return res.status(500).json({
                 message: 'Failed to fetch team information',
                 error: err.message
             });
         }
-
         if (!result || !result.team) {
             return res.status(404).json({
                 message: 'Team not found or user is not a member of this team'
             });
         }
-
         return res.status(200).json({
             message: 'Team information fetched successfully',
             team: result.team,
@@ -295,25 +265,20 @@ const getTeamInfo = (req, res) => {
         });
     });
 };
-
 const updateTeams = (req, res) => {
     const id = req.params.id;
-
     const {TeamName, TeamLeadUserId, TeamSize, College, State, ProblemStatementId, Tech_Stack, EventId} = req.body;
-
     if (!TeamName || !TeamLeadUserId || !TeamSize || !College || !State || !ProblemStatementId || !Tech_Stack || !EventId) {
         return res.status(400).json({
             message: 'All fields are required'
         });
     }
-
     if (
         Tech_Stack !== 'hardware' && Tech_Stack !== 'software') {
         return res.status(400).json({
             message: 'TechStack must be hardware or software'
         });
     }
-
     teamsService.updateTeamById(id, TeamName, TeamLeadUserId, TeamSize, College, State, ProblemStatementId, Tech_Stack, EventId, (err, result) => {
             if (err) {
                 return res.status(500).json({
@@ -321,7 +286,16 @@ const updateTeams = (req, res) => {
                     error: err.message
                 });
             }
-
+            recordMutation({
+                actor: req.user,
+                module: 'teams',
+                action: 'UPDATE_TEAM',
+                entityType: 'team',
+                entityId: id,
+                eventId: EventId,
+                newState: { TeamName, TeamLeadUserId, TeamSize, College, State, ProblemStatementId, Tech_Stack },
+                req
+            });
             res.status(200).json({
                 message: 'Team updated successfully',
                 res: result
@@ -329,36 +303,28 @@ const updateTeams = (req, res) => {
         }
     );
 };
-
 const getTeamsByEvent = (req, res) => {
-
     const EventId = req.params.eventId;
-
     teamsService.getTeamsByEvent(EventId, (err, result) => {
-
         if (err) {
             return res.status(500).json({
                 message: "Failed to fetch teams"
             });
         }
-
         return res.status(200).json({
             message: "Teams fetched successfully",
             teams: result
         });
     });
 };
-
 const getPublicTeamInfo = (req, res) => {
     const { teamId } = req.params;
-
     if (!teamId) {
         return res.status(400).json({
             success: false,
             message: 'Team ID is required'
         });
     }
-
     teamsService.getPublicTeamInfo(teamId, (err, result) => {
         if (err) {
             console.error('Get public team info error:', err);
@@ -368,14 +334,12 @@ const getPublicTeamInfo = (req, res) => {
                 message: err.message || 'Failed to fetch public team information'
             });
         }
-
         if (!result || !result.team) {
             return res.status(404).json({
                 success: false,
                 message: 'Team not found'
             });
         }
-
         return res.status(200).json({
             success: true,
             message: 'Public team information fetched successfully',
@@ -384,7 +348,6 @@ const getPublicTeamInfo = (req, res) => {
         });
     });
 };
-
 module.exports = {
     createTeam,
     getAllTeams,

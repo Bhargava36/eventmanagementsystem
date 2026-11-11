@@ -1,5 +1,4 @@
 const notificationService = require('./notificationService');
-
 const getNotifications = async (req, res) => {
     try {
         const { userId, eventId, page = 1, limit = 20, unreadOnly = 'false' } = req.query;
@@ -15,7 +14,6 @@ const getNotifications = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const createNotification = async (req, res) => {
     try {
         const userId = req.body.userId ?? req.body.UserId ?? null;
@@ -24,7 +22,6 @@ const createNotification = async (req, res) => {
         const message = req.body.message ?? req.body.Message;
         const type = req.body.type ?? req.body.Type ?? 'BROADCAST';
         const linkUrl = req.body.linkUrl ?? req.body.LinkUrl ?? null;
-
         if (!title || !message) {
             return res.status(400).json({ success: false, message: 'Title and message are required' });
         }
@@ -34,7 +31,6 @@ const createNotification = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const markRead = async (req, res) => {
     try {
         const { id } = req.params;
@@ -44,7 +40,6 @@ const markRead = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const markAllRead = async (req, res) => {
     try {
         const { userId } = req.body;
@@ -54,7 +49,6 @@ const markAllRead = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const deleteNotif = async (req, res) => {
     try {
         const { id } = req.params;
@@ -64,7 +58,6 @@ const deleteNotif = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 module.exports = {
     getNotifications,
     createNotification,

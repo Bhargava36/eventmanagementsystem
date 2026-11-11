@@ -1,8 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const eResController = require("./e_resController");
-
+const { optionalAuth } = require("../../middleware/authmiddleware");
+router.use(optionalAuth);
 router.post('/register', eResController.createRegistration);
+router.put('/:id/status', eResController.updateRegistrationStatus);
+router.patch('/:id/status', eResController.updateRegistrationStatus);
 router.get('/count', eResController.getRegistrationCount);
 router.get('/event/:eventId/count', eResController.getRegistrationCountByEvent);
 router.get('/event/:eventId/pending-count', eResController.getPendingCountByEvent);
@@ -13,5 +16,4 @@ router.get('/team/:teamId', eResController.getRegistrationsByTeamId);
 router.get('/mode/:mode', eResController.getRegistrationsByMode);
 router.get('/', eResController.getAllRegistrations);
 router.get('/:id', eResController.getRegistrationById);
-
 module.exports = router;

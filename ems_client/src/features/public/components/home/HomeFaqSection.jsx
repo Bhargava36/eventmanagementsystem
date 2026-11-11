@@ -34,19 +34,16 @@ const FAQS = [
 export default function HomeFaqSection() {
   const [openIndex, setOpenIndex] = useState(0);
   const supportCardRef = useRef(null);
+  const sectionRef = useRef(null);
+  const sidebarRef = useRef(null);
+  const faqListRef = useRef(null);
 
   const toggle = (idx) => {
     setOpenIndex(openIndex === idx ? null : idx);
   };
 
-  const sectionRef = useRef(null);
-  const sidebarRef = useRef(null);
-  const faqListRef = useRef(null);
-
-  // GSAP ScrollTrigger Scroll-Reveal & Support Card Hover
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Sidebar reveal (smooth entrance when entering view)
       if (sidebarRef.current) {
         gsap.from(sidebarRef.current, {
           scrollTrigger: {
@@ -62,7 +59,6 @@ export default function HomeFaqSection() {
         });
       }
 
-      // FAQ Rows Stagger reveal (smooth entrance when entering view)
       const items = faqListRef.current?.children;
       if (items && items.length) {
         gsap.from(items, {
@@ -104,7 +100,7 @@ export default function HomeFaqSection() {
       className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 w-full md:max-w-[80%] mx-auto scroll-mt-20"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-        {/* Left Column: Sticky Title & Direct Support Box with ScrollReveal */}
+        {/* Left Column: Sticky Title & Support Box */}
         <div ref={sidebarRef} className="lg:col-span-5 lg:sticky lg:top-28 space-y-6">
           <div className="space-y-3">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
@@ -115,7 +111,6 @@ export default function HomeFaqSection() {
             </p>
           </div>
 
-          {/* Clean Support Card */}
           <div
             ref={supportCardRef}
             className="p-6 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-4 shadow-sm transition-colors duration-200"
@@ -139,7 +134,7 @@ export default function HomeFaqSection() {
           </div>
         </div>
 
-        {/* Right Column: Framer Motion Spring Accordions with ScrollReveal */}
+        {/* Right Column: Accordions */}
         <div ref={faqListRef} className="lg:col-span-7 divide-y divide-slate-200 dark:divide-zinc-800">
           {FAQS.map((faq, idx) => {
             const isOpen = openIndex === idx;

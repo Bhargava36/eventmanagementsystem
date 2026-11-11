@@ -1,12 +1,9 @@
 const db = require('../../config/db');
-
-/**
- * Get comprehensive database table stats
- */
+// Get comprehensive database table stats
 const getDatabaseStats = () => {
     return new Promise((resolve, reject) => {
         const query = `
-            SELECT 
+            SELECT
                 TABLE_NAME AS tableName,
                 TABLE_ROWS AS rowCount,
                 ROUND((DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS sizeMb,
@@ -16,15 +13,12 @@ const getDatabaseStats = () => {
             WHERE TABLE_SCHEMA = DATABASE()
             ORDER BY (DATA_LENGTH + INDEX_LENGTH) DESC
         `;
-
         db.query(query, (err, rows) => {
             if (err) return reject(err);
-
             const tables = rows || [];
             const totalTables = tables.length;
             const totalRows = tables.reduce((acc, t) => acc + (Number(t.rowCount) || 0), 0);
             const totalSizeMb = tables.reduce((acc, t) => acc + (parseFloat(t.sizeMb) || 0), 0).toFixed(2);
-
             resolve({
                 totalTables,
                 totalRows,
@@ -34,25 +28,19 @@ const getDatabaseStats = () => {
         });
     });
 };
-
-/**
- * Generate full database SQL dump
- */
+// Generate full database SQL dump
 const generateSqlDump = () => {
     return new Promise(async (resolve, reject) => {
         try {
             db.query('SHOW TABLES', async (err, tableRows) => {
                 if (err) return reject(err);
-
                 const tables = tableRows.map(r => Object.values(r)[0]);
                 let sqlDump = `-- ========================================================\n`;
                 sqlDump += `-- AYOJAN Event Management System Database Snapshot Dump\n`;
                 sqlDump += `-- Generated: ${new Date().toISOString()}\n`;
                 sqlDump += `-- ========================================================\n\n`;
                 sqlDump += `SET FOREIGN_KEY_CHECKS = 0;\n\n`;
-
                 let totalRowsCount = 0;
-
                 for (const table of tables) {
                     await new Promise((resT) => {
                         db.query(`SHOW CREATE TABLE \`${table}\``, (cErr, cResult) => {
@@ -63,7 +51,6 @@ const generateSqlDump = () => {
                                 sqlDump += `-- --------------------------------------------------------\n`;
                                 sqlDump += `DROP TABLE IF EXISTS \`${table}\`;\n`;
                                 sqlDump += `${createSql};\n\n`;
-
                                 db.query(`SELECT * FROM \`${table}\``, (dErr, dataRows) => {
                                     if (!dErr && dataRows.length > 0) {
                                         totalRowsCount += dataRows.length;
@@ -102,10 +89,8 @@ const generateSqlDump = () => {
                         });
                     });
                 }
-
                 sqlDump += `SET FOREIGN_KEY_CHECKS = 1;\n`;
                 sqlDump += `-- Dump completed at: ${new Date().toISOString()}\n`;
-
                 resolve({
                     sql: sqlDump,
                     totalTables: tables.length,
@@ -117,22 +102,17 @@ const generateSqlDump = () => {
         }
     });
 };
-
-/**
- * Generate full database JSON dump
- */
+// Generate full database JSON dump
 const generateJsonDump = () => {
     return new Promise((resolve, reject) => {
         db.query('SHOW TABLES', async (err, tableRows) => {
             if (err) return reject(err);
-
             const tables = tableRows.map(r => Object.values(r)[0]);
             const resultData = {
                 exportedAt: new Date().toISOString(),
                 tables: {}
             };
             let totalRowsCount = 0;
-
             for (const table of tables) {
                 await new Promise((resT) => {
                     db.query(`SELECT * FROM \`${table}\``, (dErr, dataRows) => {
@@ -144,7 +124,6 @@ const generateJsonDump = () => {
                     });
                 });
             }
-
             resolve({
                 json: resultData,
                 totalTables: tables.length,
@@ -153,10 +132,7 @@ const generateJsonDump = () => {
         });
     });
 };
-
-/**
- * Record backup in database_backups table
- */
+// Record backup in database_backups table
 const recordBackup = ({ filename, sizeBytes, totalTables, totalRows, format = 'SQL', notes = 'Manual Backup' }) => {
     return new Promise((resolve) => {
         const query = `
@@ -169,10 +145,7 @@ const recordBackup = ({ filename, sizeBytes, totalTables, totalRows, format = 'S
         });
     });
 };
-
-/**
- * List backups history
- */
+// List backups history
 const getBackupsList = () => {
     return new Promise((resolve, reject) => {
         db.query('SELECT * FROM database_backups ORDER BY CreatedAt DESC', (err, rows) => {
@@ -181,10 +154,7 @@ const getBackupsList = () => {
         });
     });
 };
-
-/**
- * Delete a backup history record
- */
+// Delete a backup history record
 const deleteBackup = (id) => {
     return new Promise((resolve, reject) => {
         db.query('DELETE FROM database_backups WHERE Id = ?', [id], (err, res) => {
@@ -193,14 +163,10 @@ const deleteBackup = (id) => {
         });
     });
 };
-
-/**
- * Seed initial sample backup record if table empty
- */
+// Seed initial sample backup record if table empty
 const seedInitialBackupsIfEmpty = () => {
     db.query('SELECT COUNT(*) AS count FROM database_backups', (err, res) => {
         if (err || !res || res[0].count > 0) return;
-
         recordBackup({
             filename: `ayojan_db_snapshot_initial.sql`,
             sizeBytes: 1420580,
@@ -211,9 +177,7 @@ const seedInitialBackupsIfEmpty = () => {
         });
     });
 };
-
 setTimeout(seedInitialBackupsIfEmpty, 2500);
-
 module.exports = {
     getDatabaseStats,
     generateSqlDump,
@@ -222,4 +186,3 @@ module.exports = {
     getBackupsList,
     deleteBackup
 };
-

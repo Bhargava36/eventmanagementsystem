@@ -9,7 +9,6 @@ import {
   RefreshCw,
   Search
 } from 'lucide-react';
-
 const renderStars = (rating) => (
   <div className="flex items-center gap-0.5">
     {[1, 2, 3, 4, 5].map((star) => (
@@ -24,7 +23,6 @@ const renderStars = (rating) => (
     ))}
   </div>
 );
-
 export default function AdminFeedback() {
   const [adminData, setAdminData] = useState(() => {
     try {
@@ -33,16 +31,13 @@ export default function AdminFeedback() {
       return {};
     }
   });
-
   const [feedbackList, setFeedbackList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-
   const eventId = adminData?.EventId;
   const eventName = adminData?.EventName;
   const adminId = adminData?.Id;
-
   // Listen for active event updates from sidebar or switcher
   useEffect(() => {
     const handleEventUpdated = (e) => {
@@ -54,7 +49,6 @@ export default function AdminFeedback() {
         console.error('Error updating admin event in AdminFeedback:', err);
       }
     };
-
     window.addEventListener('admin-event-updated', handleEventUpdated);
     window.addEventListener('storage', handleEventUpdated);
     return () => {
@@ -62,7 +56,6 @@ export default function AdminFeedback() {
       window.removeEventListener('storage', handleEventUpdated);
     };
   }, []);
-
   const getFeedback = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -76,7 +69,6 @@ export default function AdminFeedback() {
       } else {
         throw new Error('No active event or admin found in session');
       }
-
       const response = await fetch(url);
       const data = await response.json();
       if (!response.ok) {
@@ -98,11 +90,9 @@ export default function AdminFeedback() {
       setLoading(false);
     }
   }, [eventId, adminId]);
-
   useEffect(() => {
     getFeedback();
   }, [getFeedback]);
-
   const getRating = (item) => Number(item.Rating ?? item.rating ?? 0);
   const totalFeedback = feedbackList.length;
   const averageRating = totalFeedback
@@ -110,14 +100,12 @@ export default function AdminFeedback() {
     : '0.0';
   const positiveFeedback = feedbackList.filter((item) => getRating(item) >= 4).length;
   const negativeFeedback = feedbackList.filter((item) => getRating(item) <= 2).length;
-
   const stats = [
     { title: 'Total Feedback', value: totalFeedback, icon: MessageSquare },
     { title: 'Average Rating', value: `${averageRating} / 5`, icon: Star },
     { title: 'Positive Feedback', value: positiveFeedback, icon: ThumbsUp },
     { title: 'Negative Feedback', value: negativeFeedback, icon: ThumbsDown }
   ];
-
   const filteredFeedback = feedbackList.filter((item) => {
     const userName = String(item.UserName || item.name || '');
     const email = String(item.Email || item.email || '');
@@ -133,7 +121,6 @@ export default function AdminFeedback() {
       comments.toLowerCase().includes(searchText)
     );
   });
-
   const formatDate = (date) => {
     if (!date) return 'N/A';
     const parsedDate = new Date(date);
@@ -144,7 +131,6 @@ export default function AdminFeedback() {
       year: 'numeric'
     });
   };
-
   const getInitials = (name) =>
     String(name || 'User')
       .trim()
@@ -152,7 +138,6 @@ export default function AdminFeedback() {
       .slice(0, 2)
       .map((part) => part.charAt(0).toUpperCase())
       .join('');
-
   return (
     <div className="bg-slate-50 dark:bg-black min-h-screen transition-colors text-slate-900 dark:text-white">
       {/* Top Header */}
@@ -179,7 +164,6 @@ export default function AdminFeedback() {
               : 'Monitor feedback submitted by participants for your active event.'}
           </p>
         </div>
-
         <button
           type="button"
           onClick={getFeedback}
@@ -190,7 +174,6 @@ export default function AdminFeedback() {
           Refresh
         </button>
       </motion.div>
-
       {/* Main Content Area */}
       <div className="p-4 sm:p-6 md:p-10 space-y-6">
         {/* Metric Cards */}
@@ -216,11 +199,9 @@ export default function AdminFeedback() {
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                 </div>
-
                 <p className="text-xs font-medium text-slate-500 dark:text-zinc-400">
                   {stat.title}
                 </p>
-
                 <p className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
                   {stat.value}
                 </p>
@@ -228,7 +209,6 @@ export default function AdminFeedback() {
             );
           })}
         </motion.div>
-
         {/* Feedback List Container */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -245,7 +225,6 @@ export default function AdminFeedback() {
                 {filteredFeedback.length} feedback record{filteredFeedback.length === 1 ? '' : 's'} for this event
               </p>
             </div>
-
             <div className="relative w-full sm:w-80">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -257,7 +236,6 @@ export default function AdminFeedback() {
               />
             </div>
           </div>
-
           {loading ? (
             <div className="py-16 text-center text-xs text-slate-400">
               <RefreshCw className="w-6 h-6 animate-spin mx-auto text-emerald-500 mb-2" />
@@ -301,13 +279,11 @@ export default function AdminFeedback() {
                     <th className="pb-3 font-bold uppercase tracking-wider text-[10px]">Date</th>
                   </tr>
                 </thead>
-
                 <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                   {filteredFeedback.map((item, index) => {
                     const userName = item.UserName || item.name || 'User';
                     const rating = getRating(item);
                     const comments = item.Comments || item.comments || '';
-
                     return (
                       <motion.tr
                         key={item.Id || item.id || index}
@@ -329,7 +305,6 @@ export default function AdminFeedback() {
                                 {getInitials(userName)}
                               </div>
                             )}
-
                             <div className="min-w-0">
                               <p className="font-bold text-slate-900 dark:text-white truncate">
                                 {userName}
@@ -340,30 +315,25 @@ export default function AdminFeedback() {
                             </div>
                           </div>
                         </td>
-
                         <td className="py-3.5 pr-4 text-slate-700 dark:text-zinc-300 font-medium">
                           {item.EventName || item.eventName || eventName || 'Workshop'}
                         </td>
-
                         <td className="py-3.5 pr-4">
                           <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200/50 dark:border-zinc-700/50">
                             {item.Category || item.category || 'General'}
                           </span>
                         </td>
-
                         <td className="py-3.5 pr-4">
                           {renderStars(rating)}
                           <span className="text-[10px] font-mono text-slate-400 mt-0.5 block">
                             {rating}/5
                           </span>
                         </td>
-
                         <td className="py-3.5 pr-4 text-slate-600 dark:text-zinc-300 max-w-xs">
                           <p className="line-clamp-3 text-xs leading-relaxed">
                             {comments || 'No comments provided'}
                           </p>
                         </td>
-
                         <td className="py-3.5 text-slate-500 dark:text-zinc-400 whitespace-nowrap text-xs font-mono">
                           {formatDate(item.CreatedAt || item.createdAt)}
                         </td>

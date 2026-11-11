@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/api';
-
 import {
   Users,
   UsersRound,
@@ -11,18 +10,16 @@ import {
   CreditCard,
   Activity,
   UserCheck,
+  UserPlus,
 } from 'lucide-react';
-
 import { motion } from 'framer-motion';
 import useTheme from '../../../../Hooks/useTheme';
 import SuperAdminAnalytics from './components/SuperAdminAnalytics';
-
 function getThemeStyles(hex = '#10B981', isDark = false) {
   let c = String(hex || '#10B981').replace('#', '').trim();
   if (c.length === 3) c = c.split('').map((x) => x + x).join('');
   const num = parseInt(c, 16);
   let h = 160, s = 80, l = 50;
-
   if (!isNaN(num) && c.length === 6) {
     let r = ((num >> 16) & 255) / 255;
     let g = ((num >> 8) & 255) / 255;
@@ -43,7 +40,6 @@ function getThemeStyles(hex = '#10B981', isDark = false) {
     s = Math.round(s * 100);
     l = Math.round(l * 100);
   }
-
   if (isDark) {
     const sat = Math.max(s, 75);
     const brightText = `hsl(${h}, ${sat}%, 72%)`;
@@ -57,7 +53,6 @@ function getThemeStyles(hex = '#10B981', isDark = false) {
       statNumberColor: brightText,
     };
   }
-
   const deepColor = `hsl(${h}, ${Math.max(s, 65)}%, 36%)`;
   return {
     border: hex,
@@ -68,7 +63,6 @@ function getThemeStyles(hex = '#10B981', isDark = false) {
     statNumberColor: deepColor,
   };
 }
-
 function SuperAdminDashboard() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -79,7 +73,6 @@ function SuperAdminDashboard() {
   const [events, setEvents] = useState([]);
   const [recentRegistrations, setRecentRegistrations] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
-
   useEffect(() => {
     fetchUsersCount();
     fetchMembersCount();
@@ -88,19 +81,15 @@ function SuperAdminDashboard() {
     fetchEvents();
     fetchRecentRegistrations();
   }, []);
-
   const fetchUsersCount = async () => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/users/count`
       );
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch users count');
       }
-
       setUsersCount(data.userCount ?? data.count ?? 0);
       if (data.registeredMembersCount !== undefined || data.totalMembersCount !== undefined) {
         setMembersCount(data.registeredMembersCount ?? data.totalMembersCount ?? 0);
@@ -109,13 +98,11 @@ function SuperAdminDashboard() {
       console.error('Error fetching users count:', error);
     }
   };
-
   const fetchMembersCount = async () => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/teams/members/count`
       );
-
       if (response.ok) {
         const data = await response.json();
         setMembersCount(data.registeredMembersCount ?? data.count ?? data.totalMembersCount ?? 0);
@@ -124,119 +111,82 @@ function SuperAdminDashboard() {
       console.error('Error fetching members count:', error);
     }
   };
-
   const fetchTeamsCount = async () => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/teams/count`
       );
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch teams count');
       }
-
       setTeamsCount(data.count || data.teamCount || 0);
     } catch (error) {
       console.error('Error fetching teams count:', error);
     }
   };
-
   const fetchEventsCount = async () => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/events/count`
       );
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch events count');
       }
-
       setEventsCount(data.count || data.eventCount || 0);
     } catch (error) {
       console.error('Error fetching events count:', error);
     }
   };
-
   const fetchEvents = async () => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/events/`
       );
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch events');
       }
-
       const rawEvents = Array.isArray(data) ? data : data.events || [];
-      const enrichedEvents = await Promise.all(
-        rawEvents.map(async (event) => {
-          let teamCount = Number(event.TeamCount ?? event.teamCount ?? event.teamsCount ?? 0);
-          let memberCount = Number(event.MemberCount ?? event.UserCount ?? event.userCount ?? event.usersCount ?? 0);
-
-          if ((teamCount === 0 || memberCount === 0) && event.Id) {
-            try {
-              const summaryRes = await fetch(`${API_BASE_URL}/api/events/${event.Id}/dashboard-summary`);
-              if (summaryRes.ok) {
-                const summaryData = await summaryRes.json();
-                const summaryInfo = summaryData?.data;
-                if (summaryInfo) {
-                  if (!teamCount) teamCount = Number(summaryInfo.teamsCount || 0);
-                  if (!memberCount) memberCount = Number(summaryInfo.usersCount || 0);
-                }
-              }
-            } catch (_) { }
-          }
-
-          return {
-            ...event,
-            TeamCount: teamCount,
-            MemberCount: memberCount,
-            UserCount: memberCount,
-          };
-        })
-      );
-
+      const enrichedEvents = rawEvents.map((event) => {
+        const teamCount = Number(event.TeamCount ?? event.teamCount ?? event.teamsCount ?? 0);
+        const memberCount = Number(event.MemberCount ?? event.UserCount ?? event.userCount ?? event.usersCount ?? 0);
+        return {
+          ...event,
+          TeamCount: teamCount,
+          MemberCount: memberCount,
+          UserCount: memberCount,
+        };
+      });
       setEvents(enrichedEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
   };
-
   const fetchRecentRegistrations = async () => {
     try {
       const registrationsResponse = await fetch(
         `${API_BASE_URL}/api/event_reg/recent`
       );
       const registrationsData = await registrationsResponse.json();
-
       if (!registrationsResponse.ok) {
         throw new Error(
           registrationsData.message || 'Failed to fetch recent registrations'
         );
       }
-
       const activitiesResponse = await fetch(
         `${API_BASE_URL}/api/event_reg/activities`
       );
       const activitiesData = await activitiesResponse.json();
-
       if (!activitiesResponse.ok) {
         throw new Error(
           activitiesData.message || 'Failed to fetch recent activities'
         );
       }
-
       const teamsResponse = await fetch(`${API_BASE_URL}/api/teams`);
       const teamsData = await teamsResponse.json().catch(() => ({}));
-
       let team = [];
-
       if (teamsResponse.ok) {
         team = Array.isArray(teamsData)
           ? teamsData
@@ -246,25 +196,19 @@ function SuperAdminDashboard() {
       } else {
         console.error("Failed to fetch teams:", teamsData);
       }
-
       const registrations = Array.isArray(registrationsData.registration)
         ? registrationsData.registration
         : [];
-
       const activities = Array.isArray(activitiesData.activities)
         ? activitiesData.activities
         : [];
-
       const teams = Array.isArray(teamsData.teams)
         ? teamsData.teams
         : [];
-
       const teamsById = new Map();
-
       teams.forEach((team) => {
         teamsById.set(String(team.Id ?? team.id), team);
       });
-
       const eventIds = [
         ...new Set(
           [...registrations, ...activities]
@@ -273,41 +217,32 @@ function SuperAdminDashboard() {
             .map(String)
         ),
       ];
-
       const eventsResponse = await fetch(`${API_BASE_URL}/api/events/`);
       const eventsData = await eventsResponse.json();
-
       const allEvents = Array.isArray(eventsData)
         ? eventsData
         : eventsData.events || [];
-
       const eventsById = new Map(
         allEvents.map((event) => [
           String(event.Id ?? event.id),
           event,
         ])
       );
-
       const teamsByIdWithLeaders = new Map(teamsById);
-
       for (const eventId of eventIds) {
         try {
           const response = await fetch(
             `${API_BASE_URL}/api/teams/event/${eventId}`
           );
-
           const data = await response.json();
-
           if (!response.ok) {
             throw new Error(
               data.message || 'Failed to fetch event teams'
             );
           }
-
           const eventTeams = Array.isArray(data.teams)
             ? data.teams
             : [];
-
           eventTeams.forEach((team) => {
             teamsByIdWithLeaders.set(
               String(team.Id ?? team.id),
@@ -321,31 +256,24 @@ function SuperAdminDashboard() {
           );
         }
       }
-
       const enrichRegistration = (registration) => {
         const teamId = registration.TeamId ?? registration.teamId;
-
         const team = teamsByIdWithLeaders.get(String(teamId));
-
         const eventId =
           registration.EventId ??
           registration.eventId ??
           team?.EventId ??
           team?.eventId;
-
         const event = eventsById.get(String(eventId));
-
         return {
           ...team,
           ...registration,
-
           TeamName:
             registration.TeamName ||
             registration.teamName ||
             team?.TeamName ||
             team?.teamName ||
             '—',
-
           EventName:
             registration.EventName ||
             registration.eventName ||
@@ -354,7 +282,6 @@ function SuperAdminDashboard() {
             event?.EventName ||
             event?.eventName ||
             '—',
-
           EventStatus:
             registration.EventStatus ||
             registration.eventStatus ||
@@ -363,7 +290,6 @@ function SuperAdminDashboard() {
             event?.EventStatus ||
             event?.status ||
             'unknown',
-
           LeaderName:
             registration.LeaderName ||
             registration.leaderName ||
@@ -375,7 +301,6 @@ function SuperAdminDashboard() {
       setRecentRegistrations(
         registrations.map(enrichRegistration)
       );
-
       setRecentActivities(
         activities.map(enrichRegistration)
       );
@@ -391,28 +316,23 @@ function SuperAdminDashboard() {
       const response = await fetch(
         `${API_BASE_URL}/api/teams/event/${eventId}/count`
       );
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(
           data.message || 'Failed to fetch team count'
         );
       }
-
       return data.teamCount || data.count || 0;
     } catch (error) {
       console.error('Error fetching team count:', error);
       return 0;
     }
   };
-
   const currentEvent = events.find(
     (event) =>
       String(event.status || event.EventStatus || '').toLowerCase() ===
       'ongoing'
   );
-
   const getActivityName = (activity) => {
     return (
       activity.TeamName ||
@@ -424,7 +344,6 @@ function SuperAdminDashboard() {
       "Registration"
     );
   };
-
   const getActivityLeader = (activity) => {
     return (
       activity.LeaderName ||
@@ -436,7 +355,6 @@ function SuperAdminDashboard() {
       "User"
     );
   };
-
   const getActivityStatus = (activity) => {
     return (
       activity.Status ||
@@ -444,7 +362,6 @@ function SuperAdminDashboard() {
       "pending"
     );
   };
-
   const getActivityDate = (activity) => {
     return (
       activity.CreatedAt ||
@@ -455,12 +372,10 @@ function SuperAdminDashboard() {
       activity.date
     );
   };
-
   const formatTime = (value) => {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? 'Recently' : date.toLocaleString();
   };
-
   const stats = [
     {
       title: 'Total Members',
@@ -483,7 +398,6 @@ function SuperAdminDashboard() {
       icon: Calendar,
     },
   ];
-
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors overflow-x-hidden">
       <motion.div
@@ -495,12 +409,10 @@ function SuperAdminDashboard() {
         <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
           Dashboard
         </h1>
-
         <p className="text-emerald-700 dark:text-emerald-500 text-sm sm:text-base mt-1">
           Overview of all events and system analytics
         </p>
       </motion.div>
-
       <div className="p-4 sm:p-6 md:p-8 space-y-8">
         <motion.div
           initial="hidden"
@@ -518,7 +430,6 @@ function SuperAdminDashboard() {
         >
           {stats.map((stat, i) => {
             const Icon = stat.icon;
-
             return (
               <motion.div
                 key={i}
@@ -551,12 +462,10 @@ function SuperAdminDashboard() {
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
                       {stat.title}
                     </p>
-
                     <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
                       {stat.value}
                     </p>
                   </div>
-
                   <div className="p-1.5 sm:p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 shrink-0">
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 dark:text-emerald-500" />
                   </div>
@@ -565,7 +474,6 @@ function SuperAdminDashboard() {
             );
           })}
         </motion.div>
-        
         {/* Graphical Analytics & Performance Insights */}
         <motion.div
           initial={{ opacity: 0, y: 25 }}
@@ -583,7 +491,6 @@ function SuperAdminDashboard() {
             isDark={isDark}
           />
         </motion.div>
-
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -598,17 +505,11 @@ function SuperAdminDashboard() {
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
               Events Overview
             </h2>
-
-            {/* <button className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-500 flex items-center gap-1 hover:underline">
-              View All
-              <ArrowRight className="w-4 h-4" />
-            </button> */}
+            {/* Unused template component */}
           </div>
-
           {events.length === 0 ? (
             <div className="text-center py-10">
               <Calendar className="w-10 h-10 mx-auto text-gray-400 mb-3" />
-
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 No events found
               </p>
@@ -621,7 +522,6 @@ function SuperAdminDashboard() {
                 ).toLowerCase();
                 const primaryColor = event.PrimaryColor || '#10B981';
                 const themeStyles = getThemeStyles(primaryColor, isDark);
-
                 return (
                   <motion.div
                     key={event.Id || i}
@@ -664,7 +564,6 @@ function SuperAdminDashboard() {
                           <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white line-clamp-1">
                             {event.EventName}
                           </h3>
-
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {event.StartDate
                               ? new Date(
@@ -687,7 +586,6 @@ function SuperAdminDashboard() {
                               : '—'}
                           </p>
                         </div>
-
                         <span
                           style={{
                             backgroundColor: themeStyles.badgeBg,
@@ -700,7 +598,6 @@ function SuperAdminDashboard() {
                         </span>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-2 text-center pt-3 border-t border-gray-100 dark:border-gray-800/80 mt-3">
                       <div>
                         <p
@@ -709,12 +606,10 @@ function SuperAdminDashboard() {
                         >
                           {event.MemberCount ?? event.UserCount ?? 0}
                         </p>
-
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
                           Members
                         </p>
                       </div>
-
                       <div>
                         <p
                           className="text-base sm:text-lg font-bold"
@@ -722,7 +617,6 @@ function SuperAdminDashboard() {
                         >
                           {event.TeamCount || 0}
                         </p>
-
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-medium">
                           Teams
                         </p>
@@ -734,11 +628,9 @@ function SuperAdminDashboard() {
             </div>
           )}
         </motion.div>
-
         {currentEvent ? (() => {
           const currentPrimary = currentEvent.PrimaryColor || '#10B981';
           const currentStyles = getThemeStyles(currentPrimary, isDark);
-
           return (
             <motion.div
               initial={{
@@ -767,7 +659,6 @@ function SuperAdminDashboard() {
                   <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                     {currentEvent.EventName} – Overview
                   </h2>
-
                   <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                     {currentEvent.StartDate
                       ? new Date(
@@ -790,7 +681,6 @@ function SuperAdminDashboard() {
                       : '—'}
                   </p>
                 </div>
-
                 <span
                   style={{
                     backgroundColor: currentStyles.badgeBg,
@@ -802,7 +692,6 @@ function SuperAdminDashboard() {
                   Current Event
                 </span>
               </div>
-
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800">
                   <div
@@ -815,19 +704,16 @@ function SuperAdminDashboard() {
                   >
                     <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-
                   <p
                     className="text-base sm:text-lg font-bold"
                     style={{ color: currentStyles.statNumberColor }}
                   >
                     {currentEvent.MemberCount ?? currentEvent.UserCount ?? 0}
                   </p>
-
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Members Registered
                   </p>
                 </div>
-
                 <div className="p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800">
                   <div
                     className="p-1.5 sm:p-2 rounded-lg w-fit mb-2 border"
@@ -839,19 +725,16 @@ function SuperAdminDashboard() {
                   >
                     <UsersRound className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-
                   <p
                     className="text-base sm:text-lg font-bold"
                     style={{ color: currentStyles.statNumberColor }}
                   >
                     {currentEvent.TeamCount || 0}
                   </p>
-
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Teams Registered
                   </p>
                 </div>
-
                 <div className="p-3 sm:p-4 rounded-lg bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800">
                   <div
                     className="p-1.5 sm:p-2 rounded-lg w-fit mb-2 border"
@@ -863,13 +746,11 @@ function SuperAdminDashboard() {
                   >
                     <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
-
                   <p
                     className="text-base sm:text-lg font-bold text-gray-900 dark:text-white"
                   >
                     {currentEvent.EventType || '—'}
                   </p>
-
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Event Type
                   </p>
@@ -880,13 +761,11 @@ function SuperAdminDashboard() {
         })() : (
           <div className="bg-white dark:bg-black rounded-xl p-6 border border-gray-200 dark:border-zinc-800 text-center">
             <Calendar className="w-10 h-10 mx-auto text-gray-400 mb-3" />
-
             <p className="text-sm text-gray-500 dark:text-gray-400">
               No current event
             </p>
           </div>
         )}
-
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <motion.div
             initial={{
@@ -910,12 +789,8 @@ function SuperAdminDashboard() {
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                 Recent Registrations
               </h2>
-
-              {/* <button className="text-xs sm:text-sm text-emerald-700 dark:text-emerald-500 hover:underline">
-                View All
-              </button> */}
+              {/* Unused template component */}
             </div>
-
             <div className="overflow-x-auto">
               <table className="w-full text-xs sm:text-sm min-w-[400px]">
                 <thead>
@@ -923,21 +798,17 @@ function SuperAdminDashboard() {
                     <th className="pb-3 font-medium">
                       Team Name
                     </th>
-
                     <th className="pb-3 font-medium">
                       Event
                     </th>
-
                     <th className="pb-3 font-medium hidden sm:table-cell">
                       Date
                     </th>
-
                     <th className="pb-3 font-medium">
                       Status
                     </th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {recentRegistrations.slice(0, 5).map((registration, i) => (
                     <motion.tr
@@ -962,11 +833,9 @@ function SuperAdminDashboard() {
                       <td className="py-3 text-gray-900 dark:text-white font-medium">
                         {registration.TeamName || '—'}
                       </td>
-
                       <td className="py-3 text-gray-600 dark:text-gray-300">
                         {registration.EventName || registration.eventName || '—'}
                       </td>
-
                       <td className="py-3 text-gray-600 dark:text-gray-300 hidden sm:table-cell">
                         {registration.CreatedAt || registration.createdAt
                           ? new Date(
@@ -974,7 +843,6 @@ function SuperAdminDashboard() {
                           ).toLocaleDateString()
                           : '—'}
                       </td>
-
                       <td className="py-3">
                         <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500">
                           {registration.Status ||
@@ -988,7 +856,6 @@ function SuperAdminDashboard() {
               </table>
             </div>
           </motion.div>
-
           <motion.div
             initial={{
               opacity: 0,
@@ -1016,68 +883,48 @@ function SuperAdminDashboard() {
                   Latest team registrations across events
                 </p>
               </div>
-
               <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 shrink-0">
                 <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-700 dark:text-emerald-500" />
               </div>
             </div>
-
               {recentActivities.length === 0 ? (
                 <div className="py-10 text-center">
-
                   <Activity className="w-8 h-8 mx-auto text-gray-400" />
-
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                     No recent activities
                   </p>
-
                 </div>
               ) : (
                 <div className="space-y-4">
-
                   {recentActivities.slice(0, 5).map((activity, index) => {
-
                     const status = getActivityStatus(activity);
-
                     return (
                       <div
                         key={activity.Id || activity.id || index}
                         className="flex items-start gap-3"
                       >
-
                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 shrink-0">
-
                           {status.toLowerCase() === "approved" ? (
                             <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                           ) : (
                             <UserPlus className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                           )}
-
                         </div>
-
                         <div className="min-w-0 flex-1">
-
                           <p className="text-sm text-gray-900 dark:text-white font-medium">
                             New registration from{" "}
                             {getActivityName(activity)}
                           </p>
-
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             Leader: {getActivityLeader(activity)}
                           </p>
-
                           <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-1">
-
                             <Clock className="w-3 h-3" />
-
                             {getActivityDate(activity)
                               ? formatTime(getActivityDate(activity))
                               : "Recently"}
-
                           </div>
-
                         </div>
-
                         <span
                           className={`text-[10px] px-2 py-1 rounded-full ${status.toLowerCase() === "approved"
                             ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500"
@@ -1088,11 +935,9 @@ function SuperAdminDashboard() {
                         >
                           {status}
                         </span>
-
                       </div>
                     );
                   })}
-
                 </div>
               )}
           </motion.div>
@@ -1101,5 +946,4 @@ function SuperAdminDashboard() {
     </div>
   );
 }
-
 export default SuperAdminDashboard;

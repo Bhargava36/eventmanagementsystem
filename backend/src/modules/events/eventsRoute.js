@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const eventsController = require('./eventsController');
-
+const { optionalAuth } = require('../../middleware/authmiddleware');
+router.use(optionalAuth);
 router.post('/create', eventsController.createEvent);
 router.get('/', eventsController.getAllEvents);
 router.get('/count', eventsController.getEventCount);
@@ -16,5 +17,4 @@ router.post('/:id/broadcasts', eventsController.sendBroadcast);
 router.get('/:id/broadcasts', eventsController.getBroadcasts);
 router.put('/:id', eventsController.updateEvent);
 router.delete('/:id', eventsController.deleteEvent);
-
 module.exports = router;

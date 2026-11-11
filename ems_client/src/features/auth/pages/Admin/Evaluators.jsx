@@ -36,7 +36,6 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { getTrackVisibility, isSoloTeamSize } from '../../../../lib/utils';
-
 function Evaluators() {
   const storedAdmin = useMemo(() => {
     try {
@@ -45,15 +44,12 @@ function Evaluators() {
       return {};
     }
   }, []);
-
   const eventId = storedAdmin?.EventId;
-
   const { isBoth, isVirtual, isPhysical } = getTrackVisibility(
     storedAdmin?.HackathonMode,
     storedAdmin?.Location
   );
   const isIndividual = isSoloTeamSize(storedAdmin?.TeamSize);
-
   // Tab indexing:
   // 0: Physical Evaluators
   // 1: Virtual Evaluators
@@ -61,31 +57,26 @@ function Evaluators() {
   // 3: Virtual Rounds
   const defaultTab = isVirtual && !isPhysical ? 1 : 0;
   const [activeSection, setActiveSection] = useState(defaultTab);
-
   // Evaluators state
   const [evaluators, setEvaluators] = useState([]);
   const [evaluatorStats, setEvaluatorStats] = useState({ total: 0, active: 0, inactive: 0 });
   const [loadingEvaluators, setLoadingEvaluators] = useState(false);
   const [evaluatorSearch, setEvaluatorSearch] = useState('');
-
   // Rounds & Questions state
   const [rounds, setRounds] = useState([]);
   const [loadingRounds, setLoadingRounds] = useState(false);
   const [expandedRoundIds, setExpandedRoundIds] = useState({});
-
   const toggleRoundExpanded = (roundId) => {
     setExpandedRoundIds(prev => ({
       ...prev,
       [roundId]: !prev[roundId]
     }));
   };
-
   // Modals state
   const [isAddEvaluatorOpen, setIsAddEvaluatorOpen] = useState(false);
   const [editingEvaluator, setEditingEvaluator] = useState(null);
   const [credentialsModal, setCredentialsModal] = useState(null); // for viewing/copying credentials
   const [copiedKey, setCopiedKey] = useState(false);
-
   // Evaluator form state
   const [evaluatorForm, setEvaluatorForm] = useState({
     name: '',
@@ -99,7 +90,6 @@ function Evaluators() {
   const [showFormPassword, setShowFormPassword] = useState(false);
   const [evaluatorSubmitting, setEvaluatorSubmitting] = useState(false);
   const [evaluatorError, setEvaluatorError] = useState('');
-
   // Round modal/form state
   const [isRoundModalOpen, setIsRoundModalOpen] = useState(false);
   const [editingRound, setEditingRound] = useState(null);
@@ -110,7 +100,6 @@ function Evaluators() {
     status: 'Active'
   });
   const [roundSubmitting, setRoundSubmitting] = useState(false);
-
   // Question modal/form state
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [activeRoundForQuestion, setActiveRoundForQuestion] = useState(null);
@@ -122,10 +111,8 @@ function Evaluators() {
     questionOrder: 1
   });
   const [questionSubmitting, setQuestionSubmitting] = useState(false);
-
   const isRoundsTab = activeSection === 2 || activeSection === 3;
   const currentTrack = activeSection === 1 || activeSection === 3 ? 'Virtual' : 'Physical';
-
   // Generate strong random password
   const generatePassword = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
@@ -135,7 +122,6 @@ function Evaluators() {
     }
     setEvaluatorForm(prev => ({ ...prev, password: pwd }));
   };
-
   // Fetch evaluators
   const fetchEvaluators = useCallback(async () => {
     if (!eventId) return;
@@ -155,7 +141,6 @@ function Evaluators() {
       setLoadingEvaluators(false);
     }
   }, [eventId, currentTrack]);
-
   // Fetch rounds
   const fetchRounds = useCallback(async () => {
     if (!eventId) return;
@@ -174,7 +159,6 @@ function Evaluators() {
       setLoadingRounds(false);
     }
   }, [eventId, currentTrack]);
-
   useEffect(() => {
     if (isRoundsTab) {
       fetchRounds();
@@ -182,7 +166,6 @@ function Evaluators() {
       fetchEvaluators();
     }
   }, [isRoundsTab, currentTrack, fetchEvaluators, fetchRounds]);
-
   // Handle Evaluator Create / Update
   const handleOpenAddEvaluator = () => {
     const defaultPwd = 'Eval@' + Math.floor(1000 + Math.random() * 9000);
@@ -199,7 +182,6 @@ function Evaluators() {
     setEditingEvaluator(null);
     setIsAddEvaluatorOpen(true);
   };
-
   const handleOpenEditEvaluator = (evaluator) => {
     setEditingEvaluator(evaluator);
     setEvaluatorForm({
@@ -215,18 +197,15 @@ function Evaluators() {
     setEvaluatorError('');
     setIsAddEvaluatorOpen(true);
   };
-
   const handleSubmitEvaluator = async (e) => {
     e.preventDefault();
     if (!eventId) {
       alert('Event ID not found for this admin.');
       return;
     }
-
     try {
       setEvaluatorSubmitting(true);
       setEvaluatorError('');
-
       if (editingEvaluator) {
         // Update
         const payload = {
@@ -241,7 +220,6 @@ function Evaluators() {
         if (evaluatorForm.password) {
           payload.Password = evaluatorForm.password;
         }
-
         const res = await fetch(`${API_BASE_URL}/api/evaluators/${editingEvaluator.Id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -249,7 +227,6 @@ function Evaluators() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to update evaluator');
-
         setIsAddEvaluatorOpen(false);
         fetchEvaluators();
       } else {
@@ -264,7 +241,6 @@ function Evaluators() {
           College: evaluatorForm.college,
           Role: evaluatorForm.role
         };
-
         const res = await fetch(`${API_BASE_URL}/api/evaluators`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -272,7 +248,6 @@ function Evaluators() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to create evaluator');
-
         setIsAddEvaluatorOpen(false);
         fetchEvaluators();
         // Show credentials popup so admin can copy immediately
@@ -291,10 +266,8 @@ function Evaluators() {
       setEvaluatorSubmitting(false);
     }
   };
-
   const handleDeleteEvaluator = async (id, name) => {
     if (!window.confirm(`Are you sure you want to remove evaluator "${name}"?`)) return;
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/evaluators/${id}`, {
         method: 'DELETE'
@@ -309,9 +282,7 @@ function Evaluators() {
       alert(err.message || 'Error deleting evaluator');
     }
   };
-
   // ── ROUNDS ACTIONS ──
-
   const handleOpenAddRound = () => {
     setEditingRound(null);
     setRoundForm({
@@ -322,7 +293,6 @@ function Evaluators() {
     });
     setIsRoundModalOpen(true);
   };
-
   const handleOpenEditRound = (round) => {
     setEditingRound(round);
     setRoundForm({
@@ -333,11 +303,9 @@ function Evaluators() {
     });
     setIsRoundModalOpen(true);
   };
-
   const handleSubmitRound = async (e) => {
     e.preventDefault();
     if (!eventId) return;
-
     try {
       setRoundSubmitting(true);
       if (editingRound) {
@@ -374,10 +342,8 @@ function Evaluators() {
       setRoundSubmitting(false);
     }
   };
-
   const handleDeleteRound = async (roundId, roundName) => {
     if (!window.confirm(`Are you sure you want to delete "${roundName}" and all its questions?`)) return;
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/evaluators/rounds/${roundId}`, {
         method: 'DELETE'
@@ -391,9 +357,7 @@ function Evaluators() {
       alert(err.message);
     }
   };
-
   // ── QUESTIONS ACTIONS ──
-
   const handleOpenAddQuestion = (round) => {
     setActiveRoundForQuestion(round);
     setEditingQuestion(null);
@@ -405,7 +369,6 @@ function Evaluators() {
     });
     setIsQuestionModalOpen(true);
   };
-
   const handleOpenEditQuestion = (round, question) => {
     setActiveRoundForQuestion(round);
     setEditingQuestion(question);
@@ -417,11 +380,9 @@ function Evaluators() {
     });
     setIsQuestionModalOpen(true);
   };
-
   const handleSubmitQuestion = async (e) => {
     e.preventDefault();
     if (!activeRoundForQuestion) return;
-
     try {
       setQuestionSubmitting(true);
       if (editingQuestion) {
@@ -457,10 +418,8 @@ function Evaluators() {
       setQuestionSubmitting(false);
     }
   };
-
   const handleDeleteQuestion = async (questionId) => {
     if (!window.confirm('Are you sure you want to delete this evaluation question?')) return;
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/evaluators/questions/${questionId}`, {
         method: 'DELETE'
@@ -474,7 +433,6 @@ function Evaluators() {
       alert(err.message);
     }
   };
-
   // Filtered evaluators by search
   const filteredEvaluators = useMemo(() => {
     if (!evaluatorSearch.trim()) return evaluators;
@@ -487,22 +445,18 @@ function Evaluators() {
       (e.Role || '').toLowerCase().includes(term)
     );
   }, [evaluators, evaluatorSearch]);
-
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(true);
     setTimeout(() => setCopiedKey(false), 2000);
   };
-
   const copyCredentialsPackage = (creds) => {
     const payload = `=== EVENT EVALUATOR CREDENTIALS ===\nEvent: ${storedAdmin?.EventName || 'Event ID #' + eventId}\nTrack: ${creds.track}\nEvaluator: ${creds.name}\nUsername: ${creds.username || creds.email}\nEmail: ${creds.email}\nPassword: ${creds.password || '(Encrypted securely - use password set during creation)'}\nRole: ${creds.role}\nNote: Access is strictly restricted to this event.`;
     copyToClipboard(payload);
   };
-
   return (
     <main className="min-h-screen w-full min-w-0 bg-slate-50 p-3 font-sans text-slate-900 dark:bg-black dark:text-white sm:p-5 lg:p-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-
         {/* ── HEADER ── */}
         <div className="flex flex-col items-start justify-between gap-5 border-b border-slate-200 pb-6 dark:border-zinc-800 sm:flex-row sm:items-center">
           <div className="flex items-start gap-4">
@@ -526,7 +480,6 @@ function Evaluators() {
             </div>
           </div>
         </div>
-
         {/* ── TABS ── */}
         <div className="space-y-0">
           <div className="relative z-10 -mb-px flex items-end gap-2 overflow-x-auto">
@@ -546,7 +499,6 @@ function Evaluators() {
             ].map((tab) => {
               const isActive = activeSection === tab.id;
               const Icon = tab.icon;
-
               return (
                 <button
                   key={tab.id}
@@ -576,7 +528,6 @@ function Evaluators() {
               );
             })}
           </div>
-
           {/* ── TAB PANEL ── */}
           <section
             role="tabpanel"
@@ -611,7 +562,6 @@ function Evaluators() {
                   </p>
                 </div>
               </div>
-
               {isRoundsTab ? (
                 <button
                   type="button"
@@ -633,7 +583,6 @@ function Evaluators() {
                 </button>
               )}
             </div>
-
             {/* ══════════ EVALUATORS VIEW ══════════ */}
             {!isRoundsTab && (
               <>
@@ -650,7 +599,6 @@ function Evaluators() {
                       </div>
                     </div>
                   </div>
-
                   <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 dark:border-zinc-800/80 dark:bg-black">
                     <div className="flex items-start gap-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10">
@@ -662,7 +610,6 @@ function Evaluators() {
                       </div>
                     </div>
                   </div>
-
                   <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 dark:border-zinc-800/80 dark:bg-black">
                     <div className="flex items-start gap-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-50 dark:bg-rose-500/10">
@@ -675,7 +622,6 @@ function Evaluators() {
                     </div>
                   </div>
                 </div>
-
                 {/* Table Box */}
                 <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-zinc-800">
                   <div className="flex flex-col gap-4 border-b border-slate-100 p-5 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
@@ -703,7 +649,6 @@ function Evaluators() {
                       />
                     </div>
                   </div>
-
                   <div className="w-full overflow-x-auto">
                     {loadingEvaluators ? (
                       <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -751,7 +696,6 @@ function Evaluators() {
                               .join('')
                               .toUpperCase()
                               .slice(0, 2);
-
                             return (
                               <tr key={evaluator.Id} className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/30">
                                 <td className="whitespace-nowrap px-5 py-4 align-middle text-left">
@@ -765,22 +709,18 @@ function Evaluators() {
                                     </div>
                                   </div>
                                 </td>
-
                                 <td className="whitespace-nowrap px-5 py-4 align-middle text-left">
                                   <p className="font-medium text-slate-800 dark:text-slate-200">{evaluator.Email}</p>
                                   <p className="text-xs text-slate-400">User: {evaluator.Username || evaluator.Email}</p>
                                 </td>
-
                                 <td className="whitespace-nowrap px-5 py-4 align-middle text-slate-600 dark:text-slate-400">
                                   {evaluator.College || '—'}
                                 </td>
-
                                 <td className="whitespace-nowrap px-5 py-4 align-middle">
                                   <span className="rounded-full bg-slate-100 dark:bg-zinc-800 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
                                     {evaluator.Role || 'Evaluator'}
                                   </span>
                                 </td>
-
                                 <td className="whitespace-nowrap px-5 py-4 align-middle">
                                   <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
                                     evaluator.Status === 'Active'
@@ -795,7 +735,6 @@ function Evaluators() {
                                     {evaluator.Status}
                                   </span>
                                 </td>
-
                                 <td className="whitespace-nowrap px-5 py-4 align-middle">
                                   <button
                                     type="button"
@@ -813,7 +752,6 @@ function Evaluators() {
                                     View / Copy
                                   </button>
                                 </td>
-
                                 <td className="whitespace-nowrap px-5 py-4 align-middle">
                                   <div className="flex items-center justify-center gap-1.5">
                                     <button
@@ -844,7 +782,6 @@ function Evaluators() {
                 </div>
               </>
             )}
-
             {/* ══════════ ROUNDS & QUESTIONS VIEW ══════════ */}
             {isRoundsTab && (
               <div className="space-y-6">
@@ -876,7 +813,6 @@ function Evaluators() {
                     {rounds.map((round, rIdx) => {
                       const totalMarks = (round.questions || []).reduce((sum, q) => sum + Number(q.MaxMarks || 0), 0);
                       const isExpanded = Boolean(expandedRoundIds[round.Id]);
-
                       return (
                         <article
                           key={round.Id}
@@ -915,7 +851,6 @@ function Evaluators() {
                                 )}
                               </div>
                             </div>
-
                             <div className="flex items-center gap-2 shrink-0">
                               {/* Outline Style Add Question Button */}
                               <button
@@ -929,7 +864,6 @@ function Evaluators() {
                                 <Plus className="h-3.5 w-3.5" />
                                 Add Question &amp; Marks
                               </button>
-
                               <button
                                 type="button"
                                 title="Edit Round"
@@ -952,7 +886,6 @@ function Evaluators() {
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
-
                               {/* Accordion / Dropdown Toggle Button */}
                               <button
                                 type="button"
@@ -967,7 +900,6 @@ function Evaluators() {
                               </button>
                             </div>
                           </div>
-
                           {/* Collapsible Questions Dropdown Drawer */}
                           <AnimatePresence initial={false}>
                             {isExpanded && (
@@ -1017,14 +949,12 @@ function Evaluators() {
                                             )}
                                           </div>
                                         </div>
-
                                         <div className="flex items-center gap-3 shrink-0">
                                           {/* Outline Style Marks Badge */}
                                           <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-50/60 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400">
                                             <Award className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                                             {q.MaxMarks} Marks
                                           </span>
-
                                           <button
                                             type="button"
                                             title="Edit Question"
@@ -1059,7 +989,6 @@ function Evaluators() {
           </section>
         </div>
       </div>
-
       {/* ══════════ MODAL: ADD / EDIT EVALUATOR ══════════ */}
       {isAddEvaluatorOpen && (
         <div
@@ -1095,7 +1024,6 @@ function Evaluators() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-
             <form onSubmit={handleSubmitEvaluator} className="space-y-4 p-5 sm:p-6">
               {evaluatorError && (
                 <div className="flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-50 p-3 text-xs text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">
@@ -1103,7 +1031,6 @@ function Evaluators() {
                   <span>{evaluatorError}</span>
                 </div>
               )}
-
               {/* Name */}
               <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
                 Full Name *
@@ -1118,7 +1045,6 @@ function Evaluators() {
                   />
                 </div>
               </label>
-
               {/* Email & Username */}
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -1135,7 +1061,6 @@ function Evaluators() {
                     />
                   </div>
                 </label>
-
                 <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
                   Username (Login ID)
                   <div className="relative">
@@ -1149,7 +1074,6 @@ function Evaluators() {
                   </div>
                 </label>
               </div>
-
               {/* Password */}
               <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
                 <span>{editingEvaluator ? 'Change Password (leave blank to keep current)' : 'Password *'}</span>
@@ -1183,7 +1107,6 @@ function Evaluators() {
                   </div>
                 </div>
               </label>
-
               {/* College & Role */}
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -1198,7 +1121,6 @@ function Evaluators() {
                     />
                   </div>
                 </label>
-
                 <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
                   Evaluator Role
                   <select
@@ -1214,7 +1136,6 @@ function Evaluators() {
                   </select>
                 </label>
               </div>
-
               {/* Track & Status (for edit) */}
               <div className="grid gap-3 sm:grid-cols-2 pt-1">
                 <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -1228,7 +1149,6 @@ function Evaluators() {
                     <option value="Virtual">Virtual Event</option>
                   </select>
                 </label>
-
                 {editingEvaluator && (
                   <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
                     Status
@@ -1243,11 +1163,9 @@ function Evaluators() {
                   </label>
                 )}
               </div>
-
               <div className="rounded-xl bg-slate-50 dark:bg-zinc-900/60 p-3 text-xs text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-zinc-800/80">
                 🔒 Evaluator will have access strictly restricted to <strong>{storedAdmin?.EventName || `Event #${eventId}`}</strong>.
               </div>
-
               <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 dark:border-zinc-800 sm:flex-row sm:justify-end">
                 <button
                   type="button"
@@ -1269,7 +1187,6 @@ function Evaluators() {
           </div>
         </div>
       )}
-
       {/* ══════════ MODAL: VIEW / COPY CREDENTIALS ══════════ */}
       {credentialsModal && (
         <div
@@ -1299,7 +1216,6 @@ function Evaluators() {
                 <X className="h-4 w-4" />
               </button>
             </div>
-
             <div className="space-y-2.5 rounded-2xl bg-slate-50 dark:bg-zinc-950 p-4 border border-slate-200 dark:border-zinc-800 text-xs font-mono">
               <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-zinc-800/60">
                 <span className="text-slate-400 font-sans">Event</span>
@@ -1324,7 +1240,6 @@ function Evaluators() {
                 </span>
               </div>
             </div>
-
             <div className="flex gap-2">
               <button
                 type="button"
@@ -1345,7 +1260,6 @@ function Evaluators() {
           </div>
         </div>
       )}
-
       {/* ══════════ MODAL: ADD / EDIT ROUND ══════════ */}
       {isRoundModalOpen && (
         <div
@@ -1381,7 +1295,6 @@ function Evaluators() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-
             <form onSubmit={handleSubmitRound} className="space-y-4 p-5 sm:p-6">
               <div className="grid gap-3 sm:grid-cols-4">
                 <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300 sm:col-span-1">
@@ -1394,7 +1307,6 @@ function Evaluators() {
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-3 text-sm outline-none focus:border-emerald-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:focus:border-emerald-500"
                   />
                 </label>
-
                 <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300 sm:col-span-3">
                   Round Name *
                   <input
@@ -1406,7 +1318,6 @@ function Evaluators() {
                   />
                 </label>
               </div>
-
               <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
                 Description &amp; Guidelines (Optional)
                 <textarea
@@ -1417,7 +1328,6 @@ function Evaluators() {
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none focus:border-emerald-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:focus:border-emerald-500"
                 />
               </label>
-
               <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 dark:border-zinc-800 sm:flex-row sm:justify-end">
                 <button
                   type="button"
@@ -1439,7 +1349,6 @@ function Evaluators() {
           </div>
         </div>
       )}
-
       {/* ══════════ MODAL: ADD / EDIT QUESTION (WITH MARKS) ══════════ */}
       {isQuestionModalOpen && (
         <div
@@ -1475,7 +1384,6 @@ function Evaluators() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-
             <form onSubmit={handleSubmitQuestion} className="space-y-4 p-5 sm:p-6">
               {/* Question Text */}
               <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -1489,7 +1397,6 @@ function Evaluators() {
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none focus:border-emerald-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:focus:border-emerald-500"
                 />
               </label>
-
               {/* Max Marks */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -1523,7 +1430,6 @@ function Evaluators() {
                   </div>
                 </div>
               </div>
-
               {/* Rubric Description */}
               <label className="block space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
                 Grading Rubric / Guidelines (Optional)
@@ -1535,7 +1441,6 @@ function Evaluators() {
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none focus:border-emerald-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white dark:focus:border-emerald-500"
                 />
               </label>
-
               <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 dark:border-zinc-800 sm:flex-row sm:justify-end">
                 <button
                   type="button"
@@ -1557,9 +1462,7 @@ function Evaluators() {
           </div>
         </div>
       )}
-
     </main>
   );
 }
-
 export default Evaluators;

@@ -1,15 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
 gsap.registerPlugin(ScrollTrigger);
-
 export default function ParallaxStoryBackdrop() {
   const containerRef = useRef(null);
   const layer1Ref = useRef(null);
   const layer2Ref = useRef(null);
   const layer3Ref = useRef(null);
-
   useEffect(() => {
     const ctx = gsap.context(() => {
       // Parallax Layer 1: Slow subtle background drift
@@ -26,7 +23,6 @@ export default function ParallaxStoryBackdrop() {
           },
         });
       }
-
       // Parallax Layer 2: Medium depth telemetry nodes
       if (layer2Ref.current) {
         gsap.to(layer2Ref.current, {
@@ -41,7 +37,6 @@ export default function ParallaxStoryBackdrop() {
           },
         });
       }
-
       // Parallax Layer 3: Ambient geometric depth rings
       if (layer3Ref.current) {
         gsap.to(layer3Ref.current, {
@@ -58,10 +53,8 @@ export default function ParallaxStoryBackdrop() {
         });
       }
     }, containerRef);
-
     return () => ctx.revert();
   }, []);
-
   return (
     <div
       ref={containerRef}
@@ -83,16 +76,13 @@ export default function ParallaxStoryBackdrop() {
         <div className="flex justify-between">
           <span>TELEMETRY.SYNC // ENCRYPTED</span>
           <span>BOUNTY.VERIFICATION // AUTOMATED</span>
-          
         </div>
       </div>
-
       {/* Parallax Layer 2: Ambient Glowing Energy Nodes */}
       <div ref={layer2Ref} className="absolute inset-0 transform-gpu will-change-transform">
         <div className="absolute top-1/4 -left-20 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl transform-gpu" />
         <div className="absolute top-2/3 -right-20 w-96 h-96 rounded-full bg-emerald-500/5 blur-3xl transform-gpu" />
       </div>
-
       {/* Parallax Layer 3: Faint Geometric Axis */}
       <div ref={layer3Ref} className="absolute right-10 top-1/2 opacity-20 dark:opacity-10 transform-gpu will-change-transform">
         <svg width="240" height="240" viewBox="0 0 240 240" fill="none">

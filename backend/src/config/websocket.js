@@ -1,14 +1,10 @@
 const { WebSocketServer, WebSocket } = require('ws');
-
 let wss = null;
-
 const initWebSocket = (server) => {
     wss = new WebSocketServer({ server });
-
     wss.on('connection', (ws, req) => {
         ws.isAlive = true;
         ws.on('pong', () => { ws.isAlive = true; });
-
         ws.on('message', (message) => {
             try {
                 const data = JSON.parse(message);
@@ -19,12 +15,10 @@ const initWebSocket = (server) => {
                 // Ignore invalid json
             }
         });
-
         ws.on('error', (err) => {
             console.error('WebSocket client error:', err.message);
         });
     });
-
     const interval = setInterval(() => {
         if (!wss) return;
         wss.clients.forEach((ws) => {
@@ -33,15 +27,12 @@ const initWebSocket = (server) => {
             ws.ping();
         });
     }, 30000);
-
     wss.on('close', () => {
         clearInterval(interval);
     });
-
     console.log('WebSocket Server initialized successfully');
     return wss;
 };
-
 const broadcastEvent = (eventId, payload) => {
     if (!wss) return;
     const msgString = JSON.stringify(payload);
@@ -58,5 +49,4 @@ const broadcastEvent = (eventId, payload) => {
         }
     });
 };
-
 module.exports = { initWebSocket, broadcastEvent };

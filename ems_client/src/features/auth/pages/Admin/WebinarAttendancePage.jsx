@@ -25,7 +25,6 @@ import {
   Tv,
   FileSpreadsheet
 } from 'lucide-react';
-
 function playCheckInSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -44,24 +43,18 @@ function playCheckInSound() {
     // Ignore audio context errors
   }
 }
-
 function calculateWebinarDays(startDateStr, endDateStr) {
   if (!startDateStr) {
     return [{ dayNumber: 1, label: 'Day 1', dateFormatted: '', weekday: '', fullDateIso: '', fullDate: null }];
   }
-
   const s = new Date(startDateStr);
   const e = endDateStr ? new Date(endDateStr) : new Date(startDateStr);
-
   const startUtc = new Date(s.getFullYear(), s.getMonth(), s.getDate());
   const endUtc = new Date(e.getFullYear(), e.getMonth(), e.getDate());
-
   let diffTime = endUtc.getTime() - startUtc.getTime();
   let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
   if (isNaN(diffDays) || diffDays < 1) diffDays = 1;
   if (diffDays > 30) diffDays = 30;
-
   const daysList = [];
   for (let i = 0; i < diffDays; i++) {
     const current = new Date(startUtc);
@@ -79,10 +72,8 @@ function calculateWebinarDays(startDateStr, endDateStr) {
       label: `Day ${dayNumber}`
     });
   }
-
   return daysList;
 }
-
 export default function WebinarAttendancePage() {
   const toast = useToast();
   const [currentEventId, setCurrentEventId] = useState(() => {
@@ -93,7 +84,6 @@ export default function WebinarAttendancePage() {
       return null;
     }
   });
-
   const eventId = currentEventId;
   const admin = (() => {
     try {
@@ -102,25 +92,21 @@ export default function WebinarAttendancePage() {
       return {};
     }
   })();
-
   const [eventData, setEventData] = useState(null);
   const [activeDay, setActiveDay] = useState(1);
   const [activeSlot, setActiveSlot] = useState('Morning');
   const [viewMode, setViewMode] = useState('session');
-
   const [attendees, setAttendees] = useState([]);
   const [allRecords, setAllRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [updatingId, setUpdatingId] = useState(null);
-
   // Scanner State
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerError, setScannerError] = useState('');
   const [lastScannedAttendee, setLastScannedAttendee] = useState(null);
   const html5QrCodeRef = useRef(null);
-
   const fetchEventDetails = async () => {
     if (!currentEventId) return;
     try {
@@ -132,19 +118,15 @@ export default function WebinarAttendancePage() {
       console.error('Failed to load event details:', e);
     }
   };
-
   useEffect(() => {
     fetchEventDetails();
   }, [currentEventId]);
-
   const webinarDays = useMemo(() => {
     const start = eventData?.VirtualStartDate || eventData?.StartDate;
     const end = eventData?.VirtualEndDate || eventData?.EndDate || start;
     return calculateWebinarDays(start, end);
   }, [eventData]);
-
   const totalDays = webinarDays.length;
-
   const fetchAttendance = async () => {
     if (!currentEventId) return;
     try {
@@ -163,17 +145,14 @@ export default function WebinarAttendancePage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchAttendance();
   }, [currentEventId, activeDay, activeSlot]);
-
   const markAttendeeStatus = async (attendee, targetStatus, optDay = null, optSlot = null) => {
     const day = optDay !== null ? Number(optDay) : activeDay;
     const slot = optSlot || activeSlot;
     const key = `${attendee.UserId}-${day}-${slot}`;
     setUpdatingId(key);
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/webinars/${eventId}/attendance`, {
         method: 'POST',
@@ -186,9 +165,7 @@ export default function WebinarAttendancePage() {
           SessionSlot: slot
         })
       });
-
       if (!res.ok) throw new Error('Status update failed');
-
       if (day === activeDay && slot === activeSlot) {
         setAttendees((prev) =>
           prev.map((a) =>
@@ -202,7 +179,6 @@ export default function WebinarAttendancePage() {
           )
         );
       }
-
       setAllRecords((prev) => {
         const remaining = prev.filter(
           (r) =>
@@ -223,7 +199,6 @@ export default function WebinarAttendancePage() {
           }
         ];
       });
-
       if (targetStatus === 'checked_in') {
         playCheckInSound();
         toast.success(`Verified: ${attendee.UserName} marked Present (Day ${day} • ${slot})!`);
@@ -239,7 +214,6 @@ export default function WebinarAttendancePage() {
       setUpdatingId(null);
     }
   };
-
   const handleBulkMark = async (status) => {
     const pendingAttendees = filteredAttendees.filter(
       (a) => a.AttendanceStatus !== 'checked_in' && a.AttendanceStatus !== 'present' && a.AttendanceStatus !== 'absent'
@@ -248,7 +222,6 @@ export default function WebinarAttendancePage() {
       toast.info('No pending delegates to mark in this session.');
       return;
     }
-
     try {
       setLoading(true);
       for (const attendee of pendingAttendees) {
@@ -275,14 +248,12 @@ export default function WebinarAttendancePage() {
       setLoading(false);
     }
   };
-
   const getMatrixStatus = (userId, day, slot) => {
     const rec = allRecords.find(
       (r) => Number(r.UserId) === Number(userId) && Number(r.DayNumber) === Number(day) && r.SessionSlot === slot
     );
     return rec ? rec.Status : 'none';
   };
-
   const getDelegateMatrixStats = (userId) => {
     const totalSlots = totalDays * 2;
     let attended = 0;
@@ -296,21 +267,17 @@ export default function WebinarAttendancePage() {
     const isEligible = percent >= 70;
     return { attended, totalSlots, percent, isEligible };
   };
-
   // QR Scanner Handler
   const startQrScanner = () => {
     setScannerOpen(true);
     setScannerError('');
     setLastScannedAttendee(null);
-
     setTimeout(() => {
       const qrCodeId = 'reader-webinar-scanner';
       const el = document.getElementById(qrCodeId);
       if (!el) return;
-
       const html5QrCode = new Html5Qrcode(qrCodeId);
       html5QrCodeRef.current = html5QrCode;
-
       html5QrCode
         .start(
           { facingMode: 'environment' },
@@ -326,7 +293,6 @@ export default function WebinarAttendancePage() {
         });
     }, 300);
   };
-
   const stopQrScanner = () => {
     if (html5QrCodeRef.current) {
       html5QrCodeRef.current
@@ -341,11 +307,9 @@ export default function WebinarAttendancePage() {
       setScannerOpen(false);
     }
   };
-
   const handleScannedPass = (scannedText) => {
     let cleanText = (scannedText || '').trim();
     let attendeeIdOrEmail = cleanText;
-
     try {
       if (cleanText.startsWith('http')) {
         const parsedUrl = new URL(cleanText);
@@ -356,7 +320,6 @@ export default function WebinarAttendancePage() {
           attendeeIdOrEmail;
       }
     } catch {}
-
     const matched = attendees.find((a) => {
       const uid = String(a.UserId || '');
       const tid = String(a.TeamId || '');
@@ -365,7 +328,6 @@ export default function WebinarAttendancePage() {
       const target = attendeeIdOrEmail.toLowerCase();
       return uid === target || tid === target || em === target || code === target;
     });
-
     if (matched) {
       setLastScannedAttendee(matched);
       markAttendeeStatus(matched, 'checked_in');
@@ -373,7 +335,6 @@ export default function WebinarAttendancePage() {
       toast.error('No matching delegate found in this webinar for scanned pass');
     }
   };
-
   const filteredAttendees = useMemo(() => {
     return attendees.filter((a) => {
       const q = searchQuery.toLowerCase();
@@ -383,18 +344,15 @@ export default function WebinarAttendancePage() {
         (a.College || '').toLowerCase().includes(q) ||
         String(a.TeamId || '').includes(q) ||
         String(a.UserId || '').includes(q);
-
       const st = a.AttendanceStatus || 'none';
       const matchesStatus =
         filterStatus === 'all' ||
         (filterStatus === 'checked_in' && (st === 'checked_in' || st === 'present')) ||
         (filterStatus === 'absent' && st === 'absent') ||
         (filterStatus === 'pending' && st !== 'checked_in' && st !== 'present' && st !== 'absent');
-
       return matchesSearch && matchesStatus;
     });
   }, [attendees, searchQuery, filterStatus]);
-
   const stats = useMemo(() => {
     const total = attendees.length;
     const present = attendees.filter(
@@ -405,14 +363,12 @@ export default function WebinarAttendancePage() {
     const rate = total > 0 ? Math.round((present / total) * 100) : 0;
     return { total, present, absent, pending, rate };
   }, [attendees]);
-
   // Export Matrix CSV
   const handleExportMatrixCsv = () => {
     if (attendees.length === 0) {
       toast.error('No delegates to export');
       return;
     }
-
     const headers = [
       'Delegate ID',
       'Delegate Name',
@@ -424,7 +380,6 @@ export default function WebinarAttendancePage() {
       'Attendance Rate (%)',
       'Certificate Eligible'
     ];
-
     const rows = attendees.map((a) => {
       const { attended, totalSlots, percent, isEligible } = getDelegateMatrixStats(a.UserId);
       const slotValues = webinarDays.flatMap((d) => {
@@ -435,7 +390,6 @@ export default function WebinarAttendancePage() {
           e === 'checked_in' || e === 'present' ? 'Present' : e === 'absent' ? 'Absent' : 'Pending'
         ];
       });
-
       return [
         `DEL-${a.TeamId || a.UserId}`,
         `"${a.UserName || 'Delegate'}"`,
@@ -448,7 +402,6 @@ export default function WebinarAttendancePage() {
         isEligible ? 'YES' : 'NO'
       ];
     });
-
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
@@ -459,7 +412,6 @@ export default function WebinarAttendancePage() {
     document.body.removeChild(link);
     toast.success('Webinar Attendance Matrix CSV exported successfully');
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black p-4 sm:p-6 md:p-8 space-y-6">
       {/* Top Header Card */}
@@ -476,7 +428,6 @@ export default function WebinarAttendancePage() {
             Track delegate virtual session check-ins, scan delegate entry passes with live camera, and manage attendance records across all keynote talks.
           </p>
         </div>
-
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={fetchAttendance}
@@ -501,7 +452,6 @@ export default function WebinarAttendancePage() {
           </button>
         </div>
       </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl p-5 shadow-sm space-y-1">
@@ -521,13 +471,11 @@ export default function WebinarAttendancePage() {
           <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{stats.rate}%</p>
         </div>
       </div>
-
       {/* ── WEBSITE SIGNATURE THEME TABS ── */}
       <div className="relative pt-2">
         <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto scrollbar-none">
           {webinarDays.map((d) => {
             const isActive = viewMode === 'session' && activeDay === d.dayNumber;
-
             return (
               <button
                 key={d.dayNumber}
@@ -550,7 +498,6 @@ export default function WebinarAttendancePage() {
                 ) : (
                   <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
                 )}
-
                 <span
                   className={`relative z-20 flex items-center gap-2 transition-colors ${
                     isActive
@@ -579,7 +526,6 @@ export default function WebinarAttendancePage() {
               </button>
             );
           })}
-
           {/* Master Matrix Tab (Docked Right) */}
           <button
             type="button"
@@ -597,7 +543,6 @@ export default function WebinarAttendancePage() {
             ) : (
               <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
             )}
-
             <span
               className={`relative z-20 flex items-center gap-2 transition-colors ${
                 viewMode === 'matrix'
@@ -615,7 +560,6 @@ export default function WebinarAttendancePage() {
           </button>
         </div>
       </div>
-
       {/* Connected Sub-bar */}
       {viewMode === 'session' && (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 p-4 rounded-2xl shadow-sm">
@@ -644,7 +588,6 @@ export default function WebinarAttendancePage() {
           </div>
         </div>
       )}
-
       {/* Filter and Bulk Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
@@ -657,7 +600,6 @@ export default function WebinarAttendancePage() {
             className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
           />
         </div>
-
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => handleBulkMark('checked_in')}
@@ -675,7 +617,6 @@ export default function WebinarAttendancePage() {
           </button>
         </div>
       </div>
-
       {/* View Content */}
       {loading ? (
         <div className="p-16 text-center text-slate-400">
@@ -698,7 +639,6 @@ export default function WebinarAttendancePage() {
             const isAbsent = st === 'absent';
             const key = `${attendee.UserId}-${activeDay}-${activeSlot}`;
             const isBusy = updatingId === key;
-
             return (
               <motion.div
                 key={attendee.UserId || idx}
@@ -738,7 +678,6 @@ export default function WebinarAttendancePage() {
                     </div>
                   </div>
                 </div>
-
                 {/* Status Toggles */}
                 <div className="flex items-center gap-2 self-end sm:self-center">
                   <button
@@ -753,7 +692,6 @@ export default function WebinarAttendancePage() {
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Present</span>
                   </button>
-
                   <button
                     disabled={isBusy}
                     onClick={() => markAttendeeStatus(attendee, 'absent')}
@@ -766,7 +704,6 @@ export default function WebinarAttendancePage() {
                     <XCircle className="w-3.5 h-3.5" />
                     <span>Absent</span>
                   </button>
-
                   {(isPresent || isAbsent) && (
                     <button
                       disabled={isBusy}
@@ -814,7 +751,6 @@ export default function WebinarAttendancePage() {
               <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                 {filteredAttendees.map((attendee) => {
                   const { attended, totalSlots, percent, isEligible } = getDelegateMatrixStats(attendee.UserId);
-
                   return (
                     <tr key={attendee.UserId} className="hover:bg-slate-50 dark:hover:bg-zinc-900/40 transition">
                       <td className="py-3 px-4">
@@ -871,7 +807,6 @@ export default function WebinarAttendancePage() {
           </div>
         </div>
       )}
-
       {/* QR Scanner Modal */}
       <AnimatePresence>
         {scannerOpen && (
@@ -898,13 +833,10 @@ export default function WebinarAttendancePage() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-
               <div id="reader-webinar-scanner" className="overflow-hidden rounded-2xl bg-black min-h-[260px]" />
-
               {scannerError && (
                 <p className="text-xs text-rose-500 font-medium text-center">{scannerError}</p>
               )}
-
               {lastScannedAttendee && (
                 <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
                   <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">

@@ -24,21 +24,17 @@ import {
   GraduationCap,
   Info
 } from 'lucide-react';
-
 export default function SeminarDelegatePassCard({ eventId, user, team }) {
   const toast = useToast();
-
   const [eventData, setEventData] = useState(null);
   const [delegateInfo, setDelegateInfo] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [speakers, setSpeakers] = useState([]);
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
-
   // Active folder tab
   const [activeTab, setActiveTab] = useState('agenda'); // 'agenda' | 'speakers' | 'attendance' | 'proceedings' | 'feedback'
   const [activeDay, setActiveDay] = useState('all');
-
   const fetchDelegateData = useCallback(async () => {
     if (!eventId || !user?.Id) return;
     try {
@@ -50,12 +46,10 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
         fetch(`${API_BASE_URL}/api/seminars/${eventId}/speakers`),
         fetch(`${API_BASE_URL}/api/seminars/${eventId}/resources`)
       ]);
-
       if (evRes.ok) {
         const ev = await evRes.json();
         setEventData(Array.isArray(ev) ? ev[0] : (ev.event || ev));
       }
-
       if (delRes.ok) {
         const dData = await delRes.json();
         const me = (dData.delegates || []).find(
@@ -65,17 +59,14 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
           setDelegateInfo(me);
         }
       }
-
       if (sessRes.ok) {
         const sData = await sessRes.json();
         setSessions(sData.sessions || []);
       }
-
       if (spkRes.ok) {
         const spData = await spkRes.json();
         setSpeakers(spData.speakers || []);
       }
-
       if (resRes.ok) {
         const rData = await resRes.json();
         setResources(rData.resources || []);
@@ -86,11 +77,9 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
       setLoading(false);
     }
   }, [eventId, user?.Id, user?.Email]);
-
   useEffect(() => {
     fetchDelegateData();
   }, [fetchDelegateData]);
-
   const isCheckedIn = delegateInfo?.CheckInStatus === 'CheckedIn';
   const qrPayload = JSON.stringify({
     type: 'SEMINAR_DELEGATE_PASS',
@@ -100,13 +89,11 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
     email: user?.Email,
     ticketId: `SEM-${eventId}-${user?.Id}`
   });
-
   // Unique days for agenda filtering
   const distinctDays = Array.from(new Set(sessions.map((s) => s.DayNumber || 1))).sort((a, b) => a - b);
   const filteredSessions = activeDay === 'all'
     ? sessions
     : sessions.filter((s) => Number(s.DayNumber || 1) === Number(activeDay));
-
   return (
     <div className="space-y-6 text-slate-900 dark:text-white font-sans">
       {/* ── PRIORITY 1: OFFICIAL DELEGATE GATE PASS ── */}
@@ -129,7 +116,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
               Present this digital pass at the auditorium entry gate for check-in
             </p>
           </div>
-
           <div className="flex items-center gap-2 self-start sm:self-center">
             {isCheckedIn ? (
               <span className="px-4 py-2 rounded-2xl bg-white text-emerald-700 font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg">
@@ -144,7 +130,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
             )}
           </div>
         </div>
-
         {/* Card Body */}
         <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
           {/* Delegate Details */}
@@ -155,7 +140,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                 <p className="text-base font-bold text-slate-900 dark:text-white mt-1">{user?.UserName || user?.name || 'Registered Delegate'}</p>
                 <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">{user?.Email}</p>
               </div>
-
               <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800">
                 <p className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-zinc-500">Institution / College</p>
                 <p className="text-base font-bold text-slate-900 dark:text-white mt-1 truncate">
@@ -163,7 +147,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                 </p>
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">Delegate ID: #{user?.Id || '00'}</p>
               </div>
-
               <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800">
                 <p className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-zinc-500 flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -173,7 +156,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                   {eventData?.AuditoriumVenue || eventData?.Location || 'Main Campus Central Auditorium'}
                 </p>
               </div>
-
               <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800">
                 <p className="text-xs uppercase font-bold tracking-wider text-slate-500 dark:text-zinc-500 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -184,7 +166,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                 </p>
               </div>
             </div>
-
             <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 flex items-center gap-3">
               <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
               <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
@@ -192,7 +173,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
               </p>
             </div>
           </div>
-
           {/* QR Code Section */}
           <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 space-y-3">
             <div className="p-3.5 rounded-2xl bg-white border border-slate-200 dark:border-transparent shadow-md">
@@ -210,7 +190,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
           </div>
         </div>
       </div>
-
       {/* ── PRIORITY 2: WEBSITE SIGNATURE THEME FOLDER TABS ── */}
       <div className="relative pt-2">
         <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto scrollbar-none">
@@ -223,7 +202,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
           ].map((tab) => {
             const isActive = activeTab === tab.id;
             const TabIcon = tab.icon;
-
             return (
               <button
                 key={tab.id}
@@ -243,7 +221,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                 ) : (
                   <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
                 )}
-
                 <span
                   className={`relative z-20 flex items-center gap-2 transition-colors ${
                     isActive
@@ -262,7 +239,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
             );
           })}
         </div>
-
         {/* Connected Content Container */}
         <motion.section
           initial={{ opacity: 0, y: 12 }}
@@ -283,7 +259,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                     Chronological order of keynote speeches, panel discussions, and paper presentations
                   </p>
                 </div>
-
                 {/* Day selector if multi-day */}
                 {distinctDays.length > 1 && (
                   <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
@@ -315,7 +290,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                   </div>
                 )}
               </div>
-
               {filteredSessions.length > 0 ? (
                 <div className="grid grid-cols-1 gap-3.5">
                   {filteredSessions.map((session, idx) => (
@@ -338,13 +312,11 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                               </span>
                             )}
                           </div>
-
                           {session.Description && (
                             <p className="text-xs text-slate-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
                               {session.Description}
                             </p>
                           )}
-
                           <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
                             {session.SpeakerName && (
                               <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
@@ -352,7 +324,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                                 <span>{session.SpeakerName}</span>
                               </span>
                             )}
-
                             {session.HallName && (
                               <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1">
                                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
@@ -362,7 +333,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                           </div>
                         </div>
                       </div>
-
                       <div className="flex items-center gap-2 self-start md:self-center shrink-0">
                         {(session.StartTime || session.EndTime) && (
                           <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono shadow-xs">
@@ -370,7 +340,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                             {session.StartTime || ''} {session.EndTime ? `- ${session.EndTime}` : ''}
                           </span>
                         )}
-
                         {session.ResourcesUrl && (
                           <a
                             href={session.ResourcesUrl}
@@ -393,7 +362,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
               )}
             </div>
           )}
-
           {/* TAB 2: KEYNOTE SPEAKERS */}
           {activeTab === 'speakers' && (
             <div className="space-y-5">
@@ -406,7 +374,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                   Eminent researchers, industry leaders, and keynote presenters for this conference
                 </p>
               </div>
-
               {speakers.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {speakers.map((spk) => (
@@ -430,7 +397,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                           <div className={`w-13 h-13 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-black text-lg items-center justify-center shrink-0 ${spk.PhotoUrl ? 'hidden' : 'flex'}`}>
                             {spk.Name ? spk.Name.charAt(0) : 'S'}
                           </div>
-
                           <div className="min-w-0 flex-1">
                             <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
                               {spk.Name}
@@ -443,7 +409,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                             </p>
                           </div>
                         </div>
-
                         {spk.Topic && (
                           <div className="p-2.5 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800">
                             <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block tracking-wider mb-0.5">
@@ -454,14 +419,12 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                             </p>
                           </div>
                         )}
-
                         {spk.Bio && (
                           <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed line-clamp-3">
                             {spk.Bio}
                           </p>
                         )}
                       </div>
-
                       {spk.LinkedinUrl && (
                         <div className="pt-2 border-t border-slate-200/60 dark:border-zinc-800">
                           <a
@@ -485,7 +448,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
               )}
             </div>
           )}
-
           {/* TAB 3: GATE ATTENDANCE & INSTRUCTIONS */}
           {activeTab === 'attendance' && (
             <div className="space-y-6">
@@ -498,7 +460,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                   Physical gate entry status, auditorium hall allocation, and conference admission rules
                 </p>
               </div>
-
               {/* Status Header Box */}
               <div className={`p-6 rounded-3xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                 isCheckedIn
@@ -520,7 +481,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                     </p>
                   </div>
                 </div>
-
                 <span className={`px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider self-start sm:self-center border ${
                   isCheckedIn
                     ? 'bg-white dark:bg-black text-emerald-600 border-emerald-500/40'
@@ -529,7 +489,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                   {isCheckedIn ? 'Status: Present (In Hall)' : 'Status: Pending Gate Entry'}
                 </span>
               </div>
-
               {/* Attendance Details Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800">
@@ -538,14 +497,12 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                     {eventData?.AuditoriumVenue || eventData?.Location || 'Main Campus Central Auditorium'}
                   </p>
                 </div>
-
                 <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800">
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Admission Ticket</p>
                   <p className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-1">
                     SEM-{eventId}-{user?.Id}
                   </p>
                 </div>
-
                 <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800">
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500">Delegate Category</p>
                   <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">
@@ -553,7 +510,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                   </p>
                 </div>
               </div>
-
               {/* Guidelines Box */}
               <div className="p-5 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 space-y-2.5">
                 <h5 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-zinc-200 flex items-center gap-1.5">
@@ -569,7 +525,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
               </div>
             </div>
           )}
-
           {/* TAB 4: PROCEEDINGS & SLIDES */}
           {activeTab === 'proceedings' && (
             <div className="space-y-5">
@@ -582,7 +537,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                   Download keynote slide presentations, official research proceedings, and whitepapers
                 </p>
               </div>
-
               {resources.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {resources.map((res) => (
@@ -603,7 +557,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
                           </p>
                         )}
                       </div>
-
                       <div className="pt-2 border-t border-slate-200/60 dark:border-zinc-800">
                         <a
                           href={res.ResourceUrl}
@@ -626,7 +579,6 @@ export default function SeminarDelegatePassCard({ eventId, user, team }) {
               )}
             </div>
           )}
-
           {/* TAB 5: DELEGATE FEEDBACK */}
           {activeTab === 'feedback' && (
             <div className="max-w-3xl mx-auto">

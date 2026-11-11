@@ -2,10 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Search, RotateCcw, Compass } from 'lucide-react';
 import useTheme from '../../Hooks/useTheme';
-
 function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }) {
   const { theme } = useTheme();
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -34,7 +32,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
-
           <motion.ellipse
             cx="100"
             cy="132"
@@ -51,7 +48,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
               ease: "easeInOut"
             }}
           />
-
           <motion.g
             animate={{
               y: [0, -7, 0, 7, 0],
@@ -64,21 +60,20 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
             }}
           >
             <path
-              d="M 50 96 
-                 C 32 96 22 82 25 66 
-                 C 28 50 43 44 54 49 
-                 C 59 32 80 20 102 24 
-                 C 119 28 132 40 135 54 
-                 C 146 46 164 49 171 63 
-                 C 178 79 170 96 150 96 
-                 Z"
+              d="M 50 96
+                  C 32 96 22 82 25 66
+                  C 28 50 43 44 54 49
+                  C 59 32 80 20 102 24
+                  C 119 28 132 40 135 54
+                  C 146 46 164 49 171 63
+                  C 178 79 170 96 150 96
+                  Z"
               fill={theme === 'dark' ? 'url(#cloudGradDark)' : 'url(#cloudGradLight)'}
               stroke={theme === 'dark' ? '#3f3f46' : '#cbd5e1'}
               strokeWidth="2.5"
               strokeLinejoin="round"
               filter="url(#softGlow)"
             />
-
             <motion.path
               d="M 68 56 Q 74 53 80 57"
               stroke={theme === 'dark' ? '#a1a1aa' : '#64748b'}
@@ -97,7 +92,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
               animate={{ y: [0, -1, 0, 1, 0] }}
               transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
             />
-
             <g transform="translate(74, 67)">
               <motion.g
                 animate={{
@@ -113,7 +107,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
                 <circle cx="-1.5" cy="-1.5" r="1.6" fill="#ffffff" />
               </motion.g>
             </g>
-
             <g transform="translate(126, 67)">
               <motion.g
                 animate={{
@@ -129,7 +122,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
                 <circle cx="-1.5" cy="-1.5" r="1.6" fill="#ffffff" />
               </motion.g>
             </g>
-
             <motion.ellipse
               cx="63"
               cy="73"
@@ -148,7 +140,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
               animate={{ opacity: [0.4, 0.8, 0.4] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
             />
-
             <motion.path
               d="M 94 77 Q 100 71 106 77"
               stroke={theme === 'dark' ? '#d4d4d8' : '#475569'}
@@ -164,7 +155,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
               }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
             />
-
             <motion.path
               d="M 70 82 C 70 82 66 89 66 92 C 66 95 68 97 70.5 97 C 73 97 75 95 75 92 C 75 89 70 82 70 82 Z"
               fill="#38bdf8"
@@ -179,7 +169,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
                 ease: "easeIn"
               }}
             />
-
             <motion.g
               animate={{
                 rotate: [-6, 6, -6],
@@ -220,7 +209,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
           </motion.g>
         </svg>
       </div>
-
       <div className="space-y-2 mt-2">
         <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           No Matches Found
@@ -239,7 +227,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
           )}
         </p>
       </div>
-
       <div className="pt-4 flex flex-col items-center gap-3">
         {hasActiveFilters && (
           <button
@@ -250,7 +237,6 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
             <span>Reset All Filters</span>
           </button>
         )}
-
         {onQuickSearch && (
           <div className="pt-2 flex flex-wrap items-center justify-center gap-1.5">
             <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium mr-1 flex items-center gap-1">
@@ -272,5 +258,4 @@ function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }
     </motion.div>
   );
 }
-
 export default CuteEmptyCloud;

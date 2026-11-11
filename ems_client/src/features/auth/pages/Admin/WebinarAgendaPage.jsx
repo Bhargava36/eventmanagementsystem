@@ -22,7 +22,6 @@ import {
   Mic,
   Tv
 } from 'lucide-react';
-
 export default function WebinarAgendaPage() {
   const toast = useToast();
   const admin = useMemo(() => {
@@ -32,16 +31,13 @@ export default function WebinarAgendaPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeDay, setActiveDay] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
   const [saving, setSaving] = useState(false);
-
   const [formData, setFormData] = useState({
     SessionTitle: '',
     DayNumber: 1,
@@ -55,7 +51,6 @@ export default function WebinarAgendaPage() {
     Description: '',
     ResourcesUrl: ''
   });
-
   const fetchSessions = async () => {
     if (!eventId) return;
     try {
@@ -71,21 +66,17 @@ export default function WebinarAgendaPage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchSessions();
   }, [eventId]);
-
   const daysList = useMemo(() => {
     const days = new Set([1]);
     sessions.forEach((s) => days.add(Number(s.DayNumber) || 1));
     return Array.from(days).sort((a, b) => a - b);
   }, [sessions]);
-
   const filteredSessions = useMemo(() => {
     return sessions.filter((s) => Number(s.DayNumber || 1) === Number(activeDay));
   }, [sessions, activeDay]);
-
   const handleOpenAddModal = () => {
     setEditingSession(null);
     setFormData({
@@ -103,7 +94,6 @@ export default function WebinarAgendaPage() {
     });
     setIsModalOpen(true);
   };
-
   const handleOpenEditModal = (session) => {
     setEditingSession(session);
     setFormData({
@@ -121,33 +111,27 @@ export default function WebinarAgendaPage() {
     });
     setIsModalOpen(true);
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.SessionTitle.trim()) {
       toast.error('Keynote title is required');
       return;
     }
-
     try {
       setSaving(true);
       const url = editingSession
         ? `${API_BASE_URL}/api/webinars/sessions/${editingSession.Id}`
         : `${API_BASE_URL}/api/webinars/${eventId}/sessions`;
-
       const method = editingSession ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || 'Operation failed');
       }
-
       toast.success(editingSession ? 'Keynote session updated' : 'Keynote session scheduled');
       setIsModalOpen(false);
       fetchSessions();
@@ -158,7 +142,6 @@ export default function WebinarAgendaPage() {
       setSaving(false);
     }
   };
-
   const handleDelete = async (sessionId) => {
     if (!window.confirm('Are you sure you want to remove this keynote session from the webinar?')) return;
     try {
@@ -173,7 +156,6 @@ export default function WebinarAgendaPage() {
       toast.error('Failed to remove keynote session');
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black p-4 sm:p-6 md:p-8 space-y-6">
       {/* Top Header Card */}
@@ -190,7 +172,6 @@ export default function WebinarAgendaPage() {
             Design real-time keynote sessions, assign guest speakers and panelists, attach virtual meeting rooms (Zoom, Google Meet, YouTube Live), and share presentation slide decks.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
           <button
             onClick={fetchSessions}
@@ -208,7 +189,6 @@ export default function WebinarAgendaPage() {
           </button>
         </div>
       </div>
-
       {/* ── WEBSITE SIGNATURE THEME TABS FOR MULTI-DAY AGENDA ── */}
       {daysList.length > 1 && (
         <div className="relative pt-2">
@@ -233,7 +213,6 @@ export default function WebinarAgendaPage() {
                   ) : (
                     <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
                   )}
-
                   <span
                     className={`relative z-20 flex items-center gap-2 transition-colors ${
                       isActive
@@ -254,7 +233,6 @@ export default function WebinarAgendaPage() {
           </div>
         </div>
       )}
-
       {/* Agenda Grid */}
       {loading ? (
         <div className="p-12 text-center text-slate-400 dark:text-zinc-500">
@@ -308,7 +286,6 @@ export default function WebinarAgendaPage() {
                     Session #{idx + 1}
                   </span>
                 </div>
-
                 <div>
                   <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors">
                     {session.SessionTitle}
@@ -319,7 +296,6 @@ export default function WebinarAgendaPage() {
                     </p>
                   )}
                 </div>
-
                 <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 dark:text-zinc-400 pt-1">
                   {session.SpeakerName && (
                     <div className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-zinc-200">
@@ -332,7 +308,6 @@ export default function WebinarAgendaPage() {
                       )}
                     </div>
                   )}
-
                   {session.VenueOrMeetLink && (
                     <div className="flex items-center gap-1.5">
                       <Video className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -351,7 +326,6 @@ export default function WebinarAgendaPage() {
                       )}
                     </div>
                   )}
-
                   {session.ResourcesUrl && (
                     <a
                       href={session.ResourcesUrl}
@@ -365,7 +339,6 @@ export default function WebinarAgendaPage() {
                   )}
                 </div>
               </div>
-
               {/* Action Buttons */}
               <div className="flex items-center gap-2 self-end md:self-center shrink-0">
                 <button
@@ -387,7 +360,6 @@ export default function WebinarAgendaPage() {
           ))}
         </div>
       )}
-
       {/* Add / Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
@@ -414,7 +386,6 @@ export default function WebinarAgendaPage() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -429,7 +400,6 @@ export default function WebinarAgendaPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -468,7 +438,6 @@ export default function WebinarAgendaPage() {
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -495,7 +464,6 @@ export default function WebinarAgendaPage() {
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -522,7 +490,6 @@ export default function WebinarAgendaPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                     Session Description & Discussion Topics
@@ -535,7 +502,6 @@ export default function WebinarAgendaPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500 resize-none"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                     Keynote Slides / Resource URL (Optional)
@@ -548,7 +514,6 @@ export default function WebinarAgendaPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
                   <button
                     type="button"

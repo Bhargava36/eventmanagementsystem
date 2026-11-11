@@ -14,7 +14,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import useToast from '../../../../../Hooks/useToast';
 import { API_BASE_URL } from '@/lib/api';
-
 const RATING_LABELS = {
   1: 'Needs Improvement',
   2: 'Fair Experience',
@@ -22,7 +21,6 @@ const RATING_LABELS = {
   4: 'Very Good & Engaging',
   5: 'Outstanding & Exceptional'
 };
-
 const DEFAULT_CATEGORIES = [
   'Overall Experience',
   'Keynotes & Sessions',
@@ -30,7 +28,6 @@ const DEFAULT_CATEGORIES = [
   'Content & Learning',
   'Venue & Facilities'
 ];
-
 export default function UnifiedEventFeedbackCard({
   eventId,
   user,
@@ -41,11 +38,9 @@ export default function UnifiedEventFeedbackCard({
   const toast = useToast();
   const [eventData, setEventData] = useState(null);
   const [eventLoading, setEventLoading] = useState(false);
-
   // Feedbacks data
   const [feedbacks, setFeedbacks] = useState([]);
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
-
   // Form State
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
@@ -53,10 +48,8 @@ export default function UnifiedEventFeedbackCard({
   const [comments, setComments] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-
   // Active view toggle between 'your_review' and 'community_reviews'
   const [viewTab, setViewTab] = useState('form'); // 'form' | 'reviews'
-
   // Resolve current username
   const currentUserName = useMemo(() => {
     return (
@@ -67,7 +60,6 @@ export default function UnifiedEventFeedbackCard({
       ''
     ).trim();
   }, [user]);
-
   // Fetch Event details
   useEffect(() => {
     if (!eventId) return;
@@ -92,7 +84,6 @@ export default function UnifiedEventFeedbackCard({
       isMounted = false;
     };
   }, [eventId]);
-
   // Fetch Event Feedbacks
   const fetchFeedbacks = useCallback(async () => {
     if (!eventId) return;
@@ -116,11 +107,9 @@ export default function UnifiedEventFeedbackCard({
       setLoadingFeedbacks(false);
     }
   }, [eventId]);
-
   useEffect(() => {
     fetchFeedbacks();
   }, [fetchFeedbacks]);
-
   // Check if current user has already submitted feedback
   const userFeedback = useMemo(() => {
     if (!currentUserName || feedbacks.length === 0) return null;
@@ -132,7 +121,6 @@ export default function UnifiedEventFeedbackCard({
       ) || null
     );
   }, [feedbacks, currentUserName]);
-
   // Populate form with existing review if available
   useEffect(() => {
     if (userFeedback && !isEditing) {
@@ -141,7 +129,6 @@ export default function UnifiedEventFeedbackCard({
       setComments(userFeedback.Comments || '');
     }
   }, [userFeedback, isEditing]);
-
   // Dynamic category list based on event type
   const categories = useMemo(() => {
     const type = (eventData?.EventType || '').toLowerCase();
@@ -174,14 +161,12 @@ export default function UnifiedEventFeedbackCard({
     }
     return DEFAULT_CATEGORIES;
   }, [eventData]);
-
   // Default category sync
   useEffect(() => {
     if (categories.length > 0 && !userFeedback) {
       setCategory(categories[0]);
     }
   }, [categories, userFeedback]);
-
   // Stats calculation
   const stats = useMemo(() => {
     if (feedbacks.length === 0) {
@@ -196,7 +181,6 @@ export default function UnifiedEventFeedbackCard({
       fiveStars
     };
   }, [feedbacks]);
-
   // Handle Submit / Update Feedback
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -208,7 +192,6 @@ export default function UnifiedEventFeedbackCard({
       toast.error('Please share a few thoughts in the comments');
       return;
     }
-
     setIsSubmitting(true);
     try {
       const payload = {
@@ -219,18 +202,15 @@ export default function UnifiedEventFeedbackCard({
         rating: Number(rating),
         comments: comments.trim()
       };
-
       const res = await fetch(`${API_BASE_URL}/api/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || 'Failed to submit feedback');
       }
-
       toast.success(
         userFeedback
           ? 'Feedback updated successfully!'
@@ -248,16 +228,13 @@ export default function UnifiedEventFeedbackCard({
       setIsSubmitting(false);
     }
   };
-
   const activeStarCount = hoverRating || rating;
   const ratingDescription = RATING_LABELS[activeStarCount] || 'Rate this event';
-
   const cardTitle =
     title ||
     (eventData?.EventType
       ? `${eventData.EventType} Delegate & Attendee Feedback`
       : 'Attendee Experience & Feedback');
-
   return (
     <div
       className={`rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm dark:shadow-2xl overflow-hidden transition-all duration-300 ${
@@ -280,7 +257,6 @@ export default function UnifiedEventFeedbackCard({
               : 'Help us enhance upcoming sessions by rating keynotes, facilities, and overall management.'}
           </p>
         </div>
-
         {/* Aggregate Stats Badge */}
         {stats.count > 0 && (
           <div className="flex items-center gap-3 bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 px-4 py-2.5 rounded-2xl shrink-0">
@@ -300,7 +276,6 @@ export default function UnifiedEventFeedbackCard({
           </div>
         )}
       </div>
-
       {/* Main Content Area */}
       <div className="pt-6">
         {/* If user already submitted and is NOT editing -> Show Verified Review View */}
@@ -332,7 +307,6 @@ export default function UnifiedEventFeedbackCard({
                   </p>
                 </div>
               </div>
-
               <button
                 type="button"
                 onClick={() => setIsEditing(true)}
@@ -342,7 +316,6 @@ export default function UnifiedEventFeedbackCard({
                 <span>Edit Your Review</span>
               </button>
             </div>
-
             {/* Review Details Card */}
             <div className="rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800/80 p-5 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-zinc-800/60 pb-3">
@@ -367,14 +340,12 @@ export default function UnifiedEventFeedbackCard({
                     {RATING_LABELS[userFeedback.Rating] || 'Good'}
                   </span>
                 </div>
-
                 {userFeedback.Category && (
                   <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-zinc-800">
                     {userFeedback.Category}
                   </span>
                 )}
               </div>
-
               {userFeedback.Comments ? (
                 <p className="text-xs sm:text-sm text-slate-700 dark:text-zinc-300 leading-relaxed italic">
                   &ldquo;{userFeedback.Comments}&rdquo;
@@ -382,7 +353,6 @@ export default function UnifiedEventFeedbackCard({
               ) : (
                 <p className="text-xs text-slate-400 italic">No additional comments provided.</p>
               )}
-
               {userFeedback.CreatedAt && (
                 <div className="pt-2 flex items-center gap-1.5 text-[10px] text-slate-400">
                   <Calendar className="w-3 h-3" />
@@ -406,7 +376,6 @@ export default function UnifiedEventFeedbackCard({
                   {ratingDescription}
                 </span>
               </div>
-
               <div className="flex items-center gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 w-fit">
                 {[1, 2, 3, 4, 5].map((starValue) => {
                   const isFilled = starValue <= activeStarCount;
@@ -435,7 +404,6 @@ export default function UnifiedEventFeedbackCard({
                 </span>
               </div>
             </div>
-
             {/* Category Selector Pills */}
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300">
@@ -461,7 +429,6 @@ export default function UnifiedEventFeedbackCard({
                 })}
               </div>
             </div>
-
             {/* Comments Textarea */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -485,7 +452,6 @@ export default function UnifiedEventFeedbackCard({
                 className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-600 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all resize-none"
               />
             </div>
-
             {/* Submit & Cancel Buttons */}
             <div className="flex items-center gap-3 pt-1">
               <button
@@ -503,7 +469,6 @@ export default function UnifiedEventFeedbackCard({
                     : 'Submit Feedback'}
                 </span>
               </button>
-
               {isEditing && (
                 <button
                   type="button"
@@ -516,7 +481,6 @@ export default function UnifiedEventFeedbackCard({
             </div>
           </form>
         )}
-
         {/* Community Reviews List (collapsible or below) */}
         {feedbacks.length > 0 && (
           <div className="mt-8 pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-4">
@@ -525,7 +489,6 @@ export default function UnifiedEventFeedbackCard({
                 Recent Attendee Feedback ({feedbacks.length})
               </h5>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
               {feedbacks.slice(0, 6).map((item) => (
                 <div
@@ -554,7 +517,6 @@ export default function UnifiedEventFeedbackCard({
                         </p>
                       </div>
                     </div>
-
                     <div className="flex items-center gap-0.5 text-amber-500">
                       {[1, 2, 3, 4, 5].map((s) => (
                         <Star
@@ -568,7 +530,6 @@ export default function UnifiedEventFeedbackCard({
                       ))}
                     </div>
                   </div>
-
                   {item.Comments && (
                     <p className="text-xs text-slate-600 dark:text-zinc-400 line-clamp-2 italic">
                       &ldquo;{item.Comments}&rdquo;

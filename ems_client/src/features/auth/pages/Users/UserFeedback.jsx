@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Calendar, MessageSquare, Send, Star, Award } from 'lucide-react';
 import { apiUrl } from '../../../../lib/api';
-
 export default function UserFeedback() {
   const [formData, setFormData] = useState({
     name: '',
@@ -13,45 +12,37 @@ export default function UserFeedback() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
-
   const handleRating = (rating) => {
     setFormData((prevData) => ({ ...prevData, rating }));
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
     setMessageType('');
-
     if (!formData.name.trim()) {
       setMessage('Please enter your name.');
       setMessageType('error');
       return;
     }
-
     if (!formData.eventName.trim()) {
       setMessage('Please enter the event name.');
       setMessageType('error');
       return;
     }
-
     if (!formData.category.trim()) {
       setMessage('Please select or enter an event category.');
       setMessageType('error');
       return;
     }
-
     if (formData.rating < 1 || formData.rating > 5) {
       setMessage('Please select a star rating from 1 to 5.');
       setMessageType('error');
       return;
     }
-
     setLoading(true);
     try {
       const response = await fetch(apiUrl('/api/feedback'), {
@@ -67,12 +58,10 @@ export default function UserFeedback() {
           comments: formData.comments.trim(),
         }),
       });
-
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || 'Failed to submit event feedback.');
       }
-
       setMessage('Thank you! Your event feedback has been submitted directly to the event organizers.');
       setMessageType('success');
       setFormData({
@@ -90,7 +79,6 @@ export default function UserFeedback() {
       setLoading(false);
     }
   };
-
   const eventCategories = [
     'Event Organization',
     'Keynote & Speaker Insights',
@@ -101,7 +89,6 @@ export default function UserFeedback() {
     'Problem Statements',
     'Overall Event Rating',
   ];
-
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 p-4 md:p-6 lg:p-10 font-sans transition-colors duration-200">
       <div className="w-full max-w-4xl mx-auto space-y-6">
@@ -123,7 +110,6 @@ export default function UserFeedback() {
             </p>
           </div>
         </div>
-
         <section className="w-full rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 overflow-hidden shadow-sm">
           <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/40">
             <div className="flex items-center gap-3">
@@ -138,7 +124,6 @@ export default function UserFeedback() {
               </div>
             </div>
           </div>
-
           <div className="p-5 sm:p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid gap-5 sm:grid-cols-2">
@@ -146,7 +131,6 @@ export default function UserFeedback() {
                   <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                     Your Name <span className="text-red-500">*</span>
                   </span>
-
                   <input
                     type="text"
                     name="name"
@@ -159,12 +143,10 @@ export default function UserFeedback() {
                     className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
                   />
                 </label>
-
                 <label className="block space-y-2">
                   <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                     Event Name <span className="text-red-500">*</span>
                   </span>
-
                   <input
                     type="text"
                     name="eventName"
@@ -177,12 +159,10 @@ export default function UserFeedback() {
                   />
                 </label>
               </div>
-
               <div className="space-y-2">
                 <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                   Event Category <span className="text-red-500">*</span>
                 </span>
-
                 <div className="flex flex-wrap gap-2 mb-2">
                   {eventCategories.map((cat) => (
                     <button
@@ -199,7 +179,6 @@ export default function UserFeedback() {
                     </button>
                   ))}
                 </div>
-
                 <input
                   type="text"
                   name="category"
@@ -211,12 +190,10 @@ export default function UserFeedback() {
                   className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
                 />
               </div>
-
               <fieldset className="space-y-3">
                 <legend className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                   Event Rating <span className="text-red-500">*</span>
                 </legend>
-
                 <div className="flex flex-wrap items-center gap-1">
                   {[1, 2, 3, 4, 5].map((value) => (
                     <button
@@ -236,13 +213,11 @@ export default function UserFeedback() {
                       />
                     </button>
                   ))}
-
                   <span className="ml-2 text-xs font-semibold text-slate-500 dark:text-zinc-400">
                     {formData.rating > 0 ? `${formData.rating}/5 Stars` : 'Select a rating'}
                   </span>
                 </div>
               </fieldset>
-
               <label className="block space-y-2">
                 <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                   Comments{' '}
@@ -250,7 +225,6 @@ export default function UserFeedback() {
                     (optional)
                   </span>
                 </span>
-
                 <textarea
                   name="comments"
                   value={formData.comments}
@@ -260,12 +234,10 @@ export default function UserFeedback() {
                   placeholder="Tell event organizers what you liked or what could be improved..."
                   className="w-full rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 px-4 py-3 text-sm text-slate-900 dark:text-white outline-none transition-colors placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 resize-y"
                 />
-
                 <span className="block text-right text-xs text-slate-400 dark:text-zinc-500">
                   {formData.comments.length}/2000
                 </span>
               </label>
-
               {message && (
                 <div
                   role="alert"
@@ -279,7 +251,6 @@ export default function UserFeedback() {
                   {message}
                 </div>
               )}
-
               <div className="flex justify-end border-t border-slate-100 dark:border-zinc-800 pt-5">
                 <button
                   type="submit"

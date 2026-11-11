@@ -37,7 +37,6 @@ import {
 } from 'lucide-react';
 import useAuth from '../../../../Hooks/useAuth';
 import useToast from '../../../../Hooks/useToast';
-
 function formatDate(date) {
   if (!date) return 'TBA';
   try {
@@ -52,7 +51,6 @@ function formatDate(date) {
     return date;
   }
 }
-
 function formatTime(date) {
   if (!date) return '';
   try {
@@ -67,20 +65,17 @@ function formatTime(date) {
     return '';
   }
 }
-
 export default function ParticipantVirtualEventPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
   const { user, token } = useAuth();
-
   const [event, setEvent] = useState(null);
   const [team, setTeam] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
   const [timelines, setTimelines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
   // Problem Statements & Publishing states
   const [publishStatus, setPublishStatus] = useState({
     ThemePublished: 0,
@@ -93,7 +88,6 @@ export default function ParticipantVirtualEventPage() {
   const [teamSelection, setTeamSelection] = useState(null);
   const [selectedPSToConfirm, setSelectedPSToConfirm] = useState(null);
   const [submittingSelection, setSubmittingSelection] = useState(false);
-
   // Project submission state
   const [projectSubmission, setProjectSubmission] = useState(null);
   const [submissionModalOpen, setSubmissionModalOpen] = useState(false);
@@ -105,19 +99,14 @@ export default function ParticipantVirtualEventPage() {
     description: ''
   });
   const [submittingProject, setSubmittingProject] = useState(false);
-
   // Filters
   const [selectedThemeFilter, setSelectedThemeFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-
   // Countdown timer state
   const [timeLeft, setTimeLeft] = useState(null);
-
   // Active tab state
   const [activeTab, setActiveTab] = useState('problems');
-
   const userId = user?.Id || user?.id;
-
   // Determine if this is an individual event / individual participant registration
   const isIndividual = useMemo(() => {
     return Boolean(
@@ -129,7 +118,6 @@ export default function ParticipantVirtualEventPage() {
       (event?.TeamSize && String(event.TeamSize).toLowerCase() === 'individual')
     );
   }, [team, event]);
-
   const displayName = useMemo(() => {
     if (!team) return user?.Name || 'Participant';
     if (isIndividual) {
@@ -137,7 +125,6 @@ export default function ParticipantVirtualEventPage() {
     }
     return team.TeamName;
   }, [team, isIndividual, user]);
-
   // Determine if logged in user is the Team Leader (or individual participant)
   const isTeamLead = useMemo(() => {
     if (!team || isIndividual) return true;
@@ -151,14 +138,12 @@ export default function ParticipantVirtualEventPage() {
     }
     return false;
   }, [team, user, teamMembers, isIndividual]);
-
   useEffect(() => {
     window.scrollTo(0, 0);
     if (id) {
       loadAll();
     }
   }, [id, userId]);
-
   const loadAll = async () => {
     try {
       setRefreshing(true);
@@ -169,34 +154,28 @@ export default function ParticipantVirtualEventPage() {
         fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/publish-status`),
         fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/themes`)
       ]);
-
       if (evRes.status === 'fulfilled' && evRes.value.ok) {
         const evData = await evRes.value.json();
         const evObj = Array.isArray(evData) ? evData[0] : (evData.event || evData);
         setEvent(evObj);
       }
-
       if (timeRes.status === 'fulfilled' && timeRes.value.ok) {
         const tlData = await timeRes.value.json();
         const list = Array.isArray(tlData) ? tlData : (tlData.timelines || []);
         setTimelines(list.filter((t) => t.Track === 'Virtual' || t.Track === 'General'));
       }
-
       if (statusRes.status === 'fulfilled' && statusRes.value.ok) {
         const stData = await statusRes.value.json();
         setPublishStatus(stData);
       }
-
       if (psRes.status === 'fulfilled' && psRes.value.ok) {
         const psData = await psRes.value.json();
         setProblemStatements(psData.problemStatements || []);
       }
-
       if (themesRes.status === 'fulfilled' && themesRes.value.ok) {
         const thData = await themesRes.value.json();
         setThemes(thData.themes || []);
       }
-
       // Load user's registered team for this event
       if (userId) {
         try {
@@ -215,14 +194,12 @@ export default function ParticipantVirtualEventPage() {
                   const infoData = await infoRes.json();
                   setTeamMembers(infoData.members || []);
                 }
-
                 // Fetch team's problem statement selection
                 const selRes = await fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/team/${teamIdentifier}`);
                 if (selRes.ok) {
                   const selData = await selRes.json();
                   setTeamSelection(selData.selection || null);
                 }
-
                 // Fetch team's project submission
                 try {
                   const subRes = await fetch(`${API_BASE_URL}/api/project-submissions/event/${id}/team/${teamIdentifier}`);
@@ -248,7 +225,6 @@ export default function ParticipantVirtualEventPage() {
       setRefreshing(false);
     }
   };
-
   // Live countdown timer for problem statement selection deadline (Timezone-safe)
   useEffect(() => {
     const deadlineStr = publishStatus.PSSelectionDeadline || event?.PSSelectionDeadline;
@@ -256,7 +232,6 @@ export default function ParticipantVirtualEventPage() {
       setTimeLeft(null);
       return;
     }
-
     let targetDate;
     if (deadlineStr instanceof Date) {
       targetDate = deadlineStr.getTime();
@@ -266,16 +241,13 @@ export default function ParticipantVirtualEventPage() {
       targetDate = new Date(normalized).getTime();
       if (isNaN(targetDate)) targetDate = new Date(s).getTime();
     }
-
     if (isNaN(targetDate)) {
       setTimeLeft(null);
       return;
     }
-
     const updateTimer = () => {
       const now = Date.now();
       const diff = targetDate - now;
-
       if (diff <= 0) {
         setTimeLeft({ expired: true, hours: 0, minutes: 0, seconds: 0 });
       } else {
@@ -285,29 +257,23 @@ export default function ParticipantVirtualEventPage() {
         setTimeLeft({ expired: false, hours, minutes, seconds });
       }
     };
-
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [publishStatus.PSSelectionDeadline, event?.PSSelectionDeadline]);
-
   // Real-time updates via WebSocket (Auto-sync when themes/problem statements are published or changed)
   useEffect(() => {
     if (!id) return;
-
     let socket = null;
     let reconnectTimer = null;
     let isMounted = true;
-
     const connectWS = () => {
       try {
         const wsBase = (API_BASE_URL || 'http://localhost:3000').replace(/^http/, 'ws');
         socket = new WebSocket(wsBase);
-
         socket.onopen = () => {
           socket.send(JSON.stringify({ type: 'JOIN_EVENT', eventId: id }));
         };
-
         socket.onmessage = (msgEvent) => {
           try {
             const data = JSON.parse(msgEvent.data);
@@ -319,13 +285,11 @@ export default function ParticipantVirtualEventPage() {
             // Ignore parse error
           }
         };
-
         socket.onclose = () => {
           if (isMounted) {
             reconnectTimer = setTimeout(connectWS, 3000);
           }
         };
-
         socket.onerror = () => {
           socket.close();
         };
@@ -333,9 +297,7 @@ export default function ParticipantVirtualEventPage() {
         console.warn('WebSocket connection failed:', e);
       }
     };
-
     connectWS();
-
     return () => {
       isMounted = false;
       if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -345,7 +307,6 @@ export default function ParticipantVirtualEventPage() {
       }
     };
   }, [id, userId]);
-
   // Handle Team Selection submission
   const handleConfirmSelection = async () => {
     if (!selectedPSToConfirm || !team) return;
@@ -356,7 +317,6 @@ export default function ParticipantVirtualEventPage() {
     }
     const teamIdentifier = team.Id || team.TeamId;
     const authToken = token || localStorage.getItem('token');
-
     try {
       setSubmittingSelection(true);
       const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/select`, {
@@ -370,12 +330,10 @@ export default function ParticipantVirtualEventPage() {
           problemStatementId: selectedPSToConfirm.Id
         })
       });
-
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || 'Failed to select problem statement');
       }
-
       toast.success(`Successfully locked in: ${selectedPSToConfirm.ProblemCode}`);
       setSelectedPSToConfirm(null);
       // Reload selections and counts
@@ -387,7 +345,6 @@ export default function ParticipantVirtualEventPage() {
       setSubmittingSelection(false);
     }
   };
-
   const handleOpenSubmissionModal = () => {
     if (projectSubmission) {
       setSubmissionForm({
@@ -408,7 +365,6 @@ export default function ParticipantVirtualEventPage() {
     }
     setSubmissionModalOpen(true);
   };
-
   const handleSubmitProject = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!submissionForm.githubRepoUrl && !submissionForm.liveDemoUrl && !submissionForm.drivePptUrl) {
@@ -420,7 +376,6 @@ export default function ParticipantVirtualEventPage() {
       toast.error('No registered team found');
       return;
     }
-
     try {
       setSubmittingProject(true);
       const authToken = token || localStorage.getItem('token');
@@ -435,12 +390,10 @@ export default function ParticipantVirtualEventPage() {
           ...submissionForm
         })
       });
-
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || 'Failed to submit project');
       }
-
       toast.success(projectSubmission ? 'Project submission updated!' : 'Project submitted successfully!');
       setProjectSubmission(data.submission || null);
       setSubmissionModalOpen(false);
@@ -452,7 +405,6 @@ export default function ParticipantVirtualEventPage() {
       setSubmittingProject(false);
     }
   };
-
   // Combined list of themes (from event_themes table or statements)
   const displayThemes = useMemo(() => {
     const list = [...themes];
@@ -463,47 +415,39 @@ export default function ParticipantVirtualEventPage() {
     });
     return list;
   }, [themes, problemStatements]);
-
   const uniqueThemes = useMemo(() => {
     return displayThemes.map(t => t.ThemeName);
   }, [displayThemes]);
-
   // Filtered problem statements
   const filteredStatements = useMemo(() => {
     return problemStatements.filter((ps) => {
       const matchesTheme =
         selectedThemeFilter === 'ALL' ||
         (ps.Theme && ps.Theme.toLowerCase() === selectedThemeFilter.toLowerCase());
-
       const matchesSearch =
         !searchQuery ||
         ps.Title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ps.ProblemCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ps.Description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         ps.Category?.toLowerCase().includes(searchQuery.toLowerCase());
-
       return matchesTheme && matchesSearch;
     });
   }, [problemStatements, selectedThemeFilter, searchQuery]);
-
   const isThemePublished = Boolean(
     publishStatus.ThemePublished === 1 ||
     publishStatus.ThemePublished === true ||
     event?.ThemePublished === 1 ||
     event?.ThemePublished === true
   );
-
   const isPSPublished = Boolean(
     publishStatus.ProblemStatementsPublished === 1 ||
     publishStatus.ProblemStatementsPublished === true ||
     event?.ProblemStatementsPublished === 1 ||
     event?.ProblemStatementsPublished === true
   );
-
   const isLive = event?.VirtualStatus === 'LIVE';
   const meetUrl = event?.VirtualMeetUrl;
   const maxTeamsPerPS = publishStatus.PSMaxTeamsPerStatement || event?.PSMaxTeamsPerStatement || 5;
-
   const tabs = [
     {
       key: 'problems',
@@ -530,7 +474,6 @@ export default function ParticipantVirtualEventPage() {
       badge: null
     }
   ];
-
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
@@ -539,7 +482,6 @@ export default function ParticipantVirtualEventPage() {
       </div>
     );
   }
-
   if (!event) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
@@ -554,7 +496,6 @@ export default function ParticipantVirtualEventPage() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-zinc-100 p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Top Breadcrumb & Controls */}
@@ -566,7 +507,6 @@ export default function ParticipantVirtualEventPage() {
           <ArrowLeft className="h-4 w-4" />
           <span>Back to Event Details</span>
         </Link>
-
         <button
           type="button"
           onClick={loadAll}
@@ -577,7 +517,6 @@ export default function ParticipantVirtualEventPage() {
           <span>Sync Status</span>
         </button>
       </div>
-
       {/* Hero Live Status Card */}
       <div className={`p-6 sm:p-8 rounded-3xl border transition-all ${
         isLive
@@ -603,18 +542,15 @@ export default function ParticipantVirtualEventPage() {
               )}
               <span className="text-xs text-slate-400 font-medium">Virtual Track Room</span>
             </div>
-
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
               {event.EventName}
             </h1>
-
             <p className="text-slate-600 dark:text-zinc-400 text-xs sm:text-sm leading-relaxed">
               {isLive
                 ? 'The virtual hackathon is now in session! Connect with mentors and jury panels in the live meeting room.'
                 : 'Welcome to the Virtual Hackathon Hub. Select your problem statement, track deadlines, submit deliverables, and join live rooms.'}
             </p>
           </div>
-
           {/* Quick Meet / Status Action */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {isLive ? (
@@ -645,7 +581,6 @@ export default function ParticipantVirtualEventPage() {
           </div>
         </div>
       </div>
-
       {/* Folder Tabs Navigation (Matching Prize / Track Tabs in screenshot) */}
       <div className="space-y-0">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 relative z-10 -mb-px">
@@ -672,7 +607,6 @@ export default function ParticipantVirtualEventPage() {
                   ) : (
                     <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200/60 dark:hover:bg-zinc-900 transition" />
                   )}
-
                   <span className={`relative z-20 flex items-center gap-2 ${
                     isActive
                       ? 'text-slate-900 dark:text-white'
@@ -698,7 +632,6 @@ export default function ParticipantVirtualEventPage() {
             })}
           </div>
         </div>
-
         {/* Connected Card Container matching exact screenshot */}
         <div className={`p-6 sm:p-8 rounded-3xl ${activeTab === tabs[0].key ? 'rounded-tl-none rounded-tr-none' : 'rounded-tl-none rounded-tr-none'} bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm relative z-0`}>
           {/* TAB 1: PROBLEM STATEMENTS & THEMES */}
@@ -734,7 +667,6 @@ export default function ParticipantVirtualEventPage() {
                       Selected at: {formatDate(teamSelection.SelectedAt)} {formatTime(teamSelection.SelectedAt)}
                     </p>
                   </div>
-
                   <div className="shrink-0 flex items-center gap-2">
                     <button
                       type="button"
@@ -755,7 +687,7 @@ export default function ParticipantVirtualEventPage() {
                         {isIndividual ? 'You have not selected a problem statement yet!' : `Team ${team.TeamName} has not selected a problem statement yet!`}
                       </h4>
                       <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
-                        {isIndividual 
+                        {isIndividual
                           ? 'Please pick a problem statement from the list below before the timer runs out. If not selected in time, a statement will be automatically assigned to you!'
                           : 'Please pick a problem statement from the list below before the timer runs out. If not selected in time, a statement will be automatically assigned to your team!'}
                       </p>
@@ -765,7 +697,6 @@ export default function ParticipantVirtualEventPage() {
               )}
             </div>
           )}
-
           {/* HACKATHON THEMES PREVIEW */}
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800 pb-3">
@@ -792,7 +723,6 @@ export default function ParticipantVirtualEventPage() {
                 </div>
               </div>
             </div>
-
             {isThemePublished ? (
               displayThemes.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -844,7 +774,6 @@ export default function ParticipantVirtualEventPage() {
               </div>
             )}
           </div>
-
           {/* PROBLEM STATEMENTS LISTING */}
           <div className="space-y-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200 dark:border-zinc-800 pb-3">
@@ -870,7 +799,6 @@ export default function ParticipantVirtualEventPage() {
                   </p>
                 </div>
               </div>
-
               {/* Selection Deadline & Live Countdown */}
               {isPSPublished && (
                 <div className="flex flex-wrap items-center gap-2">
@@ -893,7 +821,6 @@ export default function ParticipantVirtualEventPage() {
                 </div>
               )}
             </div>
-
             {isPSPublished ? (
               <div className="space-y-4">
                 {!isIndividual && !isTeamLead && team && (
@@ -904,7 +831,6 @@ export default function ParticipantVirtualEventPage() {
                     </span>
                   </div>
                 )}
-
                 {/* Search & Theme Filter Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   {/* Theme Pills */}
@@ -935,7 +861,6 @@ export default function ParticipantVirtualEventPage() {
                       </button>
                     ))}
                   </div>
-
                   {/* Search input */}
                   <div className="relative min-w-[220px]">
                     <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
@@ -948,7 +873,6 @@ export default function ParticipantVirtualEventPage() {
                     />
                   </div>
                 </div>
-
                 {/* Statements Grid */}
                 {filteredStatements.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -956,7 +880,6 @@ export default function ParticipantVirtualEventPage() {
                       const isSelectedByMyTeam = teamSelection && Number(teamSelection.ProblemStatementId) === Number(ps.Id);
                       const hasExistingSelection = Boolean(teamSelection && teamSelection.ProblemStatementId);
                       const isDeadlinePassed = Boolean(timeLeft && timeLeft.expired);
-
                       return (
                         <div
                           key={ps.Id}
@@ -983,23 +906,19 @@ export default function ParticipantVirtualEventPage() {
                                   </span>
                                 )}
                               </div>
-
                               {isSelectedByMyTeam && (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-extrabold uppercase">
                                   <Check className="h-3 w-3" /> {isIndividual ? "Your Pick" : "Your Team's Pick"}
                                 </span>
                               )}
                             </div>
-
                             <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
                               {ps.Title}
                             </h3>
-
                             <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed whitespace-pre-line line-clamp-4">
                               {ps.Description}
                             </p>
                           </div>
-
                           {/* Action Button */}
                           <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80">
                             {team ? (
@@ -1073,7 +992,6 @@ export default function ParticipantVirtualEventPage() {
           </div>
         </div>
       )}
-
       {/* TAB 2: PROJECT DELIVERABLES */}
       {activeTab === 'submission' && (
         <div className="space-y-6">
@@ -1098,7 +1016,6 @@ export default function ParticipantVirtualEventPage() {
                   {teamSelection.ProblemTitle}
                 </h4>
               </div>
-
               <button
                 type="button"
                 onClick={() => setActiveTab('problems')}
@@ -1129,7 +1046,6 @@ export default function ParticipantVirtualEventPage() {
               </button>
             </div>
           )}
-
           {/* PROJECT SUBMISSION SECTION */}
           {team ? (
             <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm space-y-5">
@@ -1156,7 +1072,6 @@ export default function ParticipantVirtualEventPage() {
                     </p>
                   </div>
                 </div>
-
                 {isIndividual || isTeamLead ? (
                   <button
                     type="button"
@@ -1181,7 +1096,6 @@ export default function ParticipantVirtualEventPage() {
                   </span>
                 )}
               </div>
-
               {projectSubmission ? (
                 <div className="space-y-4 pt-1">
                   <div className="flex flex-wrap items-center gap-2.5">
@@ -1222,7 +1136,6 @@ export default function ParticipantVirtualEventPage() {
                       </a>
                     )}
                   </div>
-
                   {projectSubmission.TechStack && (
                     <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-zinc-300 pt-1">
                       <span className="font-bold text-slate-400 text-[11px] uppercase tracking-wider">Tech Stack:</span>
@@ -1231,14 +1144,12 @@ export default function ParticipantVirtualEventPage() {
                       </span>
                     </div>
                   )}
-
                   {projectSubmission.Description && (
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 text-xs text-slate-700 dark:text-zinc-300 leading-relaxed">
                       <span className="font-bold block text-slate-900 dark:text-white mb-1.5">Project Solution Overview:</span>
                       {projectSubmission.Description}
                     </div>
                   )}
-
                   <p className="text-[11px] text-slate-400 pt-0.5">
                     Last updated: {formatDate(projectSubmission.UpdatedAt || projectSubmission.SubmittedAt)} {formatTime(projectSubmission.UpdatedAt || projectSubmission.SubmittedAt)}
                     {projectSubmission.SubmittedByName && ` • by ${projectSubmission.SubmittedByName}`}
@@ -1262,7 +1173,6 @@ export default function ParticipantVirtualEventPage() {
           )}
         </div>
       )}
-
       {/* TAB 3: LIVE MEET & AGENDA */}
       {activeTab === 'meeting' && (
         <div className="space-y-6">
@@ -1282,7 +1192,6 @@ export default function ParticipantVirtualEventPage() {
                   </p>
                 </div>
               </div>
-
               {isLive ? (
                 meetUrl ? (
                   <a
@@ -1306,7 +1215,6 @@ export default function ParticipantVirtualEventPage() {
                 </span>
               )}
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Session Status</span>
@@ -1328,7 +1236,6 @@ export default function ParticipantVirtualEventPage() {
               </div>
             </div>
           </div>
-
           {/* Virtual Schedule / Timelines */}
           <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-sm p-6 space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800/80">
@@ -1340,7 +1247,6 @@ export default function ParticipantVirtualEventPage() {
                 {timelines.length} Phases
               </span>
             </div>
-
             {timelines.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
                 {timelines.map((tl, index) => (
@@ -1367,7 +1273,6 @@ export default function ParticipantVirtualEventPage() {
           </div>
         </div>
       )}
-
       {/* TAB 4: PARTICIPANT / TEAM & GUIDELINES */}
       {activeTab === 'team' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1379,7 +1284,6 @@ export default function ParticipantVirtualEventPage() {
                 {isIndividual ? 'Your Registered Details' : 'Your Registered Team'}
               </h3>
             </div>
-
             {team ? (
               <div className="space-y-3">
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
@@ -1391,7 +1295,6 @@ export default function ParticipantVirtualEventPage() {
                     {team.College || (isIndividual ? 'Individual Competitor' : 'Registered Team')}
                   </p>
                 </div>
-
                 {!isIndividual && teamMembers.length > 0 && (
                   <div className="space-y-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Team Members ({teamMembers.length})</span>
@@ -1420,7 +1323,6 @@ export default function ParticipantVirtualEventPage() {
               </div>
             )}
           </div>
-
           {/* Problem Statements & Guidelines */}
           <div className="lg:col-span-2 bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-sm space-y-4">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800/80">
@@ -1429,7 +1331,6 @@ export default function ParticipantVirtualEventPage() {
                 Virtual Sprint Resources & Protocol
               </h3>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 space-y-1.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Virtual Requirements</span>
@@ -1444,7 +1345,6 @@ export default function ParticipantVirtualEventPage() {
                 </p>
               </div>
             </div>
-
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-700 dark:text-zinc-300 flex items-start gap-2.5">
               <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
               <span>
@@ -1456,7 +1356,6 @@ export default function ParticipantVirtualEventPage() {
       )}
         </div>
       </div>
-
       {/* CONFIRMATION SELECTION MODAL */}
       <AnimatePresence>
         {selectedPSToConfirm && team && (
@@ -1486,7 +1385,6 @@ export default function ParticipantVirtualEventPage() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-
               <div className="space-y-3 bg-slate-50 dark:bg-zinc-900/60 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800">
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-black">
@@ -1498,25 +1396,20 @@ export default function ParticipantVirtualEventPage() {
                     </span>
                   )}
                 </div>
-
                 <h4 className="text-base font-bold text-slate-900 dark:text-white">
                   {selectedPSToConfirm.Title}
                 </h4>
-
                 <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed line-clamp-3">
                   {selectedPSToConfirm.Description}
                 </p>
-
                 <div className="pt-2 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-zinc-400">
                   <span>Selected For:</span>
                   <span className="font-bold text-slate-900 dark:text-white">{displayName}</span>
                 </div>
               </div>
-
               <p className="text-xs text-slate-500 dark:text-zinc-400">
                 Once confirmed, this problem statement will be officially locked for {isIndividual ? 'you' : `team ${team.TeamName}`}. Only an event admin can modify your selection after confirmation.
               </p>
-
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
@@ -1525,7 +1418,6 @@ export default function ParticipantVirtualEventPage() {
                 >
                   Cancel
                 </button>
-
                 <button
                   type="button"
                   onClick={handleConfirmSelection}
@@ -1549,7 +1441,6 @@ export default function ParticipantVirtualEventPage() {
           </div>
         )}
       </AnimatePresence>
-
       {/* PROJECT SUBMISSION MODAL */}
       <AnimatePresence>
         {submissionModalOpen && (
@@ -1579,7 +1470,6 @@ export default function ParticipantVirtualEventPage() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-
               <form onSubmit={handleSubmitProject} className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
@@ -1596,7 +1486,6 @@ export default function ParticipantVirtualEventPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                     Live Demo / Hosted Web URL
@@ -1612,7 +1501,6 @@ export default function ParticipantVirtualEventPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                     Presentation Deck / Google Drive URL
@@ -1628,7 +1516,6 @@ export default function ParticipantVirtualEventPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                     Tech Stack & Tools Used
@@ -1641,7 +1528,6 @@ export default function ParticipantVirtualEventPage() {
                     className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                     Solution Overview / Implementation Notes
@@ -1654,7 +1540,6 @@ export default function ParticipantVirtualEventPage() {
                     className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white resize-none"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-zinc-800">
                   <button
                     type="button"
@@ -1663,7 +1548,6 @@ export default function ParticipantVirtualEventPage() {
                   >
                     Cancel
                   </button>
-
                   <button
                     type="submit"
                     disabled={submittingProject}

@@ -1,5 +1,4 @@
 const nodemailer = require('nodemailer');
-
 const recordEmailLogSafe = (data) => {
     try {
         const { recordEmailLog } = require('../modules/email_dispatch/emailDispatchService');
@@ -12,7 +11,6 @@ const recordEmailLogSafe = (data) => {
         // Safe fallback if module not loaded
     }
 };
-
 // Create SMTP Transporter using environment variables or safe defaults
 const getTransporter = () => {
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
@@ -20,11 +18,9 @@ const getTransporter = () => {
     const secure = process.env.SMTP_SECURE === 'true' || port === 465;
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-
     if (!user || !pass) {
         console.warn('⚠️ [SMTP Mailer] SMTP_USER or SMTP_PASS not set in .env. Emails will be logged to console.');
     }
-
     const isGmail = host === 'smtp.gmail.com' || (user && user.endsWith('@gmail.com'));
     if (isGmail && user && pass) {
         return nodemailer.createTransport({
@@ -35,7 +31,6 @@ const getTransporter = () => {
             }
         });
     }
-
     return nodemailer.createTransport({
         host,
         port,
@@ -46,13 +41,9 @@ const getTransporter = () => {
         }
     });
 };
-
-/**
- * Send 6-digit OTP verification email for password reset
- */
+// Send 6-digit OTP verification email for password reset
 const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
     const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AYOJAN" <no-reply@ayojan.live>';
-    
     // Beautiful, responsive, Google-grade HTML template
     const html = `
     <!DOCTYPE html>
@@ -89,13 +80,13 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
           <p class="message">
             We received a request to reset your password. Please use the 6-digit one-time verification code below to authorize this password change:
           </p>
-          
+
           <div class="otp-box">
             <div class="otp-title">Your One-Time Password</div>
             <div class="otp-code">${otpCode}</div>
             <div class="otp-sub">Expires in <strong>10 minutes</strong></div>
           </div>
-          
+
           <div class="security-notice">
             <strong>Security Tip:</strong> Never share this code with anyone. Event organizers and staff will never ask for your verification code. If you did not request this, please disregard this email.
           </div>
@@ -107,14 +98,11 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
     </body>
     </html>
     `;
-
     console.log(`\n======================================================`);
     console.log(`📧 [SMTP OTP DISPATCH] To: ${toEmail} | Code: ${otpCode}`);
     console.log(`======================================================\n`);
-
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-
     if (!user || !pass) {
         // Dev fallback if SMTP credentials aren't configured yet
         return {
@@ -123,7 +111,6 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
             message: 'OTP logged to server console (SMTP credentials not yet configured)'
         };
     }
-
     const transporter = getTransporter();
     try {
         const info = await transporter.sendMail({
@@ -133,7 +120,6 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
             text: `Your password reset code is: ${otpCode}. It expires in 10 minutes.`,
             html
         });
-
         recordEmailLogSafe({
             recipientEmail: toEmail,
             recipientName: userName,
@@ -142,7 +128,6 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
             status: 'Delivered',
             payloadSnippet: `Password reset OTP: ${otpCode}`
         });
-
         return { sent: true, mode: 'smtp', messageId: info.messageId };
     } catch (err) {
         recordEmailLogSafe({
@@ -157,13 +142,9 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
         throw err;
     }
 };
-
-/**
- * Send confirmation email after password has been successfully reset
- */
+// Send confirmation email after password has been successfully reset
 const sendPasswordResetSuccessEmail = async (toEmail, userName = 'Participant') => {
     const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AYOJAN" <no-reply@ayojan.live>';
-    
     const html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -192,12 +173,9 @@ const sendPasswordResetSuccessEmail = async (toEmail, userName = 'Participant') 
     </body>
     </html>
     `;
-
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-
     if (!user || !pass) return { sent: true, mode: 'development_logged' };
-
     try {
         const transporter = getTransporter();
         await transporter.sendMail({
@@ -210,10 +188,7 @@ const sendPasswordResetSuccessEmail = async (toEmail, userName = 'Participant') 
         console.warn('Failed to send confirmation email:', err.message);
     }
 };
-
-/**
- * Send Event Announcement / Broadcast email to participants
- */
+// Send Event Announcement / Broadcast email to participants
 const sendEventBroadcastEmail = async ({
     toEmail,
     userName = 'Participant',
@@ -224,10 +199,8 @@ const sendEventBroadcastEmail = async ({
     organizerName = 'Event Organizing Committee'
 }) => {
     const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || `"${eventName}" <no-reply@eventmanagement.com>`;
-
     const getCategoryTheme = (cat) => {
         const c = String(cat || '').toLowerCase().trim();
-
         // 1. Emergency / Urgent (Solid Rose Red)
         if (c.includes('emergency') || c.includes('urgent')) {
             return {
@@ -308,15 +281,12 @@ const sendEventBroadcastEmail = async ({
             accentColor: '#059669'
         };
     };
-
     const theme = getCategoryTheme(category);
-
     const formattedMessage = (message || '')
         .split('\n')
         .filter(p => p.trim())
         .map(p => `<p style="margin: 0 0 14px 0; line-height: 1.6; color: #334155; font-size: 14px;">${p}</p>`)
         .join('');
-
     const html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -365,16 +335,12 @@ const sendEventBroadcastEmail = async ({
     </body>
     </html>
     `;
-
     console.log(`📢 [BROADCAST EMAIL] To: ${toEmail} | Subject: "${subject}" [${category}]`);
-
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-
     if (!user || !pass) {
         return { sent: true, mode: 'development_logged' };
     }
-
     try {
         const transporter = getTransporter();
         const info = await transporter.sendMail({
@@ -384,7 +350,6 @@ const sendEventBroadcastEmail = async ({
             text: `${subject}\n\nDear ${userName},\n\n${message}\n\n- ${organizerName}`,
             html
         });
-
         recordEmailLogSafe({
             recipientEmail: toEmail,
             recipientName: userName,
@@ -393,11 +358,9 @@ const sendEventBroadcastEmail = async ({
             status: 'Delivered',
             payloadSnippet: message ? message.slice(0, 160) : null
         });
-
         return { sent: true, mode: 'smtp', messageId: info.messageId };
     } catch (err) {
         console.error(`Failed to send broadcast email to ${toEmail}:`, err.message);
-
         recordEmailLogSafe({
             recipientEmail: toEmail,
             recipientName: userName,
@@ -407,14 +370,11 @@ const sendEventBroadcastEmail = async ({
             errorMessage: err.message,
             payloadSnippet: message ? message.slice(0, 160) : null
         });
-
         return { sent: false, error: err.message };
     }
 };
-
 module.exports = {
     sendOtpEmail,
     sendPasswordResetSuccessEmail,
     sendEventBroadcastEmail
 };
-

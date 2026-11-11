@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import useAuth from '../../Hooks/useAuth';
-
 export default function NotificationBellDropdown({
   className = '',
   align = 'right',
@@ -29,7 +28,6 @@ export default function NotificationBellDropdown({
   const navigate = useNavigate();
   const { user } = useAuth();
   const userId = user?.Id || user?.id || null;
-
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -37,9 +35,7 @@ export default function NotificationBellDropdown({
   const [loading, setLoading] = useState(false);
   const [isRinging, setIsRinging] = useState(false);
   const [liveToast, setLiveToast] = useState(null); // Real-time toast alert
-
   const dropdownRef = useRef(null);
-
   // Close when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -52,7 +48,6 @@ export default function NotificationBellDropdown({
         setIsOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -60,14 +55,12 @@ export default function NotificationBellDropdown({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
-
   // Fetch notifications from API
   const fetchNotifications = useCallback(async (isSilent = false) => {
     try {
       if (!isSilent) setLoading(true);
       const params = new URLSearchParams({ limit: '30' });
       if (userId) params.append('userId', String(userId));
-
       const res = await fetch(`${API_BASE_URL}/api/notifications?${params.toString()}`);
       if (!res.ok) return;
       const data = await res.json();
@@ -84,48 +77,43 @@ export default function NotificationBellDropdown({
       if (!isSilent) setLoading(false);
     }
   }, [userId]);
-
-  // Initial fetch
+  // Initial fetch (only when authenticated)
   useEffect(() => {
-    fetchNotifications();
+    if (userId) {
+      fetchNotifications();
+    }
   }, [fetchNotifications]);
-
-  // Silent polling fallback every 15s
+  // Gentle fallback polling every 60s when active (relies on real-time WebSocket)
   useEffect(() => {
+    if (!userId) return;
     const timer = setInterval(() => {
       fetchNotifications(true);
-    }, 15000);
+    }, 60000);
     return () => clearInterval(timer);
   }, [fetchNotifications]);
-
   // Real-time WebSocket listener with auto-reconnect backoff
   useEffect(() => {
     let ws = null;
     let isMounted = true;
     let shouldClose = false;
     let connectTimeout = null;
-
     const connectWs = () => {
       if (!isMounted || shouldClose) return;
       try {
         const wsUrl = API_BASE_URL.replace(/^http/, 'ws');
         ws = new WebSocket(wsUrl);
-
         ws.onopen = () => {
           if (shouldClose) {
             try { ws.close(1000, 'Clean unmount'); } catch (_) {}
             return;
           }
         };
-
         ws.onerror = () => {
           // Silently handle any transient socket connection issues
         };
-
         ws.onclose = () => {
           // Cleanly handle close
         };
-
         ws.onmessage = (event) => {
           if (!isMounted || shouldClose) return;
           try {
@@ -135,11 +123,9 @@ export default function NotificationBellDropdown({
               if (!notif.UserId || Number(notif.UserId) === Number(userId)) {
                 setNotifications((prev) => [notif, ...prev]);
                 setUnreadCount((prev) => prev + 1);
-
                 // Ring animation
                 setIsRinging(true);
                 setTimeout(() => setIsRinging(false), 1600);
-
                 // Floating live toast banner
                 setLiveToast(notif);
                 setTimeout(() => setLiveToast(null), 5500);
@@ -149,10 +135,8 @@ export default function NotificationBellDropdown({
         };
       } catch (e) {}
     };
-
     // Stagger connect slightly to avoid competing with initial HTTP render & strict mode double-mount
     connectTimeout = setTimeout(connectWs, 300);
-
     return () => {
       isMounted = false;
       shouldClose = true;
@@ -166,7 +150,6 @@ export default function NotificationBellDropdown({
       }
     };
   }, [userId]);
-
   // Mark single as read
   const handleMarkAsRead = async (id, e) => {
     if (e) e.stopPropagation();
@@ -180,7 +163,6 @@ export default function NotificationBellDropdown({
       console.error('Failed to mark read:', err);
     }
   };
-
   // Mark all as read
   const handleMarkAllAsRead = async () => {
     try {
@@ -195,7 +177,6 @@ export default function NotificationBellDropdown({
       console.error('Failed to mark all read:', err);
     }
   };
-
   // Delete notification
   const handleDelete = async (id, e) => {
     if (e) e.stopPropagation();
@@ -210,7 +191,6 @@ export default function NotificationBellDropdown({
       console.error('Failed to delete notification:', err);
     }
   };
-
   // Click notification to navigate
   const handleNotificationClick = (notif) => {
     if (!notif.IsRead) {
@@ -221,7 +201,6 @@ export default function NotificationBellDropdown({
       navigate(notif.LinkUrl);
     }
   };
-
   // Relative timestamp formatting
   const formatRelativeTime = (timestamp) => {
     if (!timestamp) return 'Just now';
@@ -237,7 +216,6 @@ export default function NotificationBellDropdown({
     if (diffDays < 7) return `${diffDays}d ago`;
     return then.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
-
   // Category Icon & Capsule Gradient
   const getCategoryMeta = (type) => {
     switch (type?.toUpperCase()) {
@@ -278,14 +256,11 @@ export default function NotificationBellDropdown({
         };
     }
   };
-
   const filteredNotifications = filter === 'UNREAD'
     ? notifications.filter((n) => !n.IsRead)
     : notifications;
-
   return (
     <div className={`relative inline-block ${className}`} ref={dropdownRef}>
-      
       {/* ── TRIGGER BUTTON ── */}
       {variant === 'floating' ? (
         // Floating Top-Right Glass Island Pill
@@ -309,11 +284,9 @@ export default function NotificationBellDropdown({
               </span>
             )}
           </motion.div>
-
           <span className="text-xs font-semibold tracking-tight hidden sm:inline">
             Notifications
           </span>
-
           {unreadCount > 0 && (
             <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white font-black text-[10px] leading-none shadow-[0_0_12px_rgba(16,185,129,0.5)]">
               {unreadCount > 9 ? '9+' : unreadCount}
@@ -335,7 +308,6 @@ export default function NotificationBellDropdown({
           >
             <Bell className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
           </motion.div>
-
           {/* Unread Counter Badge */}
           {unreadCount > 0 && (
             <motion.span
@@ -348,7 +320,6 @@ export default function NotificationBellDropdown({
           )}
         </motion.button>
       )}
-
       {/* ── THE FLOATING GLASSMORPHIC ISLAND (Apple macOS / Raycast style) ── */}
       <AnimatePresence>
         {isOpen && (
@@ -366,7 +337,6 @@ export default function NotificationBellDropdown({
           >
             {/* Top Iridescent Sheen Bar */}
             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent pointer-events-none" />
-
             {/* ── ISLAND HEADER ── */}
             <div className="px-5 pt-4.5 pb-3 border-b border-gray-100/80 dark:border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -385,7 +355,6 @@ export default function NotificationBellDropdown({
                   </h3>
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <button
@@ -406,7 +375,6 @@ export default function NotificationBellDropdown({
                 </button>
               </div>
             </div>
-
             {/* ── RAYCAST STYLE SEGMENTED CONTROL ── */}
             <LayoutGroup id="notification-tab-slider">
               <div className="px-4 py-2 border-b border-gray-100/60 dark:border-white/10 bg-gray-50/50 dark:bg-black">
@@ -428,7 +396,6 @@ export default function NotificationBellDropdown({
                     )}
                     <span className="relative z-10">All ({notifications.length})</span>
                   </button>
-
                   <button
                     onClick={() => setFilter('UNREAD')}
                     className={`relative flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer text-center ${
@@ -449,7 +416,6 @@ export default function NotificationBellDropdown({
                 </div>
               </div>
             </LayoutGroup>
-
             {/* ── FLOATING TILES LIST ── */}
             <div className="max-h-[380px] overflow-y-auto px-2 py-2 divide-y divide-transparent sidebar-scrollbar">
               {filteredNotifications.length === 0 ? (
@@ -493,7 +459,6 @@ export default function NotificationBellDropdown({
                       >
                         {meta.icon}
                       </div>
-
                       {/* Content Area */}
                       <div className="flex-1 min-w-0 font-sans">
                         <div className="flex items-center justify-between gap-1 mb-0.5">
@@ -504,7 +469,6 @@ export default function NotificationBellDropdown({
                             {formatRelativeTime(n.CreatedAt)}
                           </span>
                         </div>
-
                         <h4
                           className={`text-xs leading-snug tracking-tight truncate ${
                             !n.IsRead
@@ -514,11 +478,9 @@ export default function NotificationBellDropdown({
                         >
                           {n.Title}
                         </h4>
-
                         <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 line-clamp-2 leading-relaxed">
                           {n.Message}
                         </p>
-
                         {/* Action Link */}
                         {n.LinkUrl && (
                           <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
@@ -527,7 +489,6 @@ export default function NotificationBellDropdown({
                           </div>
                         )}
                       </div>
-
                       {/* Right Quick Controls */}
                       <div className="flex flex-col items-center gap-1 shrink-0 self-center">
                         {!n.IsRead ? (
@@ -541,7 +502,6 @@ export default function NotificationBellDropdown({
                         ) : (
                           <span className="w-2 h-2 opacity-0" />
                         )}
-
                         <button
                           onClick={(e) => handleDelete(n.Id, e)}
                           className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer"
@@ -555,7 +515,6 @@ export default function NotificationBellDropdown({
                 })
               )}
             </div>
-
             {/* ── ISLAND FOOTER (Raycast status bar) ── */}
             <div className="px-4 py-2.5 border-t border-gray-100/80 dark:border-white/10 bg-gray-50/70 dark:bg-black flex items-center justify-between text-[11px] text-gray-400">
               <div className="flex items-center gap-1.5 text-[10px]">
@@ -569,7 +528,6 @@ export default function NotificationBellDropdown({
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* ── REAL-TIME TOAST ALERT (Top Right Corner) ── */}
       <AnimatePresence>
         {liveToast && (

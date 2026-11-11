@@ -27,31 +27,25 @@ import {
 } from 'lucide-react';
 import useToast from '../../../../Hooks/useToast';
 import { API_BASE_URL } from '@/lib/api';
-
 function FoodRedirectionPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useToast();
-
   const eventId = searchParams.get('eventId');
-
   const [loading, setLoading] = useState(false);
   const [eventData, setEventData] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [allocatingMeal, setAllocatingMeal] = useState(null);
-
   // Token Scanner / Redemption State
   const [tokenInput, setTokenInput] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [verifiedToken, setVerifiedToken] = useState(null);
   const [redeeming, setRedeeming] = useState(false);
-
   useEffect(() => {
     if (eventId) {
       loadEventAndParticipants();
     }
   }, [eventId]);
-
   const loadEventAndParticipants = async () => {
     try {
       setLoading(true);
@@ -59,12 +53,10 @@ function FoodRedirectionPage() {
         fetch(`${API_BASE_URL}/api/events/${eventId}`),
         fetch(`${API_BASE_URL}/api/physical-services/events/${eventId}/food-participants`)
       ]);
-
       if (evRes.status === 'fulfilled' && evRes.value.ok) {
         const evData = await evRes.value.json();
         setEventData(Array.isArray(evData) ? evData[0] : (evData.event || evData));
       }
-
       if (foodRes.status === 'fulfilled' && foodRes.value.ok) {
         const foodData = await foodRes.value.json();
         setParticipants(foodData.participants || []);
@@ -75,7 +67,6 @@ function FoodRedirectionPage() {
       setLoading(false);
     }
   };
-
   const handleAllocateTokens = async (mealType) => {
     if (!eventId) {
       toast.error('Event ID is missing');
@@ -98,7 +89,6 @@ function FoodRedirectionPage() {
       setAllocatingMeal(null);
     }
   };
-
   const handleVerifyToken = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     const clean = tokenInput.trim();
@@ -129,7 +119,6 @@ function FoodRedirectionPage() {
       setVerifying(false);
     }
   };
-
   const handleRedeemToken = async () => {
     if (!verifiedToken?.Token) return;
     try {
@@ -150,7 +139,6 @@ function FoodRedirectionPage() {
       setRedeeming(false);
     }
   };
-
   return (
     <div className="min-h-screen w-full bg-slate-50 p-4 font-sans text-slate-900 dark:bg-black dark:text-white sm:p-6 lg:p-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
@@ -162,7 +150,6 @@ function FoodRedirectionPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Physical Event
         </button>
-
         {/* Event Header Banner */}
         <div className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-8 lg:flex-row lg:items-center">
           <div className="flex-1 space-y-4">
@@ -209,7 +196,6 @@ function FoodRedirectionPage() {
             </button>
           </div>
         </div>
-
         {/* FOOD TOKEN VERIFICATION & REDEMPTION TERMINAL */}
         <div className="rounded-3xl border border-emerald-500/30 bg-white dark:bg-black p-6 sm:p-8 shadow-sm space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-emerald-500/20 pb-4">
@@ -227,7 +213,6 @@ function FoodRedirectionPage() {
               </div>
             </div>
           </div>
-
           <form onSubmit={handleVerifyToken} className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Ticket className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
@@ -252,7 +237,6 @@ function FoodRedirectionPage() {
               <span>Verify Token</span>
             </button>
           </form>
-
           {/* VERIFIED TOKEN DETAILS CARD */}
           {verifiedToken && (
             <div className={`p-5 rounded-2xl border transition-all ${
@@ -281,7 +265,6 @@ function FoodRedirectionPage() {
                       </span>
                     )}
                   </div>
-
                   <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
                     {verifiedToken.UserName} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">({verifiedToken.UserEmail})</span>
                   </h4>
@@ -294,7 +277,6 @@ function FoodRedirectionPage() {
                     </p>
                   )}
                 </div>
-
                 <div className="shrink-0 flex items-center gap-3">
                   {!verifiedToken.IsRedeemed && (
                     <button
@@ -323,7 +305,6 @@ function FoodRedirectionPage() {
             </div>
           )}
         </div>
-
         {/* Real Allocation Triggers */}
         <div className="flex flex-col items-center gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 xl:flex-row xl:p-8">
           <div className="flex w-full items-start gap-4 xl:w-auto xl:min-w-[280px]">
@@ -335,7 +316,6 @@ function FoodRedirectionPage() {
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Generate tokens for each meal time as per the event schedule.</p>
             </div>
           </div>
-
           <div className="flex w-full flex-col gap-4 sm:flex-row xl:flex-1">
             <button
               type="button"
@@ -372,7 +352,6 @@ function FoodRedirectionPage() {
             </button>
           </div>
         </div>
-
         <div className="rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
           <div className="flex flex-col items-start justify-between gap-4 border-b border-slate-100 p-6 dark:border-zinc-800 sm:p-8 lg:flex-row lg:items-center">
             <div className="flex items-start gap-4">
@@ -384,7 +363,6 @@ function FoodRedirectionPage() {
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Teams that have selected food and their meal token status</p>
               </div>
             </div>
-            
             <div className="relative w-full lg:w-80">
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -394,7 +372,6 @@ function FoodRedirectionPage() {
               />
             </div>
           </div>
-
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1000px] text-left text-sm [&_tbody_td:nth-child(4)]:hidden [&_tbody_td:last-child]:hidden [&_thead_tr:first-child_th:nth-child(4)]:hidden [&_thead_tr:first-child_th:last-child]:hidden">
               <thead>
@@ -471,7 +448,6 @@ function FoodRedirectionPage() {
                     </button>
                   </td>
                 </tr>
-
                 <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -529,7 +505,6 @@ function FoodRedirectionPage() {
                     </button>
                   </td>
                 </tr>
-
                 <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -587,7 +562,6 @@ function FoodRedirectionPage() {
                     </button>
                   </td>
                 </tr>
-
                 <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -645,7 +619,6 @@ function FoodRedirectionPage() {
                     </button>
                   </td>
                 </tr>
-
                 <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -703,7 +676,6 @@ function FoodRedirectionPage() {
                     </button>
                   </td>
                 </tr>
-
                 <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -761,7 +733,6 @@ function FoodRedirectionPage() {
                     </button>
                   </td>
                 </tr>
-
                 <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -819,7 +790,6 @@ function FoodRedirectionPage() {
                     </button>
                   </td>
                 </tr>
-
                 <tr className="transition-colors hover:bg-slate-50/50 dark:hover:bg-zinc-900/20">
                   <td className="whitespace-nowrap px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -880,12 +850,9 @@ function FoodRedirectionPage() {
               </tbody>
             </table>
           </div>
-
         </div>
-
       </div>
     </div>
   );
 }
-
 export default FoodRedirectionPage;

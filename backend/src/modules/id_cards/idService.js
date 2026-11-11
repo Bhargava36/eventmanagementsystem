@@ -1,14 +1,10 @@
 const db = require("../../config/db");
 const crypto = require("crypto");
-
-/**
- * Creates standard CR80 default starter template configuration
- */
+// Creates standard CR80 default starter template configuration
 const getDefaultTemplateConfig = (orientation = "portrait") => {
     const isPortrait = orientation === "portrait";
     const width = isPortrait ? 380 : 600;
     const height = isPortrait ? 600 : 380;
-
     const frontElements = isPortrait
         ? [
             {
@@ -409,7 +405,6 @@ const getDefaultTemplateConfig = (orientation = "portrait") => {
                 hidden: false
             }
         ];
-
     const backElements = [
         {
             id: "back-header",
@@ -504,7 +499,6 @@ const getDefaultTemplateConfig = (orientation = "portrait") => {
             hidden: false
         }
     ];
-
     return {
         TemplateName: isPortrait ? "Standard CR80 Badge (Portrait)" : "Standard CR80 Badge (Landscape)",
         Orientation: orientation,
@@ -527,14 +521,10 @@ const getDefaultTemplateConfig = (orientation = "portrait") => {
         CardType: "id_card"
     };
 };
-
-/**
- * Creates standard Team Display Card default starter template configuration (Desk Tent format)
- */
+// Creates standard Team Display Card default starter template configuration (Desk Tent format)
 const getDefaultTeamCardTemplateConfig = () => {
     const width = 750;
     const height = 475;
-
     const frontElements = [
         {
             id: "team-card-frame",
@@ -1146,7 +1136,6 @@ const getDefaultTeamCardTemplateConfig = () => {
             hidden: false
         }
     ];
-
     const backElements = [
         {
             id: "back-header",
@@ -1222,7 +1211,6 @@ const getDefaultTeamCardTemplateConfig = () => {
             hidden: false
         }
     ];
-
     return {
         TemplateName: "Official Cyber Desk Tent (Landscape)",
         Orientation: "landscape",
@@ -1245,19 +1233,15 @@ const getDefaultTeamCardTemplateConfig = () => {
         IsDefault: 1
     };
 };
-
-/**
- * Get all ID templates for an event (optionally filtered by cardType: 'id_card' | 'team_card')
- */
+// Get all ID templates for an event (optionally filtered by cardType: 'id_card' | 'team_card')
 const getTemplatesByEvent = (EventId, cardType = 'id_card', callback) => {
     if (typeof cardType === 'function') {
         callback = cardType;
         cardType = 'id_card';
     }
     const targetType = cardType || 'id_card';
-
     const query = `
-        SELECT * FROM id_card_templates 
+        SELECT * FROM id_card_templates
         WHERE EventId = ? AND (CardType = ? OR (CardType IS NULL AND ? = 'id_card'))
         ORDER BY IsDefault DESC, CreatedAt DESC
     `;
@@ -1271,9 +1255,8 @@ const getTemplatesByEvent = (EventId, cardType = 'id_card', callback) => {
             const defaultConfig = targetType === 'team_card'
                 ? getDefaultTeamCardTemplateConfig()
                 : getDefaultTemplateConfig("portrait");
-
             const insertQuery = `
-                INSERT INTO id_card_templates 
+                INSERT INTO id_card_templates
                 (EventId, TemplateName, Orientation, CardWidth, CardHeight, Unit, FrontConfig, BackConfig, IsDefault, CardType)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
             `;
@@ -1303,10 +1286,7 @@ const getTemplatesByEvent = (EventId, cardType = 'id_card', callback) => {
         callback(null, templates);
     });
 };
-
-/**
- * Get single template by ID
- */
+// Get single template by ID
 const getTemplateById = (EventId, TemplateId, callback) => {
     const query = `SELECT * FROM id_card_templates WHERE Id = ? AND EventId = ?`;
     db.query(query, [TemplateId, EventId], (err, rows) => {
@@ -1314,10 +1294,7 @@ const getTemplateById = (EventId, TemplateId, callback) => {
         callback(null, rows[0] || null);
     });
 };
-
-/**
- * Save template (create or update)
- */
+// Save template (create or update)
 const saveTemplate = (EventId, templateData, callback) => {
     const {
         Id,
@@ -1331,15 +1308,13 @@ const saveTemplate = (EventId, templateData, callback) => {
         IsDefault = 0,
         CardType = "id_card"
     } = templateData;
-
     const frontJson = typeof FrontConfig === "object" ? JSON.stringify(FrontConfig) : FrontConfig;
     const backJson = typeof BackConfig === "object" ? JSON.stringify(BackConfig) : BackConfig;
-
     if (Id) {
         // Update existing template
         const updateQuery = `
-            UPDATE id_card_templates 
-            SET TemplateName = ?, Orientation = ?, CardWidth = ?, CardHeight = ?, Unit = ?, 
+            UPDATE id_card_templates
+            SET TemplateName = ?, Orientation = ?, CardWidth = ?, CardHeight = ?, Unit = ?,
                 FrontConfig = ?, BackConfig = ?, IsDefault = ?, CardType = ?
             WHERE Id = ? AND EventId = ?
         `;
@@ -1360,7 +1335,7 @@ const saveTemplate = (EventId, templateData, callback) => {
     } else {
         // Create new template
         const insertQuery = `
-            INSERT INTO id_card_templates 
+            INSERT INTO id_card_templates
             (EventId, TemplateName, Orientation, CardWidth, CardHeight, Unit, FrontConfig, BackConfig, IsDefault, CardType)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
@@ -1381,19 +1356,15 @@ const saveTemplate = (EventId, templateData, callback) => {
         );
     }
 };
-
-/**
- * Duplicate a template
- */
+// Duplicate a template
 const duplicateTemplate = (EventId, TemplateId, callback) => {
     getTemplateById(EventId, TemplateId, (err, original) => {
         if (err) return callback(err);
         if (!original) return callback(new Error("Original template not found"));
-
         const cloneName = `${original.TemplateName} (Copy)`;
         const targetCardType = original.CardType || 'id_card';
         const insertQuery = `
-            INSERT INTO id_card_templates 
+            INSERT INTO id_card_templates
             (EventId, TemplateName, Orientation, CardWidth, CardHeight, Unit, FrontConfig, BackConfig, IsDefault, CardType)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
         `;
@@ -1417,10 +1388,7 @@ const duplicateTemplate = (EventId, TemplateId, callback) => {
         );
     });
 };
-
-/**
- * Delete a template
- */
+// Delete a template
 const deleteTemplate = (EventId, TemplateId, callback) => {
     const query = `DELETE FROM id_card_templates WHERE Id = ? AND EventId = ?`;
     db.query(query, [TemplateId, EventId], (err, result) => {
@@ -1428,15 +1396,11 @@ const deleteTemplate = (EventId, TemplateId, callback) => {
         callback(null, { success: true, deleted: result.affectedRows > 0 });
     });
 };
-
-/**
- * Set a template as default (within its own CardType category)
- */
+// Set a template as default (within its own CardType category)
 const setDefaultTemplate = (EventId, TemplateId, callback) => {
     getTemplateById(EventId, TemplateId, (getErr, tpl) => {
         if (getErr || !tpl) return callback(getErr || new Error("Template not found"));
         const cardType = tpl.CardType || 'id_card';
-
         db.query(
             `UPDATE id_card_templates SET IsDefault = 0 WHERE EventId = ? AND CardType = ?`,
             [EventId, cardType],
@@ -1454,24 +1418,21 @@ const setDefaultTemplate = (EventId, TemplateId, callback) => {
         );
     });
 };
-
-/**
- * Enhanced query for all eligible participants with bound fields
- */
+// Enhanced query for all eligible participants with bound fields
 const getParticipantsByEvent = (EventId, callback) => {
     const query = `
-        SELECT 
-            u.Id AS UserId, 
-            COALESCE(NULLIF(tm.MemberName, ''), u.UserName, 'Member') AS ParticipantName, 
-            COALESCE(NULLIF(tm.MemberEmail, ''), u.Email, '') AS Email, 
-            t.Id AS TeamId, 
-            t.TeamName, 
-            COALESCE(NULLIF(tm.MemberCollege, ''), u.College, t.College, 'College Not Specified') AS College, 
+        SELECT
+            u.Id AS UserId,
+            COALESCE(NULLIF(tm.MemberName, ''), u.UserName, 'Member') AS ParticipantName,
+            COALESCE(NULLIF(tm.MemberEmail, ''), u.Email, '') AS Email,
+            t.Id AS TeamId,
+            t.TeamName,
+            COALESCE(NULLIF(tm.MemberCollege, ''), u.College, t.College, 'College Not Specified') AS College,
             'Engineering & Technology' AS Department,
             COALESCE(NULLIF(tm.Gender, ''), u.Gender, 'Male') AS Gender,
             COALESCE(tm.Photo, u.Photo) AS Photo,
             COALESCE(NULLIF(tm.Role, ''), CASE WHEN t.TeamLeadUserId = u.Id THEN 'Team Leader' ELSE 'Participant' END) AS ParticipantCategory,
-            c.IdCardNumber, 
+            c.IdCardNumber,
             c.VerificationToken,
             c.TemplateId,
             CASE WHEN c.Id IS NULL THEN 0 ELSE 1 END AS IdCardGenerated,
@@ -1484,17 +1445,16 @@ const getParticipantsByEvent = (EventId, callback) => {
             e.EventName,
             e.Location AS EventLocation,
             COALESCE(e.PhysicalStartDate, e.StartDate) AS EventDate
-        FROM event_registrations er 
+        FROM event_registrations er
         INNER JOIN events e ON e.Id = er.EventId
-        INNER JOIN registered_teams t ON t.Id = er.TeamId 
-        INNER JOIN registered_team_members tm ON tm.TeamId = t.Id 
-        INNER JOIN users u ON u.Id = tm.UserId 
-        LEFT JOIN participant_id_cards c ON c.EventId = er.EventId AND c.UserId = u.Id 
+        INNER JOIN registered_teams t ON t.Id = er.TeamId
+        INNER JOIN registered_team_members tm ON tm.TeamId = t.Id
+        INNER JOIN users u ON u.Id = tm.UserId
+        LEFT JOIN participant_id_cards c ON c.EventId = er.EventId AND c.UserId = u.Id
         LEFT JOIN event_attendance ea ON ea.EventId = er.EventId AND ea.UserId = u.Id
-        WHERE er.EventId = ? AND er.ParticipationMode = 'Physical' AND er.Status = 'approved' 
+        WHERE er.EventId = ? AND er.ParticipationMode = 'Physical' AND er.Status = 'approved'
         ORDER BY t.TeamName, ParticipantName
     `;
-
     db.query(query, [EventId], (err, result) => {
         if (err) {
             console.error("Get participants error:", err);
@@ -1503,13 +1463,10 @@ const getParticipantsByEvent = (EventId, callback) => {
         callback(null, result);
     });
 };
-
-/**
- * Get all registered teams with their members for an event
- */
+// Get all registered teams with their members for an event
 const getTeamsByEvent = (EventId, callback) => {
     const query = `
-        SELECT 
+        SELECT
             t.Id AS TeamId,
             t.TeamName,
             t.College,
@@ -1536,13 +1493,11 @@ const getTeamsByEvent = (EventId, callback) => {
         WHERE t.EventId = ?
         ORDER BY t.Id, CASE WHEN LOWER(COALESCE(tm.Role, '')) LIKE '%lead%' OR t.TeamLeadUserId = tm.UserId THEN 1 ELSE 2 END, tm.Id
     `;
-
     db.query(query, [EventId], (err, rows) => {
         if (err) {
             console.error("Get teams error:", err);
             return callback(err, null);
         }
-
         const teamsMap = {};
         (rows || []).forEach((r, idx) => {
             if (!teamsMap[r.TeamId]) {
@@ -1572,14 +1527,10 @@ const getTeamsByEvent = (EventId, callback) => {
                 });
             }
         });
-
         return callback(null, Object.values(teamsMap));
     });
 };
-
-/**
- * Start or update batch generation and assign secure unique tokens
- */
+// Start or update batch generation and assign secure unique tokens
 const startBatchGeneration = (EventId, { templateId = null, participantIds = null }, callback) => {
     // 1. Verify event exists
     db.query("SELECT Id, EventName, IDCardEnabled FROM events WHERE Id = ?", [EventId], (eventErr, events) => {
@@ -1589,7 +1540,6 @@ const startBatchGeneration = (EventId, { templateId = null, participantIds = nul
             err.status = 404;
             return callback(err);
         }
-
         // 2. Fetch eligible participants
         getParticipantsByEvent(EventId, (partErr, participants) => {
             if (partErr) return callback(partErr);
@@ -1604,13 +1554,10 @@ const startBatchGeneration = (EventId, { templateId = null, participantIds = nul
                     message: "No eligible physical participants found for this event."
                 });
             }
-
             const targetParticipants = Array.isArray(participantIds) && participantIds.length > 0
                 ? participants.filter(p => participantIds.includes(p.UserId))
                 : participants;
-
             const totalCount = targetParticipants.length;
-
             // 3. Create batch record
             const batchInsertQuery = `
                 INSERT INTO id_card_batches (EventId, TemplateId, Status, TotalParticipants, ProcessedCount, SuccessCount)
@@ -1619,16 +1566,13 @@ const startBatchGeneration = (EventId, { templateId = null, participantIds = nul
             db.query(batchInsertQuery, [EventId, templateId, totalCount], (batchErr, batchRes) => {
                 if (batchErr) return callback(batchErr);
                 const batchId = batchRes.insertId;
-
                 // 4. Upsert participant_id_cards with IdCardNumber and secure non-guessable VerificationToken
                 let successCount = 0;
                 let failedCount = 0;
-
                 const upsertPromises = targetParticipants.map(participant => {
                     return new Promise((resolve) => {
                         const cardNumber = participant.IdCardNumber || `EV${EventId}-U${participant.UserId}`;
                         const token = participant.VerificationToken || crypto.randomBytes(16).toString("hex");
-
                         const upsertQuery = `
                             INSERT INTO participant_id_cards (EventId, UserId, IdCardNumber, VerificationToken, TemplateId, GeneratedAt)
                             VALUES (?, ?, ?, ?, ?, NOW())
@@ -1652,12 +1596,11 @@ const startBatchGeneration = (EventId, { templateId = null, participantIds = nul
                         });
                     });
                 });
-
                 Promise.all(upsertPromises).then(() => {
                     // 5. Update batch status to completed
                     const status = failedCount === totalCount ? "failed" : "completed";
                     const updateBatchQuery = `
-                        UPDATE id_card_batches 
+                        UPDATE id_card_batches
                         SET Status = ?, ProcessedCount = ?, SuccessCount = ?, FailedCount = ?,
                             SummaryText = ?
                         WHERE Id = ?
@@ -1680,10 +1623,7 @@ const startBatchGeneration = (EventId, { templateId = null, participantIds = nul
         });
     });
 };
-
-/**
- * Get batch generation status
- */
+// Get batch generation status
 const getBatchStatus = (EventId, BatchId, callback) => {
     const query = `SELECT * FROM id_card_batches WHERE Id = ? AND EventId = ?`;
     db.query(query, [BatchId, EventId], (err, rows) => {
@@ -1691,14 +1631,10 @@ const getBatchStatus = (EventId, BatchId, callback) => {
         callback(null, rows[0] || null);
     });
 };
-
-/**
- * Unified Verification by VerificationToken OR IdCardNumber
- */
+// Unified Verification by VerificationToken OR IdCardNumber
 const verifyParticipantId = (EventId, UserId, IdCardNumber, token, callback) => {
     let whereClause = "";
     let params = [];
-
     if (token) {
         whereClause = "c.VerificationToken = ?";
         params = [token];
@@ -1706,36 +1642,34 @@ const verifyParticipantId = (EventId, UserId, IdCardNumber, token, callback) => 
         whereClause = "c.EventId = ? AND (c.UserId = ? OR ? IS NULL) AND c.IdCardNumber = ?";
         params = [EventId, UserId || null, UserId || null, IdCardNumber];
     }
-
     const query = `
-        SELECT 
-            c.IdCardNumber, 
+        SELECT
+            c.IdCardNumber,
             c.VerificationToken,
             u.Id AS UserId,
-            COALESCE(NULLIF(tm.MemberName, ''), u.UserName, 'Participant') AS ParticipantName, 
+            COALESCE(NULLIF(tm.MemberName, ''), u.UserName, 'Participant') AS ParticipantName,
             u.Email,
-            t.TeamName, 
-            COALESCE(NULLIF(tm.MemberCollege, ''), u.College, t.College, 'College Not Specified') AS College, 
+            t.TeamName,
+            COALESCE(NULLIF(tm.MemberCollege, ''), u.College, t.College, 'College Not Specified') AS College,
             'Engineering & Technology' AS Department,
             COALESCE(NULLIF(tm.Role, ''), CASE WHEN t.TeamLeadUserId = u.Id THEN 'Team Leader' ELSE 'Participant' END) AS ParticipantCategory,
             e.Id AS EventId,
-            e.EventName, 
-            COALESCE(e.PhysicalStartDate, e.StartDate) AS StartDate, 
+            e.EventName,
+            COALESCE(e.PhysicalStartDate, e.StartDate) AS StartDate,
             e.Location,
             COALESCE(ea.Status, 'not_checked_in') AS AttendanceStatus,
             ea.CheckInTime,
             ea.CheckOutTime
-        FROM participant_id_cards c 
-        INNER JOIN events e ON e.Id = c.EventId 
-        INNER JOIN users u ON u.Id = c.UserId 
-        INNER JOIN event_registrations er ON er.EventId = c.EventId AND er.Status = 'approved' AND er.ParticipationMode = 'Physical' 
-        INNER JOIN registered_teams t ON t.Id = er.TeamId 
-        INNER JOIN registered_team_members tm ON tm.TeamId = t.Id AND tm.UserId = c.UserId 
+        FROM participant_id_cards c
+        INNER JOIN events e ON e.Id = c.EventId
+        INNER JOIN users u ON u.Id = c.UserId
+        INNER JOIN event_registrations er ON er.EventId = c.EventId AND er.Status = 'approved' AND er.ParticipationMode = 'Physical'
+        INNER JOIN registered_teams t ON t.Id = er.TeamId
+        INNER JOIN registered_team_members tm ON tm.TeamId = t.Id AND tm.UserId = c.UserId
         LEFT JOIN event_attendance ea ON ea.EventId = c.EventId AND ea.UserId = c.UserId
         WHERE ${whereClause}
         LIMIT 1
     `;
-
     db.query(query, params, (err, result) => {
         if (err) {
             console.error("Verify participant ID error:", err);
@@ -1744,10 +1678,7 @@ const verifyParticipantId = (EventId, UserId, IdCardNumber, token, callback) => 
         callback(null, result[0] || null);
     });
 };
-
-/**
- * Legacy generateParticipantIds compatibility
- */
+// Legacy generateParticipantIds compatibility
 const generateParticipantIds = (EventId, callback) => {
     startBatchGeneration(EventId, {}, (err, result) => {
         if (err) return callback(err);
@@ -1757,16 +1688,15 @@ const generateParticipantIds = (EventId, callback) => {
         });
     });
 };
-
 // Check-in participant with exact timestamp
 const recordCheckIn = (EventId, UserId, checkedInBy, remarks, callback) => {
     const query = `
         INSERT INTO event_attendance (EventId, UserId, Status, CheckInTime, CheckedInBy, Remarks)
         VALUES (?, ?, 'checked_in', NOW(), ?, ?)
-        ON DUPLICATE KEY UPDATE 
-            Status = 'checked_in', 
-            CheckInTime = COALESCE(CheckInTime, NOW()), 
-            CheckedInBy = COALESCE(?, CheckedInBy), 
+        ON DUPLICATE KEY UPDATE
+            Status = 'checked_in',
+            CheckInTime = COALESCE(CheckInTime, NOW()),
+            CheckedInBy = COALESCE(?, CheckedInBy),
             Remarks = COALESCE(?, Remarks)
     `;
     db.query(query, [EventId, UserId, checkedInBy || 'Admin', remarks || null, checkedInBy || 'Admin', remarks || null], (err, result) => {
@@ -1777,16 +1707,15 @@ const recordCheckIn = (EventId, UserId, checkedInBy, remarks, callback) => {
         callback(null, { success: true, message: "Participant checked in successfully." });
     });
 };
-
 // Check-out participant with exact timestamp
 const recordCheckOut = (EventId, UserId, checkedOutBy, remarks, callback) => {
     const query = `
         INSERT INTO event_attendance (EventId, UserId, Status, CheckOutTime, CheckedOutBy, Remarks)
         VALUES (?, ?, 'checked_out', NOW(), ?, ?)
-        ON DUPLICATE KEY UPDATE 
-            Status = 'checked_out', 
-            CheckOutTime = NOW(), 
-            CheckedOutBy = COALESCE(?, CheckedOutBy), 
+        ON DUPLICATE KEY UPDATE
+            Status = 'checked_out',
+            CheckOutTime = NOW(),
+            CheckedOutBy = COALESCE(?, CheckedOutBy),
             Remarks = COALESCE(?, Remarks)
     `;
     db.query(query, [EventId, UserId, checkedOutBy || 'Admin', remarks || null, checkedOutBy || 'Admin', remarks || null], (err, result) => {
@@ -1797,12 +1726,11 @@ const recordCheckOut = (EventId, UserId, checkedOutBy, remarks, callback) => {
         callback(null, { success: true, message: "Participant checked out successfully." });
     });
 };
-
 // Reset attendance status
 const resetAttendance = (EventId, UserId, callback) => {
     const query = `
-        UPDATE event_attendance 
-        SET Status = 'not_checked_in', CheckInTime = NULL, CheckOutTime = NULL, CheckedInBy = NULL, CheckedOutBy = NULL 
+        UPDATE event_attendance
+        SET Status = 'not_checked_in', CheckInTime = NULL, CheckOutTime = NULL, CheckedInBy = NULL, CheckedOutBy = NULL
         WHERE EventId = ? AND UserId = ?
     `;
     db.query(query, [EventId, UserId], (err, result) => {
@@ -1813,7 +1741,6 @@ const resetAttendance = (EventId, UserId, callback) => {
         callback(null, { success: true, message: "Attendance status reset to pending." });
     });
 };
-
 // Instant scan / toggle check-in & check-out by ID Card Number or Token
 const scanAttendance = (EventId, scanKey, operatorName, callback) => {
     const trimmed = String(scanKey || '').trim();
@@ -1834,10 +1761,8 @@ const scanAttendance = (EventId, scanKey, operatorName, callback) => {
         if (!rows || rows.length === 0) {
             return callback(null, { notFound: true, message: `No active participant found for key: ${trimmed}` });
         }
-
         const participant = rows[0];
         const nextStatus = participant.CurrentStatus === 'checked_in' ? 'checked_out' : 'checked_in';
-
         if (nextStatus === 'checked_in') {
             recordCheckIn(EventId, participant.UserId, operatorName || 'Admin Scanner', 'Scanned at gate', (cErr) => {
                 if (cErr) return callback(cErr);
@@ -1861,7 +1786,6 @@ const scanAttendance = (EventId, scanKey, operatorName, callback) => {
         }
     });
 };
-
 module.exports = {
     getTemplatesByEvent,
     getTemplateById,

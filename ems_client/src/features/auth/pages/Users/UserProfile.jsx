@@ -31,7 +31,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import useToast from '../../../../Hooks/useToast';
 import { parseJwt } from '../../../../Contexts/AuthContext';
 import WaveDots from '../../../../components/Atoms/WaveDots';
-
+import ActiveSessionsCard from '../../components/ActiveSessionsCard';
+import TwoFactorSettingsCard from '../../components/TwoFactorSettingsCard';
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
@@ -42,7 +43,6 @@ const containerVariants = {
     }
   }
 };
-
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
   show: {
@@ -51,19 +51,16 @@ const itemVariants = {
     transition: { duration: 0.4, ease: "easeOut" }
   }
 };
-
 function UserProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-
   const [profile, setProfile] = useState(null);
   const [showEdit, setShowEdit] = useState(false);
   const [teamsCount, setTeamsCount] = useState(0);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef(null);
-
   const [formData, setFormData] = useState({
     UserName: '',
     Email: '',
@@ -74,38 +71,29 @@ function UserProfile() {
     Gender: '',
     Photo: ''
   });
-
   useEffect(() => {
     fetchUserProfile();
   }, [id]);
-
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem("token");
       const decoded = parseJwt(token);
-
       if (!token || !decoded || (decoded.role && decoded.role !== 'user')) {
         toast.error("Unauthorized session. Please login as participant.");
         navigate("/user/login");
         return;
       }
-
       const storedUser = localStorage.getItem("user");
       const loggedInUser = storedUser ? JSON.parse(storedUser) : {};
       const targetId = decoded?.Id || decoded?.id || id || loggedInUser.Id || loggedInUser.id;
-
       if (!targetId) throw new Error("User ID not found in session token");
-
       const res = await fetch(`${API_BASE_URL}/api/users/${targetId}`);
       const data = await res.json();
-
       if (!res.ok) {
         throw new Error(data.message || 'Failed to fetch profile');
       }
-
       const user = data.user;
       if (!user) throw new Error('User not found');
-
       setProfile(user);
       setFormData({
         UserName: user.UserName || '',
@@ -117,7 +105,6 @@ function UserProfile() {
         Gender: user.Gender || 'Male',
         Photo: user.Photo || ''
       });
-
       try {
         const teamsRes = await fetch(`${API_BASE_URL}/api/teams/my-teams/${targetId}`);
         const teamsData = await teamsRes.json();
@@ -127,31 +114,25 @@ function UserProfile() {
       } catch (err) {
         console.log("Teams count fetch note:", err.message);
       }
-
     } catch (error) {
       console.error('Error fetching user profile:', error);
       toast.error(error.message || "Failed to load profile");
     }
   };
-
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size must be less than 5MB');
       return;
     }
-
     try {
       setUploadingPhoto(true);
       let photoUrl = '';
-
       try {
         const uploadForm = new FormData();
         uploadForm.append('file', file);
@@ -166,7 +147,6 @@ function UserProfile() {
       } catch (upErr) {
         console.warn('Direct upload failed, using base64 fallback:', upErr);
       }
-
       if (!photoUrl) {
         photoUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -175,31 +155,24 @@ function UserProfile() {
           reader.readAsDataURL(file);
         });
       }
-
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
       const targetId = id || storedUser.Id || profile?.Id;
-
       const res = await fetch(`${API_BASE_URL}/api/users/${targetId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, Photo: photoUrl })
       });
-
       if (!res.ok) {
         const d = await res.json();
         throw new Error(d.message || 'Failed to update photo');
       }
-
       setProfile((prev) => ({ ...prev, Photo: photoUrl }));
       setFormData((prev) => ({ ...prev, Photo: photoUrl }));
-
       const updatedUser = { ...storedUser, ...formData, Photo: photoUrl };
       localStorage.setItem("user", JSON.stringify(updatedUser));
-
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('user-profile-updated'));
       window.dispatchEvent(new Event('profileUpdated'));
-
       toast.success("Profile photo updated successfully!");
     } catch (err) {
       console.error('Error uploading photo:', err);
@@ -211,26 +184,22 @@ function UserProfile() {
       }
     }
   };
-
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
-
   const handleSave = async (e) => {
     e.preventDefault();
     try {
       setSaving(true);
       const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
       const targetId = id || storedUser.Id || profile?.Id;
-
       const payload = {
         ...formData,
         Photo: formData.Photo || profile?.Photo || ''
       };
-
       const res = await fetch(`${API_BASE_URL}/api/users/${targetId}`, {
         method: 'PUT',
         headers: {
@@ -238,20 +207,15 @@ function UserProfile() {
         },
         body: JSON.stringify(payload)
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         throw new Error(data.message || 'Profile update failed');
       }
-
       const updatedUser = { ...storedUser, ...payload };
       localStorage.setItem("user", JSON.stringify(updatedUser));
-
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('user-profile-updated'));
       window.dispatchEvent(new Event('profileUpdated'));
-
       await fetchUserProfile();
       toast.success("Profile updated successfully!");
       setShowEdit(false);
@@ -262,7 +226,6 @@ function UserProfile() {
       setSaving(false);
     }
   };
-
   if (!profile) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center bg-slate-50 dark:bg-black text-slate-600 dark:text-slate-400 gap-3">
@@ -271,7 +234,6 @@ function UserProfile() {
       </div>
     );
   }
-
   const userInitial = profile.UserName ? profile.UserName.charAt(0).toUpperCase() : 'U';
   const joinedDate = profile.CreatedAt
     ? new Date(profile.CreatedAt).toLocaleDateString('en-GB', {
@@ -280,7 +242,6 @@ function UserProfile() {
         year: 'numeric'
       })
     : 'Active Member';
-
   return (
     <motion.div
       variants={containerVariants}
@@ -289,7 +250,6 @@ function UserProfile() {
       className="min-h-screen w-full bg-slate-50/80 dark:bg-black text-slate-900 dark:text-white transition-colors duration-200 p-4 sm:p-6 lg:p-8"
     >
       <div className="max-w-7xl mx-auto space-y-6">
-
         <motion.div variants={itemVariants} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -302,7 +262,6 @@ function UserProfile() {
               User Profile
             </h1>
           </div>
-
           <div className="flex items-center gap-3">
             <Link
               to="/user/dashboard"
@@ -310,7 +269,6 @@ function UserProfile() {
             >
               Dashboard
             </Link>
-
             <button
               onClick={() => setShowEdit(!showEdit)}
               className="flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md cursor-pointer"
@@ -329,7 +287,6 @@ function UserProfile() {
             </button>
           </div>
         </motion.div>
-
         <motion.div
           variants={itemVariants}
           className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-900 dark:from-emerald-950 dark:via-zinc-900 dark:to-teal-950 border border-emerald-500/20 text-white shadow-xl p-6 sm:p-8"
@@ -339,12 +296,9 @@ function UserProfile() {
             glowColor="bg-emerald-400/25"
             className="absolute right-0 top-0 bottom-0 w-1/2 md:w-2/5 z-0"
           />
-
           <div className="absolute -right-20 -bottom-20 w-80 h-80 rounded-full bg-emerald-400/10 blur-3xl pointer-events-none" />
           <div className="absolute -left-20 -top-20 w-80 h-80 rounded-full bg-teal-400/10 blur-3xl pointer-events-none" />
-
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            
             <div className="flex items-center gap-5 sm:gap-6">
               <div className="relative shrink-0">
                 <input
@@ -376,7 +330,6 @@ function UserProfile() {
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
-
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight truncate">
@@ -386,11 +339,9 @@ function UserProfile() {
                     Verified Crafter
                   </span>
                 </div>
-
                 <p className="text-xs sm:text-sm text-emerald-100/90 mt-1 font-medium">
                   {profile.College || 'AYOJAN EMS Member'}
                 </p>
-
                 <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-white/80">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/20 backdrop-blur-md border border-white/10">
                     <MapPin className="w-3.5 h-3.5 text-emerald-300" />
@@ -407,7 +358,6 @@ function UserProfile() {
                 </div>
               </div>
             </div>
-
             <div className="grid grid-cols-3 gap-3 sm:gap-4 shrink-0 lg:max-w-md w-full lg:w-auto pt-2 lg:pt-0 border-t lg:border-t-0 border-white/10">
               <div className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 p-3.5 sm:p-4 text-center">
                 <p className="text-xl sm:text-2xl font-bold text-white tracking-tight">
@@ -417,7 +367,6 @@ function UserProfile() {
                   Squads Joined
                 </p>
               </div>
-
               <div className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 p-3.5 sm:p-4 text-center">
                 <p className="text-xl sm:text-2xl font-bold text-emerald-300 tracking-tight">
                   Active
@@ -426,7 +375,6 @@ function UserProfile() {
                   Account Status
                 </p>
               </div>
-
               <div className="rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 p-3.5 sm:p-4 text-center">
                 <p className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                   100%
@@ -436,10 +384,8 @@ function UserProfile() {
                 </p>
               </div>
             </div>
-
           </div>
         </motion.div>
-
         <AnimatePresence mode="wait">
           {showEdit ? (
             <motion.div
@@ -467,7 +413,6 @@ function UserProfile() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <form onSubmit={handleSave} className="space-y-6">
                 <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
                   <div className="relative w-16 h-16 rounded-xl bg-emerald-600/10 border border-emerald-500/20 overflow-hidden flex items-center justify-center shrink-0">
@@ -496,7 +441,6 @@ function UserProfile() {
                     </button>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
@@ -514,7 +458,6 @@ function UserProfile() {
                       />
                     </div>
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                       Email Address
@@ -531,7 +474,6 @@ function UserProfile() {
                       />
                     </div>
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                       Mobile Number
@@ -548,7 +490,6 @@ function UserProfile() {
                       />
                     </div>
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                       College / Institution
@@ -565,7 +506,6 @@ function UserProfile() {
                       />
                     </div>
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                       State
@@ -581,7 +521,6 @@ function UserProfile() {
                       />
                     </div>
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                       City / Location
@@ -597,7 +536,6 @@ function UserProfile() {
                       />
                     </div>
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                       Gender
@@ -617,7 +555,6 @@ function UserProfile() {
                     </div>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-200 dark:border-zinc-800">
                   <button
                     type="submit"
@@ -662,7 +599,6 @@ function UserProfile() {
                       Primary
                     </span>
                   </div>
-
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0 mt-0.5">
@@ -677,7 +613,6 @@ function UserProfile() {
                         </p>
                       </div>
                     </div>
-
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0 mt-0.5">
                         <Phone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -691,7 +626,6 @@ function UserProfile() {
                         </p>
                       </div>
                     </div>
-
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0 mt-0.5">
                         <VenusAndMars className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -705,7 +639,6 @@ function UserProfile() {
                         </p>
                       </div>
                     </div>
-
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-slate-400 flex items-center justify-center shrink-0 mt-0.5">
                         <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -721,7 +654,6 @@ function UserProfile() {
                     </div>
                   </div>
                 </div>
-
                 <div className="mt-6 pt-4 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-between text-xs text-slate-500">
                   <span>Participant ID</span>
                   <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-400">
@@ -729,7 +661,6 @@ function UserProfile() {
                   </span>
                 </div>
               </motion.div>
-
               <motion.div
                 variants={itemVariants}
                 whileHover={{ y: -3, transition: { duration: 0.2 } }}
@@ -749,7 +680,6 @@ function UserProfile() {
                       Institutional
                     </span>
                   </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-100 dark:border-zinc-800/60">
                       <div className="flex items-center gap-2 text-slate-500 text-xs font-medium uppercase tracking-wider mb-1.5">
@@ -760,7 +690,6 @@ function UserProfile() {
                         {profile.College || 'Not Provided'}
                       </p>
                     </div>
-
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-100 dark:border-zinc-800/60">
                       <div className="flex items-center gap-2 text-slate-500 text-xs font-medium uppercase tracking-wider mb-1.5">
                         <Globe className="w-3.5 h-3.5 text-emerald-600" />
@@ -770,7 +699,6 @@ function UserProfile() {
                         {profile.State || 'India'}
                       </p>
                     </div>
-
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-100 dark:border-zinc-800/60">
                       <div className="flex items-center gap-2 text-slate-500 text-xs font-medium uppercase tracking-wider mb-1.5">
                         <Shield className="w-3.5 h-3.5 text-emerald-600" />
@@ -780,7 +708,6 @@ function UserProfile() {
                         Event Participant
                       </p>
                     </div>
-
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-100 dark:border-zinc-800/60">
                       <div className="flex items-center gap-2 text-slate-500 text-xs font-medium uppercase tracking-wider mb-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -792,13 +719,11 @@ function UserProfile() {
                     </div>
                   </div>
                 </div>
-
                 <div className="mt-5 pt-4 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                   <span>Educational Profile</span>
                   <span className="font-semibold text-emerald-600 dark:text-emerald-400">Verified Enrollment</span>
                 </div>
               </motion.div>
-
               <motion.div
                 variants={itemVariants}
                 className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4"
@@ -822,7 +747,6 @@ function UserProfile() {
                   </div>
                   <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
                 </Link>
-
                 <Link
                   to="/user/dashboard"
                   className="group p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 hover:border-emerald-500/50 shadow-sm transition-all hover:shadow-md flex items-center justify-between"
@@ -842,7 +766,6 @@ function UserProfile() {
                   </div>
                   <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
                 </Link>
-
                 <Link
                   to="/user/feedback"
                   className="group p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 hover:border-emerald-500/50 shadow-sm transition-all hover:shadow-md flex items-center justify-between"
@@ -863,13 +786,15 @@ function UserProfile() {
                   <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
                 </Link>
               </motion.div>
+              <motion.div variants={itemVariants} className="lg:col-span-12 space-y-6">
+                <TwoFactorSettingsCard />
+                <ActiveSessionsCard />
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
-
       </div>
     </motion.div>
   );
 }
-
 export default UserProfile;

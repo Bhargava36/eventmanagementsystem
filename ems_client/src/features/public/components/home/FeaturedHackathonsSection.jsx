@@ -9,12 +9,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { getEventTypeInfo } from '../../../../lib/utils';
-
-/**
- * SteppedTabShape
- * Separate fixed-geometry contour cap (top 60px) + body fill.
- * Guaranteed pixel-perfect curves that never stretch or distort during height transitions.
- */
+// SteppedTabShape Separate fixed-geometry contour cap (top 60px) + body fill.
 const SteppedTabShape = ({ className = "" }) => (
   <div className={`absolute inset-0 pointer-events-none ${className}`}>
     {/* Stepped Contour Cap (Fixed 60px height) */}
@@ -24,28 +19,26 @@ const SteppedTabShape = ({ className = "" }) => (
       className="absolute inset-x-0 top-0 h-[60px] w-full fill-current"
     >
       <path
-        d="M 0 0 
-           L 165 0 
-           C 182 0, 192 10, 192 24 
-           L 192 34 
-           C 192 48, 202 58, 218 58 
-           L 360 58 
-           L 360 60 
-           L 0 60 
-           Z"
+        d="M 0 0
+            L 165 0
+            C 182 0, 192 10, 192 24
+            L 192 34
+            C 192 48, 202 58, 218 58
+            L 360 58
+            L 360 60
+            L 0 60
+            Z"
       />
     </svg>
     {/* Solid Body Fill from y=58px to bottom */}
     <div className="absolute inset-x-0 top-[58px] bottom-0 bg-current" />
   </div>
 );
-
 export default function FeaturedHackathonsSection() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [brokenImages, setBrokenImages] = useState({});
-
   // Unified fallback events
   const defaultEvents = [
     {
@@ -79,11 +72,9 @@ export default function FeaturedHackathonsSection() {
       EventType: 'Hackathon',
     },
   ];
-
   useEffect(() => {
     fetchFeaturedEvents();
   }, []);
-
   const fetchFeaturedEvents = async () => {
     try {
       setLoading(true);
@@ -105,7 +96,6 @@ export default function FeaturedHackathonsSection() {
       setLoading(false);
     }
   };
-
   const getEventPosterUrl = (posters) => {
     if (!posters) return null;
     let url = null;
@@ -128,7 +118,6 @@ export default function FeaturedHackathonsSection() {
     }
     return url;
   };
-
   const formatDate = (start, end) => {
     if (!start) return '09–11 OCT';
     try {
@@ -140,7 +129,6 @@ export default function FeaturedHackathonsSection() {
       return 'Upcoming Dates';
     }
   };
-
   return (
     <section
       id="arena"
@@ -162,7 +150,6 @@ export default function FeaturedHackathonsSection() {
             Curated high-stakes challenges designed for student squads, solo developers, and university chapters.
           </p>
         </div>
-
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -178,7 +165,6 @@ export default function FeaturedHackathonsSection() {
           </Link>
         </motion.div>
       </motion.div>
-
       {/* 3 Stepped Folder-Tab Cards with Cascading Scroll Reveals */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {events.map((event, idx) => {
@@ -191,9 +177,7 @@ export default function FeaturedHackathonsSection() {
             if (!isNaN(num) && num > 0) return `₹${num.toLocaleString('en-IN')}`;
             return str.startsWith('₹') ? str : `₹${str}`;
           })();
-
           const cardNum = String(idx + 1).padStart(2, '0');
-
           return (
             <motion.div
               key={event.Id || idx}
@@ -205,9 +189,9 @@ export default function FeaturedHackathonsSection() {
                 delay: idx * 0.16,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              whileHover={{ 
-                y: -10, 
-                transition: { type: "spring", stiffness: 380, damping: 22 } 
+              whileHover={{
+                y: -10,
+                transition: { type: "spring", stiffness: 380, damping: 22 }
               }}
               onClick={() => navigate(`/events/${event.Id}`)}
               className="group relative rounded-[32px] overflow-hidden cursor-pointer bg-white dark:bg-black shadow-md hover:shadow-2xl transition-all duration-500 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white h-[500px] select-none"
@@ -228,7 +212,7 @@ export default function FeaturedHackathonsSection() {
                   /* Unified AYOJAN Brand Theme Visual */
                   <div className="relative w-full h-full bg-gradient-to-br from-emerald-950/40 via-zinc-900 to-black overflow-hidden flex items-center justify-center">
                     {/* Background grid */}
-                    <div 
+                    <div
                       className="absolute inset-0 opacity-[0.15]"
                       style={{
                         backgroundImage: `
@@ -238,35 +222,25 @@ export default function FeaturedHackathonsSection() {
                         backgroundSize: "28px 28px",
                       }}
                     />
-                    
                     {/* 3D Liquid Chrome Sculpture - Tactile Spring Bounce on Hover */}
                     <img
                       src="/assets/chrome_sculpture_card.jpg"
                       alt="AYOJAN Event Sculpture"
                       className="w-full h-full object-cover filter contrast-110 brightness-[0.95] mix-blend-screen opacity-85 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-118 group-hover:-translate-y-2 group-hover:brightness-110"
                     />
-
                     {/* Ambient Emerald Glow Beam with spring expand */}
                     <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/25 rounded-full blur-3xl pointer-events-none transition-all duration-700 ease-[cubic-bezier(0.34,1.4,0.64,1)] group-hover:scale-125 group-hover:opacity-75" />
                     <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-black via-transparent to-transparent opacity-80" />
                   </div>
                 )}
               </div>
-
               {/* STEPPED FOLDER TAB DRAWER */}
-              {/* 
-                - Pinned to bottom-0!
-                - Resting height: h-[420px] (tab top at y=80px, text anchored at bottom).
-                - Hover height: h-[280px] (tab top slides down to y=220px, image fully reveals).
-                - Physical spring bounce: cubic-bezier(0.34, 1.25, 0.64, 1) creates a satisfying mechanical rebound!
-                - Uses Pure White (#ffffff in light mode) and Pure Black (#000000 in dark mode)!
-              */}
-              <div 
+              {/* Pinned to bottom-0! Resting height: h-[420px] (tab top at y=80px, text anchored at bottom). */}
+              <div
                 className="absolute inset-x-0 bottom-0 h-[420px] group-hover:h-[280px] z-20 flex flex-col justify-between text-white dark:text-black transition-all duration-600 ease-[cubic-bezier(0.34,1.25,0.64,1)] overflow-hidden"
               >
                 {/* Stepped Tab SVG Path automatically adopting pure white / pure black */}
                 <SteppedTabShape />
-
                 {/* TAB HEADER (Big Number on Left + Clean Arrow ↗ on Right Shelf) */}
                 <div className="relative z-10 px-6 pt-2 flex items-start justify-between">
                   {/* Big Stepped Number (01, 02, 03) with spring scale */}
@@ -276,15 +250,12 @@ export default function FeaturedHackathonsSection() {
                   >
                     {cardNum}
                   </div>
-
-                  {/* Slanted Arrow ↗ on the Lower Right Shelf with spring bounce pop */}
                   <div className="pt-16 pr-1">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-black dark:text-white transition-all duration-500 ease-[cubic-bezier(0.34,1.5,0.64,1)] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:scale-115 group-hover:translate-x-1 group-hover:-translate-y-1">
                       <ArrowUpRight className="w-6 h-6 stroke-[2.5]" />
                     </div>
                   </div>
                 </div>
-
                 {/* BOTTOM CONTENT AREA: Title, Description & Telemetry anchored to the bottom */}
                 <div className="relative z-10 px-6 pb-6 pt-2 space-y-3">
                   <div>
@@ -293,13 +264,12 @@ export default function FeaturedHackathonsSection() {
                       className="text-xl sm:text-2xl font-bold flex justify-between items-center tracking-tight text-black dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors"
                     >
                       {event.EventName}
-                       <span className="text-xs bg-emerald-400/30 rounded-full px-3 py-1 border border-emerald-400 text-emerald-600 dark:text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{event.HackathonMode || 'Hybrid'}</span>
+                        {/* <span className="text-xs bg-emerald-400/30 rounded-full px-3 py-1 border border-emerald-400 text-emerald-600 dark:text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{event.HackathonMode || 'Hybrid'}</span> */}
                     </h3>
                     <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 leading-relaxed mt-1">
                       {event.Description || 'Collaborate with world-class crafters to build verifiable solutions.'}
                     </p>
                   </div>
-
                   {/* BOTTOM TELEMETRY STRIP (Date + Clean Mode Text + Prize) — Displays ONLY on Hover with spring expansion */}
                   <div className="overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.25,0.64,1)] max-h-0 opacity-0 group-hover:max-h-16 group-hover:opacity-100">
                     <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-mono select-none">
@@ -308,7 +278,6 @@ export default function FeaturedHackathonsSection() {
                         <Calendar className="w-3.5 h-3.5 text-emerald-500" />
                         <span>{formatDate(event.StartDate, event.EndDate)}</span>
                       </div>
-
                       {/* Prize */}
                       <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
                         <Trophy className="w-3.5 h-3.5" />
@@ -317,9 +286,7 @@ export default function FeaturedHackathonsSection() {
                     </div>
                   </div>
                 </div>
-
               </div>
-
             </motion.div>
           );
         })}

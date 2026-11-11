@@ -1,20 +1,16 @@
 import { clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-
 export function cn(...inputs) {
   return twMerge(clsx(inputs))
 }
-
 export function getEventTheme(event = {}, isDark = false) {
   const primary = event?.PrimaryColor || '#10B981';
   const secondary = event?.SecondaryColor || primary;
   const tertiary = event?.TertiaryColor || secondary;
-
   let c = String(primary).replace('#', '').trim();
   if (c.length === 3) c = c.split('').map((x) => x + x).join('');
   const num = parseInt(c, 16);
   let h = 160, s = 80, l = 50;
-
   if (!isNaN(num) && c.length === 6) {
     let r = ((num >> 16) & 255) / 255;
     let g = ((num >> 8) & 255) / 255;
@@ -35,7 +31,6 @@ export function getEventTheme(event = {}, isDark = false) {
     s = Math.round(s * 100);
     l = Math.round(l * 100);
   }
-
   if (isDark) {
     const sat = Math.max(s, 75);
     const brightText = `hsl(${h}, ${sat}%, 72%)`;
@@ -66,7 +61,6 @@ export function getEventTheme(event = {}, isDark = false) {
       registeredText: `hsl(${h}, ${sat}%, 82%)`,
     };
   }
-
   const deepColor = `hsl(${h}, ${Math.max(s, 65)}%, 36%)`;
   const solidButtonBg = `hsl(${h}, ${Math.max(s, 70)}%, 40%)`;
   const solidButtonHover = `hsl(${h}, ${Math.max(s, 70)}%, 34%)`;
@@ -94,14 +88,12 @@ export function getEventTheme(event = {}, isDark = false) {
     registeredText: deepColor,
   };
 }
-
 export function normalizeHackathonMode(mode, location = '') {
   const normalized = String(mode || '')
     .trim()
     .toLowerCase()
     .replace(/[_-]+/g, ' ')
     .replace(/\s+/g, ' ');
-
   if (
     normalized === 'both' ||
     normalized === 'hybrid' ||
@@ -112,11 +104,9 @@ export function normalizeHackathonMode(mode, location = '') {
   ) {
     return 'both';
   }
-
   if (normalized === 'virtual' || normalized === 'online') {
     return 'virtual';
   }
-
   if (
     normalized === 'physical' ||
     normalized === 'offline' ||
@@ -127,16 +117,13 @@ export function normalizeHackathonMode(mode, location = '') {
   ) {
     return 'physical';
   }
-
   const loc = String(location || '').trim().toLowerCase();
   if (loc.includes('virtual') || loc.includes('online') || loc.includes('zoom') || loc.includes('meet')) {
     return 'virtual';
   }
-
   // Never default to 'both'
   return 'physical';
 }
-
 export function getTrackVisibility(mode, location = '', eventType = '') {
   if (String(eventType || '').toLowerCase().includes('webinar')) {
     return {
@@ -148,12 +135,10 @@ export function getTrackVisibility(mode, location = '', eventType = '') {
       showPhysical: false,
     };
   }
-
   const normalized = normalizeHackathonMode(mode, location);
   const isBoth = normalized === 'both';
   const isVirtual = normalized === 'virtual';
   const isPhysical = normalized === 'physical';
-
   return {
     mode: normalized,
     isBoth,
@@ -163,7 +148,6 @@ export function getTrackVisibility(mode, location = '', eventType = '') {
     showPhysical: isBoth || isPhysical,
   };
 }
-
 export function isSoloTeamSize(teamSize) {
   if (!teamSize) return false;
   const str = String(teamSize).trim().toLowerCase();
@@ -183,16 +167,13 @@ export function isSoloTeamSize(teamSize) {
   }
   return false;
 }
-
 export function parseTeamSizeOptions(rawTeamSize) {
   if (!rawTeamSize) return [2, 3, 4];
   const str = String(rawTeamSize).trim().toLowerCase();
-
   // If Individual / Solo
   if (isSoloTeamSize(str)) {
     return [1];
   }
-
   // Check for range e.g. "2-4", "2 - 4", "2 to 4", "2 - 4 members"
   const rangeMatch = str.match(/(\d+)\s*(?:-|to)\s*(\d+)/);
   if (rangeMatch) {
@@ -202,7 +183,6 @@ export function parseTeamSizeOptions(rawTeamSize) {
       return Array.from({ length: max - min + 1 }, (_, i) => min + i);
     }
   }
-
   // Check for exact single number e.g. "4", "4 members", "4 per team"
   const singleMatch = str.match(/\b(\d+)\b/);
   if (singleMatch) {
@@ -211,10 +191,8 @@ export function parseTeamSizeOptions(rawTeamSize) {
       return [num];
     }
   }
-
   return [2, 3, 4];
 }
-
 export function getEventTypeInfo(eventType = '') {
   const t = String(eventType || '').trim().toLowerCase();
   const isWorkshop = t.includes('workshop') || t.includes('bootcamp');
@@ -225,7 +203,6 @@ export function getEventTypeInfo(eventType = '') {
   const isTechFest = t.includes('fest') || t.includes('symposium');
   const isProjectExpo = t.includes('expo') || t.includes('exhibition');
   const isHackathon = !isWorkshop && !isSeminar && !isCodingContest && !isTechFest && !isWebinar && !isAlumni && !isProjectExpo;
-
   let label = 'Event';
   let badgeColor = 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20';
   let participantTerm = 'Participants & Teams';
@@ -233,7 +210,6 @@ export function getEventTypeInfo(eventType = '') {
   let agendaTerm = 'Event Schedule & Timelines';
   let submissionTerm = 'Project Submission';
   let prizeTerm = 'Prize Pool & Rewards';
-
   if (isWebinar) {
     label = 'Webinar';
     badgeColor = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20';
@@ -294,7 +270,6 @@ export function getEventTypeInfo(eventType = '') {
     submissionTerm = 'Project Submission';
     prizeTerm = 'Prize Money & Rewards';
   }
-
   return {
     type: eventType || 'Hackathon',
     label,
@@ -314,13 +289,7 @@ export function getEventTypeInfo(eventType = '') {
     isHackathon,
   };
 }
-
-/**
- * Validates the chronological sequence of event dates:
- * 1. Registration Start Date <= Registration Closing Date (From <= To)
- * 2. Registration Closing Date <= Event Start Date (Registrations close on or before event starts)
- * 3. Event Start Date <= Event End Date (From <= To)
- */
+// Validates the chronological sequence of event dates: 1. Registration Start Date <= Registration Closing Date (From <= To)
 export function validateEventDates({
   registrationStart,
   registrationEnd,
@@ -329,7 +298,6 @@ export function validateEventDates({
   trackName = ''
 }) {
   const prefix = trackName ? `[${trackName}] ` : '';
-
   const toTimestamp = (val) => {
     if (!val) return 0;
     if (typeof val === 'string') {
@@ -347,29 +315,21 @@ export function validateEventDates({
     const d = new Date(val);
     return isNaN(d.getTime()) ? 0 : new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   };
-
   const regS = toTimestamp(registrationStart);
   const regE = toTimestamp(registrationEnd);
   const evS = toTimestamp(eventStart);
   const evE = toTimestamp(eventEnd);
-
   if (regS && regE && regS > regE) {
     return `${prefix}Registration Start Date (From) must be before or on Registration Closing Date (To).`;
   }
-
   if (evS && evE && evS > evE) {
     return `${prefix}Event Start Date (From) must be before or on Event End Date (To).`;
   }
-
   if (regE && evS && regE > evS) {
     return `${prefix}Registration Closing Date must be on or before Event Start Date (Registrations must close before the event starts).`;
   }
-
   if (regS && evS && regS > evS) {
     return `${prefix}Registration Start Date must be before Event Start Date.`;
   }
-
   return null;
 }
-
-

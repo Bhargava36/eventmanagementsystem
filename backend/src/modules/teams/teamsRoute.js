@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const teamsController = require('./teamsController');
-
+const { optionalAuth } = require('../../middleware/authmiddleware');
+router.use(optionalAuth);
 router.post('/create', teamsController.createTeam);
 router.get('/', teamsController.getAllTeams);
 router.get('/count', teamsController.getTeamsCount);
@@ -17,5 +18,4 @@ router.get('/public/:teamId', teamsController.getPublicTeamInfo);
 router.get('/event/:eventId', teamsController.getTeamsByEvent);
 router.get('/:id', teamsController.getTeamById);
 router.put('/:id', teamsController.updateTeams);
-
 module.exports = router;

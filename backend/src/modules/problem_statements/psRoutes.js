@@ -3,11 +3,12 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const psService = require('./psService');
 const { broadcastEvent } = require('../../config/websocket');
-
+const { optionalAuth } = require('../../middleware/authmiddleware');
+const { recordMutation } = require('../security/auditService');
+router.use(optionalAuth);
 // ========================
 // ADMIN: CRUD Themes for an Event
 // ========================
-
 // GET all themes for an event
 router.get('/event/:eventId/themes', (req, res) => {
     psService.getAllThemes(req.params.eventId, (err, results) => {
@@ -15,7 +16,6 @@ router.get('/event/:eventId/themes', (req, res) => {
         res.json({ themes: results });
     });
 });
-
 // CREATE a theme
 router.post('/event/:eventId/themes', (req, res) => {
     psService.createTheme(req.params.eventId, req.body, (err, result) => {
@@ -25,11 +25,20 @@ router.post('/event/:eventId/themes', (req, res) => {
             }
             return res.status(500).json({ message: 'Failed to create theme', error: err.message });
         }
+        recordMutation({
+            actor: req.user,
+            module: 'problem_statements',
+            action: 'CREATE_THEME',
+            entityType: 'theme',
+            entityId: result?.id,
+            eventId: req.params.eventId,
+            newState: req.body,
+            req
+        });
         broadcastEvent(req.params.eventId, { type: 'THEMES_UPDATED', eventId: req.params.eventId });
         res.status(201).json(result);
     });
 });
-
 // UPDATE a theme
 router.put('/themes/:id', (req, res) => {
     psService.updateTheme(req.params.id, req.body, (err) => {
@@ -38,7 +47,6 @@ router.put('/themes/:id', (req, res) => {
         res.json({ message: 'Theme updated successfully' });
     });
 });
-
 // DELETE a theme
 router.delete('/themes/:id', (req, res) => {
     psService.deleteTheme(req.params.id, (err) => {
@@ -47,11 +55,9 @@ router.delete('/themes/:id', (req, res) => {
         res.json({ message: 'Theme deleted successfully' });
     });
 });
-
 // ========================
 // ADMIN: CRUD Problem Statements for an Event
 // ========================
-
 // GET all problem statements for an event
 router.get('/event/:eventId', (req, res) => {
     psService.getAllByEvent(req.params.eventId, (err, results) => {
@@ -59,7 +65,6 @@ router.get('/event/:eventId', (req, res) => {
         res.json({ problemStatements: results });
     });
 });
-
 // CREATE a problem statement
 router.post('/event/:eventId', (req, res) => {
     psService.createProblemStatement(req.params.eventId, req.body, (err, result) => {
@@ -69,33 +74,56 @@ router.post('/event/:eventId', (req, res) => {
             }
             return res.status(500).json({ message: 'Failed to create problem statement', error: err.message });
         }
+        recordMutation({
+            actor: req.user,
+            module: 'problem_statements',
+            action: 'CREATE_PROBLEM_STATEMENT',
+            entityType: 'problem_statement',
+            entityId: result?.id,
+            eventId: req.params.eventId,
+            newState: req.body,
+            req
+        });
         broadcastEvent(req.params.eventId, { type: 'STATEMENTS_UPDATED', eventId: req.params.eventId });
         res.status(201).json(result);
     });
 });
-
 // UPDATE a problem statement
 router.put('/:id', (req, res) => {
     psService.updateProblemStatement(req.params.id, req.body, (err) => {
         if (err) return res.status(500).json({ message: 'Failed to update problem statement', error: err.message });
+        recordMutation({
+            actor: req.user,
+            module: 'problem_statements',
+            action: 'UPDATE_PROBLEM_STATEMENT',
+            entityType: 'problem_statement',
+            entityId: req.params.id,
+            newState: req.body,
+            req
+        });
         broadcastEvent(null, { type: 'STATEMENTS_UPDATED' });
         res.json({ message: 'Problem statement updated successfully' });
     });
 });
-
 // DELETE a problem statement
 router.delete('/:id', (req, res) => {
     psService.deleteProblemStatement(req.params.id, (err) => {
         if (err) return res.status(500).json({ message: 'Failed to delete problem statement', error: err.message });
+        recordMutation({
+            actor: req.user,
+            module: 'problem_statements',
+            action: 'DELETE_PROBLEM_STATEMENT',
+            entityType: 'problem_statement',
+            entityId: req.params.id,
+            req
+        });
         broadcastEvent(null, { type: 'STATEMENTS_UPDATED' });
         res.json({ message: 'Problem statement deleted successfully' });
     });
 });
-
 // ========================
 // ADMIN: Publish Controls
 // ========================
-
 // GET publish status for an event
 router.get('/event/:eventId/publish-status', (req, res) => {
     psService.getPublishStatus(req.params.eventId, (err, result) => {
@@ -103,11 +131,19 @@ router.get('/event/:eventId/publish-status', (req, res) => {
         res.json(result);
     });
 });
-
 // Publish/Unpublish Theme
 router.put('/event/:eventId/publish-theme', (req, res) => {
     psService.publishTheme(req.params.eventId, req.body.published, (err) => {
         if (err) return res.status(500).json({ message: 'Failed to update theme status', error: err.message });
+        recordMutation({
+            actor: req.user,
+            module: 'problem_statements',
+            action: req.body.published ? 'PUBLISH_THEME' : 'UNPUBLISH_THEME',
+            entityType: 'theme',
+            eventId: req.params.eventId,
+            newState: { published: req.body.published },
+            req
+        });
         broadcastEvent(req.params.eventId, {
             type: 'THEME_PUBLISHED',
             eventId: req.params.eventId,
@@ -116,7 +152,6 @@ router.put('/event/:eventId/publish-theme', (req, res) => {
         res.json({ message: `Theme ${req.body.published ? 'published' : 'unpublished'} successfully` });
     });
 });
-
 // Publish/Unpublish Problem Statements
 router.put('/event/:eventId/publish-statements', (req, res) => {
     psService.publishProblemStatements(req.params.eventId, req.body.published, (err) => {
@@ -129,7 +164,6 @@ router.put('/event/:eventId/publish-statements', (req, res) => {
         res.json({ message: `Problem statements ${req.body.published ? 'published' : 'unpublished'} successfully` });
     });
 });
-
 // Publish/Unpublish Physical Problem Statements
 router.put('/event/:eventId/publish-physical-statements', (req, res) => {
     psService.publishPhysicalProblemStatements(req.params.eventId, req.body.published, (err) => {
@@ -142,7 +176,6 @@ router.put('/event/:eventId/publish-physical-statements', (req, res) => {
         res.json({ message: `Physical problem statements ${req.body.published ? 'published' : 'unpublished'} successfully` });
     });
 });
-
 // Set Selection Deadline
 router.put('/event/:eventId/selection-deadline', (req, res) => {
     psService.setSelectionDeadline(req.params.eventId, req.body.deadline, (err) => {
@@ -155,7 +188,6 @@ router.put('/event/:eventId/selection-deadline', (req, res) => {
         res.json({ message: 'Selection deadline updated successfully' });
     });
 });
-
 // Set Physical Selection Deadline
 router.put('/event/:eventId/physical-selection-deadline', (req, res) => {
     psService.setPhysicalSelectionDeadline(req.params.eventId, req.body.deadline, (err) => {
@@ -168,7 +200,6 @@ router.put('/event/:eventId/physical-selection-deadline', (req, res) => {
         res.json({ message: 'Physical selection deadline updated successfully' });
     });
 });
-
 // Set Max Teams Per Statement
 router.put('/event/:eventId/max-teams', (req, res) => {
     psService.setMaxTeamsPerStatement(req.params.eventId, req.body.maxTeams, (err) => {
@@ -181,11 +212,9 @@ router.put('/event/:eventId/max-teams', (req, res) => {
         res.json({ message: 'Max teams per statement updated successfully' });
     });
 });
-
 // ========================
 // TEAM: Select Problem Statement
 // ========================
-
 // GET specific team's selection
 router.get('/event/:eventId/team/:teamId', (req, res) => {
     psService.getTeamSelection(req.params.eventId, req.params.teamId, (err, result) => {
@@ -193,13 +222,11 @@ router.get('/event/:eventId/team/:teamId', (req, res) => {
         res.json({ selection: result });
     });
 });
-
 router.post('/event/:eventId/select', (req, res) => {
     const { teamId, problemStatementId } = req.body;
     if (!teamId || !problemStatementId) {
         return res.status(400).json({ message: 'teamId and problemStatementId are required.' });
     }
-
     let userId = null;
     let userRole = null;
     const authHeader = req.headers.authorization;
@@ -213,7 +240,6 @@ router.post('/event/:eventId/select', (req, res) => {
             // invalid or expired token
         }
     }
-
     psService.selectProblemStatement(req.params.eventId, teamId, problemStatementId, userId, userRole, (err, result) => {
         if (err) {
             const status = err.status || 500;
@@ -228,22 +254,18 @@ router.post('/event/:eventId/select', (req, res) => {
         res.json(result);
     });
 });
-
 // ========================
 // GET: All Selections for an Event
 // ========================
-
 router.get('/event/:eventId/selections', (req, res) => {
     psService.getSelectionsByEvent(req.params.eventId, (err, results) => {
         if (err) return res.status(500).json({ message: 'Failed to fetch selections', error: err.message });
         res.json({ selections: results });
     });
 });
-
 // ========================
 // ADMIN: Auto-Assign Remaining Teams
 // ========================
-
 router.post('/event/:eventId/auto-assign', (req, res) => {
     psService.autoAssignRemainingTeams(req.params.eventId, (err, result) => {
         if (err) return res.status(500).json({ message: 'Auto-assignment failed', error: err.message });
@@ -254,11 +276,9 @@ router.post('/event/:eventId/auto-assign', (req, res) => {
         res.json(result);
     });
 });
-
 // ========================
 // ADMIN: Reassign a Selection
 // ========================
-
 router.put('/selection/:id/reassign', (req, res) => {
     const { problemStatementId } = req.body;
     if (!problemStatementId) {
@@ -277,11 +297,9 @@ router.put('/selection/:id/reassign', (req, res) => {
         res.json(result);
     });
 });
-
 // ========================
 // ADMIN: Remove a Selection
 // ========================
-
 router.delete('/selection/:id', (req, res) => {
     psService.removeSelection(req.params.id, (err) => {
         if (err) return res.status(500).json({ message: 'Failed to remove selection', error: err.message });
@@ -289,11 +307,9 @@ router.delete('/selection/:id', (req, res) => {
         res.json({ message: 'Selection removed successfully' });
     });
 });
-
 // ========================
 // PARTICIPANT-SUBMITTED PROBLEM STATEMENTS
 // ========================
-
 // GET all participant-submitted statements for an event (Admin view)
 router.get('/event/:eventId/participant-statements', (req, res) => {
     psService.getParticipantStatementsByEvent(req.params.eventId, (err, results) => {
@@ -301,7 +317,6 @@ router.get('/event/:eventId/participant-statements', (req, res) => {
         res.json({ statements: results });
     });
 });
-
 // GET specific team's participant-submitted statement
 router.get('/event/:eventId/team/:teamId/participant-statement', (req, res) => {
     psService.getParticipantStatementByTeam(req.params.eventId, req.params.teamId, (err, result) => {
@@ -309,14 +324,12 @@ router.get('/event/:eventId/team/:teamId/participant-statement', (req, res) => {
         res.json({ statement: result });
     });
 });
-
 // CREATE or UPDATE a participant-submitted statement (Participant/Team Lead)
 router.post('/event/:eventId/participant-statement', (req, res) => {
     const { teamId, ThemeName, Category, Title, Description, TechStack } = req.body;
     if (!teamId || !Title || !Title.trim()) {
         return res.status(400).json({ message: 'teamId and Title are required.' });
     }
-
     let userId = null;
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -328,7 +341,6 @@ router.post('/event/:eventId/participant-statement', (req, res) => {
             // invalid token
         }
     }
-
     psService.upsertParticipantStatement(
         req.params.eventId,
         teamId,
@@ -348,7 +360,6 @@ router.post('/event/:eventId/participant-statement', (req, res) => {
         }
     );
 });
-
 // UPDATE status of participant-submitted statement (Admin approve / revision)
 router.put('/participant-statements/:id/status', (req, res) => {
     psService.updateParticipantStatementStatus(req.params.id, req.body, (err) => {
@@ -357,5 +368,4 @@ router.put('/participant-statements/:id/status', (req, res) => {
         res.json({ message: 'Problem statement status updated successfully' });
     });
 });
-
 module.exports = router;

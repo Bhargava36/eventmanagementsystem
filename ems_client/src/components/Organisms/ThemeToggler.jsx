@@ -1,10 +1,8 @@
 import { Sun, Moon } from "lucide-react";
 import useTheme from "../../Hooks/useTheme";
 import { motion, AnimatePresence } from "framer-motion";
-
 const ThemeToggle = ({ variant = "default", canShowText = false, className = "" }) => {
   const { theme, toggleTheme } = useTheme();
-
   if (variant === "sidebar") {
     return (
       <button
@@ -43,14 +41,12 @@ const ThemeToggle = ({ variant = "default", canShowText = false, className = "" 
               )}
             </AnimatePresence>
           </div>
-
           {canShowText && (
             <span className="font-medium text-sm whitespace-nowrap">
               {theme === "dark" ? "Dark Mode" : "Light Mode"}
             </span>
           )}
         </div>
-
         {canShowText && (
           <div
             className={`relative w-11 h-6 rounded-full transition-colors duration-300 p-0.5 flex items-center shrink-0 ${
@@ -68,7 +64,6 @@ const ThemeToggle = ({ variant = "default", canShowText = false, className = "" 
       </button>
     );
   }
-
   return (
     <motion.button
       type="button"
@@ -106,5 +101,4 @@ const ThemeToggle = ({ variant = "default", canShowText = false, className = "" 
     </motion.button>
   );
 };
-
 export default ThemeToggle;

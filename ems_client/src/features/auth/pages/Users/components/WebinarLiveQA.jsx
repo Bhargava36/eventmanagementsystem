@@ -7,7 +7,6 @@ import {
   HelpCircle,
   CheckCircle2,
   Pin,
-
   User,
   Clock,
   Filter,
@@ -16,19 +15,15 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../../Hooks/useToast';
-
 export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
   const toast = useToast();
   const [questionText, setQuestionText] = useState('');
   const [targetSpeaker, setTargetSpeaker] = useState('All Speakers & Panel');
   const [submitting, setSubmitting] = useState(false);
   const [filterMode, setFilterMode] = useState('top'); // 'top' | 'recent' | 'mine'
-
   const currentUserId = user?.Id || user?.id || user?.UserId || null;
   const storageKey = `webinar_live_qa_${eventId}`;
-
   const [questions, setQuestions] = useState([]);
-
   const fetchQuestions = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -64,7 +59,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
     } catch (err) {
       console.warn('Could not load live webinar questions from API, using fallback:', err);
     }
-
     // Fallback to localStorage if API unavailable
     try {
       const saved = localStorage.getItem(storageKey);
@@ -76,13 +70,11 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
       }
     } catch {}
   }, [eventId, currentUserId, storageKey]);
-
   useEffect(() => {
     fetchQuestions();
     const interval = setInterval(fetchQuestions, 10000);
     return () => clearInterval(interval);
   }, [fetchQuestions]);
-
   const handlePostQuestion = async (e) => {
     if (e) e.preventDefault();
     const clean = questionText.trim();
@@ -94,7 +86,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
       toast.error('Question should be at least 10 characters long');
       return;
     }
-
     try {
       setSubmitting(true);
       const res = await fetch(`${API_BASE_URL}/api/webinars/${eventId}/questions`, {
@@ -107,7 +98,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
           QuestionText: clean
         })
       });
-
       if (res.ok) {
         toast.success('Question submitted to Keynote Panel!');
         setQuestionText('');
@@ -134,7 +124,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
       setSubmitting(false);
     }
   };
-
   const handleToggleUpvote = async (questionId) => {
     try {
       setQuestions((prev) =>
@@ -148,7 +137,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
           };
         })
       );
-
       await fetch(`${API_BASE_URL}/api/webinars/questions/${questionId}/upvote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,7 +146,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
       console.warn('Upvote error:', err);
     }
   };
-
   const filteredQuestions = useMemo(() => {
     let list = [...questions];
     if (filterMode === 'mine') {
@@ -170,7 +157,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
     }
     return list;
   }, [questions, filterMode, currentUserId]);
-
   return (
     <div className="space-y-6">
       {/* Ask Question Card */}
@@ -193,7 +179,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
             Live Stream Q&amp;A
           </span>
         </div>
-
         <form onSubmit={handlePostQuestion} className="space-y-3">
           <div className="flex flex-col sm:flex-row gap-2">
             <select
@@ -209,7 +194,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
               ))}
             </select>
           </div>
-
           <div className="relative">
             <textarea
               rows={3}
@@ -223,7 +207,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
               {questionText.length}/400
             </div>
           </div>
-
           <div className="flex items-center justify-between gap-3 pt-1">
             <span className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
               <Mic className="w-3.5 h-3.5 text-emerald-500" />
@@ -240,7 +223,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
           </div>
         </form>
       </div>
-
       {/* Questions Filter and Counter */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-zinc-800">
         <div className="flex items-center gap-2">
@@ -249,7 +231,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
           </span>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
         </div>
-
         <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 self-start sm:self-auto">
           {[
             { id: 'top', label: 'Top Upvoted' },
@@ -271,7 +252,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
           ))}
         </div>
       </div>
-
       {/* Questions List */}
       <div className="space-y-3">
         {filteredQuestions.length === 0 ? (
@@ -308,7 +288,6 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
                       </span>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-2">
                     {q.status === 'answered' && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -324,26 +303,21 @@ export default function WebinarLiveQA({ eventId, user, speakers = [] }) {
                     )}
                   </div>
                 </div>
-
                 <p className="text-xs sm:text-sm text-slate-800 dark:text-zinc-200 leading-relaxed font-medium">
                   {q.text}
                 </p>
-
                 {q.answer && (
                   <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15 text-xs text-slate-700 dark:text-zinc-300 space-y-1">
                     <span className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 text-[11px]">
-                      
                       Speaker Response:
                     </span>
                     <p className="text-xs leading-relaxed">{q.answer}</p>
                   </div>
                 )}
-
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[10px] text-slate-400 font-mono">
                     {new Date(q.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
-
                   <button
                     type="button"
                     onClick={() => handleToggleUpvote(q.id)}

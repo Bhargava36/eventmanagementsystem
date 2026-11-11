@@ -19,7 +19,6 @@ import {
   RefreshCw,
   Award
 } from 'lucide-react';
-
 const LIFECYCLE_STEPS = [
   { id: 'DRAFT', label: 'Draft' },
   { id: 'CONFIGURATION', label: 'Configured' },
@@ -31,12 +30,10 @@ const LIFECYCLE_STEPS = [
   { id: 'RESULTS_PUBLISHED', label: 'Results Published' },
   { id: 'COMPLETED', label: 'Valedictory Done' }
 ];
-
 export default function ProjectExpoSettingsPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const { eventId: urlEventId } = useParams();
-
   const admin = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -44,9 +41,7 @@ export default function ProjectExpoSettingsPage() {
       return {};
     }
   }, []);
-
   const eventId = urlEventId || admin?.EventId || 34;
-
   const [config, setConfig] = useState({
     ParticipationType: 'Both',
     MinTeamSize: 1,
@@ -63,13 +58,11 @@ export default function ProjectExpoSettingsPage() {
     RequiredDocuments: '',
     Status: 'CONFIGURATION'
   });
-
   const [domains, setDomains] = useState([]);
   const [newDomainName, setNewDomainName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
-
   const loadData = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -78,10 +71,8 @@ export default function ProjectExpoSettingsPage() {
         fetch(`${API_BASE_URL}/api/project-expo/${eventId}/config`),
         fetch(`${API_BASE_URL}/api/project-expo/${eventId}/domains`)
       ]);
-
       const cfgData = await cfgRes.json();
       const domData = await domRes.json();
-
       if (cfgData.success && cfgData.config) {
         setConfig({
           ...cfgData.config,
@@ -99,11 +90,9 @@ export default function ProjectExpoSettingsPage() {
       setLoading(false);
     }
   }, [eventId, toast]);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
-
   const handleUpdateStatus = async (newStatus) => {
     if (!eventId) return;
     try {
@@ -117,7 +106,6 @@ export default function ProjectExpoSettingsPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Status transition failed');
       }
-
       setConfig((prev) => ({ ...prev, Status: newStatus }));
       toast.success(`Expo lifecycle updated to ${newStatus}`);
     } catch (err) {
@@ -126,11 +114,9 @@ export default function ProjectExpoSettingsPage() {
       setSavingStatus(false);
     }
   };
-
   const handleSaveConfig = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!eventId) return;
-
     try {
       setSaving(true);
       const res = await fetch(`${API_BASE_URL}/api/project-expo/${eventId}/config`, {
@@ -142,7 +128,6 @@ export default function ProjectExpoSettingsPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Failed to save configuration');
       }
-
       toast.success('Project Expo configuration saved!');
       loadData();
     } catch (err) {
@@ -151,11 +136,9 @@ export default function ProjectExpoSettingsPage() {
       setSaving(false);
     }
   };
-
   const handleAddDomain = async (e) => {
     e.preventDefault();
     if (!newDomainName.trim() || !eventId) return;
-
     const updated = [...domains, { DomainName: newDomainName.trim() }];
     try {
       const res = await fetch(`${API_BASE_URL}/api/project-expo/${eventId}/domains`, {
@@ -167,7 +150,6 @@ export default function ProjectExpoSettingsPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Failed to add domain');
       }
-
       toast.success(`Added "${newDomainName.trim()}"`);
       setNewDomainName('');
       loadData();
@@ -175,7 +157,6 @@ export default function ProjectExpoSettingsPage() {
       toast.error(err.message || 'Error adding domain');
     }
   };
-
   const handleRemoveDomain = async (index) => {
     const updated = domains.filter((_, idx) => idx !== index);
     try {
@@ -188,14 +169,12 @@ export default function ProjectExpoSettingsPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Failed to remove domain');
       }
-
       toast.success('Domain removed');
       loadData();
     } catch (err) {
       toast.error(err.message || 'Error removing domain');
     }
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-black p-8 flex items-center justify-center">
@@ -206,7 +185,6 @@ export default function ProjectExpoSettingsPage() {
       </div>
     );
   }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -224,7 +202,6 @@ export default function ProjectExpoSettingsPage() {
             Configure domains, team eligibility, booth parameters, and event lifecycle status
           </p>
         </div>
-
         <button
           type="button"
           onClick={handleSaveConfig}
@@ -235,7 +212,6 @@ export default function ProjectExpoSettingsPage() {
           <span>Save Expo Configuration</span>
         </button>
       </div>
-
       <div className="p-4 sm:p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
         {/* ── LIFECYCLE PROGRESS PIPELINE ── */}
         <div className="bg-white dark:bg-black rounded-3xl p-6 sm:p-8 border border-gray-200 dark:border-zinc-800 shadow-sm space-y-4">
@@ -252,7 +228,6 @@ export default function ProjectExpoSettingsPage() {
               Current: {config.Status}
             </span>
           </div>
-
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {LIFECYCLE_STEPS.map((step, idx) => {
               const isCurrent = config.Status === step.id;
@@ -275,7 +250,6 @@ export default function ProjectExpoSettingsPage() {
             })}
           </div>
         </div>
-
         {/* ── MAIN CONFIG FORM ── */}
         <form onSubmit={handleSaveConfig} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column: Core Parameters */}
@@ -285,7 +259,6 @@ export default function ProjectExpoSettingsPage() {
                 <Users className="w-5 h-5 text-emerald-600" />
                 <span>Team & Participation Controls</span>
               </h3>
-
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -301,7 +274,6 @@ export default function ProjectExpoSettingsPage() {
                     <option value="Individual">Individual Solo Only</option>
                   </select>
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                     Min Team Size
@@ -315,7 +287,6 @@ export default function ProjectExpoSettingsPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                     Max Team Size
@@ -330,7 +301,6 @@ export default function ProjectExpoSettingsPage() {
                   />
                 </div>
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 border-t border-gray-100 dark:border-zinc-800">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -343,7 +313,6 @@ export default function ProjectExpoSettingsPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                     Max Project Submissions
@@ -359,13 +328,11 @@ export default function ProjectExpoSettingsPage() {
                 </div>
               </div>
             </div>
-
             <div className="bg-white dark:bg-black rounded-3xl p-6 sm:p-8 border border-gray-200 dark:border-zinc-800 shadow-sm space-y-6">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-emerald-600" />
                 <span>Floor Plan & Pitch Settings</span>
               </h3>
-
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -380,7 +347,6 @@ export default function ProjectExpoSettingsPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                     Stall Code Prefix
@@ -392,7 +358,6 @@ export default function ProjectExpoSettingsPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500 font-mono"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                     Pitch Duration (Minutes)
@@ -407,7 +372,6 @@ export default function ProjectExpoSettingsPage() {
                   />
                 </div>
               </div>
-
               <div className="space-y-1.5 pt-4 border-t border-gray-100 dark:border-zinc-800">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                   Required Documents Checklist
@@ -420,7 +384,6 @@ export default function ProjectExpoSettingsPage() {
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500"
                 />
               </div>
-
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                   Exhibition Guidelines & Instructions
@@ -434,7 +397,6 @@ export default function ProjectExpoSettingsPage() {
               </div>
             </div>
           </div>
-
           {/* Right Column: Domains */}
           <div className="space-y-6">
             <div className="bg-white dark:bg-black rounded-3xl p-6 sm:p-8 border border-gray-200 dark:border-zinc-800 shadow-sm space-y-6">
@@ -447,7 +409,6 @@ export default function ProjectExpoSettingsPage() {
                   Categorize projects by innovation fields
                 </p>
               </div>
-
               <div className="space-y-2.5">
                 {domains.map((dom, idx) => (
                   <div
@@ -465,7 +426,6 @@ export default function ProjectExpoSettingsPage() {
                   </div>
                 ))}
               </div>
-
               <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 space-y-3">
                 <input
                   type="text"

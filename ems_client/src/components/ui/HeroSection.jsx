@@ -1,17 +1,14 @@
 "use client";
-
 import React, { useState, useEffect, Suspense, useRef, useCallback } from "react";
 import Spline from "@splinetool/react-spline";
 import { Link } from "react-router-dom";
 import { motion, useInView } from "framer-motion";
 import { cn } from "@/lib/utils";
-
 export const HeroSection = ({ className }) => {
   const heroRef = useRef(null);
   const isHeroInView = useInView(heroRef, { margin: "250px" });
   const [splineLoaded, setSplineLoaded] = useState(false);
   const splineAppRef = useRef(null);
-
   // Responsive Zoom Tuning for 4K-exported scenes:
   // Dynamically scales the camera zoom so the 4K design fits flawlessly on mobile
   // without clipping or being oversized on laptops, tablets, and phones.
@@ -19,7 +16,6 @@ export const HeroSection = ({ className }) => {
     if (!app) return;
     const width = typeof window !== "undefined" ? window.innerWidth : 1920;
     let zoomFactor;
-
     if (width < 420) {
       zoomFactor = 0.22; // Small & standard phones (360px - 414px) - prevents 3D clipping!
     } else if (width < 640) {
@@ -37,7 +33,6 @@ export const HeroSection = ({ className }) => {
     } else {
       zoomFactor = 1.0;  // 4K Ultra-HD native
     }
-
     try {
       if (typeof app.setZoom === "function") {
         app.setZoom(zoomFactor);
@@ -46,11 +41,9 @@ export const HeroSection = ({ className }) => {
       console.debug("Spline setZoom fallback:", e);
     }
   }, []);
-
   const handleSplineLoad = (app) => {
     splineAppRef.current = app;
     setSplineLoaded(true);
-
     // 1. Programmatically hide any Built-with-Spline watermark object in the 3D scene
     try {
       const allObjects = app.getAllObjects ? app.getAllObjects() : [];
@@ -70,10 +63,8 @@ export const HeroSection = ({ className }) => {
     } catch (err) {
       console.debug("Spline watermark program hide:", err);
     }
-
     adjustZoomFor4K(app);
   };
-
   useEffect(() => {
     // Graceful trigger so the smooth bottom-to-top motion activates reliably
     const timer = setTimeout(() => {
@@ -81,7 +72,6 @@ export const HeroSection = ({ className }) => {
     }, 700);
     return () => clearTimeout(timer);
   }, []);
-
   useEffect(() => {
     const handleResize = () => {
       if (splineAppRef.current) {
@@ -91,8 +81,6 @@ export const HeroSection = ({ className }) => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [adjustZoomFor4K]);
-
-
   return (
     <section
       ref={heroRef}
@@ -105,7 +93,7 @@ export const HeroSection = ({ className }) => {
       {/* 1. 3D SPLINE SCENE CANVAS (SMOOTH BOTTOM-TO-TOP MOTION)  */}
       {/* User's custom scene: https://prod.spline.design/7EOAAK0Mc7k1gp0O/scene.splinecode */}
       {/* ======================================================== */}
-      <div 
+      <div
         className="absolute inset-0 w-full h-full z-0 flex items-center justify-center transform-gpu overflow-hidden"
         style={{ visibility: isHeroInView ? "visible" : "hidden" }}
       >
@@ -130,23 +118,18 @@ export const HeroSection = ({ className }) => {
             />
           </motion.div>
         </Suspense>
-
         {/* Top subtle fade mask for Navbar */}
         <div className="absolute top-0 inset-x-0 h-24 sm:h-28 bg-gradient-to-b from-white via-white/40 to-transparent dark:from-black dark:via-black/40 to-transparent pointer-events-none z-10" />
-
         {/* BOTTOM SOLID OPAQUE MASK: Completely hides the "Built with Spline" watermark */}
         <div className="absolute inset-x-0 bottom-0 h-48 sm:h-48 bg-gradient-to-t from-white via-white dark:from-black dark:via-black to-transparent pointer-events-none z-10" />
       </div>
-
       {/* Top spacing to account for floating Navbar */}
       <div className="h-20 sm:h-28 w-full shrink-0 pointer-events-none" />
-
       {/* ======================================================== */}
       {/* 2. FLOATING HUD OVERLAY & ACTION CTAs                    */}
       {/* Positioned cleanly below the 3D model with no collision  */}
       {/* ======================================================== */}
       <div className="relative z-20 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 sm:pb-12 flex flex-col items-center text-center pointer-events-none mt-auto">
-        
         {/* Subtitle / Value Proposition with Cinematic Blur Reveal */}
         <motion.div
           initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
@@ -159,7 +142,6 @@ export const HeroSection = ({ className }) => {
             Where crafters connect, events scale, and bold ideas take flight.
           </p>
         </motion.div>
-
         {/* Primary Action Buttons (Clickable) */}
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -178,7 +160,6 @@ export const HeroSection = ({ className }) => {
               →
             </span>
           </Link>
-
           {/* Join Platform */}
           <Link
             to="/user/register"
@@ -187,11 +168,8 @@ export const HeroSection = ({ className }) => {
             Join Free
           </Link>
         </motion.div>
-
-
       </div>
     </section>
   );
 };
-
 export default HeroSection;

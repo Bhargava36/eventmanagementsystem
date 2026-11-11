@@ -18,7 +18,6 @@ import {
   Award
 } from "lucide-react";
 import useToast from '../../../../Hooks/useToast';
-
 const PRESET_ROLES = [
   "Faculty Convener",
   "Faculty Co-Convener",
@@ -37,19 +36,16 @@ const PRESET_ROLES = [
   "Mentor & Evaluation Coordinator",
   "Custom Role"
 ];
-
 function CoreTeam() {
   const admin = JSON.parse(localStorage.getItem("admin") || "{}");
   const eventId = admin?.EventId;
   const toast = useToast();
-
   const [coreTeam, setCoreTeam] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
   const [formData, setFormData] = useState({
     role: "Faculty Convener",
     isCustomRole: false,
@@ -60,11 +56,9 @@ function CoreTeam() {
     department: "",
     photo: ""
   });
-
   const [studentCoordinators, setStudentCoordinators] = useState(0);
   const [facultyCoordinators, setFacultyCoordinators] = useState(0);
   const [volunteers, setVolunteers] = useState(0);
-
   useEffect(() => {
     if (eventId) {
       fetchCoreTeam();
@@ -73,24 +67,18 @@ function CoreTeam() {
       setError("No event assigned to this admin.");
     }
   }, [eventId]);
-
   const fetchCoreTeam = async () => {
     try {
       setError("");
-
       const response = await fetch(
         `${API_BASE_URL}/api/core_team/event/${eventId}`
       );
-
       if (!response.ok) {
         throw new Error("Failed to fetch core team");
       }
-
       const data = await response.json();
       const members = data.members || [];
-
       setCoreTeam(members);
-
       if (members.length > 0) {
         setStudentCoordinators(members[0].StudentCoordinators || 0);
         setFacultyCoordinators(members[0].FacultyCoordinators || 0);
@@ -103,7 +91,6 @@ function CoreTeam() {
       setLoading(false);
     }
   };
-
   const handleInputChange = (event) => {
     const { name, value } = event.target;
     if (name === "role") {
@@ -121,7 +108,6 @@ function CoreTeam() {
       }));
     }
   };
-
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -139,14 +125,12 @@ function CoreTeam() {
       reader.readAsDataURL(file);
     }
   };
-
   const removePhoto = () => {
     setFormData((prev) => ({
       ...prev,
       photo: "",
     }));
   };
-
   const openAddModal = () => {
     setEditingMemberId(null);
     setFormData({
@@ -161,7 +145,6 @@ function CoreTeam() {
     });
     setIsModalOpen(true);
   };
-
   const openEditModal = (member) => {
     setEditingMemberId(member.Id);
     const isPreset = PRESET_ROLES.slice(0, -1).includes(member.Role);
@@ -177,12 +160,10 @@ function CoreTeam() {
     });
     setIsModalOpen(true);
   };
-
   const handleDelete = async (memberId) => {
     if (!window.confirm("Are you sure you want to remove this core team member?")) {
       return;
     }
-
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/core_team/${memberId}`,
@@ -190,12 +171,10 @@ function CoreTeam() {
           method: "DELETE"
         }
       );
-
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || "Failed to delete member");
       }
-
       toast.success("Core team member removed successfully");
       fetchCoreTeam();
     } catch (err) {
@@ -203,20 +182,16 @@ function CoreTeam() {
       toast.error(err.message || "Failed to delete member");
     }
   };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     try {
       setSubmitting(true);
       const finalRole = formData.isCustomRole
         ? (formData.customRole?.trim() || "Core Member")
         : formData.role;
-
       const type = finalRole.toLowerCase().includes("faculty")
         ? "faculty"
         : "student";
-
       if (editingMemberId) {
         const response = await fetch(
           `${API_BASE_URL}/api/core_team/${editingMemberId}`,
@@ -236,9 +211,7 @@ function CoreTeam() {
             }),
           }
         );
-
         const data = await response.json();
-
         if (!response.ok) {
           throw new Error(data.message || "Failed to update member");
         }
@@ -266,15 +239,12 @@ function CoreTeam() {
             }),
           }
         );
-
         const data = await response.json();
-
         if (!response.ok) {
           throw new Error(data.message || "Failed to add core team member");
         }
         toast.success("Core team member added successfully");
       }
-
       setIsModalOpen(false);
       fetchCoreTeam();
     } catch (err) {
@@ -284,7 +254,6 @@ function CoreTeam() {
       setSubmitting(false);
     }
   };
-
   const teamStats = [
     {
       label: "Student Coordinators",
@@ -302,7 +271,6 @@ function CoreTeam() {
       icon: Users,
     },
   ];
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
@@ -320,16 +288,13 @@ function CoreTeam() {
               </span>
               <span className="text-xs font-semibold text-slate-400">• {coreTeam.length} Active Members</span>
             </div>
-
             <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl text-slate-900 dark:text-white">
               Core Team &amp; Committee Leads
             </h1>
-
             <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-zinc-400 max-w-2xl">
               Directory and contact management for conveners, faculty advisors, technical leads, and operational coordinators.
             </p>
           </div>
-
           <button
             type="button"
             onClick={openAddModal}
@@ -339,18 +304,15 @@ function CoreTeam() {
             <span>Add Core Member</span>
           </button>
         </div>
-
         {error && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4 text-xs font-semibold text-rose-600 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-400">
             {error}
           </div>
         )}
-
         {/* Stats Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {teamStats.map((stat, index) => {
             const Icon = stat.icon;
-
             return (
               <motion.div
                 key={stat.label}
@@ -365,12 +327,10 @@ function CoreTeam() {
                     <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                       {stat.label}
                     </p>
-
                     <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">
                       {stat.value}
                     </p>
                   </div>
-
                   <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                     <Icon className="h-5 w-5" />
                   </div>
@@ -379,7 +339,6 @@ function CoreTeam() {
             );
           })}
         </div>
-
         {/* Core Team Cards Grid */}
         {loading ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -423,20 +382,17 @@ function CoreTeam() {
                           </div>
                         )}
                       </div>
-
                       {/* Status indicator */}
                       <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white dark:ring-black">
                         <span className="h-1.5 w-1.5 rounded-full bg-white" />
                       </span>
                     </div>
-
                     {/* Member Details */}
                     <div className="flex-1 min-w-0 space-y-1.5">
                       <div className="flex items-center justify-between gap-2">
                         <span className="inline-flex items-center gap-1 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 truncate max-w-[150px]">
                           <span className="truncate">{member.Role}</span>
                         </span>
-
                         {/* Edit & Delete Controls */}
                         <div className="flex items-center gap-1 shrink-0">
                           <button
@@ -457,11 +413,9 @@ function CoreTeam() {
                           </button>
                         </div>
                       </div>
-
                       <h2 className="text-base font-bold text-slate-900 dark:text-white truncate" title={member.Name}>
                         {member.Name}
                       </h2>
-
                       {member.Department && (
                         <p className="text-xs font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 truncate">
                           {member.Type === 'faculty' ? (
@@ -472,7 +426,6 @@ function CoreTeam() {
                           <span className="truncate">{member.Department}</span>
                         </p>
                       )}
-
                       {member.Type && (
                         <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-800/60">
                           {member.Type} Member
@@ -481,7 +434,6 @@ function CoreTeam() {
                     </div>
                   </div>
                 </div>
-
                 {/* Bottom Contact Buttons */}
                 <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-zinc-800/80 flex flex-col sm:flex-row items-center gap-2 text-xs">
                   {member.Phone ? (
@@ -498,7 +450,6 @@ function CoreTeam() {
                   ) : (
                     <div className="w-full sm:flex-1 p-2 text-[11px] text-slate-400 italic">No phone</div>
                   )}
-
                   {member.Email ? (
                     <a
                       href={`mailto:${member.Email}`}
@@ -518,7 +469,6 @@ function CoreTeam() {
             ))}
           </div>
         )}
-
         {/* Empty State */}
         {!loading && coreTeam.length === 0 && (
           <div className="rounded-3xl border border-dashed border-slate-300 dark:border-zinc-800 bg-white/70 dark:bg-zinc-950/70 p-12 text-center max-w-md mx-auto space-y-4">
@@ -544,7 +494,6 @@ function CoreTeam() {
           </div>
         )}
       </div>
-
       {/* Modal for Add / Edit Core Team Member */}
       <AnimatePresence>
         {isModalOpen && (
@@ -568,7 +517,6 @@ function CoreTeam() {
                       : "Add a new convener, coordinator, or operational lead to your event."}
                   </p>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -577,7 +525,6 @@ function CoreTeam() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-
               <form onSubmit={handleSubmit} className="space-y-4 p-6">
                 {/* Photo Upload Area with Live Preview */}
                 <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-zinc-800 p-4 bg-slate-50/70 dark:bg-zinc-900/40">
@@ -617,7 +564,6 @@ function CoreTeam() {
                     </label>
                   )}
                 </div>
-
                 {/* Role Selection (Comprehensive Presets + Custom Role) */}
                 <div>
                   <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-zinc-300">
@@ -636,7 +582,6 @@ function CoreTeam() {
                     ))}
                   </select>
                 </div>
-
                 {/* Custom Role Input (shown when Custom Role is selected) */}
                 {formData.isCustomRole && (
                   <motion.div
@@ -657,7 +602,6 @@ function CoreTeam() {
                     />
                   </motion.div>
                 )}
-
                 {/* Name & Phone */}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
@@ -673,7 +617,6 @@ function CoreTeam() {
                       className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none focus:border-emerald-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
                     />
                   </div>
-
                   <div>
                     <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-zinc-300">
                       Phone Number
@@ -689,7 +632,6 @@ function CoreTeam() {
                     />
                   </div>
                 </div>
-
                 {/* Email & Department */}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
@@ -706,7 +648,6 @@ function CoreTeam() {
                       className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs text-slate-900 outline-none focus:border-emerald-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
                     />
                   </div>
-
                   <div>
                     <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-zinc-300">
                       Department / Specialization
@@ -721,7 +662,6 @@ function CoreTeam() {
                     />
                   </div>
                 </div>
-
                 {!editingMemberId && (
                   <div className="grid gap-3 sm:grid-cols-3 pt-1 border-t border-slate-100 dark:border-zinc-800/80">
                     <div>
@@ -736,7 +676,6 @@ function CoreTeam() {
                         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none focus:border-emerald-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
                       />
                     </div>
-
                     <div>
                       <label className="mb-1 block text-[11px] font-bold text-slate-500 dark:text-zinc-400">
                         Total Faculty Coordinators
@@ -749,7 +688,6 @@ function CoreTeam() {
                         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 outline-none focus:border-emerald-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white"
                       />
                     </div>
-
                     <div>
                       <label className="mb-1 block text-[11px] font-bold text-slate-500 dark:text-zinc-400">
                         Total Volunteers
@@ -764,7 +702,6 @@ function CoreTeam() {
                     </div>
                   </div>
                 )}
-
                 <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800/80">
                   <button
                     type="button"
@@ -773,7 +710,6 @@ function CoreTeam() {
                   >
                     Cancel
                   </button>
-
                   <button
                     type="submit"
                     disabled={submitting}
@@ -790,5 +726,4 @@ function CoreTeam() {
     </motion.div>
   );
 }
-
 export default CoreTeam;

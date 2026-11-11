@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { API_BASE_URL } from '@/lib/api';
 import { useSearchParams } from "react-router-dom";
 import { BadgeCheck, CheckCircle2, CircleAlert, LoaderCircle, Clock, LogIn, LogOut, RefreshCw } from "lucide-react";
-
 export default function VerifyIdPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token")?.trim() || "";
@@ -14,32 +13,26 @@ export default function VerifyIdPage() {
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
-
   const hasValidParams =
     Boolean(token) ||
     (/^[1-9]\d*$/.test(eventId) && Boolean(idCardNumber));
-
   const verifyCard = async () => {
     if (!hasValidParams) return;
     setStatus("loading");
     setError("");
-
     try {
       const query = new URLSearchParams();
       if (token) query.set("token", token);
       if (eventId) query.set("eventId", eventId);
       if (userId) query.set("userId", userId);
       if (idCardNumber) query.set("idCardNumber", idCardNumber);
-
       const response = await fetch(`${API_BASE_URL}/api/id-cards/verify?${query.toString()}`);
       const result = await response.json().catch(() => ({}));
-
       if (!response.ok) {
         setStatus(response.status === 404 ? "invalid" : "error");
         setError(result.message || "Unable to verify this ID card.");
         return;
       }
-
       setParticipant(result.participant);
       setStatus("valid");
     } catch (requestError) {
@@ -47,11 +40,9 @@ export default function VerifyIdPage() {
       setError("Could not reach the verification service. Please try again.");
     }
   };
-
   useEffect(() => {
     verifyCard();
   }, [eventId, userId, idCardNumber, hasValidParams]);
-
   const handleAttendanceAction = async (actionType) => {
     setActionLoading(true);
     setActionMessage("");
@@ -69,7 +60,6 @@ export default function VerifyIdPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || `Failed to record ${actionType}`);
-
       setActionMessage(data.message || `Successfully marked ${actionType}`);
       await verifyCard();
     } catch (err) {
@@ -78,15 +68,12 @@ export default function VerifyIdPage() {
       setActionLoading(false);
     }
   };
-
   const visibleStatus = hasValidParams ? status : "invalid";
   const visibleError = hasValidParams
     ? error
     : "The verification link is incomplete or invalid.";
-
   const isCheckedIn = participant?.AttendanceStatus === "checked_in";
   const isCheckedOut = participant?.AttendanceStatus === "checked_out";
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-100 dark:bg-black px-4 py-10 transition-colors">
       <section className="w-full max-w-lg overflow-hidden rounded-3xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl">
@@ -102,7 +89,6 @@ export default function VerifyIdPage() {
             Verified participant credential and live event check-in tracking.
           </p>
         </div>
-
         <div className="p-8 space-y-6">
           {visibleStatus === "loading" ? (
             <div className="flex items-center gap-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 p-5 text-slate-600 dark:text-zinc-300">
@@ -121,7 +107,6 @@ export default function VerifyIdPage() {
                   </p>
                 </div>
               </div>
-
               {/* Attendance Status Box */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700/80 space-y-3">
                 <div className="flex items-center justify-between">
@@ -144,7 +129,6 @@ export default function VerifyIdPage() {
                       : "Not Checked In"}
                   </span>
                 </div>
-
                 {participant?.CheckInTime && (
                   <div className="flex items-center justify-between text-xs text-slate-600 dark:text-zinc-400">
                     <span className="flex items-center gap-1.5">
@@ -156,7 +140,6 @@ export default function VerifyIdPage() {
                     </strong>
                   </div>
                 )}
-
                 {participant?.CheckOutTime && (
                   <div className="flex items-center justify-between text-xs text-slate-600 dark:text-zinc-400">
                     <span className="flex items-center gap-1.5">
@@ -168,13 +151,11 @@ export default function VerifyIdPage() {
                     </strong>
                   </div>
                 )}
-
                 {actionMessage && (
                   <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
                     {actionMessage}
                   </div>
                 )}
-
                 {/* Gate Action Buttons */}
                 <div className="pt-2 flex items-center gap-2">
                   {!isCheckedIn ? (
@@ -208,7 +189,6 @@ export default function VerifyIdPage() {
                   )}
                 </div>
               </div>
-
               {/* Participant Details List */}
               <dl className="divide-y divide-slate-100 dark:divide-zinc-800 text-xs sm:text-sm">
                 <Detail label="Participant" value={participant?.ParticipantName} />
@@ -240,7 +220,6 @@ export default function VerifyIdPage() {
               )}
             </div>
           )}
-
           <p className="text-center text-xs text-slate-400 dark:text-zinc-500">
             Verify that the pass number matches the participant’s physical ID badge.
           </p>
@@ -249,7 +228,6 @@ export default function VerifyIdPage() {
     </main>
   );
 }
-
 function Detail({ label, value }) {
   return (
     <div className="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between sm:gap-4">
@@ -260,7 +238,6 @@ function Detail({ label, value }) {
     </div>
   );
 }
-
 function formatDate(value) {
   if (!value) return "";
   const date = new Date(value);

@@ -13,21 +13,17 @@ import {
   User,
   HelpCircle,
   Bot,
-
 } from 'lucide-react';
 import useTheme from '../../Hooks/useTheme';
 import ScrollToTopButton from '../ui/ScrollToTopButton';
-
 function ByteChatbot() {
   const navigate = useNavigate();
   const { theme } = useTheme();
-
   const [isOpen, setIsOpen] = useState(false);
   const [showHintBubble, setShowHintBubble] = useState(true);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
-
   const initialGreeting = {
     id: 1,
     sender: 'byte',
@@ -40,93 +36,77 @@ function ByteChatbot() {
       'Venue & location'
     ]
   };
-
   const [messages, setMessages] = useState([initialGreeting]);
-
   useEffect(() => {
     if (isOpen) {
       setShowHintBubble(false);
       scrollToBottom();
     }
   }, [isOpen, messages]);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
   const generateByteReply = (userInput) => {
     const text = userInput.toLowerCase().trim();
-
     if (text.includes('hi') || text.includes('hello') || text.includes('hey') || text.includes('namaste')) {
       return {
         text: "Beep boop! Hello there! (◕‿◕) I'm Byte, your campus event companion. How can I help you build and compete today?",
         action: null
       };
     }
-
     if (text.includes('event') || text.includes('hackathon') || text.includes('compet') || text.includes('challenge')) {
       return {
         text: "We host competitive coding challenges, innovation competitions, and technical events! You can filter by Virtual or On-Campus tracks.",
         action: { label: 'Explore Events', path: '/events' }
       };
     }
-
     if (text.includes('register') || text.includes('participat') || text.includes('join') || text.includes('apply') || text.includes('sign up')) {
       return {
         text: "To participate in an event:\n1. Log into your Student Account.\n2. Navigate to Explore Events and select your challenge.\n3. Form or join a team with your college peers!",
         action: { label: 'Go to Student Login', path: '/user/login' }
       };
     }
-
     if (text.includes('team') || text.includes('size') || text.includes('member') || text.includes('leader')) {
       return {
         text: "Team rules depend on the specific event. Most events support 2 to 4 members. Team leaders generate an invite code that teammates use to join!",
         action: { label: 'Check Events Schedule', path: '/events' }
       };
     }
-
     if (text.includes('venue') || text.includes('location') || text.includes('where') || text.includes('campus') || text.includes('address')) {
       return {
         text: "Physical tracks take place at the Main Campus Auditorium and Department Innovation Labs. Virtual tracks happen online via GitHub & Discord!",
         action: { label: 'Browse Events', path: '/events' }
       };
     }
-
     if (text.includes('prize') || text.includes('cash') || text.includes('reward') || text.includes('winner')) {
       return {
         text: "Top teams win cash prize pools, official winner trophies, and recognized merit certificates! Check individual event pages for prize breakdowns.",
         action: { label: 'View Events & Prizes', path: '/events' }
       };
     }
-
     if (text.includes('who are you') || text.includes('byte') || text.includes('robot')) {
       return {
         text: "I'm Byte! 🤖 The official mascot and AI navigator of AYOJAN. I keep an eye on schedules, guide students, and make sure nobody gets lost at the venue!",
         action: null
       };
     }
-
     return {
       text: "Beep! I'm still learning every detail of the campus, but I can help you find events, understand team formation, or direct you to student login.",
       action: { label: 'Explore Active Events', path: '/events' }
     };
   };
-
   const handleSendMessage = (textToSend = null) => {
     const query = (textToSend || inputMessage).trim();
     if (!query) return;
-
     const userMsg = {
       id: Date.now(),
       sender: 'user',
       text: query,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
-
     setMessages((prev) => [...prev, userMsg]);
     setInputMessage('');
     setIsTyping(true);
-
     setTimeout(() => {
       const reply = generateByteReply(query);
       const botMsg = {
@@ -140,21 +120,17 @@ function ByteChatbot() {
       setIsTyping(false);
     }, 700);
   };
-
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
-
   const handleResetChat = () => {
     setMessages([initialGreeting]);
   };
-
   return (
     <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end pointer-events-auto">
-
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -194,7 +170,6 @@ function ByteChatbot() {
                   </p>
                 </div>
               </div>
-
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleResetChat}
@@ -211,7 +186,6 @@ function ByteChatbot() {
                 </button>
               </div>
             </div>
-
             <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs">
               {messages.map((msg) => (
                 <div
@@ -226,7 +200,6 @@ function ByteChatbot() {
                     }`}
                   >
                     {msg.text}
-
                     {msg.action && (
                       <div className="pt-2 mt-2 border-t border-slate-200/60 dark:border-zinc-800">
                         <button
@@ -242,11 +215,9 @@ function ByteChatbot() {
                       </div>
                     )}
                   </div>
-
                   <span className="text-[10px] text-slate-400 dark:text-zinc-500 mt-1 px-1">
                     {msg.timestamp}
                   </span>
-
                   {msg.suggestions && msg.suggestions.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-2 mt-1">
                       {msg.suggestions.map((sug, idx) => (
@@ -262,7 +233,6 @@ function ByteChatbot() {
                   )}
                 </div>
               ))}
-
               {isTyping && (
                 <div className="flex items-center gap-1.5 p-2 rounded-xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 w-16 text-emerald-600 dark:text-emerald-400">
                   <motion.span
@@ -282,10 +252,8 @@ function ByteChatbot() {
                   />
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
-
             <div className="p-3 border-t border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black">
               <div className="relative flex items-center">
                 <input
@@ -308,10 +276,8 @@ function ByteChatbot() {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Floating Scroll to Top button - exact same w-12 h-12 size and styling harmony */}
       {!isOpen && <ScrollToTopButton />}
-
       <div className="group relative flex items-center">
         {/* Sleek Tooltip on Hover (Desktop) */}
         {!isOpen && (
@@ -319,7 +285,6 @@ function ByteChatbot() {
             <span>Ask Byte AI</span>
           </span>
         )}
-
         {/* Modern AI Floating Trigger - exact w-12 h-12 */}
         <motion.button
           onClick={() => setIsOpen(!isOpen)}
@@ -354,7 +319,6 @@ function ByteChatbot() {
               </motion.div>
             )}
           </AnimatePresence>
-
           {/* Active online indicator dot */}
           {!isOpen && (
             <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
@@ -364,9 +328,7 @@ function ByteChatbot() {
           )}
         </motion.button>
       </div>
-
     </div>
   );
 }
-
 export default ByteChatbot;

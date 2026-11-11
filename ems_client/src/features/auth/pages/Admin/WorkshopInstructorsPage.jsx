@@ -21,7 +21,6 @@ import {
   BookOpen,
   Briefcase
 } from 'lucide-react';
-
 const WORKSHOP_ROLES = [
   'Lead Instructor',
   'Co-Instructor',
@@ -33,7 +32,6 @@ const WORKSHOP_ROLES = [
   'Student Volunteer',
   'Custom Role'
 ];
-
 export default function WorkshopInstructorsPage() {
   const toast = useToast();
   const admin = useMemo(() => {
@@ -43,19 +41,15 @@ export default function WorkshopInstructorsPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
-
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-
   const [formData, setFormData] = useState({
     name: '',
     role: 'Lead Instructor',
@@ -66,7 +60,6 @@ export default function WorkshopInstructorsPage() {
     phone: '',
     photo: ''
   });
-
   const fetchInstructors = async () => {
     if (!eventId) return;
     try {
@@ -82,11 +75,9 @@ export default function WorkshopInstructorsPage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchInstructors();
   }, [eventId]);
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'role') {
@@ -101,7 +92,6 @@ export default function WorkshopInstructorsPage() {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
-
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -116,7 +106,6 @@ export default function WorkshopInstructorsPage() {
       reader.readAsDataURL(file);
     }
   };
-
   const openAddModal = () => {
     setEditingId(null);
     setFormData({
@@ -131,7 +120,6 @@ export default function WorkshopInstructorsPage() {
     });
     setIsModalOpen(true);
   };
-
   const openEditModal = (member) => {
     setEditingId(member.Id);
     const isPreset = WORKSHOP_ROLES.slice(0, -1).includes(member.Role);
@@ -147,7 +135,6 @@ export default function WorkshopInstructorsPage() {
     });
     setIsModalOpen(true);
   };
-
   const handleDelete = async (id) => {
     if (!window.confirm('Remove this instructor/team member from the workshop?')) return;
     try {
@@ -160,18 +147,15 @@ export default function WorkshopInstructorsPage() {
       toast.error(err.message || 'Could not delete');
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       toast.error('Please enter the instructor or staff name');
       return;
     }
-
     const finalRole = formData.isCustomRole
       ? (formData.customRole?.trim() || 'Instructor')
       : formData.role;
-
     const payload = {
       EventId: eventId,
       Role: finalRole,
@@ -182,7 +166,6 @@ export default function WorkshopInstructorsPage() {
       Type: finalRole.toLowerCase().includes('volunteer') || finalRole.toLowerCase().includes('assistant') ? 'student' : 'faculty',
       Photo: formData.photo || null
     };
-
     try {
       setSubmitting(true);
       if (editingId) {
@@ -211,7 +194,6 @@ export default function WorkshopInstructorsPage() {
       setSubmitting(false);
     }
   };
-
   // Filtered list
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
@@ -221,18 +203,15 @@ export default function WorkshopInstructorsPage() {
         (roleFilter === 'instructors' && (roleLower.includes('instructor') || roleLower.includes('speaker') || roleLower.includes('trainer'))) ||
         (roleFilter === 'assistants' && (roleLower.includes('assistant') || roleLower.includes('ta') || roleLower.includes('facilitator'))) ||
         (roleFilter === 'coordinators' && (roleLower.includes('coordinator') || roleLower.includes('admin') || roleLower.includes('support') || roleLower.includes('volunteer')));
-
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         (m.Name || '').toLowerCase().includes(q) ||
         (m.Role || '').toLowerCase().includes(q) ||
         (m.Department || '').toLowerCase().includes(q) ||
         (m.Email || '').toLowerCase().includes(q);
-
       return matchesFilter && matchesSearch;
     });
   }, [members, roleFilter, searchQuery]);
-
   // Stats
   const stats = useMemo(() => {
     const total = members.length;
@@ -247,7 +226,6 @@ export default function WorkshopInstructorsPage() {
     const coordinators = total - trainers - assistants;
     return { total, trainers, assistants, coordinators: Math.max(0, coordinators) };
   }, [members]);
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black p-4 sm:p-6 md:p-8 space-y-6">
       {/* Header */}
@@ -264,7 +242,6 @@ export default function WorkshopInstructorsPage() {
             Add lead trainers, industry experts, lab assistants, and coordinators delivering this workshop.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
           <button
             onClick={fetchInstructors}
@@ -282,7 +259,6 @@ export default function WorkshopInstructorsPage() {
           </button>
         </div>
       </div>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-sm">
@@ -302,7 +278,6 @@ export default function WorkshopInstructorsPage() {
           <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">{stats.coordinators}</p>
         </div>
       </div>
-
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1">
@@ -325,7 +300,6 @@ export default function WorkshopInstructorsPage() {
             </button>
           ))}
         </div>
-
         <div className="relative w-full sm:w-72">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -337,7 +311,6 @@ export default function WorkshopInstructorsPage() {
           />
         </div>
       </div>
-
       {/* Instructors Grid */}
       {loading ? (
         <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-16 text-center flex flex-col items-center justify-center">
@@ -391,7 +364,6 @@ export default function WorkshopInstructorsPage() {
                       </span>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
                     <button
                       onClick={() => openEditModal(member)}
@@ -409,7 +381,6 @@ export default function WorkshopInstructorsPage() {
                     </button>
                   </div>
                 </div>
-
                 <div className="space-y-2 text-xs border-t border-slate-100 dark:border-zinc-800/80 pt-3">
                   {member.Department && (
                     <div className="flex items-center gap-2 text-slate-600 dark:text-zinc-300">
@@ -417,7 +388,6 @@ export default function WorkshopInstructorsPage() {
                       <span className="truncate">{member.Department}</span>
                     </div>
                   )}
-
                   {member.Email && (
                     <div className="flex items-center gap-2 text-slate-600 dark:text-zinc-300">
                       <Mail className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -426,7 +396,6 @@ export default function WorkshopInstructorsPage() {
                       </a>
                     </div>
                   )}
-
                   {member.Phone && (
                     <div className="flex items-center gap-2 text-slate-600 dark:text-zinc-300">
                       <Phone className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -441,7 +410,6 @@ export default function WorkshopInstructorsPage() {
           ))}
         </div>
       )}
-
       {/* Add / Edit Modal */}
       <AnimatePresence>
         {isModalOpen && (
@@ -473,7 +441,6 @@ export default function WorkshopInstructorsPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <form onSubmit={handleSubmit} className="mt-5 space-y-4">
                 {/* Photo Upload */}
                 <div className="flex items-center gap-4">
@@ -512,7 +479,6 @@ export default function WorkshopInstructorsPage() {
                     )}
                   </div>
                 </div>
-
                 {/* Name */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
@@ -528,7 +494,6 @@ export default function WorkshopInstructorsPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 {/* Role */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
@@ -547,7 +512,6 @@ export default function WorkshopInstructorsPage() {
                     ))}
                   </select>
                 </div>
-
                 {/* Custom Role Input */}
                 {formData.isCustomRole && (
                   <div>
@@ -565,7 +529,6 @@ export default function WorkshopInstructorsPage() {
                     />
                   </div>
                 )}
-
                 {/* Organization / Company / University */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
@@ -580,7 +543,6 @@ export default function WorkshopInstructorsPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 {/* Email and Phone */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -596,7 +558,6 @@ export default function WorkshopInstructorsPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500"
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1">
                       Phone Number
@@ -611,7 +572,6 @@ export default function WorkshopInstructorsPage() {
                     />
                   </div>
                 </div>
-
                 <div className="pt-3 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-zinc-800">
                   <button
                     type="button"

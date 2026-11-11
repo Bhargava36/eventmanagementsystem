@@ -1,5 +1,4 @@
 const db = require("../../config/db");
-
 // Block Services
 const createBlock = async ({ EventId = null, BlockName, Gender, Description = "" }) => {
     const [result] = await db.promise().query(
@@ -14,7 +13,6 @@ const createBlock = async ({ EventId = null, BlockName, Gender, Description = ""
         Description: Description ? Description.trim() : null
     };
 };
-
 const getAllBlocks = async (eventId = null) => {
     let query = `SELECT
             b.Id,
@@ -30,18 +28,14 @@ const getAllBlocks = async (eventId = null) => {
         FROM accommodation_blocks b
         LEFT JOIN Accommodation r ON r.BlockId = b.Id`;
     const params = [];
-
     if (eventId) {
         query += ` WHERE b.EventId = ?`;
         params.push(Number(eventId));
     }
-
     query += ` GROUP BY b.Id ORDER BY b.Gender ASC, b.BlockName ASC`;
-
     const [rows] = await db.promise().query(query, params);
     return rows;
 };
-
 const getBlockById = async (id) => {
     const [rows] = await db.promise().query(
         `SELECT
@@ -63,7 +57,6 @@ const getBlockById = async (id) => {
     );
     return rows[0] || null;
 };
-
 const updateBlock = async (id, { BlockName, Gender, Description = "" }) => {
     await db.promise().query(
         `UPDATE accommodation_blocks SET BlockName = ?, Gender = ?, Description = ? WHERE Id = ?`,
@@ -76,7 +69,6 @@ const updateBlock = async (id, { BlockName, Gender, Description = "" }) => {
     );
     return getBlockById(id);
 };
-
 const deleteBlock = async (id) => {
     const [allocations] = await db.promise().query(
         `SELECT a.Id FROM accommodation_allocations a
@@ -94,13 +86,11 @@ const deleteBlock = async (id) => {
     const [result] = await db.promise().query(`DELETE FROM accommodation_blocks WHERE Id = ?`, [id]);
     return result.affectedRows > 0;
 };
-
 // Room Assignments
 const getRoomAssignments = (roomIds, callback) => {
     if (roomIds.length === 0) {
         return callback(null, []);
     }
-
     const placeholders = roomIds.map(() => "?").join(", ");
     db.query(
         `SELECT
@@ -125,11 +115,9 @@ const getRoomAssignments = (roomIds, callback) => {
         callback
     );
 };
-
 const createRoom = async (roomData) => {
     let { EventId = null, BlockId = null, room_num, Type, Gender, Capacity, Occupied = 0, UserId = null, Status = "Available" } = roomData;
     let roomGender = Gender;
-
     if (BlockId) {
         const [blockRows] = await db.promise().query(`SELECT EventId, Gender FROM accommodation_blocks WHERE Id = ?`, [BlockId]);
         if (blockRows[0]) {
@@ -139,7 +127,6 @@ const createRoom = async (roomData) => {
             }
         }
     }
-
     const query = `INSERT INTO Accommodation (EventId, BlockId, room_num, Type, Gender, Capacity, Occupied, UserId, Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const [result] = await db.promise().query(query, [EventId ? Number(EventId) : null, BlockId, room_num.trim(), Type, roomGender, Capacity, Occupied, UserId, Status]);
     return {
@@ -155,11 +142,9 @@ const createRoom = async (roomData) => {
         Status
     };
 };
-
 const getAllRooms = async (eventIdOrCallback, maybeCallback) => {
     let eventId = null;
     let callback = null;
-
     if (typeof eventIdOrCallback === "function") {
         callback = eventIdOrCallback;
     } else {
@@ -168,7 +153,6 @@ const getAllRooms = async (eventIdOrCallback, maybeCallback) => {
             callback = maybeCallback;
         }
     }
-
     try {
         let roomsQuery = `SELECT
                     r.Id,
@@ -193,7 +177,6 @@ const getAllRooms = async (eventIdOrCallback, maybeCallback) => {
             roomsParams.push(eventId, eventId);
         }
         roomsQuery += ` ORDER BY r.Gender ASC, r.room_num ASC`;
-
         let assignmentsQuery = `SELECT
                     allocation.Id AS AllocationId,
                     allocation.RoomId,
@@ -216,27 +199,22 @@ const getAllRooms = async (eventIdOrCallback, maybeCallback) => {
             assignmentsParams.push(eventId);
         }
         assignmentsQuery += ` ORDER BY allocation.CreatedAt DESC, user.UserName ASC`;
-
         const [roomsPromise, assignmentsPromise] = await Promise.all([
             db.promise().query(roomsQuery, roomsParams),
             db.promise().query(assignmentsQuery, assignmentsParams)
         ]);
-
         const rooms = roomsPromise[0] || [];
         const assignments = assignmentsPromise[0] || [];
-
         const assignmentsByRoom = new Map();
         assignments.forEach((assignment) => {
             const roomAssignments = assignmentsByRoom.get(assignment.RoomId) || [];
             roomAssignments.push(assignment);
             assignmentsByRoom.set(assignment.RoomId, roomAssignments);
         });
-
         const result = rooms.map((room) => ({
             ...room,
             participants: assignmentsByRoom.get(room.Id) || []
         }));
-
         if (typeof callback === "function") {
             return callback(null, result);
         }
@@ -248,7 +226,6 @@ const getAllRooms = async (eventIdOrCallback, maybeCallback) => {
         throw err;
     }
 };
-
 const getRoomById = (id, callback) => {
     const query = `
         SELECT
@@ -276,7 +253,6 @@ const getRoomById = (id, callback) => {
         if (!result[0]) {
             return callback(null, null);
         }
-
         getRoomAssignments([result[0].Id], (assignmentError, assignments) => {
             if (assignmentError) {
                 return callback(assignmentError, null);
@@ -288,15 +264,12 @@ const getRoomById = (id, callback) => {
         });
     });
 };
-
 const allocateStudents = async (roomId, eventId, studentIds) => {
     const connection = await db.promise().getConnection();
     let transactionStarted = false;
-
     try {
         await connection.beginTransaction();
         transactionStarted = true;
-
         const [rooms] = await connection.query(
             `SELECT
                 r.Id,
@@ -320,13 +293,11 @@ const allocateStudents = async (roomId, eventId, studentIds) => {
             error.status = 404;
             throw error;
         }
-
         if (room.EventId && Number(room.EventId) !== Number(eventId)) {
             const error = new Error("This accommodation room does not belong to the selected event.");
             error.status = 400;
             throw error;
         }
-
         const [events] = await connection.query(
             "SELECT AccommodationEnabled FROM events WHERE Id = ?",
             [eventId]
@@ -341,13 +312,11 @@ const allocateStudents = async (roomId, eventId, studentIds) => {
             error.status = 403;
             throw error;
         }
-
         if (room.Status === "Maintenance") {
             const error = new Error("Students cannot be allocated to a room under maintenance.");
             error.status = 409;
             throw error;
         }
-
         const placeholders = studentIds.map(() => "?").join(", ");
         const [participants] = await connection.query(
             `SELECT
@@ -371,25 +340,21 @@ const allocateStudents = async (roomId, eventId, studentIds) => {
                 AND member.UserId IN (${placeholders})`,
             [eventId, ...studentIds]
         );
-
         if (participants.length !== studentIds.length) {
             const error = new Error("Every selected participant must belong to an approved physical team that requested accommodation.");
             error.status = 400;
             throw error;
         }
-
         // Strict Gender Enforcement:
         // Male participants MUST ONLY be allocated to Boys block/room.
         // Female participants MUST ONLY be allocated to Girls block/room.
         const effectiveGender = String(room.BlockGender || room.Gender).toLowerCase().trim();
         const isBoysRoom = ["boys", "boy", "male", "m"].includes(effectiveGender);
         const isGirlsRoom = ["girls", "girl", "female", "f"].includes(effectiveGender);
-
         for (const p of participants) {
             const pGender = String(p.Gender || "").toLowerCase().trim();
             const isParticipantMale = ["male", "boy", "boys", "m"].includes(pGender);
             const isParticipantFemale = ["female", "girl", "girls", "f"].includes(pGender);
-
             if (isBoysRoom && !isParticipantMale) {
                 const error = new Error(`Cannot allocate female student (${p.UserName}) to a Boys Block room (${room.BlockName || 'Boys Block'}). Male students must be assigned to Boys Block and Female students to Girls Block.`);
                 error.status = 400;
@@ -401,7 +366,6 @@ const allocateStudents = async (roomId, eventId, studentIds) => {
                 throw error;
             }
         }
-
         const [existingAllocations] = await connection.query(
             `SELECT UserId
             FROM accommodation_allocations
@@ -413,14 +377,12 @@ const allocateStudents = async (roomId, eventId, studentIds) => {
             error.status = 409;
             throw error;
         }
-
         const occupied = Number(room.Occupied) || 0;
         if (occupied + participants.length > Number(room.Capacity)) {
             const error = new Error("The selected participants exceed the room's remaining capacity.");
             error.status = 409;
             throw error;
         }
-
         const allocationValues = participants.map((participant) => [
             eventId,
             roomId,
@@ -433,14 +395,12 @@ const allocateStudents = async (roomId, eventId, studentIds) => {
             VALUES ?`,
             [allocationValues]
         );
-
         const nextOccupied = occupied + participants.length;
         const nextStatus = nextOccupied >= Number(room.Capacity) ? "Full" : "Occupied";
         await connection.query(
             "UPDATE Accommodation SET Occupied = ?, Status = ? WHERE Id = ?",
             [nextOccupied, nextStatus, roomId]
         );
-
         await connection.commit();
         transactionStarted = false;
         return { allocated: participants.length };
@@ -458,14 +418,12 @@ const allocateStudents = async (roomId, eventId, studentIds) => {
         connection.release();
     }
 };
-
 const deallocateStudent = async (roomId, userId) => {
     const connection = await db.promise().getConnection();
     let transactionStarted = false;
     try {
         await connection.beginTransaction();
         transactionStarted = true;
-
         const [allocations] = await connection.query(
             `SELECT Id FROM accommodation_allocations WHERE RoomId = ? AND UserId = ?`,
             [roomId, userId]
@@ -475,12 +433,10 @@ const deallocateStudent = async (roomId, userId) => {
             error.status = 404;
             throw error;
         }
-
         await connection.query(
             `DELETE FROM accommodation_allocations WHERE RoomId = ? AND UserId = ?`,
             [roomId, userId]
         );
-
         const [roomRows] = await connection.query(
             `SELECT Capacity, Occupied FROM Accommodation WHERE Id = ? FOR UPDATE`,
             [roomId]
@@ -493,7 +449,6 @@ const deallocateStudent = async (roomId, userId) => {
                 [newOccupied, newStatus, roomId]
             );
         }
-
         await connection.commit();
         transactionStarted = false;
         return { success: true };
@@ -506,11 +461,9 @@ const deallocateStudent = async (roomId, userId) => {
         connection.release();
     }
 };
-
 const updateRoom = async (id, roomData) => {
     let { EventId = null, BlockId = null, room_num, Type, Gender, Capacity, Occupied = 0, UserId = null, Status = "Available" } = roomData;
     let roomGender = Gender;
-
     if (BlockId) {
         const [blockRows] = await db.promise().query(`SELECT EventId, Gender FROM accommodation_blocks WHERE Id = ?`, [BlockId]);
         if (blockRows[0]) {
@@ -520,14 +473,12 @@ const updateRoom = async (id, roomData) => {
             }
         }
     }
-
     const query = EventId
         ? `UPDATE Accommodation SET EventId = ?, BlockId = ?, room_num = ?, Type = ?, Gender = ?, Capacity = ?, Occupied = ?, UserId = ?, Status = ? WHERE Id = ?`
         : `UPDATE Accommodation SET BlockId = ?, room_num = ?, Type = ?, Gender = ?, Capacity = ?, Occupied = ?, UserId = ?, Status = ? WHERE Id = ?`;
     const params = EventId
         ? [Number(EventId), BlockId, room_num.trim(), Type, roomGender, Capacity, Occupied, UserId, Status, id]
         : [BlockId, room_num.trim(), Type, roomGender, Capacity, Occupied, UserId, Status, id];
-
     const [result] = await db.promise().query(query, params);
     if (result.affectedRows === 0) {
         return null;
@@ -539,7 +490,6 @@ const updateRoom = async (id, roomData) => {
         });
     });
 };
-
 const deleteRoom = (id, callback) => {
     const query = `DELETE FROM Accommodation WHERE Id = ?`;
     db.query(query, [id], (err, result) => {
@@ -549,7 +499,6 @@ const deleteRoom = (id, callback) => {
         callback(null, result.affectedRows > 0);
     });
 };
-
 module.exports = {
     createBlock,
     getAllBlocks,

@@ -1,11 +1,7 @@
 const db = require('../../config/db');
-
-/**
- * Format payload based on platform
- */
+// Format payload based on platform
 const formatPayload = (platform, eventName, payload) => {
     const timestamp = new Date().toISOString();
-
     if (platform === 'DISCORD') {
         return {
             username: 'AYOJAN Event Engine',
@@ -28,7 +24,6 @@ const formatPayload = (platform, eventName, payload) => {
             ]
         };
     }
-
     if (platform === 'SLACK') {
         return {
             text: `*AYOJAN Alert*: ${eventName}`,
@@ -51,7 +46,6 @@ const formatPayload = (platform, eventName, payload) => {
             ]
         };
     }
-
     // Default: Generic Standard Webhook Payload
     return {
         event: eventName,
@@ -59,29 +53,21 @@ const formatPayload = (platform, eventName, payload) => {
         data: payload
     };
 };
-
-/**
- * Trigger webhooks for a specific event
- */
+// Trigger webhooks for a specific event
 const triggerWebhooks = async (eventName, payload, eventId = null) => {
     return new Promise((resolve) => {
         db.query('SELECT * FROM webhook_endpoints WHERE IsActive = 1', async (err, endpoints) => {
             if (err || !endpoints || !endpoints.length) return resolve([]);
-
             const matching = endpoints.filter((ep) => {
                 if (ep.EventId && eventId && Number(ep.EventId) !== Number(eventId)) return false;
                 const eventsList = ep.Events ? ep.Events.split(',').map(s => s.trim().toUpperCase()) : [];
                 return eventsList.includes(eventName.toUpperCase()) || eventsList.includes('*') || eventsList.includes('ALL');
             });
-
             if (!matching.length) return resolve([]);
-
             const results = [];
-
             for (const ep of matching) {
                 const startTime = Date.now();
                 const formattedBody = formatPayload(ep.Platform, eventName, payload);
-
                 // Mock URL handling
                 if (ep.TargetUrl.includes('/mock/') || ep.TargetUrl.includes('example.com') || ep.TargetUrl.includes('localhost')) {
                     const duration = Math.floor(Math.random() * 20) + 35;
@@ -100,17 +86,14 @@ const triggerWebhooks = async (eventName, payload, eventId = null) => {
                         duration,
                         'SUCCESS'
                     ]);
-
                     db.query(`
-                        UPDATE webhook_endpoints 
-                        SET LastTriggeredAt = CURRENT_TIMESTAMP, LastStatus = 200 
+                        UPDATE webhook_endpoints
+                        SET LastTriggeredAt = CURRENT_TIMESTAMP, LastStatus = 200
                         WHERE Id = ?
                     `, [ep.Id]);
-
                     results.push({ webhookId: ep.Id, status: 200, duration, success: true });
                     continue;
                 }
-
                 try {
                     const response = await fetch(ep.TargetUrl, {
                         method: 'POST',
@@ -122,11 +105,9 @@ const triggerWebhooks = async (eventName, payload, eventId = null) => {
                         body: JSON.stringify(formattedBody),
                         signal: AbortSignal.timeout(6000)
                     });
-
                     const duration = Date.now() - startTime;
                     const responseText = await response.text().catch(() => '');
                     const isSuccess = response.status >= 200 && response.status < 300;
-
                     // Log webhook delivery
                     db.query(`
                         INSERT INTO webhook_logs (
@@ -143,14 +124,12 @@ const triggerWebhooks = async (eventName, payload, eventId = null) => {
                         duration,
                         isSuccess ? 'SUCCESS' : 'FAILED'
                     ]);
-
                     // Update last status
                     db.query(`
-                        UPDATE webhook_endpoints 
-                        SET LastTriggeredAt = CURRENT_TIMESTAMP, LastStatus = ? 
+                        UPDATE webhook_endpoints
+                        SET LastTriggeredAt = CURRENT_TIMESTAMP, LastStatus = ?
                         WHERE Id = ?
                     `, [response.status, ep.Id]);
-
                     results.push({ webhookId: ep.Id, status: response.status, duration, success: isSuccess });
                 } catch (sendErr) {
                     const duration = Date.now() - startTime;
@@ -169,31 +148,24 @@ const triggerWebhooks = async (eventName, payload, eventId = null) => {
                         duration,
                         'FAILED'
                     ]);
-
                     db.query(`
-                        UPDATE webhook_endpoints 
-                        SET LastTriggeredAt = CURRENT_TIMESTAMP, LastStatus = 504 
+                        UPDATE webhook_endpoints
+                        SET LastTriggeredAt = CURRENT_TIMESTAMP, LastStatus = 504
                         WHERE Id = ?
                     `, [ep.Id]);
-
                     results.push({ webhookId: ep.Id, status: 504, error: sendErr.message, success: false });
                 }
             }
-
             resolve(results);
         });
     });
 };
-
-/**
- * Test a webhook endpoint with a simulated ping
- */
+// Test a webhook endpoint with a simulated ping
 const testWebhook = (id) => {
     return new Promise((resolve, reject) => {
         db.query('SELECT * FROM webhook_endpoints WHERE Id = ?', [id], async (err, rows) => {
             if (err || !rows.length) return reject(new Error('Webhook endpoint not found'));
             const ep = rows[0];
-
             const mockPayload = {
                 message: 'This is a test notification verifying connectivity with AYOJAN.',
                 details: {
@@ -202,16 +174,13 @@ const testWebhook = (id) => {
                     testId: Math.random().toString(36).substring(7).toUpperCase()
                 }
             };
-
             const startTime = Date.now();
             const formatted = formatPayload(ep.Platform, 'TEST_PING', mockPayload);
-
             // Handle demo/mock endpoints gracefully without hitting Discord/Slack real auth
             const isMockUrl = ep.TargetUrl.includes('/mock/') || ep.TargetUrl.includes('example.com') || ep.TargetUrl.includes('localhost');
             if (isMockUrl) {
                 const duration = Math.floor(Math.random() * 20) + 35;
                 const simulatedStatus = 200;
-
                 db.query(`
                     INSERT INTO webhook_logs (
                         WebhookId, EventName, TargetUrl, Payload, ResponseStatusCode,
@@ -227,13 +196,11 @@ const testWebhook = (id) => {
                     duration,
                     'SUCCESS'
                 ]);
-
                 db.query(`
-                    UPDATE webhook_endpoints 
-                    SET LastTriggeredAt = CURRENT_TIMESTAMP, LastStatus = ? 
+                    UPDATE webhook_endpoints
+                    SET LastTriggeredAt = CURRENT_TIMESTAMP, LastStatus = ?
                     WHERE Id = ?
                 `, [simulatedStatus, ep.Id]);
-
                 return resolve({
                     success: true,
                     statusCode: simulatedStatus,
@@ -241,7 +208,6 @@ const testWebhook = (id) => {
                     response: 'Demo/Mock Webhook Ping Verified (HTTP 200 OK)'
                 });
             }
-
             try {
                 const response = await fetch(ep.TargetUrl, {
                     method: 'POST',
@@ -253,11 +219,9 @@ const testWebhook = (id) => {
                     body: JSON.stringify(formatted),
                     signal: AbortSignal.timeout(6000)
                 });
-
                 const duration = Date.now() - startTime;
                 const responseText = await response.text().catch(() => '');
                 const isSuccess = response.status >= 200 && response.status < 300;
-
                 db.query(`
                     INSERT INTO webhook_logs (
                         WebhookId, EventName, TargetUrl, Payload, ResponseStatusCode,
@@ -273,13 +237,11 @@ const testWebhook = (id) => {
                     duration,
                     isSuccess ? 'SUCCESS' : 'FAILED'
                 ]);
-
                 db.query(`
-                    UPDATE webhook_endpoints 
-                    SET LastTriggeredAt = CURRENT_TIMESTAMP, LastStatus = ? 
+                    UPDATE webhook_endpoints
+                    SET LastTriggeredAt = CURRENT_TIMESTAMP, LastStatus = ?
                     WHERE Id = ?
                 `, [response.status, ep.Id]);
-
                 resolve({
                     success: isSuccess,
                     statusCode: response.status,
@@ -303,7 +265,6 @@ const testWebhook = (id) => {
                     duration,
                     'FAILED'
                 ]);
-
                 resolve({
                     success: false,
                     statusCode: 504,
@@ -314,10 +275,7 @@ const testWebhook = (id) => {
         });
     });
 };
-
-/**
- * CRUD operations for webhooks
- */
+// CRUD operations for webhooks
 const getWebhooks = () => {
     return new Promise((resolve, reject) => {
         db.query('SELECT * FROM webhook_endpoints ORDER BY CreatedAt DESC', (err, rows) => {
@@ -326,7 +284,6 @@ const getWebhooks = () => {
         });
     });
 };
-
 const createWebhook = ({ name, targetUrl, platform = 'GENERIC', events = 'ALL', secretKey = null, eventId = null }) => {
     return new Promise((resolve, reject) => {
         const query = `
@@ -339,11 +296,10 @@ const createWebhook = ({ name, targetUrl, platform = 'GENERIC', events = 'ALL', 
         });
     });
 };
-
 const updateWebhook = (id, { name, targetUrl, platform, events, secretKey, isActive }) => {
     return new Promise((resolve, reject) => {
         const query = `
-            UPDATE webhook_endpoints 
+            UPDATE webhook_endpoints
             SET Name = COALESCE(?, Name),
                 TargetUrl = COALESCE(?, TargetUrl),
                 Platform = COALESCE(?, Platform),
@@ -358,7 +314,6 @@ const updateWebhook = (id, { name, targetUrl, platform, events, secretKey, isAct
         });
     });
 };
-
 const deleteWebhook = (id) => {
     return new Promise((resolve, reject) => {
         db.query('DELETE FROM webhook_logs WHERE WebhookId = ?', [id], () => {
@@ -369,7 +324,6 @@ const deleteWebhook = (id) => {
         });
     });
 };
-
 const getWebhookLogs = (webhookId = null, limit = 50) => {
     return new Promise((resolve, reject) => {
         let query = 'SELECT * FROM webhook_logs ';
@@ -380,21 +334,16 @@ const getWebhookLogs = (webhookId = null, limit = 50) => {
         }
         query += 'ORDER BY CreatedAt DESC LIMIT ?';
         params.push(Number(limit));
-
         db.query(query, params, (err, rows) => {
             if (err) return reject(err);
             resolve(rows || []);
         });
     });
 };
-
-/**
- * Seed initial sample webhook if empty
- */
+// Seed initial sample webhook if empty
 const seedInitialWebhooksIfEmpty = () => {
     db.query('SELECT COUNT(*) AS count FROM webhook_endpoints', (err, res) => {
         if (err || !res || res[0].count > 0) return;
-
         createWebhook({
             name: 'Discord Organizers Channel',
             targetUrl: 'https://discord.com/api/webhooks/mock/ayojan-organizers',
@@ -418,9 +367,7 @@ const seedInitialWebhooksIfEmpty = () => {
         });
     });
 };
-
 setTimeout(seedInitialWebhooksIfEmpty, 2500);
-
 module.exports = {
     triggerWebhooks,
     testWebhook,
@@ -430,4 +377,3 @@ module.exports = {
     deleteWebhook,
     getWebhookLogs
 };
-

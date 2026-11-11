@@ -1,12 +1,7 @@
 import React, { useMemo } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { Award } from 'lucide-react';
-
-/**
- * EventSponsorsSection
- * Displays sponsors cleanly showing just their official brand logos/images.
- * If website exists, clicking the logo navigates to their page.
- */
+// EventSponsorsSection Displays sponsors cleanly showing just their official brand logos/images.
 export default function EventSponsorsSection({
   sponsors = [],
   eventName = 'Event',
@@ -28,11 +23,9 @@ export default function EventSponsorsSection({
       })
       .filter((sp) => Boolean(sp.logo || sp.name));
   }, [sponsors]);
-
   if (normalizedSponsors.length === 0) {
     return null;
   }
-
   return (
     <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-5">
       {/* Header */}
@@ -67,7 +60,6 @@ export default function EventSponsorsSection({
           </div>
         </div>
       </div>
-
       {/* Sponsors Logos Only */}
       <div className="flex flex-wrap items-center gap-4 sm:gap-6">
         {normalizedSponsors.map((sp) => {
@@ -89,7 +81,6 @@ export default function EventSponsorsSection({
               )}
             </div>
           );
-
           if (sp.website) {
             return (
               <a
@@ -103,7 +94,6 @@ export default function EventSponsorsSection({
               </a>
             );
           }
-
           return <div key={sp.id}>{cardContent}</div>;
         })}
       </div>

@@ -29,10 +29,8 @@ import {
   Image as ImageIcon
 } from 'lucide-react';
 import { getEventTypeInfo } from '../../../lib/utils';
-
 export const resolveEventMode = (ev) => {
   const raw = String(ev?.HackathonMode || '').trim().toLowerCase();
-
   // 1. Explicit HackathonMode from DB takes highest priority
   if (
     raw === 'both' ||
@@ -43,71 +41,56 @@ export const resolveEventMode = (ev) => {
   ) {
     return 'both';
   }
-
   if (raw === 'hybrid') {
     return 'hybrid';
   }
-
   if (raw === 'virtual' || raw === 'online') {
     return 'virtual';
   }
-
   if (raw === 'physical' || raw === 'offline' || raw === 'in person' || raw === 'in-person' || raw === 'on campus' || raw === 'on-campus') {
     return 'physical';
   }
-
   // 2. Fallback heuristic only when HackathonMode is empty
   const loc = String(ev?.Location || '').trim().toLowerCase();
   const isVirtualLoc = loc.includes('virtual') || loc.includes('online') || loc.includes('zoom') || loc.includes('meet') || loc === 'remote';
   const hasRealPhysicalVenue = Boolean(loc && !isVirtualLoc);
   const hasVirtualDates = Boolean(ev?.VirtualStartDate || ev?.VirtualRegistrationStart);
   const hasPhysicalDates = Boolean(ev?.PhysicalStartDate || ev?.PhysicalRegistrationStart);
-
   if ((hasVirtualDates || isVirtualLoc) && (hasPhysicalDates || hasRealPhysicalVenue)) {
     return 'both';
   }
-
   if (hasVirtualDates || isVirtualLoc) {
     return 'virtual';
   }
-
   if (hasPhysicalDates || hasRealPhysicalVenue) {
     return 'physical';
   }
-
   return 'virtual';
 };
-
 function ExploreEvents() {
   const navigate = useNavigate();
   const { theme } = useTheme();
-
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [brokenImages, setBrokenImages] = useState({});
-
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMode, setSelectedMode] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [selectedType, setSelectedType] = useState('ALL');
   const [sortBy, setSortBy] = useState('date-asc');
-
   useEffect(() => {
     fetchEvents();
   }, []);
-
   const fetchEvents = async () => {
     try {
       setLoading(true);
       setFetchError(null);
       const res = await fetch(`${API_BASE_URL}/api/events`);
       const data = await res.json();
-
       if (!res.ok) {
         throw new Error(data.message || 'Failed to fetch events');
       }
-
       setEvents(data.events || []);
     } catch (err) {
       setFetchError(err.message || 'Unable to connect to events service');
@@ -115,7 +98,6 @@ function ExploreEvents() {
       setLoading(false);
     }
   };
-
   const handleActionClick = (e, event) => {
     e.stopPropagation();
     const rawUser = localStorage.getItem('user');
@@ -131,7 +113,6 @@ function ExploreEvents() {
     }
     navigate('/user/login', { state: { redirectTo: `/user/events/${event.Id}` } });
   };
-
   const eventTypes = useMemo(() => {
     const types = new Set();
     events.forEach((ev) => {
@@ -139,7 +120,6 @@ function ExploreEvents() {
     });
     return Array.from(types);
   }, [events]);
-
   const filteredEvents = useMemo(() => {
     return events
       .filter((ev) => {
@@ -150,7 +130,6 @@ function ExploreEvents() {
           (ev.Description && ev.Description.toLowerCase().includes(query)) ||
           (ev.Location && ev.Location.toLowerCase().includes(query)) ||
           (ev.EventType && ev.EventType.toLowerCase().includes(query));
-
         const mode = resolveEventMode(ev);
         const matchesMode =
           selectedMode === 'ALL' ||
@@ -158,18 +137,15 @@ function ExploreEvents() {
           (selectedMode === 'PHYSICAL' && (mode === 'physical' || mode === 'both')) ||
           (selectedMode === 'VIRTUAL_AND_PHYSICAL' && mode === 'both') ||
           (selectedMode === 'HYBRID' && mode === 'hybrid');
-
         const statusNormalized = (ev.EventStatus || '').toLowerCase();
         const matchesStatus =
           selectedStatus === 'ALL' ||
           (selectedStatus === 'UPCOMING' && statusNormalized === 'upcoming') ||
           (selectedStatus === 'ONGOING' && statusNormalized === 'ongoing') ||
           (selectedStatus === 'COMPLETED' && statusNormalized === 'completed');
-
         const matchesType =
           selectedType === 'ALL' ||
           ev.EventType?.toLowerCase() === selectedType.toLowerCase();
-
         return matchesSearch && matchesMode && matchesStatus && matchesType;
       })
       .sort((a, b) => {
@@ -188,7 +164,6 @@ function ExploreEvents() {
         return 0;
       });
   }, [events, searchTerm, selectedMode, selectedStatus, selectedType, sortBy]);
-
   const stats = useMemo(() => {
     const total = events.length;
     const virtual = events.filter((e) => {
@@ -202,10 +177,8 @@ function ExploreEvents() {
     const virtualAndPhysical = events.filter((e) => resolveEventMode(e) === 'both').length;
     const hybrid = events.filter((e) => resolveEventMode(e) === 'hybrid').length;
     const ongoing = events.filter((e) => (e.EventStatus || '').toLowerCase() === 'ongoing').length;
-
     return { total, virtual, physical, virtualAndPhysical, hybrid, ongoing };
   }, [events]);
-
   const formatDate = (dateString) => {
     if (!dateString) return 'TBA';
     try {
@@ -220,7 +193,6 @@ function ExploreEvents() {
       return dateString;
     }
   };
-
   const getEventPosterUrl = (posters) => {
     if (!posters) return null;
     let url = null;
@@ -243,7 +215,6 @@ function ExploreEvents() {
     }
     return url;
   };
-
   const clearAllFilters = () => {
     setSearchTerm('');
     setSelectedMode('ALL');
@@ -251,17 +222,14 @@ function ExploreEvents() {
     setSelectedType('ALL');
     setSortBy('date-asc');
   };
-
   const hasActiveFilters =
     searchTerm !== '' ||
     selectedMode !== 'ALL' ||
     selectedStatus !== 'ALL' ||
     selectedType !== 'ALL';
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white pt-28 sm:pt-32 pb-24 transition-colors duration-300">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-
         <motion.div
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -273,16 +241,13 @@ function ExploreEvents() {
             glowColor={theme === 'dark' ? 'bg-emerald-500/15' : 'bg-emerald-400/10'}
             className="absolute right-0 top-0 bottom-0 w-3/5 z-0"
           />
-
           <div className="relative z-10 max-w-2xl space-y-3">
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
               Explore Events
             </h1>
-
             <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 leading-relaxed font-normal">
               Discover technical events, coding challenges, and innovation competitions. Connect with teams and build solutions.
             </p>
-
             <div className="pt-2 flex flex-wrap items-center gap-4 sm:gap-5 text-xs text-slate-500 dark:text-zinc-400 font-mono">
               <div>
                 <span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.total}</span>
@@ -320,7 +285,6 @@ function ExploreEvents() {
             </div>
           </div>
         </motion.div>
-
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -346,7 +310,6 @@ function ExploreEvents() {
                 </button>
               )}
             </div>
-
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs font-medium text-slate-700 dark:text-zinc-300">
                 <SlidersHorizontal className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -362,7 +325,6 @@ function ExploreEvents() {
                   <option value="team-asc" className="bg-white dark:bg-zinc-950 text-slate-900 dark:text-white">Team Size</option>
                 </select>
               </div>
-
               {hasActiveFilters && (
                 <button
                   onClick={clearAllFilters}
@@ -372,7 +334,6 @@ function ExploreEvents() {
                   Clear
                 </button>
               )}
-
               <button
                 onClick={fetchEvents}
                 disabled={loading}
@@ -383,7 +344,6 @@ function ExploreEvents() {
               </button>
             </div>
           </div>
-
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-slate-500 dark:text-zinc-500 mr-1 flex items-center gap-1 font-medium">
               <Filter className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
@@ -408,9 +368,7 @@ function ExploreEvents() {
                 {m.label}
               </button>
             ))}
-
             <div className="h-3 w-px bg-slate-200 dark:bg-zinc-800 mx-1.5 hidden sm:block" />
-
             <span className="text-slate-500 dark:text-zinc-500 mr-1 flex items-center gap-1 font-medium">
               Status:
             </span>
@@ -432,7 +390,6 @@ function ExploreEvents() {
                 {s.label}
               </button>
             ))}
-
             {eventTypes.length > 0 && (
               <>
                 <div className="h-3 w-px bg-slate-200 dark:bg-zinc-800 mx-1.5 hidden md:block" />
@@ -466,7 +423,6 @@ function ExploreEvents() {
             )}
           </div>
         </motion.div>
-
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -509,12 +465,10 @@ function ExploreEvents() {
             {filteredEvents.map((event, idx) => {
               const posterUrl = getEventPosterUrl(event.Posters);
               const customBg = event.PrimaryColor || '#059669';
-
               const isOngoing = (event.EventStatus || '').toLowerCase() === 'ongoing';
               const isCompleted = (event.EventStatus || '').toLowerCase() === 'completed';
               const mode = resolveEventMode(event);
               const typeInfo = getEventTypeInfo(event.EventType);
-
               return (
                 <motion.div
                   key={event.Id}
@@ -550,19 +504,15 @@ function ExploreEvents() {
                         </span>
                       </div>
                     )}
-
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent transition-opacity duration-400 group-hover:opacity-0" />
                   </div>
-
                   <div className="absolute inset-x-0 bottom-0 p-5 z-10 transition-all duration-300 ease-out group-hover:opacity-0 group-hover:translate-y-4">
                     <div className="h-0.5 w-8 bg-emerald-400 mb-2" />
                     <h3 className="text-xl sm:text-2xl font-black text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] line-clamp-2">
                       {event.EventName}
                     </h3>
                   </div>
-
                   <div className="absolute inset-0 z-20 p-5 flex flex-col justify-between opacity-0 group-hover:opacity-100 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] bg-white/95 dark:bg-black/90 backdrop-blur-md">
-
                     <div className="flex items-center justify-between gap-2 transform -translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ease-out">
                       {(() => {
                         if (mode === 'both') {
@@ -596,7 +546,6 @@ function ExploreEvents() {
                           </div>
                         );
                       })()}
-
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300">
                         {isOngoing ? (
                           <span className="text-emerald-600 dark:text-emerald-400 font-bold">Live</span>
@@ -613,7 +562,6 @@ function ExploreEvents() {
                         )}
                       </div>
                     </div>
-
                     <div className="space-y-3 my-auto transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ease-out">
                       <div className="space-y-0.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
@@ -623,13 +571,11 @@ function ExploreEvents() {
                           {event.EventName}
                         </h3>
                       </div>
-
                       {event.Description && (
                         <p className="text-xs text-slate-600 dark:text-zinc-300 line-clamp-2 leading-relaxed">
                           {event.Description}
                         </p>
                       )}
-
                       <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-zinc-800">
                         <div className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-zinc-800/60">
                           <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 text-[11px]">
@@ -638,7 +584,6 @@ function ExploreEvents() {
                           </span>
                           <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[160px]">{formatDate(event.StartDate)}</span>
                         </div>
-
                         <div className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-zinc-800/60">
                           <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 text-[11px]">
                             <Users className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -648,7 +593,6 @@ function ExploreEvents() {
                             {typeInfo.isWebinar ? 'Solo Delegate (1 Seat)' : (event.TeamSize ? `${event.TeamSize} Members` : 'Flexible')}
                           </span>
                         </div>
-
                         {event.Location && (
                           <div className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-zinc-800/60">
                             <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 text-[11px]">
@@ -658,7 +602,6 @@ function ExploreEvents() {
                             <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[160px]">{event.Location}</span>
                           </div>
                         )}
-
                         {(mode === 'both') && (event.VirtualPrizeMoney || event.PhysicalPrizeMoney) ? (
                           <div className="flex flex-col gap-1 py-1 text-xs">
                             <div className="flex items-center justify-between text-[11px] font-bold text-amber-600 dark:text-amber-400">
@@ -698,7 +641,6 @@ function ExploreEvents() {
                         ) : null}
                       </div>
                     </div>
-
                     <div className="pt-1 flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ease-out">
                       <button
                         onClick={(e) => {
@@ -710,7 +652,6 @@ function ExploreEvents() {
                         <Eye className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>Quick View</span>
                       </button>
-
                       <button
                         onClick={(e) => handleActionClick(e, event)}
                         className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95"
@@ -719,7 +660,6 @@ function ExploreEvents() {
                         <ArrowRight className="h-3.5 w-3.5 text-white" />
                       </button>
                     </div>
-
                   </div>
                 </motion.div>
               );
@@ -730,5 +670,4 @@ function ExploreEvents() {
     </div>
   );
 }
-
 export default ExploreEvents;

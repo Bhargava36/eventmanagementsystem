@@ -1,21 +1,17 @@
 const platformFeedbackService = require('./platformFeedbackService');
-
 const createFeedback = (req, res) => {
     const { userId, userName, userEmail, userPhoto, rating, category, comments } = req.body;
-
     if (!userName?.trim() || rating === undefined || rating === null || !comments?.trim()) {
         return res.status(400).json({
             message: 'Name, rating, and feedback comments are required'
         });
     }
-
     const numRating = Number(rating);
     if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5) {
         return res.status(400).json({
             message: 'Rating must be an integer between 1 and 5'
         });
     }
-
     const feedbackData = {
         UserId: userId ? Number(userId) : null,
         UserName: userName.trim(),
@@ -25,7 +21,6 @@ const createFeedback = (req, res) => {
         Category: category?.trim() || 'General Experience',
         Comments: comments.trim()
     };
-
     platformFeedbackService.createPlatformFeedback(feedbackData, (err, feedback) => {
         if (err) {
             console.error('Create platform feedback error:', err);
@@ -39,7 +34,6 @@ const createFeedback = (req, res) => {
         });
     });
 };
-
 const getAllFeedback = (req, res) => {
     platformFeedbackService.getAllPlatformFeedback((err, feedback) => {
         if (err) {
@@ -55,7 +49,6 @@ const getAllFeedback = (req, res) => {
         });
     });
 };
-
 const getTestimonials = (req, res) => {
     const limit = req.query.limit || 12;
     platformFeedbackService.getTestimonials(limit, (err, testimonials) => {
@@ -72,7 +65,6 @@ const getTestimonials = (req, res) => {
         });
     });
 };
-
 const deleteFeedback = (req, res) => {
     const id = Number(req.params.id);
     if (!id || id <= 0) {
@@ -86,7 +78,6 @@ const deleteFeedback = (req, res) => {
         return res.status(200).json({ message: 'Feedback deleted successfully' });
     });
 };
-
 module.exports = {
     createFeedback,
     getAllFeedback,

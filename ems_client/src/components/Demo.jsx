@@ -1,5 +1,4 @@
 import { HeroSection } from "@/components/ui/HeroSection";
-
 const DemoOne = () => {
   return (
     <div className="flex w-full h-screen justify-center items-center">
@@ -7,5 +6,4 @@ const DemoOne = () => {
     </div>
   );
 };
-
 export { DemoOne };

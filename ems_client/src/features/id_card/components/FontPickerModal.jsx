@@ -17,7 +17,6 @@ import {
   FONT_CATEGORIES,
   loadGoogleFontDynamically
 } from '../constants/fontsCatalog';
-
 export default function FontPickerModal({
   isOpen,
   onClose,
@@ -27,14 +26,12 @@ export default function FontPickerModal({
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [previewText, setPreviewText] = useState('AVISHKAAR 2026');
-
   // Pre-load visible fonts dynamically
   useEffect(() => {
     if (!isOpen) return;
     // Load top 30 initial fonts immediately so previews appear instantly
     FONTS_CATALOG.slice(0, 35).forEach((f) => loadGoogleFontDynamically(f.family));
   }, [isOpen]);
-
   const filteredFonts = useMemo(() => {
     return FONTS_CATALOG.filter((f) => {
       const matchCat = selectedCategory === 'All' || f.category === selectedCategory;
@@ -48,9 +45,7 @@ export default function FontPickerModal({
       return matchCat && matchQuery;
     });
   }, [selectedCategory, searchQuery]);
-
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none animate-in fade-in duration-200">
       <div className="relative w-full max-w-4xl max-h-[88vh] bg-white dark:bg-[#0d1012] border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-800 dark:text-slate-100">
@@ -74,7 +69,6 @@ export default function FontPickerModal({
               </p>
             </div>
           </div>
-
           <button
             type="button"
             onClick={onClose}
@@ -83,7 +77,6 @@ export default function FontPickerModal({
             <X className="h-5 w-5" />
           </button>
         </div>
-
         {/* Toolbar: Search, Sample Preview Text, Categories */}
         <div className="p-4 border-b border-slate-200 dark:border-zinc-800/80 bg-slate-50/70 dark:bg-[#0c0e10] space-y-3">
           <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -98,7 +91,6 @@ export default function FontPickerModal({
                 className="w-full pl-10 pr-4 py-2 rounded-xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 outline-none focus:border-emerald-500 transition"
               />
             </div>
-
             {/* Custom Preview Text */}
             <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
               <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-bold uppercase tracking-wider">Preview Text:</span>
@@ -111,7 +103,6 @@ export default function FontPickerModal({
               />
             </div>
           </div>
-
           {/* Category Filter Pills */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             {FONT_CATEGORIES.map((cat) => {
@@ -137,14 +128,12 @@ export default function FontPickerModal({
             })}
           </div>
         </div>
-
         {/* Font Cards Grid */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredFonts.map((f) => {
             const isCurrent = currentFont === f.value || currentFont?.includes(f.family);
             // Preload font as it renders in view
             loadGoogleFontDynamically(f.family);
-
             return (
               <div
                 key={f.name}
@@ -180,7 +169,6 @@ export default function FontPickerModal({
                     )}
                   </div>
                 </div>
-
                 {/* Sample Live Typography Rendering */}
                 <div className="py-2 px-3 rounded-xl bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/5 flex items-center justify-center min-h-[54px] overflow-hidden">
                   <p
@@ -190,7 +178,6 @@ export default function FontPickerModal({
                     {previewText || f.name}
                   </p>
                 </div>
-
                 {/* Card Footer */}
                 <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
                   <span>CSS: {f.family}</span>
@@ -201,7 +188,6 @@ export default function FontPickerModal({
               </div>
             );
           })}
-
           {filteredFonts.length === 0 && (
             <div className="col-span-full py-16 text-center text-slate-400 dark:text-zinc-500">
               <Type className="w-10 h-10 mx-auto mb-2 opacity-30" />
@@ -210,7 +196,6 @@ export default function FontPickerModal({
             </div>
           )}
         </div>
-
         {/* Modal Footer */}
         <div className="px-6 py-3 border-t border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-[#0a0c0e] flex items-center justify-between text-xs text-slate-500 dark:text-zinc-500">
           <span>Click any font style to apply it directly to your card text.</span>

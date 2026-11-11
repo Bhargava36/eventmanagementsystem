@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const evaluatorService = require('./evaluatorService');
-
+const sessionService = require("../security/sessionService");
+const { recordLoginAttempt, isAccountLocked } = require("../security/securityAlertService");
+const { recordMutation } = require("../security/auditService");
 const getEvaluatorsByEvent = (req, res) => {
     const eventId = req.params.eventId;
     const track = req.query.track || null;
-
     evaluatorService.getEvaluatorsByEvent(eventId, track, (err, result) => {
         if (err) {
             return res.status(err.status || 500).json({
@@ -18,7 +19,6 @@ const getEvaluatorsByEvent = (req, res) => {
         });
     });
 };
-
 const getAllEvaluators = (req, res) => {
     evaluatorService.getAllEvaluators((err, evaluators) => {
         if (err) {
@@ -26,13 +26,11 @@ const getAllEvaluators = (req, res) => {
                 message: err.message
             });
         }
-
         res.status(200).json({
             evaluators
         });
     });
 };
-
 const createEvaluator = (req, res) => {
     evaluatorService.createEvaluator(req.body, (err, result) => {
         if (err) {
@@ -41,13 +39,22 @@ const createEvaluator = (req, res) => {
                 error: err.message
             });
         }
+        recordMutation({
+            actor: req.user,
+            module: 'evaluators',
+            action: 'CREATE_EVALUATOR',
+            entityType: 'evaluator',
+            entityId: result?.id || result?.Id,
+            eventId: req.body?.EventId,
+            newState: { Name: req.body?.Name, Email: req.body?.Email, Role: req.body?.Role || req.body?.EventRole },
+            req
+        });
         res.status(201).json({
             message: 'Evaluator created successfully',
             data: result
         });
     });
 };
-
 const updateEvaluator = (req, res) => {
     const id = req.params.id;
     evaluatorService.updateEvaluator(id, req.body, (err, result) => {
@@ -57,13 +64,22 @@ const updateEvaluator = (req, res) => {
                 error: err.message
             });
         }
+        recordMutation({
+            actor: req.user,
+            module: 'evaluators',
+            action: 'UPDATE_EVALUATOR',
+            entityType: 'evaluator',
+            entityId: id,
+            eventId: req.body?.EventId,
+            newState: req.body,
+            req
+        });
         res.status(200).json({
             message: 'Evaluator updated successfully',
             data: result
         });
     });
 };
-
 const deleteEvaluator = (req, res) => {
     const id = req.params.id;
     evaluatorService.deleteEvaluator(id, (err, result) => {
@@ -73,18 +89,23 @@ const deleteEvaluator = (req, res) => {
                 error: err.message
             });
         }
+        recordMutation({
+            actor: req.user,
+            module: 'evaluators',
+            action: 'DELETE_EVALUATOR',
+            entityType: 'evaluator',
+            entityId: id,
+            req
+        });
         res.status(200).json({
             message: 'Evaluator deleted successfully'
         });
     });
 };
-
 // ── ROUNDS CONTROLLER ──
-
 const getEvaluationRounds = (req, res) => {
     const eventId = req.params.eventId;
     const track = req.query.track || null;
-
     evaluatorService.getEvaluationRounds(eventId, track, (err, result) => {
         if (err) {
             return res.status(err.status || 500).json({
@@ -99,7 +120,6 @@ const getEvaluationRounds = (req, res) => {
         });
     });
 };
-
 const createEvaluationRound = (req, res) => {
     evaluatorService.createEvaluationRound(req.body, (err, result) => {
         if (err) {
@@ -114,7 +134,6 @@ const createEvaluationRound = (req, res) => {
         });
     });
 };
-
 const updateEvaluationRound = (req, res) => {
     const id = req.params.id;
     evaluatorService.updateEvaluationRound(id, req.body, (err, result) => {
@@ -129,7 +148,6 @@ const updateEvaluationRound = (req, res) => {
         });
     });
 };
-
 const deleteEvaluationRound = (req, res) => {
     const id = req.params.id;
     evaluatorService.deleteEvaluationRound(id, (err, result) => {
@@ -144,9 +162,7 @@ const deleteEvaluationRound = (req, res) => {
         });
     });
 };
-
 // ── QUESTIONS CONTROLLER ──
-
 const createEvaluationQuestion = (req, res) => {
     const roundId = req.params.roundId;
     evaluatorService.createEvaluationQuestion(roundId, req.body, (err, result) => {
@@ -162,7 +178,6 @@ const createEvaluationQuestion = (req, res) => {
         });
     });
 };
-
 const updateEvaluationQuestion = (req, res) => {
     const id = req.params.id;
     evaluatorService.updateEvaluationQuestion(id, req.body, (err, result) => {
@@ -177,7 +192,6 @@ const updateEvaluationQuestion = (req, res) => {
         });
     });
 };
-
 const deleteEvaluationQuestion = (req, res) => {
     const id = req.params.id;
     evaluatorService.deleteEvaluationQuestion(id, (err, result) => {
@@ -192,24 +206,46 @@ const deleteEvaluationQuestion = (req, res) => {
         });
     });
 };
-
-const evaluatorLogin = (req, res) => {
+const evaluatorLogin = async (req, res) => {
     const { username, password } = req.body;
-
     if (!username || !password) {
         return res.status(400).json({
             message: 'Username and password are required'
         });
     }
-
-    evaluatorService.evaluatorLogin(username, password, (err, result) => {
+    const cleanUser = (username || '').trim().toLowerCase();
+    // Check account lockout status
+    const lockStatus = await isAccountLocked(cleanUser);
+    if (lockStatus.locked) {
+        return res.status(423).json({
+            success: false,
+            code: 'ACCOUNT_LOCKED',
+            message: `Account is temporarily locked due to repeated failed login attempts. Please try again in ${lockStatus.remainingMinutes} minutes or contact support.`
+        });
+    }
+    evaluatorService.evaluatorLogin(username, password, async (err, result) => {
         if (err) {
+            recordLoginAttempt({ email: cleanUser, role: 'evaluator', status: 'FAILED_PASSWORD', failureReason: err.message, req });
             return res.status(err.status || 401).json({
                 message: err.message || 'Authentication failed',
                 error: err.message
             });
         }
-
+        // Create active session in database
+        let sessionId = null;
+        try {
+            const session = await sessionService.createSession({
+                userId: result.Id,
+                userEmail: result.Email || cleanUser,
+                userRole: "evaluator",
+                req
+            });
+            sessionId = session.sessionId;
+        } catch (sErr) {
+            console.error('[EvaluatorLogin] Failed to register session record:', sErr.message);
+        }
+        // Record successful login
+        recordLoginAttempt({ userId: result.Id, email: result.Email || cleanUser, role: 'evaluator', status: 'SUCCESS', req });
         const token = jwt.sign(
             {
                 Id: result.Id,
@@ -222,17 +258,18 @@ const evaluatorLogin = (req, res) => {
                 Role: result.Role,
                 RoleName: result.RoleName,
                 College: result.College,
-                role: 'evaluator'
+                role: 'evaluator',
+                sessionId
             },
             process.env.JWT_SECRECT || 'secret',
             {
                 expiresIn: process.env.JWT_EXPIRES_IN || '7d'
             }
         );
-
         return res.status(200).json({
             message: 'Evaluator authenticated successfully',
             token,
+            sessionId,
             evaluator: {
                 ...result,
                 RoleName: result.RoleName,
@@ -247,11 +284,9 @@ const evaluatorLogin = (req, res) => {
         });
     });
 };
-
 const getTeamsForEvaluation = (req, res) => {
     const { eventId } = req.params;
     const { track } = req.query;
-
     evaluatorService.getTeamsForEvaluation(eventId, track, (err, result) => {
         if (err) {
             return res.status(err.status || 500).json({
@@ -266,11 +301,9 @@ const getTeamsForEvaluation = (req, res) => {
         });
     });
 };
-
 const getScoresForRound = (req, res) => {
     const { roundId } = req.params;
     const { evaluatorId } = req.query;
-
     evaluatorService.getScoresForRound(roundId, evaluatorId, (err, result) => {
         if (err) {
             return res.status(err.status || 500).json({
@@ -284,7 +317,6 @@ const getScoresForRound = (req, res) => {
         });
     });
 };
-
 const saveEvaluationScore = (req, res) => {
     evaluatorService.saveEvaluationScore(req.body, (err, result) => {
         if (err) {
@@ -299,11 +331,10 @@ const saveEvaluationScore = (req, res) => {
         });
     });
 };
-
 const getEventResults = (req, res) => {
     const { eventId } = req.params;
     const { track } = req.query;
-
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     evaluatorService.getEventResults(eventId, track, (err, result) => {
         if (err) {
             return res.status(err.status || 500).json({
@@ -320,11 +351,9 @@ const getEventResults = (req, res) => {
         });
     });
 };
-
 const publishRoundResults = (req, res) => {
     const roundId = req.params.roundId;
     const isPublished = req.body.isPublished !== undefined ? req.body.isPublished : true;
-
     evaluatorService.publishRoundResults(roundId, isPublished, (err, result) => {
         if (err) {
             return res.status(err.status || 500).json({
@@ -340,12 +369,10 @@ const publishRoundResults = (req, res) => {
         });
     });
 };
-
 const publishOverallResults = (req, res) => {
     const eventId = req.params.eventId;
     const track = req.body.track || req.query.track || 'Physical';
     const isPublished = req.body.isPublished !== undefined ? req.body.isPublished : true;
-
     evaluatorService.publishOverallResults(eventId, track, isPublished, (err, result) => {
         if (err) {
             return res.status(err.status || 500).json({
@@ -361,10 +388,8 @@ const publishOverallResults = (req, res) => {
         });
     });
 };
-
 const getTeamPublishedResults = (req, res) => {
     const teamId = req.params.teamId;
-
     evaluatorService.getTeamPublishedResults(teamId, (err, result) => {
         if (err) {
             return res.status(err.status || 500).json({
@@ -376,6 +401,43 @@ const getTeamPublishedResults = (req, res) => {
         res.status(200).json({
             success: true,
             message: 'Published results fetched successfully',
+            data: result
+        });
+    });
+};
+
+const simulateEvaluatorScores = (req, res) => {
+    const eventId = req.params.eventId;
+    const track = req.body.track || req.query.track || 'Physical';
+    evaluatorService.simulateEvaluatorScores(eventId, track, (err, result) => {
+        if (err) {
+            return res.status(err.status || 500).json({
+                success: false,
+                message: err.message || 'Failed to simulate evaluator scores',
+                error: err.message
+            });
+        }
+        res.status(200).json({
+            success: true,
+            message: result.message,
+            data: result
+        });
+    });
+};
+
+const clearSimulatedScores = (req, res) => {
+    const eventId = req.params.eventId;
+    evaluatorService.clearSimulatedScores(eventId, (err, result) => {
+        if (err) {
+            return res.status(err.status || 500).json({
+                success: false,
+                message: err.message || 'Failed to clear simulated scores',
+                error: err.message
+            });
+        }
+        res.status(200).json({
+            success: true,
+            message: result.message,
             data: result
         });
     });
@@ -401,5 +463,7 @@ module.exports = {
     getEventResults,
     publishRoundResults,
     publishOverallResults,
-    getTeamPublishedResults
+    getTeamPublishedResults,
+    simulateEvaluatorScores,
+    clearSimulatedScores
 };

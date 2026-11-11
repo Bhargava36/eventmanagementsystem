@@ -26,30 +26,25 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import useTheme from '../../../../Hooks/useTheme';
-
+import Pagination from '../../../../components/Molecules/Pagination';
 export default function AllUsersPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-
   const [users, setUsers] = useState([]);
   const [evaluators, setEvaluators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   // Search & Filters
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState('NEWEST');
   const [viewMode, setViewMode] = useState('table'); // 'table' | 'cards'
-
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
   // Selected User Modal
   const [selectedUser, setSelectedUser] = useState(null);
   const [copiedText, setCopiedText] = useState('');
-
   const fetchUsers = async () => {
     setLoading(true);
     setError('');
@@ -79,22 +74,18 @@ export default function AllUsersPage() {
       console.error('Fetch evaluators error:', err);
     }
   };
-
   const refreshAll = () => {
     fetchUsers();
     fetchEvaluators();
   };
-
   useEffect(() => {
     fetchUsers();
     fetchEvaluators();
   }, []);
-
   // Reset to first page on search or filter change
   useEffect(() => {
     setCurrentPage(1);
   }, [search, roleFilter, sortBy, pageSize]);
-
   // Copy helper
   const handleCopy = (text, key) => {
     if (!text) return;
@@ -102,66 +93,39 @@ export default function AllUsersPage() {
     setCopiedText(key);
     setTimeout(() => setCopiedText(''), 2000);
   };
-
   // Unified directory: combine users + evaluators seamlessly
   const allDirectoryUsers = useMemo(() => {
-    // Map evaluators from evaluators table
-    const evaluatorEmailMap = new Map();
-    (evaluators || []).forEach((ev) => {
-      const email = String(ev.Email || '').toLowerCase().trim();
-      const item = {
-        Id: `eval_${ev.Id}`,
-        originalId: ev.Id,
-        isEvaluator: true,
-        UserName: ev.Name || ev.UserName || 'Evaluator',
-        Name: ev.Name || ev.UserName,
-        Email: ev.Email || '',
-        Mobile: ev.Mobile || ev.Phone || '',
-        Gender: ev.Gender || null,
-        College: ev.College || '',
-        Location: ev.Location || ev.Track || '',
-        State: ev.State || '',
-        RoleId: ev.RoleId || 4,
-        RoleName: 'evaluator',
-        RoleDisplay: ev.EventRole || ev.Role || 'Evaluator',
-        EventId: ev.EventId,
-        EventName: ev.EventName || (ev.EventId ? `Event #${ev.EventId}` : 'Assigned Event'),
-        Track: ev.Track,
-        Status: ev.Status || 'Active',
-        CreatedAt: ev.CreatedAt,
-        Photo: ev.Photo || null
-      };
-      if (email) {
-        evaluatorEmailMap.set(email, item);
-      }
-    });
+    // Format all evaluator appointments from evaluators table
+    const formattedEvaluators = (evaluators || []).map((ev) => ({
+      Id: `eval_${ev.Id}`,
+      originalId: ev.Id,
+      isEvaluator: true,
+      UserName: ev.Name || ev.UserName || 'Evaluator',
+      Name: ev.Name || ev.UserName,
+      Email: ev.Email || '',
+      Mobile: ev.Mobile || ev.Phone || '',
+      Gender: ev.Gender || null,
+      College: ev.College || '',
+      Location: ev.Location || ev.Track || '',
+      State: ev.State || '',
+      RoleId: ev.RoleId || 4,
+      RoleName: 'evaluator',
+      RoleDisplay: ev.EventRole || ev.Role || 'Evaluator',
+      EventId: ev.EventId,
+      EventName: ev.EventName || (ev.EventId ? `Event #${ev.EventId}` : 'Assigned Event'),
+      Track: ev.Track,
+      Status: ev.Status || 'Active',
+      CreatedAt: ev.CreatedAt,
+      Photo: ev.Photo || null
+    }));
 
-    // Process users table:
-    // If a user in users table is an evaluator and also exists in evaluators table, merge the rich evaluator data.
-    const processedUsers = (users || []).map((u) => {
-      const email = String(u.Email || '').toLowerCase().trim();
+    // Filter out users from users table whose role is evaluator (if any) to avoid duplication with evaluators table
+    const nonEvalUsers = (users || []).filter((u) => {
       const isUserEval = String(u.RoleName || '').toLowerCase() === 'evaluator' || u.RoleId === 4;
-      if (isUserEval && evaluatorEmailMap.has(email)) {
-        const evData = evaluatorEmailMap.get(email);
-        evaluatorEmailMap.delete(email); // consumed
-        return {
-          ...u,
-          ...evData,
-          Id: u.Id || evData.Id,
-          UserName: u.UserName || evData.UserName,
-          RoleName: 'evaluator',
-          RoleDisplay: evData.RoleDisplay || 'Evaluator',
-          EventName: evData.EventName || u.EventName,
-          College: evData.College || u.College
-        };
-      }
-      return u;
+      return !isUserEval;
     });
 
-    // Remaining evaluators from evaluators table that were not in users table
-    const remainingEvaluators = Array.from(evaluatorEmailMap.values());
-
-    return [...processedUsers, ...remainingEvaluators];
+    return [...nonEvalUsers, ...formattedEvaluators];
   }, [users, evaluators]);
 
   // KPI Calculations
@@ -170,7 +134,6 @@ export default function AllUsersPage() {
     let admins = 0;
     let superAdmins = 0;
     let evalCount = 0;
-
     allDirectoryUsers.forEach((u) => {
       const r = String(u.RoleName || '').toLowerCase();
       if (r === 'admin' || r === 'organizer') admins += 1;
@@ -178,15 +141,11 @@ export default function AllUsersPage() {
       else if (r === 'evaluator' || r === 'judge') evalCount += 1;
       else regularUsers += 1;
     });
-
-    const totalEvaluators = Math.max(evalCount, (evaluators || []).length);
-    const total = regularUsers + admins + superAdmins + totalEvaluators;
-
-    return { total, regularUsers, admins, superAdmins, totalEvaluators };
-  }, [allDirectoryUsers, evaluators]);
+    const total = regularUsers + admins + superAdmins + evalCount;
+    return { total, regularUsers, admins, superAdmins, totalEvaluators: evalCount };
+  }, [allDirectoryUsers]);
 
   const totalEvaluators = stats.totalEvaluators;
-
   // Filtering & Sorting
   const filteredUsers = useMemo(() => {
     return allDirectoryUsers
@@ -194,11 +153,8 @@ export default function AllUsersPage() {
         const matchesRole =
           roleFilter === 'ALL' ||
           String(u.RoleName || '').toLowerCase() === roleFilter.toLowerCase();
-
         if (!matchesRole) return false;
-
         if (!search.trim()) return true;
-
         const q = search.toLowerCase();
         const name = String(u.UserName || '').toLowerCase();
         const email = String(u.Email || '').toLowerCase();
@@ -208,7 +164,6 @@ export default function AllUsersPage() {
         const event = String(u.EventName || '').toLowerCase();
         const role = String(u.RoleName || '').toLowerCase();
         const roleDisplay = String(u.RoleDisplay || '').toLowerCase();
-
         return (
           name.includes(q) ||
           email.includes(q) ||
@@ -236,44 +191,45 @@ export default function AllUsersPage() {
         return 0;
       });
   }, [allDirectoryUsers, search, roleFilter, sortBy]);
-
   // Pagination Slice
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredUsers.slice(start, start + pageSize);
   }, [filteredUsers, currentPage, pageSize]);
-
-  // Role Badge Helper
-  const getRoleBadge = (roleName, roleDisplay) => {
+  // Role Configuration Helper (Clean Status Dot & Typography, No Pills)
+  const getRoleConfig = (roleName, roleDisplay) => {
     const r = String(roleName || 'user').toLowerCase();
     switch (r) {
       case 'admin':
       case 'organizer':
         return {
           label: 'Event Admin',
-          classes: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 border-blue-200 dark:border-blue-500/30',
+          dot: 'bg-emerald-500',
+          text: 'text-emerald-700 dark:text-emerald-400 font-semibold',
         };
       case 'evaluator':
       case 'judge':
         return {
           label: roleDisplay || 'Evaluator',
-          classes: 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400 border-purple-200 dark:border-purple-500/30',
+          dot: 'bg-emerald-500',
+          text: 'text-gray-900 dark:text-white font-semibold',
         };
       case 'super_admin':
       case 'superadmin':
         return {
           label: 'Super Admin',
-          classes: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 border-amber-200 dark:border-amber-500/30',
+          dot: 'bg-emerald-500',
+          text: 'text-emerald-700 dark:text-emerald-400 font-semibold',
         };
       default:
         return {
           label: 'Participant',
-          classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30',
+          dot: 'bg-gray-400 dark:bg-zinc-500',
+          text: 'text-gray-700 dark:text-gray-300 font-medium',
         };
     }
   };
-
   // CSV Export
   const exportUsersCSV = () => {
     if (filteredUsers.length === 0) return;
@@ -285,7 +241,6 @@ export default function AllUsersPage() {
       }
       return s;
     };
-
     const rows = filteredUsers.map((u) => [
       escapeCSV(u.Id),
       escapeCSV(u.UserName),
@@ -297,7 +252,6 @@ export default function AllUsersPage() {
       escapeCSV(u.EventName || '—'),
       escapeCSV(u.CreatedAt ? new Date(u.CreatedAt).toLocaleDateString() : '—'),
     ]);
-
     const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -309,11 +263,9 @@ export default function AllUsersPage() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen text-gray-900 dark:text-gray-100 transition-colors pb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        
         {/* Page Top Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-gray-200/60 dark:border-zinc-800/80">
           <div>
@@ -331,7 +283,6 @@ export default function AllUsersPage() {
               </div>
             </div>
           </div>
-
           <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={exportUsersCSV}
@@ -346,7 +297,6 @@ export default function AllUsersPage() {
                 </span>
               )}
             </button>
-
             <button
               onClick={refreshAll}
               disabled={loading}
@@ -357,91 +307,86 @@ export default function AllUsersPage() {
             </button>
           </div>
         </div>
-
         {/* Top Metric Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm"
+            className="p-6 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Total Users
               </span>
-              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                 <Users className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-3">
+            <p className="text-2xl sm:text-3xl font-extrabold font-heading text-gray-900 dark:text-white mt-3">
               {stats.total.toLocaleString()}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Platform members</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Platform members</p>
           </motion.div>
-
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm"
+            className="p-6 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Participants
               </span>
-              <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <div className="p-2 rounded-xl bg-gray-100 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-300">
                 <UserCheck className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-3">
+            <p className="text-2xl sm:text-3xl font-extrabold font-heading text-gray-900 dark:text-white mt-3">
               {stats.regularUsers.toLocaleString()}
             </p>
-            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Students & Attendees</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Students & Attendees</p>
           </motion.div>
-
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm"
+            className="p-6 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Event Admins
               </span>
-              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+              <div className="p-2 rounded-xl bg-gray-100 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-300">
                 <ShieldCheck className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-3">
+            <p className="text-2xl sm:text-3xl font-extrabold font-heading text-gray-900 dark:text-white mt-3">
               {stats.admins.toLocaleString()}
             </p>
-            <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">Event Organizers</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Event Organizers</p>
           </motion.div>
-
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm"
+            className="p-6 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Evaluators
               </span>
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <div className="p-2 rounded-xl bg-gray-100 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-300">
                 <Award className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-3">
+            <p className="text-2xl sm:text-3xl font-extrabold font-heading text-gray-900 dark:text-white mt-3">
               {totalEvaluators.toLocaleString()}
             </p>
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Judges & Reviewers</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Judges & Reviewers</p>
           </motion.div>
         </div>
-
         {/* Search, Filter & Controls Toolbar */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm space-y-4">
+        <div className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs space-y-4">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             {/* Search Input */}
             <div className="relative flex-1">
@@ -451,21 +396,20 @@ export default function AllUsersPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, email, college, phone, or event..."
-                className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all placeholder:text-gray-400"
+                className="w-full pl-10 pr-9 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-sm outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-gray-400 text-gray-900 dark:text-white"
               />
               {search && (
                 <button
                   onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
-
-            {/* Role Filter Selector */}
+            {/* Role Filter Selector (Clean Rectangular Buttons, No Pills) */}
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-zinc-900 rounded-xl border border-gray-200/80 dark:border-zinc-800 text-xs sm:scrolling-touch overflow-x-auto sm: scrolling-smooth">
+              <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 text-xs">
                 {[
                   { id: 'ALL', label: 'All Roles' },
                   { id: 'user', label: 'Participants' },
@@ -476,25 +420,24 @@ export default function AllUsersPage() {
                   <button
                     key={item.id}
                     onClick={() => setRoleFilter(item.id)}
-                    className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       roleFilter === item.id
-                        ? 'bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 shadow-xs'
-                        : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
                     {item.label}
                   </button>
                 ))}
               </div>
-
               {/* View Switcher */}
-              <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-zinc-900 rounded-xl border border-gray-200/80 dark:border-zinc-800">
+              <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800">
                 <button
                   onClick={() => setViewMode('table')}
                   title="Table View"
-                  className={`p-1.5 rounded-lg transition-all ${
+                  className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                     viewMode === 'table'
-                      ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                      ? 'bg-emerald-600 text-white shadow-xs'
                       : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
@@ -503,9 +446,9 @@ export default function AllUsersPage() {
                 <button
                   onClick={() => setViewMode('cards')}
                   title="Cards View"
-                  className={`p-1.5 rounded-lg transition-all ${
+                  className={`p-1.5 rounded-lg transition-all cursor-pointer ${
                     viewMode === 'cards'
-                      ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                      ? 'bg-emerald-600 text-white shadow-xs'
                       : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                   }`}
                 >
@@ -514,14 +457,12 @@ export default function AllUsersPage() {
               </div>
             </div>
           </div>
-
           {/* Quick Sub-bar: Sort & Result Count */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-gray-500 dark:text-gray-400 gap-2 pt-2 border-t border-gray-100 dark:border-zinc-800/80">
             <div>
               Showing <span className="font-bold text-gray-900 dark:text-white">{filteredUsers.length}</span> matching users
               {search && ` for "${search}"`}
             </div>
-
             <div className="flex items-center gap-3">
               <span className="font-medium">Sort by:</span>
               <select
@@ -534,7 +475,6 @@ export default function AllUsersPage() {
                 <option value="NAME_ASC" className="dark:bg-zinc-900">Name (A-Z)</option>
                 <option value="NAME_DESC" className="dark:bg-zinc-900">Name (Z-A)</option>
               </select>
-
               <span className="font-medium ml-2">Per Page:</span>
               <select
                 value={pageSize}
@@ -548,7 +488,6 @@ export default function AllUsersPage() {
             </div>
           </div>
         </div>
-
         {/* Users Content */}
         {loading ? (
           <div className="py-20 text-center">
@@ -569,33 +508,32 @@ export default function AllUsersPage() {
           </div>
         ) : viewMode === 'table' ? (
           /* Table View */
-          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm overflow-hidden">
+          <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead className="bg-gray-50/80 dark:bg-zinc-900/60 border-b border-gray-200 dark:border-zinc-800 text-gray-500 dark:text-gray-400 font-semibold uppercase text-[11px] tracking-wider">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50/80 dark:bg-zinc-900/50 border-b border-gray-200 dark:border-zinc-800 text-gray-500 dark:text-gray-400 font-semibold text-xs">
                   <tr>
-                    <th className="py-3.5 px-4 sm:px-6">User</th>
-                    <th className="py-3.5 px-4">Role</th>
-                    <th className="py-3.5 px-4 hidden md:table-cell">Contact & College</th>
-                    <th className="py-3.5 px-4 hidden lg:table-cell">Associated Event</th>
-                    <th className="py-3.5 px-4 hidden sm:table-cell">Joined</th>
-                    <th className="py-3.5 px-4 sm:px-6 text-right">Actions</th>
+                    <th className="py-4 px-6 whitespace-nowrap">User</th>
+                    <th className="py-4 px-6 whitespace-nowrap">Role</th>
+                    <th className="py-4 px-6 hidden md:table-cell whitespace-nowrap">Contact & College</th>
+                    <th className="py-4 px-6 hidden lg:table-cell whitespace-nowrap">Associated Event</th>
+                    <th className="py-4 px-6 hidden sm:table-cell whitespace-nowrap">Joined</th>
+                    <th className="py-4 px-6 text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/70">
                   {paginatedUsers.map((u, idx) => {
-                    const badge = getRoleBadge(u.RoleName, u.RoleDisplay);
+                    const roleConfig = getRoleConfig(u.RoleName, u.RoleDisplay);
                     const initials = u.UserName ? u.UserName.substring(0, 2).toUpperCase() : 'U';
-
                     return (
                       <tr
                         key={u.Id || idx}
                         className="hover:bg-gray-50/60 dark:hover:bg-zinc-900/40 transition-colors"
                       >
                         {/* User identity */}
-                        <td className="py-3 px-4 sm:px-6">
+                        <td className="py-4.5 px-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden ring-1 ring-emerald-500/20">
+                            <div className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-zinc-900 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden border border-gray-200 dark:border-zinc-800">
                               {u.Photo ? (
                                 <img
                                   src={u.Photo}
@@ -613,62 +551,55 @@ export default function AllUsersPage() {
                               <p className="font-semibold text-gray-900 dark:text-white truncate">
                                 {u.UserName || 'Anonymous'}
                               </p>
-                              <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 truncate">
+                              <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
                                 <Mail className="w-3 h-3 text-gray-400 shrink-0" />
                                 <span className="truncate">{u.Email}</span>
                               </div>
                             </div>
                           </div>
                         </td>
-
-                        {/* Role badge */}
-                        <td className="py-3 px-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.classes}`}>
-                            {badge.label}
-                          </span>
+                        {/* Role: Clean Dot + Typography, No Pills */}
+                        <td className="py-4.5 px-6 whitespace-nowrap">
+                          <div className="flex items-center text-emerald-600 gap-2">
+                            <span className={`text-xs text-emerald-600`}>
+                              {roleConfig.label}
+                            </span>
+                          </div>
                         </td>
-
                         {/* Contact & College */}
-                        <td className="py-3 px-4 hidden md:table-cell">
+                        <td className="py-4.5 px-6 hidden md:table-cell">
                           <div className="space-y-0.5 text-xs">
                             {u.College && (
-                              <p className="text-gray-700 dark:text-gray-300 truncate max-w-[200px]" title={u.College}>
+                              <p className="text-gray-800 dark:text-gray-200 truncate max-w-[200px]" title={u.College}>
                                 {u.College}
                               </p>
                             )}
                             {u.Mobile && (
                               <p className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                <Phone className="w-3 h-3" />
-                                {u.Mobile}
+                                <Phone className="w-3 h-3 text-gray-400" />
+                                <span>{u.Mobile}</span>
                               </p>
                             )}
                             {!u.College && !u.Mobile && <span className="text-gray-400">—</span>}
                           </div>
                         </td>
-
                         {/* Associated Event */}
-                        <td className="py-3 px-4 hidden lg:table-cell">
-                          {u.EventName ? (
-                            <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 truncate max-w-[180px] inline-block" title={u.EventName}>
-                              {u.EventName}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400 text-xs">EMS Platform</span>
-                          )}
+                        <td className="py-4.5 px-6 hidden lg:table-cell">
+                          <span className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate max-w-[220px] inline-block" title={u.EventName || 'EMS Platform'}>
+                            {u.EventName || 'EMS Platform'}
+                          </span>
                         </td>
-
                         {/* Joined Date */}
-                        <td className="py-3 px-4 hidden sm:table-cell text-xs text-gray-500 dark:text-gray-400">
+                        <td className="py-4.5 px-6 hidden sm:table-cell text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                           {u.CreatedAt ? new Date(u.CreatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                         </td>
-
                         {/* Actions */}
-                        <td className="py-3 px-4 sm:px-6 text-right">
+                        <td className="py-4.5 px-6 text-right whitespace-nowrap">
                           <button
                             onClick={() => setSelectedUser(u)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-200 transition-all"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-medium hover:bg-gray-50 dark:hover:bg-zinc-800 text-gray-700 dark:text-gray-200 transition-colors shadow-xs cursor-pointer"
                           >
-                            <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                            <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                             <span>Details</span>
                           </button>
                         </td>
@@ -683,18 +614,17 @@ export default function AllUsersPage() {
           /* Cards Grid View */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {paginatedUsers.map((u, idx) => {
-              const badge = getRoleBadge(u.RoleName, u.RoleDisplay);
+              const roleConfig = getRoleConfig(u.RoleName, u.RoleDisplay);
               const initials = u.UserName ? u.UserName.substring(0, 2).toUpperCase() : 'U';
-
               return (
                 <div
                   key={u.Id || idx}
-                  className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm flex flex-col justify-between hover:border-emerald-500/40 transition-all"
+                  className="p-6 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-xs flex flex-col justify-between hover:border-emerald-500/40 transition-all"
                 >
                   <div>
-                    <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-11 h-11 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden ring-1 ring-emerald-500/20">
+                        <div className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-zinc-900 text-gray-700 dark:text-gray-300 flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden border border-gray-200 dark:border-zinc-800">
                           {u.Photo ? (
                             <img src={u.Photo} alt={u.UserName} className="w-full h-full object-cover" />
                           ) : (
@@ -705,14 +635,16 @@ export default function AllUsersPage() {
                           <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">
                             {u.UserName || 'Anonymous'}
                           </h4>
-                          <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full border mt-1 ${badge.classes}`}>
-                            {badge.label}
-                          </span>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`w-2 h-2 rounded-full ${roleConfig.dot}`} />
+                            <span className={`text-xs ${roleConfig.text}`}>
+                              {roleConfig.label}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-
-                    <div className="space-y-1.5 text-xs text-gray-500 dark:text-gray-400 pt-3 border-t border-gray-100 dark:border-zinc-850">
+                    <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400 pt-3 border-t border-gray-100 dark:border-zinc-850">
                       <div className="flex items-center gap-2 truncate">
                         <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                         <span className="truncate">{u.Email}</span>
@@ -737,14 +669,13 @@ export default function AllUsersPage() {
                       )}
                     </div>
                   </div>
-
                   <div className="mt-4 pt-3 border-t border-gray-100 dark:border-zinc-800/80 flex items-center justify-between text-xs">
                     <span className="text-gray-400">
                       Joined {u.CreatedAt ? new Date(u.CreatedAt).toLocaleDateString() : '—'}
                     </span>
                     <button
                       onClick={() => setSelectedUser(u)}
-                      className="text-emerald-700 dark:text-emerald-400 font-semibold hover:underline"
+                      className="text-emerald-700 dark:text-emerald-400 font-semibold hover:underline cursor-pointer"
                     >
                       View Profile
                     </button>
@@ -754,61 +685,19 @@ export default function AllUsersPage() {
             })}
           </div>
         )}
-
-        {/* Pagination Strip */}
+        {/* Pagination Strip (Standard Clean Numbered Component) */}
         {filteredUsers.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Showing <span className="font-bold text-gray-900 dark:text-white">{(currentPage - 1) * pageSize + 1}</span> to{' '}
-              <span className="font-bold text-gray-900 dark:text-white">
-                {Math.min(currentPage * pageSize, filteredUsers.length)}
-              </span>{' '}
-              of <span className="font-bold text-gray-900 dark:text-white">{filteredUsers.length}</span> users
-            </p>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={currentPage === 1}
-                className="p-2 rounded-xl border border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                title="Previous Page"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              {/* Page Number Chips */}
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
-                .map((p, idx, arr) => (
-                  <React.Fragment key={p}>
-                    {idx > 0 && p - arr[idx - 1] > 1 && (
-                      <span className="px-2 text-xs text-gray-400">...</span>
-                    )}
-                    <button
-                      onClick={() => setCurrentPage(p)}
-                      className={`w-8 h-8 rounded-xl text-xs font-bold transition-all ${
-                        currentPage === p
-                          ? 'bg-emerald-600 text-white shadow-sm'
-                          : 'border border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  </React.Fragment>
-                ))}
-
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-xl border border-gray-200 dark:border-zinc-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                title="Next Page"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredUsers.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[10, 20, 50, 100]}
+            itemName="users"
+          />
         )}
-
         {/* User Details Modal */}
         <AnimatePresence>
           {selectedUser && (
@@ -825,10 +714,9 @@ export default function AllUsersPage() {
                 >
                   <X className="w-5 h-5" />
                 </button>
-
                 {/* Modal Header with User Badge */}
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xl shrink-0 overflow-hidden ring-2 ring-emerald-500/30">
+                  <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-zinc-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-zinc-800 flex items-center justify-center font-bold text-xl shrink-0 overflow-hidden">
                     {selectedUser.Photo ? (
                       <img src={selectedUser.Photo} alt={selectedUser.UserName} className="w-full h-full object-cover" />
                     ) : (
@@ -840,14 +728,15 @@ export default function AllUsersPage() {
                       {selectedUser.UserName}
                     </h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getRoleBadge(selectedUser.RoleName, selectedUser.RoleDisplay).classes}`}>
-                        {getRoleBadge(selectedUser.RoleName, selectedUser.RoleDisplay).label}
+                      <span className={`w-2 h-2 rounded-full ${getRoleConfig(selectedUser.RoleName, selectedUser.RoleDisplay).dot}`} />
+                      <span className={`text-xs ${getRoleConfig(selectedUser.RoleName, selectedUser.RoleDisplay).text}`}>
+                        {getRoleConfig(selectedUser.RoleName, selectedUser.RoleDisplay).label}
                       </span>
-                      <span className="text-xs text-gray-400">ID #{selectedUser.Id}</span>
+                      <span className="text-gray-300 dark:text-zinc-700">·</span>
+                      <span className="text-xs text-gray-400">ID #{selectedUser.originalId || selectedUser.Id}</span>
                     </div>
                   </div>
                 </div>
-
                 {/* Details Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/60 border border-gray-100 dark:border-zinc-800 text-xs">
                   <div>
@@ -863,7 +752,6 @@ export default function AllUsersPage() {
                       </button>
                     </div>
                   </div>
-
                   <div>
                     <span className="text-gray-400 block font-medium">Mobile Phone</span>
                     <div className="flex items-center gap-1.5 mt-0.5 text-gray-900 dark:text-white font-semibold">
@@ -879,28 +767,24 @@ export default function AllUsersPage() {
                       )}
                     </div>
                   </div>
-
                   <div>
                     <span className="text-gray-400 block font-medium">College / Institution</span>
                     <p className="mt-0.5 text-gray-900 dark:text-white font-semibold truncate">
                       {selectedUser.College || '—'}
                     </p>
                   </div>
-
                   <div>
                     <span className="text-gray-400 block font-medium">Location</span>
                     <p className="mt-0.5 text-gray-900 dark:text-white font-semibold">
                       {selectedUser.Location || '—'}{selectedUser.State ? `, ${selectedUser.State}` : ''}
                     </p>
                   </div>
-
                   <div>
                     <span className="text-gray-400 block font-medium">Associated Event</span>
                     <p className="mt-0.5 text-gray-900 dark:text-white font-semibold">
                       {selectedUser.EventName || 'General Platform User'}
                     </p>
                   </div>
-
                   <div>
                     <span className="text-gray-400 block font-medium">Registration Date</span>
                     <p className="mt-0.5 text-gray-900 dark:text-white font-semibold">
@@ -908,7 +792,6 @@ export default function AllUsersPage() {
                     </p>
                   </div>
                 </div>
-
                 <div className="flex justify-end">
                   <button
                     onClick={() => setSelectedUser(null)}

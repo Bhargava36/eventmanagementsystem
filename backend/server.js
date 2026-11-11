@@ -1,10 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 require('./src/config/db');
-
 const superAdminRoute = require("./src/modules/superAdmin/superAdminRoute");
 const eventsRoute = require("./src/modules/events/eventsRoute");
 const adminRoute = require("./src/modules/admins/adminRoute");
@@ -39,14 +37,23 @@ const emailDispatchRoute = require("./src/modules/email_dispatch/emailDispatchRo
 const backupRoute = require("./src/modules/backup/backupRoute");
 const webhookRoute = require("./src/modules/webhooks/webhookRoute");
 const notificationRoutes = require("./src/modules/notifications/notificationRoute");
-
+const securityRoute = require("./src/modules/security/securityRoute");
+const securityHeaders = require("./src/middleware/securityHeaders");
+const { globalLimiter } = require("./src/middleware/rateLimiter");
+const dbCircuitBreaker = require("./src/modules/security/dbCircuitBreaker");
 const app = express();
-
 app.use(cors());
+app.use(securityHeaders);
+app.use('/api', globalLimiter);
+app.use('/api', (req, res, next) => {
+    if (req.path.startsWith('/security/monitoring') || req.path.startsWith('/security/health') || req.path.startsWith('/security/database-health')) {
+        return next();
+    }
+    dbCircuitBreaker.middleware()(req, res, next);
+});
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(auditMiddleware);
-
 // Serve uploaded files statically with explicit CORS (e.g. http://localhost:3000/uploads/images/...)
 app.use('/uploads', (req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
@@ -55,7 +62,6 @@ app.use('/uploads', (req, res, next) => {
     if (req.method === 'OPTIONS') return res.sendStatus(200);
     next();
 }, express.static(path.join(__dirname, 'uploads')));
-
 app.use('/api/upload', uploadRoute);
 app.use('/api/super_admin', superAdminRoute);
 app.use('/api/events', eventsRoute);
@@ -73,7 +79,9 @@ app.use("/api/id-cards", idCardRoutes);
 app.use("/api/physical-services", physicalServicesRoutes);
 app.use("/api/sponsors", sponsorRoutes);
 app.use("/api/gallery", galleryRoutes);
-app.use("/api/dev", devRoute);
+if (process.env.NODE_ENV !== 'production') {
+    app.use("/api/dev", devRoute);
+}
 app.use("/api/evaluators", evaluatorRoutes);
 app.use("/api/problem-statements", psRoutes);
 app.use("/api/project-submissions", projectSubmissionRoutes);
@@ -90,15 +98,49 @@ app.use('/api/email-dispatch', emailDispatchRoute);
 app.use('/api/database-backups', backupRoute);
 app.use('/api/webhooks', webhookRoute);
 app.use('/api/notifications', notificationRoutes);
-
-
+app.use('/api/security', securityRoute);
 const http = require('http');
 const { initWebSocket } = require('./src/config/websocket');
-
+const db = require('./src/config/db');
+const { flushLogs } = require('./src/modules/logs/loggerService');
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 initWebSocket(server);
-
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+// Graceful process termination & connection pool cleanup
+const gracefulShutdown = async (signal) => {
+    console.log(`\n[Server] Received ${signal}. Starting graceful shutdown...`);
+    // 1. Flush any pending buffered audit logs
+    try {
+        await flushLogs();
+        console.log('[Server] Pending audit logs flushed.');
+    } catch (e) {
+        console.error('[Server] Error flushing audit logs:', e.message);
+    }
+    // 2. Stop accepting new HTTP requests
+    server.close((err) => {
+        if (err) {
+            console.error('[Server] Error closing HTTP server:', err.message);
+        } else {
+            console.log('[Server] HTTP/WebSocket server closed.');
+        }
+        // 3. Close MySQL Connection Pool
+        db.end((dbErr) => {
+            if (dbErr) {
+                console.error('[Server] Error closing MySQL pool:', dbErr.message);
+            } else {
+                console.log('[Server] MySQL connection pool drained and closed.');
+            }
+            process.exit(0);
+        });
+    });
+    // Force exit if shutdown hangs beyond 10s
+    setTimeout(() => {
+        console.error('[Server] Graceful shutdown timed out. Forcing process exit.');
+        process.exit(1);
+    }, 10000).unref();
+};
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

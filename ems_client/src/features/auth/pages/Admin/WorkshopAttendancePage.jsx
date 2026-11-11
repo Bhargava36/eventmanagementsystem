@@ -32,7 +32,6 @@ import {
   BarChart3,
   UserX
 } from 'lucide-react';
-
 // Web Audio API beep for instant physical check-in audio feedback
 function playCheckInSound() {
   try {
@@ -41,24 +40,19 @@ function playCheckInSound() {
     const ctx = new AudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-
     osc.type = 'sine';
     osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
     osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.15); // A6
-
     gain.gain.setValueAtTime(0.15, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-
     osc.connect(gain);
     gain.connect(ctx.destination);
-
     osc.start();
     osc.stop(ctx.currentTime + 0.15);
   } catch (e) {
     // Audio autoplay restrictions fallback
   }
 }
-
 // Robust date parser that prevents UTC-shift bugs on YYYY-MM-DD or ISO strings
 function parseLocalDate(dateStr) {
   if (!dateStr) return null;
@@ -78,12 +72,10 @@ function parseLocalDate(dateStr) {
   const parsed = new Date(dateStr);
   return isNaN(parsed.getTime()) ? null : parsed;
 }
-
 // Automatically calculate workshop calendar days from StartDate and EndDate
 function calculateWorkshopDays(startDateStr, endDateStr) {
   const start = parseLocalDate(startDateStr);
   const end = endDateStr ? parseLocalDate(endDateStr) : start;
-
   if (!start) {
     return Array.from({ length: 5 }, (_, i) => ({
       dayNumber: i + 1,
@@ -93,17 +85,14 @@ function calculateWorkshopDays(startDateStr, endDateStr) {
       label: `Day ${i + 1}`
     }));
   }
-
   const sUtc = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
   const eUtc = end
     ? Date.UTC(end.getFullYear(), end.getMonth(), end.getDate())
     : sUtc;
-
   const msPerDay = 1000 * 60 * 60 * 24;
   let diffDays = Math.round((eUtc - sUtc) / msPerDay) + 1;
   if (diffDays < 1) diffDays = 1;
   if (diffDays > 30) diffDays = 30; // sensible safety ceiling
-
   const daysList = [];
   for (let i = 0; i < diffDays; i++) {
     const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
@@ -122,10 +111,8 @@ function calculateWorkshopDays(startDateStr, endDateStr) {
       label: `Day ${i + 1}`
     });
   }
-
   return daysList;
 }
-
 export default function WorkshopAttendancePage() {
   const toast = useToast();
   const [currentEventId, setCurrentEventId] = useState(() => {
@@ -136,7 +123,6 @@ export default function WorkshopAttendancePage() {
       return null;
     }
   });
-
   const eventId = currentEventId;
   const admin = (() => {
     try {
@@ -145,29 +131,24 @@ export default function WorkshopAttendancePage() {
       return {};
     }
   })();
-
   // Event details & dynamic date-based workshop days
   const [eventData, setEventData] = useState(null);
   const [extraDays, setExtraDays] = useState(0);
-
   // Multi-Day & Session State
   const [activeDay, setActiveDay] = useState(1);
   const [activeSlot, setActiveSlot] = useState('Morning'); // 'Morning' | 'Evening'
   const [viewMode, setViewMode] = useState('session'); // 'session' | 'matrix'
-
   const [attendees, setAttendees] = useState([]);
   const [allRecords, setAllRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [updatingId, setUpdatingId] = useState(null);
-
   // Live QR Camera Scanner State
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannerError, setScannerError] = useState('');
   const [lastScannedAttendee, setLastScannedAttendee] = useState(null);
   const html5QrCodeRef = useRef(null);
-
   // Fetch Event Details for automatic date calculation
   const fetchEventDetails = async () => {
     if (!currentEventId) return;
@@ -180,11 +161,9 @@ export default function WorkshopAttendancePage() {
       console.error('Failed to load event details:', e);
     }
   };
-
   useEffect(() => {
     fetchEventDetails();
   }, [currentEventId]);
-
   // Compute calculated days from event StartDate & EndDate
   const workshopDays = useMemo(() => {
     let start = null;
@@ -201,7 +180,6 @@ export default function WorkshopAttendancePage() {
       end = eventData?.EndDate || eventData?.PhysicalEndDate || eventData?.VirtualEndDate || start;
     }
     const baseDays = calculateWorkshopDays(start, end);
-
     if (extraDays > 0) {
       const lastDay = baseDays[baseDays.length - 1];
       for (let i = 1; i <= extraDays; i++) {
@@ -229,9 +207,7 @@ export default function WorkshopAttendancePage() {
     }
     return baseDays;
   }, [eventData, extraDays]);
-
   const totalDays = workshopDays.length;
-
   useEffect(() => {
     const handleEventUpdated = (e) => {
       try {
@@ -244,7 +220,6 @@ export default function WorkshopAttendancePage() {
         console.error('Error handling event update in WorkshopAttendancePage:', err);
       }
     };
-
     window.addEventListener('admin-event-updated', handleEventUpdated);
     window.addEventListener('storage', handleEventUpdated);
     return () => {
@@ -252,7 +227,6 @@ export default function WorkshopAttendancePage() {
       window.removeEventListener('storage', handleEventUpdated);
     };
   }, []);
-
   const fetchAttendance = async () => {
     if (!currentEventId) return;
     try {
@@ -271,18 +245,15 @@ export default function WorkshopAttendancePage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchAttendance();
   }, [currentEventId, activeDay, activeSlot]);
-
   // Mark status for an attendee (supports day & session slot)
   const markAttendeeStatus = async (attendee, targetStatus, optDay = null, optSlot = null) => {
     const day = optDay !== null ? Number(optDay) : activeDay;
     const slot = optSlot || activeSlot;
     const key = `${attendee.UserId}-${day}-${slot}`;
     setUpdatingId(key);
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/workshops/${eventId}/attendance`, {
         method: 'POST',
@@ -295,9 +266,7 @@ export default function WorkshopAttendancePage() {
           SessionSlot: slot
         })
       });
-
       if (!res.ok) throw new Error('Status update failed');
-
       // Update current view attendees if viewing this day & slot
       if (day === activeDay && slot === activeSlot) {
         setAttendees((prev) =>
@@ -312,7 +281,6 @@ export default function WorkshopAttendancePage() {
           )
         );
       }
-
       // Update global records
       setAllRecords((prev) => {
         const remaining = prev.filter(
@@ -334,7 +302,6 @@ export default function WorkshopAttendancePage() {
           }
         ];
       });
-
       if (targetStatus === 'checked_in') {
         playCheckInSound();
         toast.success(`Verified: ${attendee.UserName} marked Present (Day ${day} • ${slot})!`);
@@ -350,7 +317,6 @@ export default function WorkshopAttendancePage() {
       setUpdatingId(null);
     }
   };
-
   // Bulk action: Mark all not-taken as Present or Absent
   const handleBulkMark = async (status) => {
     const pendingAttendees = filteredAttendees.filter(
@@ -360,7 +326,6 @@ export default function WorkshopAttendancePage() {
       toast.info('No pending attendees to mark in this session.');
       return;
     }
-
     try {
       setLoading(true);
       for (const attendee of pendingAttendees) {
@@ -387,7 +352,6 @@ export default function WorkshopAttendancePage() {
       setLoading(false);
     }
   };
-
   // Helper for matrix lookup
   const getMatrixStatus = (userId, day, slot) => {
     const rec = allRecords.find(
@@ -398,7 +362,6 @@ export default function WorkshopAttendancePage() {
     if (rec.Status === 'absent') return 'absent';
     return 'pending';
   };
-
   // Helper for participant overall percentage
   const getAttendeeStats = (userId) => {
     const totalSessions = totalDays * 2;
@@ -409,13 +372,11 @@ export default function WorkshopAttendancePage() {
     const isEligible = percent >= 75; // standard 75% workshop certificate threshold
     return { presentCount, absentCount, totalSessions, percent, isEligible };
   };
-
   // Start & Stop QR Camera Scanner
   const startScanner = async () => {
     setScannerError('');
     setScannerOpen(true);
   };
-
   useEffect(() => {
     let qrScanner = null;
     if (scannerOpen) {
@@ -424,13 +385,11 @@ export default function WorkshopAttendancePage() {
         try {
           qrScanner = new Html5Qrcode(qrCodeId);
           html5QrCodeRef.current = qrScanner;
-
           const config = {
             fps: 10,
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0
           };
-
           await qrScanner.start(
             { facingMode: 'environment' },
             config,
@@ -444,7 +403,6 @@ export default function WorkshopAttendancePage() {
           setScannerError(err?.message || 'Unable to access camera. Please check permissions.');
         }
       }, 300);
-
       return () => {
         clearTimeout(timer);
         if (qrScanner && qrScanner.isScanning) {
@@ -455,7 +413,6 @@ export default function WorkshopAttendancePage() {
       };
     }
   }, [scannerOpen]);
-
   const closeScanner = async () => {
     if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
       try {
@@ -465,14 +422,11 @@ export default function WorkshopAttendancePage() {
     }
     setScannerOpen(false);
   };
-
   const handleQrCodeDecoded = (decodedText) => {
     if (!decodedText) return;
-
     let targetUserId = null;
     let targetTeamId = null;
     let targetEmail = null;
-
     // 1. Check if JSON payload (from digital pass)
     try {
       const parsed = JSON.parse(decodedText);
@@ -511,7 +465,6 @@ export default function WorkshopAttendancePage() {
         targetEmail = decodedText.trim().toLowerCase();
       }
     }
-
     // Match with current workshop attendees (by UserId, TeamId, or Email)
     const match = attendees.find((a) => {
       if (targetUserId && Number(a.UserId) === Number(targetUserId)) return true;
@@ -519,7 +472,6 @@ export default function WorkshopAttendancePage() {
       if (targetEmail && (a.Email || '').toLowerCase() === targetEmail.toLowerCase()) return true;
       return false;
     });
-
     if (match) {
       setLastScannedAttendee(match);
       if (match.AttendanceStatus !== 'checked_in') {
@@ -531,30 +483,25 @@ export default function WorkshopAttendancePage() {
       toast.error(`No matching attendee found in this workshop for scanned pass`);
     }
   };
-
   const filteredAttendees = useMemo(() => {
     return attendees.filter((a) => {
       const isPresent = a.AttendanceStatus === 'checked_in' || a.AttendanceStatus === 'present';
       const isAbsent = a.AttendanceStatus === 'absent';
       const isPending = !isPresent && !isAbsent;
-
       const matchesStatus =
         filterStatus === 'all' ||
         (filterStatus === 'present' && isPresent) ||
         (filterStatus === 'absent' && isAbsent) ||
         (filterStatus === 'pending' && isPending);
-
       const q = searchQuery.toLowerCase();
       const matchesQuery =
         (a.UserName || '').toLowerCase().includes(q) ||
         (a.Email || '').toLowerCase().includes(q) ||
         (a.Mobile || '').toLowerCase().includes(q) ||
         (a.College || '').toLowerCase().includes(q);
-
       return matchesStatus && matchesQuery;
     });
   }, [attendees, filterStatus, searchQuery]);
-
   const stats = useMemo(() => {
     const total = attendees.length;
     const present = attendees.filter((a) => a.AttendanceStatus === 'checked_in' || a.AttendanceStatus === 'present').length;
@@ -563,7 +510,6 @@ export default function WorkshopAttendancePage() {
     const rate = total > 0 ? Math.round((present / total) * 100) : 0;
     return { total, present, absent, pending, rate };
   }, [attendees]);
-
   // Overall event statistics across all calculated days
   const overallStats = useMemo(() => {
     const totalPossible = attendees.length * totalDays * 2;
@@ -572,23 +518,19 @@ export default function WorkshopAttendancePage() {
     const eligibleCount = attendees.filter((a) => getAttendeeStats(a.UserId).isEligible).length;
     return { totalPossible, totalPresent, avgRate, eligibleCount };
   }, [attendees, allRecords, totalDays]);
-
   // CSV Export
   const handleExportCSV = () => {
     if (attendees.length === 0) {
       toast.error('No attendees to export');
       return;
     }
-
     const currentDayObj = workshopDays.find((d) => d.dayNumber === activeDay) || { label: `Day ${activeDay}`, dateFormatted: '' };
-
     if (viewMode === 'session') {
       const headers = ['User ID', 'Name', 'Email', 'Mobile', 'College', 'Day', 'Date', 'Session Slot', 'Attendance Status', 'Check-In Timestamp'];
       const rows = attendees.map((a) => {
         const isPresent = a.AttendanceStatus === 'checked_in' || a.AttendanceStatus === 'present';
         const isAbsent = a.AttendanceStatus === 'absent';
         const statusText = isPresent ? 'Present' : isAbsent ? 'Absent' : 'Pending (Not Taken)';
-
         return [
           a.UserId,
           `"${a.UserName || ''}"`,
@@ -602,7 +544,6 @@ export default function WorkshopAttendancePage() {
           a.CheckInTime ? `"${new Date(a.CheckInTime).toLocaleString('en-IN')}"` : 'N/A'
         ];
       });
-
       const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
@@ -620,7 +561,6 @@ export default function WorkshopAttendancePage() {
         dayHeaders.push(`${d.label}${dateSuffix} Morning`);
         dayHeaders.push(`${d.label}${dateSuffix} Evening`);
       });
-
       const headers = ['User ID', 'Name', 'Email', 'College', ...dayHeaders, 'Total Attended', 'Total Sessions', 'Attendance %', 'Certificate Eligibility'];
       const rows = attendees.map((a) => {
         const dayStatuses = [];
@@ -643,7 +583,6 @@ export default function WorkshopAttendancePage() {
           aStats.isEligible ? 'Eligible' : 'Shortage'
         ];
       });
-
       const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
@@ -655,7 +594,6 @@ export default function WorkshopAttendancePage() {
       toast.success(`Exported ${workshopDays.length}-Day Master Matrix CSV successfully`);
     }
   };
-
   return (
     <div className="bg-slate-50 dark:bg-black min-h-screen text-slate-900 dark:text-zinc-100 transition-colors p-4 sm:p-6 md:p-8 lg:p-10 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -680,7 +618,6 @@ export default function WorkshopAttendancePage() {
               Auto-calculated from Start Date & End Date ({workshopDays[0]?.dateFormatted || 'Day 1'} — {workshopDays[workshopDays.length - 1]?.dateFormatted || 'Final Day'}). Daily Morning & Evening session check-in.
             </p>
           </div>
-
           <div className="flex items-center gap-3 flex-wrap">
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -691,7 +628,6 @@ export default function WorkshopAttendancePage() {
               <Camera className="w-4 h-4" />
               <span>Live QR Scanner</span>
             </motion.button>
-
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -702,7 +638,6 @@ export default function WorkshopAttendancePage() {
               <Download className="w-4 h-4 text-emerald-600" />
               <span>{viewMode === 'session' ? 'Export Session CSV' : 'Export Matrix CSV'}</span>
             </motion.button>
-
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -715,7 +650,6 @@ export default function WorkshopAttendancePage() {
             </motion.button>
           </div>
         </motion.div>
-
         {/* ── LIVE METRICS GRID ── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -733,7 +667,6 @@ export default function WorkshopAttendancePage() {
               <Users className="w-5 h-5" />
             </div>
           </div>
-
           <div className="p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
@@ -748,7 +681,6 @@ export default function WorkshopAttendancePage() {
               <CheckCircle2 className="w-5 h-5" />
             </div>
           </div>
-
           <div className="p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
@@ -761,7 +693,6 @@ export default function WorkshopAttendancePage() {
               <XCircle className="w-5 h-5" />
             </div>
           </div>
-
           <div className="p-5 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
@@ -775,13 +706,11 @@ export default function WorkshopAttendancePage() {
             </div>
           </div>
         </motion.div>
-
         {/* ── WEBSITE SIGNATURE THEME TABS ── */}
         <div className="relative pt-2">
           <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto scrollbar-none">
             {workshopDays.map((d) => {
               const isActive = viewMode === 'session' && activeDay === d.dayNumber;
-
               return (
                 <button
                   key={d.dayNumber}
@@ -804,7 +733,6 @@ export default function WorkshopAttendancePage() {
                   ) : (
                     <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
                   )}
-
                   <span
                     className={`relative z-20 flex items-center gap-2 transition-colors ${
                       isActive
@@ -833,7 +761,6 @@ export default function WorkshopAttendancePage() {
                 </button>
               );
             })}
-
             {/* Add Extra Day Tab Action */}
             <button
               type="button"
@@ -848,7 +775,6 @@ export default function WorkshopAttendancePage() {
               <Plus className="w-3.5 h-3.5" />
               <span>Add Day</span>
             </button>
-
             {/* Master Matrix Tab (Docked Right) */}
             <button
               type="button"
@@ -866,7 +792,6 @@ export default function WorkshopAttendancePage() {
               ) : (
                 <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
               )}
-
               <span
                 className={`relative z-20 flex items-center gap-2 transition-colors ${
                   viewMode === 'matrix'
@@ -892,7 +817,6 @@ export default function WorkshopAttendancePage() {
               </span>
             </button>
           </div>
-
           {/* Main Card Container Connected to Signature Tabs */}
           <div className="bg-white dark:bg-black rounded-2xl rounded-tl-none border border-slate-200 dark:border-zinc-800 shadow-sm relative z-0 p-5 sm:p-6 space-y-5">
             {/* ── VIEW 1: DAILY SESSION CHECK-IN VIEW ── */}
@@ -917,7 +841,6 @@ export default function WorkshopAttendancePage() {
                         <Sun className={`w-3.5 h-3.5 ${activeSlot === 'Morning' ? 'text-amber-500' : 'text-slate-400'}`} />
                         <span>Morning Session (FN)</span>
                       </button>
-
                       <button
                         type="button"
                         onClick={() => setActiveSlot('Evening')}
@@ -932,7 +855,6 @@ export default function WorkshopAttendancePage() {
                       </button>
                     </div>
                   </div>
-
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -943,7 +865,6 @@ export default function WorkshopAttendancePage() {
                       <CheckCheck className="w-3.5 h-3.5" />
                       <span>Mark All Present</span>
                     </button>
-
                     <button
                       type="button"
                       onClick={() => handleBulkMark('absent')}
@@ -955,7 +876,6 @@ export default function WorkshopAttendancePage() {
                     </button>
                   </div>
                 </div>
-
                 {/* Filter and Search Bar */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
               <div className="relative flex-1">
@@ -968,7 +888,6 @@ export default function WorkshopAttendancePage() {
                   className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900 text-slate-900 dark:text-white outline-none focus:border-emerald-500 transition"
                 />
               </div>
-
               {/* Status filter buttons */}
               <div className="flex items-center gap-2 flex-wrap">
                 {[
@@ -992,7 +911,6 @@ export default function WorkshopAttendancePage() {
                 ))}
               </div>
             </div>
-
             {/* Attendance Table */}
             <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden">
               {loading ? (
@@ -1020,14 +938,12 @@ export default function WorkshopAttendancePage() {
                         <th className="py-3 px-4 font-bold uppercase tracking-wider text-[10px] text-right">Action</th>
                       </tr>
                     </thead>
-
                     <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                       {filteredAttendees.map((attendee, index) => {
                         const isPresent = attendee.AttendanceStatus === 'checked_in' || attendee.AttendanceStatus === 'present';
                         const isAbsent = attendee.AttendanceStatus === 'absent';
                         const key = `${attendee.UserId}-${activeDay}-${activeSlot}`;
                         const isUpdating = updatingId === key;
-
                         return (
                           <motion.tr
                             key={attendee.UserId || index}
@@ -1045,7 +961,6 @@ export default function WorkshopAttendancePage() {
                                 </div>
                               </div>
                             </td>
-
                             {/* College */}
                             <td className="py-3.5 px-4 text-slate-600 dark:text-zinc-300">
                               <div className="flex items-center gap-1.5 truncate max-w-xs">
@@ -1053,7 +968,6 @@ export default function WorkshopAttendancePage() {
                                 <span className="truncate">{attendee.College || 'Direct Enrollment'}</span>
                               </div>
                             </td>
-
                             {/* Contact */}
                             <td className="py-3.5 px-4 text-slate-600 dark:text-zinc-400">
                               <div className="space-y-0.5">
@@ -1069,7 +983,6 @@ export default function WorkshopAttendancePage() {
                                 )}
                               </div>
                             </td>
-
                             {/* Status Badge */}
                             <td className="py-3.5 px-4">
                               {isPresent ? (
@@ -1089,7 +1002,6 @@ export default function WorkshopAttendancePage() {
                                 </span>
                               )}
                             </td>
-
                             {/* Timestamp */}
                             <td className="py-3.5 px-4 text-slate-500 dark:text-zinc-400 font-mono text-[11px] whitespace-nowrap">
                               {attendee.CheckInTime
@@ -1099,7 +1011,6 @@ export default function WorkshopAttendancePage() {
                                   })
                                 : '—'}
                             </td>
-
                             {/* Action Buttons */}
                             <td className="py-3.5 px-4 text-right">
                               <div className="flex items-center justify-end gap-1.5">
@@ -1115,7 +1026,6 @@ export default function WorkshopAttendancePage() {
                                       <X className="w-3.5 h-3.5" />
                                       <span>Mark Absent</span>
                                     </button>
-
                                     <button
                                       type="button"
                                       disabled={isUpdating}
@@ -1138,7 +1048,6 @@ export default function WorkshopAttendancePage() {
                                       <Check className="w-3.5 h-3.5" />
                                       <span>Mark Present</span>
                                     </button>
-
                                     <button
                                       type="button"
                                       disabled={isUpdating}
@@ -1161,7 +1070,6 @@ export default function WorkshopAttendancePage() {
                                       <Check className="w-3.5 h-3.5" />
                                       <span>Present</span>
                                     </button>
-
                                     <button
                                       type="button"
                                       disabled={isUpdating}
@@ -1186,7 +1094,6 @@ export default function WorkshopAttendancePage() {
             </div>
           </div>
         )}
-
         {/* ── VIEW 2: DYNAMIC MASTER ATTENDANCE MATRIX ── */}
         {viewMode === 'matrix' && (
           <motion.div
@@ -1206,14 +1113,12 @@ export default function WorkshopAttendancePage() {
                   Daily AM (Morning) & PM (Evening) sessions. Dates: {workshopDays[0]?.dateFormatted} – {workshopDays[workshopDays.length - 1]?.dateFormatted}. Certificate requirement: 75% attendance.
                 </p>
               </div>
-
               <div className="flex items-center gap-3">
                 <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                   {overallStats.eligibleCount} / {attendees.length} Certificate Ready
                 </span>
               </div>
             </div>
-
             {/* Matrix Table */}
             <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
@@ -1252,11 +1157,9 @@ export default function WorkshopAttendancePage() {
                       </th>
                     </tr>
                   </thead>
-
                   <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
                     {attendees.map((attendee, index) => {
                       const aStats = getAttendeeStats(attendee.UserId);
-
                       return (
                         <tr key={attendee.UserId || index} className="hover:bg-slate-50/60 dark:hover:bg-zinc-900/40 transition">
                           {/* Attendee Name (Sticky Left) */}
@@ -1266,12 +1169,10 @@ export default function WorkshopAttendancePage() {
                               <p className="text-[10px] text-slate-400 font-mono">SEAT #{attendee.TeamId || attendee.UserId}</p>
                             </div>
                           </td>
-
                           {/* Dynamic Days AM & PM cells with real dates */}
                           {workshopDays.map((d) => {
                             const mStatus = getMatrixStatus(attendee.UserId, d.dayNumber, 'Morning');
                             const eStatus = getMatrixStatus(attendee.UserId, d.dayNumber, 'Evening');
-
                             const renderBadge = (st, slot) => {
                               const isP = st === 'checked_in';
                               const isA = st === 'absent';
@@ -1295,7 +1196,6 @@ export default function WorkshopAttendancePage() {
                                 </button>
                               );
                             };
-
                             return (
                               <React.Fragment key={d.dayNumber}>
                                 <td className="py-2.5 px-1.5 text-center border-l border-slate-100 dark:border-zinc-800/80">
@@ -1307,12 +1207,10 @@ export default function WorkshopAttendancePage() {
                               </React.Fragment>
                             );
                           })}
-
                           {/* Attended count */}
                           <td className="py-3 px-3 text-center font-bold font-mono border-l border-slate-100 dark:border-zinc-800">
                             {aStats.presentCount} / {aStats.totalSessions}
                           </td>
-
                           {/* Rate % */}
                           <td className="py-3 px-3 text-center font-bold font-mono">
                             <span
@@ -1325,7 +1223,6 @@ export default function WorkshopAttendancePage() {
                               {aStats.percent}%
                             </span>
                           </td>
-
                           {/* Certificate Eligibility */}
                           <td className="py-3 px-4 text-right">
                             {aStats.isEligible ? (
@@ -1351,7 +1248,6 @@ export default function WorkshopAttendancePage() {
           </div>
         </div>
       </div>
-
       {/* Live QR Camera Scanner Modal */}
       <AnimatePresence>
         {scannerOpen && (
@@ -1383,7 +1279,6 @@ export default function WorkshopAttendancePage() {
                     </div>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={closeScanner}
@@ -1392,7 +1287,6 @@ export default function WorkshopAttendancePage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <div className="p-6 space-y-4">
                 {/* QR Video Viewport */}
                 <div className="relative rounded-2xl overflow-hidden bg-black aspect-square flex items-center justify-center border border-slate-200 dark:border-zinc-800">
@@ -1404,7 +1298,6 @@ export default function WorkshopAttendancePage() {
                     </div>
                   )}
                 </div>
-
                 {/* Last Scanned Feedback Box */}
                 {lastScannedAttendee && (
                   <motion.div
@@ -1423,12 +1316,10 @@ export default function WorkshopAttendancePage() {
                     </span>
                   </motion.div>
                 )}
-
                 <p className="text-center text-xs text-slate-500 dark:text-zinc-400">
                   Align attendee pass QR code within the frame to verify automatically.
                 </p>
               </div>
-
               <div className="p-4 border-t border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50 flex justify-end">
                 <button
                   type="button"

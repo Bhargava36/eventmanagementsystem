@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
 import AppConfirmModal from '../../../../components/Molecules/AppConfirmModal';
+import Pagination from '../../../../components/Molecules/Pagination';
 import {
   CalendarDays,
   Clock,
@@ -17,8 +18,7 @@ import {
   Building2,
   Loader2,
   AlertTriangle,
-  X,
-  UserCheck
+  X
 } from 'lucide-react';
 
 export default function ProjectExpoSchedulesPage() {
@@ -38,12 +38,15 @@ export default function ProjectExpoSchedulesPage() {
 
   const [schedules, setSchedules] = useState([]);
   const [submissions, setSubmissions] = useState([]);
-  const [judges, setJudges] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Search & Filter
   const [search, setSearch] = useState('');
-  const [selectedJudgeFilter, setSelectedJudgeFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Create / Edit modal
   const [showSlotModal, setShowSlotModal] = useState(false);
@@ -54,7 +57,6 @@ export default function ProjectExpoSchedulesPage() {
     StartTime: '10:00',
     EndTime: '10:20',
     RoomOrBooth: '',
-    JudgeId: '',
     Status: 'SCHEDULED'
   });
   const [savingSlot, setSavingSlot] = useState(false);
@@ -67,24 +69,23 @@ export default function ProjectExpoSchedulesPage() {
     if (!eventId) return;
     try {
       setLoading(true);
-      const [schRes, subRes, jdgRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/project-expo/${eventId}/schedules`),
-        fetch(`${API_BASE_URL}/api/project-expo/${eventId}/submissions`),
-        fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}`)
+      const [schRes, subRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/project-expo/${eventId}/schedules?_t=${Date.now()}`, {
+          cache: 'no-store'
+        }),
+        fetch(`${API_BASE_URL}/api/project-expo/${eventId}/submissions?_t=${Date.now()}`, {
+          cache: 'no-store'
+        })
       ]);
 
       const schData = await schRes.json();
       const subData = await subRes.json();
-      const jdgData = await jdgRes.json();
 
       if (schData.success && Array.isArray(schData.schedules)) {
         setSchedules(schData.schedules);
       }
       if (subData.success && Array.isArray(subData.submissions)) {
         setSubmissions(subData.submissions);
-      }
-      if (jdgData.success && Array.isArray(jdgData.evaluators)) {
-        setJudges(jdgData.evaluators);
       }
     } catch (err) {
       toast.error('Failed to load presentation schedules');
@@ -96,6 +97,11 @@ export default function ProjectExpoSchedulesPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Reset pagination on filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, pageSize]);
 
   const stats = useMemo(() => {
     const total = schedules.length;
@@ -110,25 +116,29 @@ export default function ProjectExpoSchedulesPage() {
         !search ||
         (sch.TeamName || '').toLowerCase().includes(search.toLowerCase()) ||
         (sch.ProjectTitle || '').toLowerCase().includes(search.toLowerCase()) ||
-        (sch.JudgeName || '').toLowerCase().includes(search.toLowerCase()) ||
-        (sch.RoomOrBooth || '').toLowerCase().includes(search.toLowerCase());
-
-      const matchJudge =
-        selectedJudgeFilter === 'ALL' || String(sch.JudgeId) === String(selectedJudgeFilter);
-
-      return matchSearch && matchJudge;
+        (sch.RoomOrBooth || '').toLowerCase().includes(search.toLowerCase()) ||
+        (sch.BoothNumber || '').toLowerCase().includes(search.toLowerCase());
+      const matchStatus =
+        statusFilter === 'ALL' || String(sch.Status) === String(statusFilter);
+      return matchSearch && matchStatus;
     });
-  }, [schedules, search, selectedJudgeFilter]);
+  }, [schedules, search, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredSchedules.length / pageSize));
+  const paginatedSchedules = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredSchedules.slice(start, start + pageSize);
+  }, [filteredSchedules, currentPage, pageSize]);
 
   const handleOpenCreate = () => {
     setEditingSlotId(null);
+    const firstSub = submissions[0];
     setSlotForm({
-      TeamId: submissions[0]?.TeamId ? String(submissions[0].TeamId) : '',
+      TeamId: firstSub?.TeamId ? String(firstSub.TeamId) : '',
       SlotDate: new Date().toISOString().split('T')[0],
       StartTime: '10:00',
       EndTime: '10:20',
-      RoomOrBooth: 'STALL-01',
-      JudgeId: judges[0]?.Id ? String(judges[0].Id) : '',
+      RoomOrBooth: firstSub?.BoothNumber || 'STALL-01',
       Status: 'SCHEDULED'
     });
     setShowSlotModal(true);
@@ -141,22 +151,18 @@ export default function ProjectExpoSchedulesPage() {
       SlotDate: slot.SlotDate ? slot.SlotDate.split('T')[0] : '',
       StartTime: slot.StartTime ? slot.StartTime.slice(0, 5) : '10:00',
       EndTime: slot.EndTime ? slot.EndTime.slice(0, 5) : '10:20',
-      RoomOrBooth: slot.RoomOrBooth || '',
-      JudgeId: slot.JudgeId ? String(slot.JudgeId) : '',
+      RoomOrBooth: slot.RoomOrBooth || slot.BoothNumber || '',
       Status: slot.Status || 'SCHEDULED'
     });
     setShowSlotModal(true);
   };
-
   const handleSaveSlot = async (e) => {
     e.preventDefault();
     if (!eventId) return;
-
     if (!slotForm.TeamId || !slotForm.SlotDate || !slotForm.StartTime || !slotForm.EndTime) {
       toast.error('Please complete team, date, and slot time range.');
       return;
     }
-
     try {
       setSavingSlot(true);
       const res = await fetch(`${API_BASE_URL}/api/project-expo/${eventId}/schedules`, {
@@ -170,16 +176,14 @@ export default function ProjectExpoSchedulesPage() {
           StartTime: slotForm.StartTime,
           EndTime: slotForm.EndTime,
           RoomOrBooth: slotForm.RoomOrBooth || null,
-          JudgeId: slotForm.JudgeId ? parseInt(slotForm.JudgeId, 10) : null,
+          JudgeId: null,
           Status: slotForm.Status
         })
       });
-
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Failed to save presentation slot');
       }
-
       toast.success(editingSlotId ? 'Slot updated successfully!' : 'Slot scheduled successfully!');
       setShowSlotModal(false);
       loadData();
@@ -189,10 +193,8 @@ export default function ProjectExpoSchedulesPage() {
       setSavingSlot(false);
     }
   };
-
   const handleConfirmDelete = async () => {
     if (!deletingSlotId) return;
-
     try {
       setDeleting(true);
       const res = await fetch(`${API_BASE_URL}/api/project-expo/schedules/${deletingSlotId}`, {
@@ -202,7 +204,6 @@ export default function ProjectExpoSchedulesPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Failed to remove schedule');
       }
-
       toast.success('Presentation slot removed.');
       setDeletingSlotId(null);
       loadData();
@@ -212,7 +213,6 @@ export default function ProjectExpoSchedulesPage() {
       setDeleting(false);
     }
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-black p-8 flex items-center justify-center">
@@ -223,7 +223,6 @@ export default function ProjectExpoSchedulesPage() {
       </div>
     );
   }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -234,14 +233,13 @@ export default function ProjectExpoSchedulesPage() {
       {/* ── HEADER ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 pt-6 sm:px-6 md:px-8 max-w-7xl mx-auto">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-heading">
             Project Presentation & Demo Schedules
           </h1>
-          <p className="text-emerald-700 dark:text-emerald-500 text-sm sm:text-base mt-1">
-            Assign demonstration time slots and evaluation juries to prevent floor crowding
+          <p className="text-gray-500 dark:text-zinc-400 text-sm sm:text-base mt-1">
+            Assign demonstration time slots and stall locations to prevent floor crowding
           </p>
         </div>
-
         <button
           type="button"
           onClick={handleOpenCreate}
@@ -251,7 +249,6 @@ export default function ProjectExpoSchedulesPage() {
           <span>Schedule Demo Slot</span>
         </button>
       </div>
-
       <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
         {/* ── STATS TILES ── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
@@ -264,7 +261,6 @@ export default function ProjectExpoSchedulesPage() {
               <CalendarDays className="w-6 h-6" />
             </div>
           </div>
-
           <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm transition hover:shadow-md flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Completed Presentations</p>
@@ -274,10 +270,9 @@ export default function ProjectExpoSchedulesPage() {
               <CheckCircle2 className="w-6 h-6" />
             </div>
           </div>
-
           <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm transition hover:shadow-md flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Pending Rounds</p>
+              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Pending Presentations</p>
               <p className="text-2xl sm:text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1.5">{stats.pending}</p>
             </div>
             <div className="p-3 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
@@ -285,7 +280,6 @@ export default function ProjectExpoSchedulesPage() {
             </div>
           </div>
         </div>
-
         {/* ── SEARCH & FILTER ── */}
         <div className="bg-white dark:bg-black rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <div className="relative flex-1">
@@ -294,52 +288,49 @@ export default function ProjectExpoSchedulesPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by team, project, judge, or stall location..."
+              placeholder="Search by team, project, or stall location..."
               className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500 transition"
             />
           </div>
-
           <div className="flex items-center gap-3">
             <select
-              value={selectedJudgeFilter}
-              onChange={(e) => setSelectedJudgeFilter(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-black text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-emerald-500 font-medium"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-black text-sm text-gray-800 dark:text-gray-200 outline-none focus:border-emerald-500 font-medium cursor-pointer"
             >
-              <option value="ALL">All Evaluators ({judges.length})</option>
-              {judges.map((j) => (
-                <option key={j.Id} value={j.Id}>
-                  Judge: {j.Name}
-                </option>
-              ))}
+              <option value="ALL">All Statuses</option>
+              <option value="SCHEDULED">Scheduled</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="RESCHEDULED">Rescheduled</option>
+              <option value="CANCELLED">Cancelled</option>
             </select>
           </div>
         </div>
-
         {/* ── SCHEDULES TIMELINE TABLE ── */}
         {filteredSchedules.length === 0 ? (
           <div className="bg-white dark:bg-black rounded-2xl p-12 sm:p-16 border border-gray-200 dark:border-zinc-800 text-center">
             <CalendarDays className="w-12 h-12 text-gray-400 mx-auto mb-4 opacity-50" />
             <h3 className="text-base font-bold text-gray-900 dark:text-white">No Schedules Added</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 max-w-md mx-auto">
-              Click "Schedule Demo Slot" above to assign presenting time slots and judges to your exhibiting teams.
+              Click "Schedule Demo Slot" above to assign presentation time slots to your exhibiting teams.
             </p>
           </div>
         ) : (
           <div className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50/75 dark:bg-zinc-900/60 border-b border-gray-200 dark:border-zinc-800 text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs font-semibold">
+                <thead className="bg-gray-50/75 dark:bg-black border-b border-gray-200 dark:border-zinc-800 text-gray-500 dark:text-gray-400 uppercase tracking-wider text-xs font-semibold">
                   <tr>
                     <th className="py-4 px-6">Time Slot & Date</th>
                     <th className="py-4 px-6">Exhibiting Team & Project</th>
-                    <th className="py-4 px-6">Assigned Jury</th>
                     <th className="py-4 px-6">Stall Location</th>
                     <th className="py-4 px-6">Status</th>
                     <th className="py-4 px-6 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/80">
-                  {filteredSchedules.map((sch) => (
+                <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
+                  {paginatedSchedules.map((sch) => (
                     <tr key={sch.Id} className="hover:bg-gray-50/50 dark:hover:bg-zinc-900/30 transition-colors">
                       <td className="py-4 px-6 whitespace-nowrap">
                         <div className="flex items-center gap-2">
@@ -352,43 +343,33 @@ export default function ProjectExpoSchedulesPage() {
                           {sch.SlotDate ? new Date(sch.SlotDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Date not set'}
                         </span>
                       </td>
-
                       <td className="py-4 px-6">
                         <p className="font-bold text-gray-900 dark:text-white">{sch.TeamName}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-sm mt-0.5">
                           {sch.ProjectTitle || 'No project title registered'}
                         </p>
                       </td>
-
                       <td className="py-4 px-6">
-                        <p className="font-medium text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
-                          <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>{sch.JudgeName || 'Pending Assignment'}</span>
-                        </p>
-                        {sch.JudgeDesignation && (
-                          <p className="text-xs text-gray-400 mt-0.5">{sch.JudgeDesignation}</p>
-                        )}
-                      </td>
-
-                      <td className="py-4 px-6">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 font-medium text-xs">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 text-gray-700 dark:text-zinc-300 font-medium text-xs">
                           <Building2 className="w-3 h-3 text-emerald-600" />
                           <span>{sch.RoomOrBooth || sch.BoothNumber || 'Exhibition Hall'}</span>
                         </span>
                       </td>
-
                       <td className="py-4 px-6">
                         <span
-                          className={`text-xs font-semibold ${
+                          className={`inline-flex items-center px-2.5 py-0.5 text-xs font-semibold ${
                             sch.Status === 'COMPLETED'
                               ? 'text-emerald-600 dark:text-emerald-400'
+                              : sch.Status === 'IN_PROGRESS'
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : sch.Status === 'CANCELLED'
+                              ? 'text-rose-600 dark:text-rose-400'
                               : 'text-amber-600 dark:text-amber-400'
                           }`}
                         >
-                          • {sch.Status === 'COMPLETED' ? 'Completed' : 'Scheduled'}
+                           {sch.Status === 'COMPLETED' ? 'Completed' : sch.Status === 'IN_PROGRESS' ? 'In Progress' : sch.Status === 'CANCELLED' ? 'Cancelled' : sch.Status === 'RESCHEDULED' ? 'Rescheduled' : 'Scheduled'}
                         </span>
                       </td>
-
                       <td className="py-4 px-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-3 text-xs">
                           <button
@@ -412,9 +393,20 @@ export default function ProjectExpoSchedulesPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Component */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredSchedules.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[5, 10, 20, 50]}
+              itemName="schedules"
+            />
           </div>
         )}
-
         {/* ── CREATE / EDIT SLOT MODAL ── */}
         <AnimatePresence>
           {showSlotModal && (
@@ -426,7 +418,6 @@ export default function ProjectExpoSchedulesPage() {
                 onClick={() => !savingSlot && setShowSlotModal(false)}
                 className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
               />
-
               <motion.div
                 initial={{ opacity: 0, scale: 0.96, y: 12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -439,7 +430,7 @@ export default function ProjectExpoSchedulesPage() {
                       {editingSlotId ? 'Edit Presentation Slot' : 'Schedule Demo Slot'}
                     </h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Assign demonstration timing and panel judges for this team.
+                      Assign demonstration timing and stall location for this team.
                     </p>
                   </div>
                   <button
@@ -451,7 +442,6 @@ export default function ProjectExpoSchedulesPage() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-
                 <form onSubmit={handleSaveSlot} className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -459,19 +449,26 @@ export default function ProjectExpoSchedulesPage() {
                     </label>
                     <select
                       value={slotForm.TeamId}
-                      onChange={(e) => setSlotForm({ ...slotForm, TeamId: e.target.value })}
+                      onChange={(e) => {
+                        const chosenTeamId = e.target.value;
+                        const chosenSub = submissions.find((s) => String(s.TeamId) === String(chosenTeamId));
+                        setSlotForm((prev) => ({
+                          ...prev,
+                          TeamId: chosenTeamId,
+                          RoomOrBooth: chosenSub?.BoothNumber || prev.RoomOrBooth
+                        }));
+                      }}
                       required
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500 font-medium"
                     >
                       <option value="">-- Choose Team --</option>
                       {submissions.map((sub) => (
                         <option key={sub.TeamId} value={sub.TeamId}>
-                          {sub.TeamName} — {sub.ProjectTitle}
+                          {sub.TeamName} — {sub.ProjectTitle || 'No project title'}
                         </option>
                       ))}
                     </select>
                   </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -485,7 +482,6 @@ export default function ProjectExpoSchedulesPage() {
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500"
                       />
                     </div>
-
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                         Assigned Stall / Location
@@ -499,7 +495,6 @@ export default function ProjectExpoSchedulesPage() {
                       />
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -513,7 +508,6 @@ export default function ProjectExpoSchedulesPage() {
                         className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500"
                       />
                     </div>
-
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                         End Time *
@@ -527,44 +521,22 @@ export default function ProjectExpoSchedulesPage() {
                       />
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        Assigned Jury / Evaluator
-                      </label>
-                      <select
-                        value={slotForm.JudgeId}
-                        onChange={(e) => setSlotForm({ ...slotForm, JudgeId: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500 font-medium"
-                      >
-                        <option value="">-- No Specific Judge --</option>
-                        {judges.map((j) => (
-                          <option key={j.Id} value={j.Id}>
-                            {j.Name} ({j.Role || 'Judge'})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                        Status
-                      </label>
-                      <select
-                        value={slotForm.Status}
-                        onChange={(e) => setSlotForm({ ...slotForm, Status: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500 font-medium"
-                      >
-                        <option value="SCHEDULED">Scheduled</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="RESCHEDULED">Rescheduled</option>
-                        <option value="CANCELLED">Cancelled</option>
-                      </select>
-                    </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                      Status
+                    </label>
+                    <select
+                      value={slotForm.Status}
+                      onChange={(e) => setSlotForm({ ...slotForm, Status: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500 font-medium"
+                    >
+                      <option value="SCHEDULED">Scheduled</option>
+                      <option value="IN_PROGRESS">In Progress</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="RESCHEDULED">Rescheduled</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
                   </div>
-
                   <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-zinc-800">
                     <button
                       type="button"
@@ -588,7 +560,6 @@ export default function ProjectExpoSchedulesPage() {
             </div>
           )}
         </AnimatePresence>
-
         {/* ── DELETE MODAL ── */}
         <AppConfirmModal
           isOpen={Boolean(deletingSlotId)}

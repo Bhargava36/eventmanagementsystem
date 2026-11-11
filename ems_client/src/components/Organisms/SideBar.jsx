@@ -20,9 +20,10 @@ import {
   CircleX,
   Users,
   ScrollText,
-  Sliders
+  Sliders,
+  ShieldCheck,
+  Activity
 } from 'lucide-react';
-
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
       <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -31,10 +32,6 @@ const logoElement = (
       <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
     </div>
   );
-
-
-
-
 const SidebarContent = ({
   isMobile = false,
   collapsed,
@@ -46,7 +43,6 @@ const SidebarContent = ({
   const location = useLocation();
   const [count, setCount] = useState([]);
   const { user } = useAuth();
-
   const [superAdminData, setSuperAdminData] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('user') || localStorage.getItem('admin') || '{}');
@@ -55,11 +51,9 @@ const SidebarContent = ({
     }
   });
   const [imageError, setImageError] = useState(false);
-
   useEffect(() => {
     fetchEventCount();
   },[]);
-
   useEffect(() => {
     const syncSuperAdminData = () => {
       try {
@@ -68,7 +62,6 @@ const SidebarContent = ({
         setImageError(false);
       } catch {}
     };
-
     const targetId = superAdminData?.Id || superAdminData?.id || user?.Id || user?.id;
     if (targetId) {
       fetch(`${API_BASE_URL}/api/super_admin/profile/${targetId}`)
@@ -87,7 +80,6 @@ const SidebarContent = ({
         })
         .catch(() => {});
     }
-
     window.addEventListener('storage', syncSuperAdminData);
     window.addEventListener('superadmin-profile-updated', syncSuperAdminData);
     window.addEventListener('profileUpdated', syncSuperAdminData);
@@ -97,7 +89,6 @@ const SidebarContent = ({
       window.removeEventListener('profileUpdated', syncSuperAdminData);
     };
   }, [user?.Id, user?.id]);
-
   const fetchEventCount = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/events/`);
@@ -107,24 +98,23 @@ const SidebarContent = ({
       console.error('Error fetching event count:', error);
     }
   };
-
   const totalEvents = count.length;
   const profilePath = '/sidebar/profile';
   const superAdminDisplayName = superAdminData?.UserName || user?.UserName || superAdminData?.Name || user?.Name || 'Super Admin';
   const superAdminPhoto = superAdminData?.Photo || superAdminData?.photo || user?.Photo || user?.photo || superAdminData?.ProfilePic || '';
   const superAdminInitials = superAdminDisplayName ? superAdminDisplayName.charAt(0).toUpperCase() : 'SA';
-
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/sidebar', badge: null, end: true },
     { name: 'Events', icon: Calendar, path: '/sidebar/events', badge: totalEvents, dot: false },
     { name: 'Users', icon: Users, path: '/sidebar/users', badge: null },
     { name: 'Operations', icon: Sliders, path: '/sidebar/operations', badge: null },
+    { name: 'Security', icon: ShieldCheck, path: '/sidebar/security', badge: null },
+    { name: 'Monitoring', icon: Activity, path: '/sidebar/system-monitoring', badge: null },
     { name: 'Logs', icon: ScrollText, path: '/sidebar/logs', badge: null },
     { name: 'Notifications', icon: Bell, path: '/sidebar/notification', badge: null},
     { name: 'Feedback', icon: MessageCircleQuestion, path: '/sidebar/feedback', badge: null },
     { name: 'Profile', icon: CircleUserRound, path: profilePath, badge: null },
   ];
-
   useEffect(() => {
     if (collapsed) {
       setShowText(false);
@@ -135,17 +125,14 @@ const SidebarContent = ({
       return () => clearTimeout(timer);
     }
   }, [collapsed]);
-
   const toast = useToast();
   const { logout } = useAuth();
   const canShowText = isMobile || showText;
-
   function handleLogout() {
     logout();
     toast.success('Logged out successfully');
     navigate('/login');
   }
-
   return (
     <aside
       className={`relative ${
@@ -165,7 +152,6 @@ const SidebarContent = ({
           )}
         </button>
       )}
-
       {isMobile && (
         <button
           onClick={() => setMobileOpen(false)}
@@ -174,7 +160,6 @@ const SidebarContent = ({
           <CircleX className="w-7 h-7 text-white" />
         </button>
       )}
-
       {/* Fixed Header */}
       <div
         className={`flex items-center gap-3 mb-6 mt-2 shrink-0 ${
@@ -216,9 +201,7 @@ const SidebarContent = ({
           </motion.div>
         )}
       </div>
-
       <div className="border-t border-gray-200 dark:border-[#1A2440] mb-3 shrink-0"></div>
-
       {/* Only Navigation Links Scroll */}
       <LayoutGroup id={isMobile ? 'superadmin-nav-mobile' : 'superadmin-nav-desktop'}>
         <nav className="space-y-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1.5 sidebar-scrollbar">
@@ -227,7 +210,6 @@ const SidebarContent = ({
             const isCurrentActive = item.end
               ? location.pathname === item.path
               : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
-
             return (
               <NavLink
                 key={item.name}
@@ -295,7 +277,6 @@ const SidebarContent = ({
           })}
         </nav>
       </LayoutGroup>
-
       {/* Fixed Footer */}
       <div className="mt-auto shrink-0 pt-3 ">
         <ThemeToggle variant="sidebar" canShowText={canShowText} />
@@ -323,11 +304,9 @@ const SidebarContent = ({
     </aside>
   );
 };
-
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-black overflow-hidden">
       <div className="hidden lg:flex h-screen sticky top-0 z-20">
@@ -338,14 +317,12 @@ const Sidebar = () => {
           setMobileOpen={setMobileOpen}
         />
       </div>
-
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
-
       <div
         className={`fixed top-0 left-0 z-50 h-full lg:hidden transition-transform duration-300 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
@@ -358,7 +335,6 @@ const Sidebar = () => {
           setMobileOpen={setMobileOpen}
         />
       </div>
-
       <div className="flex-1 min-w-0 overflow-y-auto h-screen bg-gray-50 dark:bg-black transition-colors relative">
         <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30">
           <div className="flex items-center gap-3">
@@ -382,16 +358,13 @@ const Sidebar = () => {
           </div>
           <NotificationBellDropdown align="right" />
         </div>
-
         {/* Floating Top-Right Notification Island on Desktop */}
         <div className="hidden lg:flex fixed top-5 right-6 z-40 items-center">
           <NotificationBellDropdown align="right" variant="floating" />
         </div>
-
         <Outlet />
       </div>
     </div>
   );
 };
-
 export default Sidebar;

@@ -1,8 +1,5 @@
 const projectExpoService = require('./projectExpoService');
-
-/**
- * CONFIG & STATUS
- */
+// CONFIG & STATUS
 const getConfig = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -12,7 +9,6 @@ const getConfig = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const saveConfig = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -22,22 +18,18 @@ const saveConfig = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const updateStatus = async (req, res) => {
     try {
         const { eventId } = req.params;
         const { status } = req.body;
         if (!status) return res.status(400).json({ success: false, message: 'Status is required.' });
-        const result = await projectExpoService.updateStatus(eventId, status);
+        const result = await projectExpoService.updateStatus(eventId, status, req);
         return res.status(200).json({ success: true, message: `Status updated to ${status}.`, result });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
-/**
- * DOMAINS
- */
+// DOMAINS
 const getDomains = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -47,7 +39,6 @@ const getDomains = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const saveDomains = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -59,10 +50,7 @@ const saveDomains = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
-/**
- * SUBMISSIONS
- */
+// SUBMISSIONS
 const getSubmissions = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -77,7 +65,6 @@ const getSubmissions = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const getSubmissionByTeam = async (req, res) => {
     try {
         const { eventId, teamId } = req.params;
@@ -87,7 +74,6 @@ const getSubmissionByTeam = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const upsertSubmission = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -102,22 +88,18 @@ const upsertSubmission = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const reviewSubmission = async (req, res) => {
     try {
         const { submissionId } = req.params;
         const { status, adminFeedback } = req.body;
         if (!status) return res.status(400).json({ success: false, message: 'Review status is required.' });
-        const result = await projectExpoService.reviewSubmission(submissionId, { status, adminFeedback });
+        const result = await projectExpoService.reviewSubmission(submissionId, { status, adminFeedback }, req);
         return res.status(200).json({ success: true, message: `Submission reviewed as ${status}.`, result });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
-/**
- * BOOTHS
- */
+// BOOTHS
 const getBooths = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -127,7 +109,6 @@ const getBooths = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const batchGenerateBooths = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -138,32 +119,36 @@ const batchGenerateBooths = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const allocateBooth = async (req, res) => {
     try {
         const { boothId } = req.params;
         const { teamId } = req.body;
         if (!teamId) return res.status(400).json({ success: false, message: 'TeamId is required for allocation.' });
-        const result = await projectExpoService.allocateBooth(boothId, teamId);
+        const result = await projectExpoService.allocateBooth(boothId, teamId, req);
         return res.status(200).json({ success: true, message: 'Booth allocated successfully.', result });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const deallocateBooth = async (req, res) => {
     try {
         const { boothId } = req.params;
-        const result = await projectExpoService.deallocateBooth(boothId);
+        const result = await projectExpoService.deallocateBooth(boothId, req);
         return res.status(200).json({ success: true, message: 'Booth deallocated successfully.', result });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
-/**
- * SCHEDULES
- */
+const deleteBooth = async (req, res) => {
+    try {
+        const { boothId } = req.params;
+        const result = await projectExpoService.deleteBooth(boothId, req);
+        return res.status(200).json({ success: true, message: 'Stall deleted successfully.', result });
+    } catch (err) {
+        return res.status(400).json({ success: false, message: err.message });
+    }
+};
+// SCHEDULES
 const getSchedules = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -173,7 +158,6 @@ const getSchedules = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const upsertSchedule = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -184,7 +168,6 @@ const upsertSchedule = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const deleteSchedule = async (req, res) => {
     try {
         const { scheduleId } = req.params;
@@ -194,10 +177,7 @@ const deleteSchedule = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
-/**
- * CRITERIA & SCORES
- */
+// CRITERIA & SCORES
 const getCriteria = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -207,7 +187,6 @@ const getCriteria = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const saveCriteria = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -219,7 +198,6 @@ const saveCriteria = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const getScores = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -230,7 +208,6 @@ const getScores = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const submitScore = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -241,7 +218,6 @@ const submitScore = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const getJudges = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -251,10 +227,7 @@ const getJudges = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
-/**
- * RESULTS
- */
+// RESULTS
 const getRankings = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -264,29 +237,29 @@ const getRankings = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const getResults = async (req, res) => {
     try {
         const { eventId } = req.params;
-        const results = await projectExpoService.getResults(eventId);
+        const userRole = (req.user?.role || req.user?.Role || '').toLowerCase();
+        const isAdmin = ['admin', 'superadmin', 'evaluator'].includes(userRole);
+        const onlyPublished = req.query.all === 'true' && isAdmin ? false : !isAdmin;
+        const results = await projectExpoService.getResults(eventId, onlyPublished);
         return res.status(200).json({ success: true, results });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const publishResults = async (req, res) => {
     try {
         const { eventId } = req.params;
         const { winners } = req.body;
         if (!Array.isArray(winners)) return res.status(400).json({ success: false, message: 'Winners list is required.' });
-        const results = await projectExpoService.publishResults(eventId, winners);
+        const results = await projectExpoService.publishResults(eventId, winners, req);
         return res.status(200).json({ success: true, message: 'Results published successfully.', results });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 module.exports = {
     getConfig,
     saveConfig,
@@ -301,6 +274,7 @@ module.exports = {
     batchGenerateBooths,
     allocateBooth,
     deallocateBooth,
+    deleteBooth,
     getSchedules,
     upsertSchedule,
     deleteSchedule,

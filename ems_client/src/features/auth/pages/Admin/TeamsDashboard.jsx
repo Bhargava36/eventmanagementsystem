@@ -20,21 +20,23 @@ import {
     ChevronsLeft,
     ChevronsRight
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { getTrackVisibility, isSoloTeamSize, getEventTypeInfo } from '../../../../lib/utils';
-
 function TeamsDashboard() {
     const navigate = useNavigate();
     const storedAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
-    const [currentEventId, setCurrentEventId] = useState(storedAdmin?.EventId || storedAdmin?.eventId || null);
-
     const typeInfo = getEventTypeInfo(storedAdmin?.EventType);
+
+    if (typeInfo.isAlumni) {
+        return <Navigate to="/admin/alumni/registrations" replace />;
+    }
+
+    const [currentEventId, setCurrentEventId] = useState(storedAdmin?.EventId || storedAdmin?.eventId || null);
     const { showVirtual, showPhysical, isBoth, isVirtual, isPhysical } = getTrackVisibility(
         storedAdmin?.HackathonMode,
         storedAdmin?.Location,
         storedAdmin?.EventType
     );
-
     const [teams, setTeams] = useState([]);
     const [totalTeams, setTotalTeams] = useState(0);
     const [totalMembers, setTotalMembers] = useState(0);
@@ -44,13 +46,10 @@ function TeamsDashboard() {
     const [activeTab, setActiveTab] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-
     const isSolo = isSoloTeamSize(storedAdmin?.TeamSize) || typeInfo.isWorkshop || typeInfo.isSeminar || typeInfo.isWebinar || (teams.length > 0 && teams.every((t) => Number(t.MemberCount || t.MembersCount || t.TeamSize || 1) === 1));
-
     useEffect(() => {
         setCurrentPage(1);
     }, [search, activeTab]);
-
     useEffect(() => {
         const init = async () => {
             let eid = currentEventId;
@@ -70,7 +69,6 @@ function TeamsDashboard() {
                     console.error('Failed to resolve admin event:', e);
                 }
             }
-
             if (eid) {
                 fetchTeams(eid);
             } else {
@@ -78,10 +76,8 @@ function TeamsDashboard() {
                 setError('No event assigned to this admin.');
             }
         };
-
         init();
     }, [currentEventId]);
-
     const fetchTeams = async (targetEventId = currentEventId) => {
         if (!targetEventId) return;
         try {
@@ -91,12 +87,10 @@ function TeamsDashboard() {
             if (!response.ok) {
                 throw new Error('Failed to fetch teams');
             }
-
             const data = await response.json();
             const fetchedTeams = Array.isArray(data) ? data : (data.teams || []);
             setTeams(fetchedTeams);
             setTotalTeams(fetchedTeams.length);
-
             const members = fetchedTeams.reduce(
                 (total, team) => total + Number(team.MemberCount || team.MembersCount || team.TeamSize || 0),
                 0
@@ -109,14 +103,12 @@ function TeamsDashboard() {
             setLoading(false);
         }
     };
-
     const getTeamId = (team) => team.Id;
     const getTeamName = (team) => team.TeamName || 'Unnamed Team';
     const getTagline = (team) => team.Description || team.College || 'No description available';
     const getLeaderName = (team) => team.LeaderName || 'Not available';
     const getLeaderEmail = (team) => team.LeaderEmail || team.Email || 'Not available';
     const getMemberCount = (team) => Number(team.MemberCount || team.MembersCount || team.TeamSize || 0);
-
     const getRegisteredDate = (team) => {
         const date = team.CreatedAt || team.Created_At;
         if (!date) return 'Registered';
@@ -126,27 +118,21 @@ function TeamsDashboard() {
             year: 'numeric'
         });
     };
-
     const getMode = (team) => (team.ParticipationMode || '').toLowerCase();
-
     const virtualCount = teams.filter((t) => {
         const m = getMode(t);
         return m === 'virtual' || m === 'both' || m === 'hybrid' || m.includes('virtual');
     }).length;
-
     const physicalCount = teams.filter((t) => {
         const m = getMode(t);
         return m === 'physical' || m === 'both' || m === 'hybrid' || m.includes('physical');
     }).length;
-
     const filteredTeams = teams.filter((team) => {
         const matchesSearch =
             (team.TeamName || '').toLowerCase().includes(search.toLowerCase()) ||
             (team.LeaderName || '').toLowerCase().includes(search.toLowerCase()) ||
             (team.College || '').toLowerCase().includes(search.toLowerCase());
-
         if (!matchesSearch) return false;
-
         const m = getMode(team);
         if (activeTab === 'virtual') {
             return m === 'virtual' || m === 'both' || m === 'hybrid' || m.includes('virtual');
@@ -156,16 +142,13 @@ function TeamsDashboard() {
         }
         return true;
     });
-
     const totalPages = Math.max(1, Math.ceil(filteredTeams.length / itemsPerPage));
     const safeCurrentPage = Math.min(currentPage, totalPages);
     const startIndex = (safeCurrentPage - 1) * itemsPerPage;
     const paginatedTeams = filteredTeams.slice(startIndex, startIndex + itemsPerPage);
-
     const handleTeamClick = (teamId) => {
         navigate(`/admin/teams/${teamId}`);
     };
-
     const tabs = typeInfo.isWebinar
         ? []
         : [
@@ -196,7 +179,6 @@ function TeamsDashboard() {
                   ]
                 : [])
         ];
-
     return (
         <motion.div
             initial={{ opacity: 0, y: 14 }}
@@ -217,7 +199,6 @@ function TeamsDashboard() {
                             : `Track, filter and manage virtual and physical ${typeInfo.label.toLowerCase()} registrations.`}
                     </p>
                 </div>
-
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -229,7 +210,6 @@ function TeamsDashboard() {
                             className="w-full sm:w-64 pl-10 pr-4 py-2 bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-xl text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500 shadow-sm"
                         />
                     </div>
-
                     <button
                         type="button"
                         onClick={fetchTeams}
@@ -240,13 +220,11 @@ function TeamsDashboard() {
                     </button>
                 </div>
             </div>
-
             {error && (
                 <div className="mb-6 rounded-xl border border-red-200 bg-red-50/50 p-4 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-400">
                     {error}
                 </div>
             )}
-
             <div className={`grid grid-cols-2 ${isBoth ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-3 sm:gap-4 mb-6 sm:mb-8`}>
                 <motion.div
                     initial={{ opacity: 0, y: 12 }}
@@ -272,7 +250,6 @@ function TeamsDashboard() {
                         {typeInfo.isWebinar ? 'Registered delegates' : 'All registrations'}
                     </p>
                 </motion.div>
-
                 {(isBoth || isVirtual) && (
                     <motion.div
                         initial={{ opacity: 0, y: 12 }}
@@ -299,7 +276,6 @@ function TeamsDashboard() {
                         </p>
                     </motion.div>
                 )}
-
                 {(isBoth || isPhysical) && (
                     <motion.div
                         initial={{ opacity: 0, y: 12 }}
@@ -326,7 +302,6 @@ function TeamsDashboard() {
                         </p>
                     </motion.div>
                 )}
-
                 <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -352,14 +327,12 @@ function TeamsDashboard() {
                     </p>
                 </motion.div>
             </div>
-
             <div className="relative pt-2">
                 {tabs.length > 0 && (
                     <div className="flex items-end gap-2 px-4 sm:px-6 relative z-10 -mb-px sm: scrolling-touch overflow-x-auto sm:scrolling-smooth">
                         {tabs.map((tab) => {
                             const isActive = activeTab === tab.id;
                             const Icon = tab.icon;
-
                             return (
                                 <button
                                     key={tab.id}
@@ -379,7 +352,6 @@ function TeamsDashboard() {
                                     ) : (
                                         <div className="absolute inset-0 rounded-t-2xl bg-gray-100/80 dark:bg-black border border-gray-200 dark:border-zinc-800 z-0" />
                                     )}
-
                                     <span className={`relative z-20 flex items-center gap-2 transition-colors ${
                                         isActive
                                             ? 'text-gray-950 dark:text-white font-bold'
@@ -393,7 +365,6 @@ function TeamsDashboard() {
                                             }`}
                                         />
                                         <span>{tab.label}</span>
-
                                         <span
                                             className={`ml-1 px-2 py-0.5 rounded-lg text-[11px] font-bold transition-colors ${
                                                 isActive
@@ -409,7 +380,6 @@ function TeamsDashboard() {
                         })}
                     </div>
                 )}
-
                 <div className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-zinc-800 shadow-sm overflow-hidden mb-6 relative z-0">
                     <div className="p-4 sm:p-5 border-b border-gray-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
@@ -424,7 +394,6 @@ function TeamsDashboard() {
                                 ({filteredTeams.length} {filteredTeams.length === 1 ? (typeInfo.isWebinar ? 'delegate' : isSolo ? 'attendee' : 'team') : (typeInfo.isWebinar ? 'delegates' : isSolo ? 'attendees' : 'teams')})
                             </span>
                         </div>
-
                         <div className="flex items-center gap-2 sm:gap-3">
                             <div className="relative flex-1 sm:flex-none">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -436,7 +405,6 @@ function TeamsDashboard() {
                                     className="w-full sm:w-60 pl-9 pr-4 py-1.5 sm:py-2 bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-lg text-xs sm:text-sm text-gray-900 dark:text-white focus:outline-none focus:border-emerald-700 dark:focus:border-emerald-500"
                                 />
                             </div>
-
                             <button
                                 type="button"
                                 onClick={() => setSearch('')}
@@ -447,7 +415,6 @@ function TeamsDashboard() {
                             </button>
                         </div>
                     </div>
-
                     <div className="overflow-x-auto">
                         <table className="w-full text-xs sm:text-sm min-w-[900px]">
                             <thead>
@@ -475,7 +442,6 @@ function TeamsDashboard() {
                                     </th>
                                 </tr>
                             </thead>
-
                             <tbody>
                                 {loading ? (
                                     [1, 2, 3, 4].map((i) => (
@@ -536,7 +502,6 @@ function TeamsDashboard() {
                                         const isVirtual = mode === 'virtual';
                                         const isPhysical = mode === 'physical';
                                         const isBoth = mode === 'both' || mode === 'hybrid' || mode.includes('virtual and physical');
-
                                         return (
                                             <motion.tr
                                                 key={teamId || index}
@@ -548,13 +513,11 @@ function TeamsDashboard() {
                                                 <td className="px-4 py-3 sm:py-4 text-gray-900 dark:text-white font-medium">
                                                     {String(startIndex + index + 1).padStart(2, '0')}
                                                 </td>
-
                                                 <td className="px-4 py-3 sm:py-4">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0 bg-emerald-700 dark:bg-emerald-500">
                                                             {typeInfo.isWebinar ? <Radio className="w-4 h-4" /> : typeInfo.isWorkshop ? <GraduationCap className="w-4 h-4" /> : isSolo ? <User className="w-4 h-4" /> : <Code className="w-4 h-4" />}
                                                         </div>
-
                                                         <div className="min-w-0">
                                                             <p className="font-semibold text-gray-900 dark:text-white truncate">
                                                                 {isSolo && getLeaderName(team) !== 'Not available' ? getLeaderName(team) : teamName}
@@ -565,7 +528,6 @@ function TeamsDashboard() {
                                                         </div>
                                                     </div>
                                                 </td>
-
                                                 <td className="px-4 py-3 sm:py-4">
                                                     {typeInfo.isWebinar ? (
                                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
@@ -593,7 +555,6 @@ function TeamsDashboard() {
                                                         </span>
                                                     )}
                                                 </td>
-
                                                 <td className="px-4 py-3 sm:py-4">
                                                     <p className="font-medium text-gray-900 dark:text-white">
                                                         {getLeaderEmail(team)}
@@ -602,7 +563,6 @@ function TeamsDashboard() {
                                                         {team.LeaderPhone || team.Phone || team.Mobile || (typeInfo.isWebinar ? 'Webinar Delegate' : isSolo ? 'Individual Attendee' : 'Team Leader')}
                                                     </p>
                                                 </td>
-
                                                 <td className="px-4 py-3 sm:py-4 text-center text-gray-900 dark:text-white font-semibold">
                                                     {typeInfo.isWebinar ? (
                                                         <span className="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
@@ -616,11 +576,9 @@ function TeamsDashboard() {
                                                         getMemberCount(team)
                                                     )}
                                                 </td>
-
                                                 <td className="px-4 py-3 sm:py-4 text-gray-600 dark:text-gray-300 text-xs">
                                                     {getRegisteredDate(team)}
                                                 </td>
-
                                                 <td className="px-4 py-3 sm:py-4">
                                                     <div className="flex items-center justify-center">
                                                         <button
@@ -640,14 +598,12 @@ function TeamsDashboard() {
                             </tbody>
                         </table>
                     </div>
-
                     {filteredTeams.length > 0 && (
                         <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50 dark:bg-black/60">
                             <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                 <span>
                                     Showing <span className="font-semibold text-gray-900 dark:text-white">{startIndex + 1}</span> to <span className="font-semibold text-gray-900 dark:text-white">{Math.min(startIndex + itemsPerPage, filteredTeams.length)}</span> of <span className="font-semibold text-gray-900 dark:text-white">{filteredTeams.length}</span> {typeInfo.isWebinar ? 'delegates' : isSolo ? 'attendees' : 'teams'}
                                 </span>
-
                                 <div className="hidden sm:flex items-center gap-1.5 ml-2 border-l border-gray-200 dark:border-zinc-800 pl-3">
                                     <span className="text-xs text-gray-400">Per page:</span>
                                     <select
@@ -665,7 +621,6 @@ function TeamsDashboard() {
                                     </select>
                                 </div>
                             </div>
-
                             <div className="flex items-center gap-1.5">
                                 <button
                                     type="button"
@@ -685,7 +640,6 @@ function TeamsDashboard() {
                                 >
                                     <ChevronLeft className="w-4 h-4" />
                                 </button>
-
                                 <div className="flex items-center gap-1 px-1">
                                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                                         .filter((p) => p === 1 || p === totalPages || Math.abs(p - safeCurrentPage) <= 1)
@@ -715,7 +669,6 @@ function TeamsDashboard() {
                                             )
                                         )}
                                 </div>
-
                                 <button
                                     type="button"
                                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
@@ -742,5 +695,4 @@ function TeamsDashboard() {
         </motion.div>
     );
 }
-
 export default TeamsDashboard;

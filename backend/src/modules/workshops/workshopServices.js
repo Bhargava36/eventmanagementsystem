@@ -1,10 +1,9 @@
 const db = require('../../config/db');
-
 // Sessions
 const getSessions = (eventId, callback) => {
     const query = `
-        SELECT * FROM workshop_sessions 
-        WHERE EventId = ? 
+        SELECT * FROM workshop_sessions
+        WHERE EventId = ?
         ORDER BY DayNumber ASC, StartTime ASC, Id ASC
     `;
     db.query(query, [eventId], (err, results) => {
@@ -12,7 +11,6 @@ const getSessions = (eventId, callback) => {
         return callback(null, results);
     });
 };
-
 const createSession = (data, callback) => {
     const {
         EventId,
@@ -30,13 +28,11 @@ const createSession = (data, callback) => {
         ResourcesUrl = null,
         DisplayOrder = 0
     } = data;
-
     const query = `
-        INSERT INTO workshop_sessions 
+        INSERT INTO workshop_sessions
         (EventId, SessionTitle, DayNumber, SessionDate, StartTime, EndTime, SpeakerName, SpeakerDesignation, SpeakerCompany, SpeakerPhoto, VenueOrMeetLink, Description, ResourcesUrl, DisplayOrder)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-
     db.query(
         query,
         [EventId, SessionTitle, DayNumber, SessionDate, StartTime, EndTime, SpeakerName, SpeakerDesignation, SpeakerCompany, SpeakerPhoto, VenueOrMeetLink, Description, ResourcesUrl, DisplayOrder],
@@ -46,7 +42,6 @@ const createSession = (data, callback) => {
         }
     );
 };
-
 const updateSession = (sessionId, data, callback) => {
     const {
         SessionTitle,
@@ -63,9 +58,8 @@ const updateSession = (sessionId, data, callback) => {
         ResourcesUrl,
         DisplayOrder
     } = data;
-
     const query = `
-        UPDATE workshop_sessions 
+        UPDATE workshop_sessions
         SET SessionTitle = COALESCE(?, SessionTitle),
             DayNumber = COALESCE(?, DayNumber),
             SessionDate = COALESCE(?, SessionDate),
@@ -81,7 +75,6 @@ const updateSession = (sessionId, data, callback) => {
             DisplayOrder = COALESCE(?, DisplayOrder)
         WHERE Id = ?
     `;
-
     db.query(
         query,
         [SessionTitle, DayNumber, SessionDate, StartTime, EndTime, SpeakerName, SpeakerDesignation, SpeakerCompany, SpeakerPhoto, VenueOrMeetLink, Description, ResourcesUrl, DisplayOrder, sessionId],
@@ -91,7 +84,6 @@ const updateSession = (sessionId, data, callback) => {
         }
     );
 };
-
 const deleteSession = (sessionId, callback) => {
     const query = `DELETE FROM workshop_sessions WHERE Id = ?`;
     db.query(query, [sessionId], (err, result) => {
@@ -99,12 +91,11 @@ const deleteSession = (sessionId, callback) => {
         return callback(null, result);
     });
 };
-
 // Resources
 const getResources = (eventId, callback) => {
     const query = `
-        SELECT * FROM workshop_resources 
-        WHERE EventId = ? 
+        SELECT * FROM workshop_resources
+        WHERE EventId = ?
         ORDER BY Id DESC
     `;
     db.query(query, [eventId], (err, results) => {
@@ -112,7 +103,6 @@ const getResources = (eventId, callback) => {
         return callback(null, results);
     });
 };
-
 const createResource = (data, callback) => {
     const {
         EventId,
@@ -122,18 +112,15 @@ const createResource = (data, callback) => {
         Description = null,
         SessionId = null
     } = data;
-
     const query = `
         INSERT INTO workshop_resources (EventId, Title, ResourceType, ResourceUrl, Description, SessionId)
         VALUES (?, ?, ?, ?, ?, ?)
     `;
-
     db.query(query, [EventId, Title, ResourceType, ResourceUrl, Description, SessionId], (err, result) => {
         if (err) return callback(err, null);
         return callback(null, { insertId: result.insertId, ...data });
     });
 };
-
 const deleteResource = (resourceId, callback) => {
     const query = `DELETE FROM workshop_resources WHERE Id = ?`;
     db.query(query, [resourceId], (err, result) => {
@@ -141,7 +128,6 @@ const deleteResource = (resourceId, callback) => {
         return callback(null, result);
     });
 };
-
 // Attendance
 const getAttendance = (eventId, dayNumber = 1, sessionSlot = 'Morning', callback) => {
     const query = `
@@ -161,23 +147,20 @@ const getAttendance = (eventId, dayNumber = 1, sessionSlot = 'Morning', callback
         FROM registered_teams rt
         JOIN registered_team_members tm ON tm.TeamId = rt.Id
         LEFT JOIN users u ON tm.UserId = u.Id
-        LEFT JOIN event_attendance ea ON ea.EventId = rt.EventId 
-            AND ea.UserId = tm.UserId 
-            AND ea.DayNumber = ? 
+        LEFT JOIN event_attendance ea ON ea.EventId = rt.EventId
+            AND ea.UserId = tm.UserId
+            AND ea.DayNumber = ?
             AND ea.SessionSlot = ?
         WHERE rt.EventId = ?
         ORDER BY tm.Id ASC
     `;
-
     const allRecordsQuery = `
         SELECT ea.UserId, ea.DayNumber, ea.SessionSlot, ea.Status, ea.CheckInTime
         FROM event_attendance ea
         WHERE ea.EventId = ?
     `;
-
     db.query(query, [dayNumber, sessionSlot, dayNumber, sessionSlot, eventId], (err, results) => {
         if (err) return callback(err, null, null);
-        
         db.query(allRecordsQuery, [eventId], (aErr, allRecords) => {
             if (aErr) {
                 return callback(null, results, []);
@@ -186,13 +169,12 @@ const getAttendance = (eventId, dayNumber = 1, sessionSlot = 'Morning', callback
         });
     });
 };
-
 const markAttendance = (eventId, userId, status, markedBy, dayNumber = 1, sessionSlot = 'Morning', attendanceDate = null, callback) => {
     const checkInTime = status === 'checked_in' ? new Date() : null;
     const query = `
         INSERT INTO event_attendance (EventId, UserId, Status, CheckInTime, CheckedInBy, DayNumber, SessionSlot, AttendanceDate)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE 
+        ON DUPLICATE KEY UPDATE
             Status = VALUES(Status),
             CheckInTime = VALUES(CheckInTime),
             CheckedInBy = VALUES(CheckedInBy),
@@ -204,16 +186,15 @@ const markAttendance = (eventId, userId, status, markedBy, dayNumber = 1, sessio
         return callback(null, result);
     });
 };
-
 const getUserAttendance = (eventId, userId, callback) => {
     const query = `
-        SELECT 
-            ea.UserId, 
-            ea.DayNumber, 
-            ea.SessionSlot, 
-            ea.Status, 
-            ea.CheckInTime, 
-            ea.Remarks, 
+        SELECT
+            ea.UserId,
+            ea.DayNumber,
+            ea.SessionSlot,
+            ea.Status,
+            ea.CheckInTime,
+            ea.Remarks,
             ea.AttendanceDate
         FROM event_attendance ea
         WHERE ea.EventId = ? AND ea.UserId = ?
@@ -224,7 +205,6 @@ const getUserAttendance = (eventId, userId, callback) => {
         return callback(null, results || []);
     });
 };
-
 module.exports = {
     getSessions,
     createSession,

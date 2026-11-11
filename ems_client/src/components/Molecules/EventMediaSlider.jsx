@@ -2,12 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Maximize2, X, Image as ImageIcon } from 'lucide-react';
-
-/**
- * EventMediaSlider
- * High-end responsive photo slider & carousel with auto-advance, thumbnail strip,
- * and integrated full-screen lightbox.
- */
+// EventMediaSlider High-end responsive photo slider & carousel with auto-advance, thumbnail strip,
 export default function EventMediaSlider({
   images = [],
   eventName = 'Event',
@@ -25,22 +20,17 @@ export default function EventMediaSlider({
     const url = img.url || img.ImageUrl || img.imageUrl || null;
     return url && url.startsWith('/uploads') ? `${API_BASE_URL}${url}` : url;
   }).filter(Boolean);
-
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-
   // Auto-play timer
   useEffect(() => {
     if (!autoPlay || normalizedImages.length <= 1 || isPaused || isLightboxOpen) return;
-
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % normalizedImages.length);
     }, interval);
-
     return () => clearInterval(timer);
   }, [autoPlay, normalizedImages.length, isPaused, isLightboxOpen, interval]);
-
   // Keyboard navigation for lightbox
   useEffect(() => {
     if (!isLightboxOpen) return;
@@ -56,7 +46,6 @@ export default function EventMediaSlider({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, normalizedImages.length]);
-
   if (normalizedImages.length === 0) {
     return (
       <div
@@ -80,19 +69,15 @@ export default function EventMediaSlider({
       </div>
     );
   }
-
   const currentImg = normalizedImages[currentIndex] || normalizedImages[0];
-
   const handlePrev = (e) => {
     e?.stopPropagation();
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : normalizedImages.length - 1));
   };
-
   const handleNext = (e) => {
     e?.stopPropagation();
     setCurrentIndex((prev) => (prev < normalizedImages.length - 1 ? prev + 1 : 0));
   };
-
   return (
     <div
       className="flex flex-col gap-3 w-full select-none"
@@ -116,14 +101,12 @@ export default function EventMediaSlider({
             className="w-full h-full object-cover object-center cursor-pointer transition-transform duration-500 group-hover:scale-105"
           />
         </AnimatePresence>
-
         {/* Counter Badge */}
         {normalizedImages.length > 1 && (
           <div className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md text-[10px] font-mono font-bold text-white border border-white/10 shadow">
             {currentIndex + 1} / {normalizedImages.length}
           </div>
         )}
-
         {/* Fullscreen Button */}
         <button
           type="button"
@@ -133,7 +116,6 @@ export default function EventMediaSlider({
         >
           <Maximize2 className="w-4 h-4" />
         </button>
-
         {/* Slide Controls (if > 1 image) */}
         {normalizedImages.length > 1 && (
           <>
@@ -153,7 +135,6 @@ export default function EventMediaSlider({
             >
               <ChevronRight className="w-4 h-4" />
             </button>
-
             {/* Bottom Dots Indicator */}
             <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-1.5 z-10 pointer-events-none">
               {normalizedImages.map((_, idx) => (
@@ -173,7 +154,6 @@ export default function EventMediaSlider({
           </>
         )}
       </div>
-
       {/* Thumbnails Row */}
       {normalizedImages.length > 1 && (
         <div className="flex items-center gap-2 overflow-x-auto py-1 px-0.5 no-scrollbar">
@@ -216,7 +196,6 @@ export default function EventMediaSlider({
           ))}
         </div>
       )}
-
       {/* Lightbox Modal */}
       <AnimatePresence>
         {isLightboxOpen && (
@@ -242,7 +221,6 @@ export default function EventMediaSlider({
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               {/* Main Expanded Image */}
               <div
                 className="relative max-w-full max-h-[80vh] flex items-center justify-center overflow-hidden rounded-2xl border border-zinc-800 bg-black"
@@ -253,7 +231,6 @@ export default function EventMediaSlider({
                   alt={`${eventName} enlarged`}
                   className="max-w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl"
                 />
-
                 {normalizedImages.length > 1 && (
                   <>
                     <button

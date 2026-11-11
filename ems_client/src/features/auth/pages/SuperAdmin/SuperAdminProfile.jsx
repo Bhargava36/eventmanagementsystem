@@ -29,7 +29,8 @@ import WaveDots from '../../../../components/Atoms/WaveDots';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';
 import { parseJwt } from '../../../../Contexts/AuthContext';
-
+import ActiveSessionsCard from '../../components/ActiveSessionsCard';
+import TwoFactorSettingsCard from '../../components/TwoFactorSettingsCard';
 function getStoredSuperAdmin() {
   try {
     const userStr = localStorage.getItem('user');
@@ -37,22 +38,18 @@ function getStoredSuperAdmin() {
   } catch (e) {
     console.warn('Error reading user from storage:', e);
   }
-
   try {
     const adminStr = localStorage.getItem('admin');
     if (adminStr) return JSON.parse(adminStr);
   } catch (e) {
     console.warn('Error reading admin from storage:', e);
   }
-
   return null;
 }
-
 function SuperAdminProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-
   const [profile, setProfile] = useState(() => getStoredSuperAdmin());
   const [showEdit, setShowEdit] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -64,14 +61,12 @@ function SuperAdminProfile() {
     teamsCount: 0,
     usersCount: 0
   });
-
   const [formData, setFormData] = useState({
     UserName: '',
     Email: '',
     PhoneNumber: '',
     Photo: ''
   });
-
   const fetchProfile = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
@@ -80,32 +75,26 @@ function SuperAdminProfile() {
         navigate('/superadmin/login');
         return;
       }
-
       const decoded = parseJwt(token);
       if (!decoded || decoded.role !== 'super_admin') {
         toast.error('Unauthorized access. Super admin credentials required.');
         navigate('/unauthorized');
         return;
       }
-
       const targetId = id || decoded.Id || decoded.id || profile?.Id;
       if (!targetId) {
         toast.error('Super Admin identifier missing.');
         return;
       }
-
       const response = await fetch(`${API_BASE_URL}/api/super_admin/profile/${targetId}`);
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch profile');
       }
-
       const admin = data.admin;
       if (!admin) {
         throw new Error('Super Admin data not found');
       }
-
       setProfile(admin);
       setFormData({
         UserName: admin.UserName || '',
@@ -113,7 +102,6 @@ function SuperAdminProfile() {
         PhoneNumber: admin.PhoneNumber || '',
         Photo: admin.Photo || ''
       });
-
       const updatedUser = {
         ...(getStoredSuperAdmin() || {}),
         ...admin
@@ -124,7 +112,6 @@ function SuperAdminProfile() {
       toast.error(error.message || 'Failed to load profile');
     }
   }, [id, navigate, profile?.Id, toast]);
-
   const fetchSystemStats = useCallback(async () => {
     try {
       const [eventsRes, adminsRes, teamsRes, usersRes] = await Promise.allSettled([
@@ -133,32 +120,26 @@ function SuperAdminProfile() {
         fetch(`${API_BASE_URL}/api/teams/count`),
         fetch(`${API_BASE_URL}/api/users/count`)
       ]);
-
       let eventsCount = 0;
       let adminsCount = 0;
       let teamsCount = 0;
       let usersCount = 0;
-
       if (eventsRes.status === 'fulfilled' && eventsRes.value.ok) {
         const ed = await eventsRes.value.json();
         eventsCount = Array.isArray(ed.events) ? ed.events.length : 0;
       }
-
       if (adminsRes.status === 'fulfilled' && adminsRes.value.ok) {
         const ad = await adminsRes.value.json();
         adminsCount = Array.isArray(ad.events) ? ad.events.length : Array.isArray(ad.admins) ? ad.admins.length : 0;
       }
-
       if (teamsRes.status === 'fulfilled' && teamsRes.value.ok) {
         const td = await teamsRes.value.json();
         teamsCount = td.count || 0;
       }
-
       if (usersRes.status === 'fulfilled' && usersRes.value.ok) {
         const ud = await usersRes.value.json();
         usersCount = ud.count || 0;
       }
-
       setStats({
         eventsCount,
         adminsCount,
@@ -169,30 +150,24 @@ function SuperAdminProfile() {
       console.warn('Telemetry load failed:', e);
     }
   }, []);
-
   useEffect(() => {
     fetchProfile();
     fetchSystemStats();
   }, [fetchProfile, fetchSystemStats]);
-
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size must be less than 5MB');
       return;
     }
-
     try {
       setUploadingPhoto(true);
       let photoUrl = '';
-
       try {
         const uploadForm = new FormData();
         uploadForm.append('file', file);
@@ -207,7 +182,6 @@ function SuperAdminProfile() {
       } catch (upErr) {
         console.warn('Direct upload failed, using base64 fallback:', upErr);
       }
-
       if (!photoUrl) {
         photoUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -216,29 +190,24 @@ function SuperAdminProfile() {
           reader.readAsDataURL(file);
         });
       }
-
       const token = localStorage.getItem('token');
       const decoded = parseJwt(token);
       const targetId = id || decoded?.Id || decoded?.id || profile?.Id;
-
       const payload = {
         UserName: formData.UserName || profile?.UserName,
         Email: formData.Email || profile?.Email,
         PhoneNumber: formData.PhoneNumber || profile?.PhoneNumber,
         Photo: photoUrl
       };
-
       const response = await fetch(`${API_BASE_URL}/api/super_admin/profile/${targetId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       if (!response.ok) {
         const d = await response.json();
         throw new Error(d.message || 'Failed to update photo');
       }
-
       const updated = {
         ...(profile || {}),
         ...payload,
@@ -246,14 +215,11 @@ function SuperAdminProfile() {
       };
       setProfile(updated);
       setFormData((prev) => ({ ...prev, Photo: photoUrl }));
-
       localStorage.setItem('user', JSON.stringify(updated));
       localStorage.setItem('superAdmin', JSON.stringify(updated));
-
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('superadmin-profile-updated'));
       window.dispatchEvent(new Event('profileUpdated'));
-
       toast.success('Super admin photo updated successfully!');
     } catch (err) {
       console.error('Error uploading photo:', err);
@@ -265,7 +231,6 @@ function SuperAdminProfile() {
       }
     }
   };
-
   const handleEditClick = () => {
     if (!profile) return;
     setFormData({
@@ -276,27 +241,23 @@ function SuperAdminProfile() {
     });
     setShowEdit(true);
   };
-
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.UserName.trim() || !formData.Email.trim() || !formData.PhoneNumber.trim()) {
       toast.error('All fields are required.');
       return;
     }
-
     try {
       setSaving(true);
       const token = localStorage.getItem('token');
       const decoded = parseJwt(token);
       const targetId = id || decoded?.Id || decoded?.id || profile?.Id;
-
       const payload = {
         UserName: formData.UserName,
         Email: formData.Email,
         PhoneNumber: formData.PhoneNumber,
         Photo: formData.Photo || profile?.Photo || ''
       };
-
       const response = await fetch(`${API_BASE_URL}/api/super_admin/profile/${targetId}`, {
         method: 'PUT',
         headers: {
@@ -304,14 +265,11 @@ function SuperAdminProfile() {
         },
         body: JSON.stringify(payload)
       });
-
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || 'Profile update failed');
       }
-
       toast.success('Super Admin profile updated successfully!');
-
       const updated = {
         ...(profile || {}),
         ...payload
@@ -319,11 +277,9 @@ function SuperAdminProfile() {
       setProfile(updated);
       localStorage.setItem('user', JSON.stringify(updated));
       localStorage.setItem('superAdmin', JSON.stringify(updated));
-
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('superadmin-profile-updated'));
       window.dispatchEvent(new Event('profileUpdated'));
-
       setShowEdit(false);
       await fetchProfile();
     } catch (error) {
@@ -333,14 +289,12 @@ function SuperAdminProfile() {
       setSaving(false);
     }
   };
-
   const currentAdmin = profile || {
     UserName: 'Super Administrator',
     Email: 'superadmin@ayojan.com',
     PhoneNumber: '+91 99887 76655',
     created_at: new Date().toISOString()
   };
-
   const formattedJoinedDate = currentAdmin.created_at
     ? new Date(currentAdmin.created_at).toLocaleDateString('en-US', {
         month: 'short',
@@ -348,7 +302,6 @@ function SuperAdminProfile() {
         year: 'numeric'
       })
     : 'System Inception';
-
   const credentialItems = [
     { label: 'Full Name', value: currentAdmin.UserName },
     { label: 'Email Address', value: currentAdmin.Email, isVerified: true },
@@ -367,7 +320,6 @@ function SuperAdminProfile() {
     },
     { label: 'Status', value: 'Active', isBadge: true }
   ];
-
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen text-gray-900 dark:text-gray-100 transition-colors p-4 sm:p-6 md:p-8 lg:p-10 font-sans">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
@@ -391,7 +343,6 @@ function SuperAdminProfile() {
               View and manage your profile information and account details.
             </p>
           </div>
-
           <div>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -419,7 +370,6 @@ function SuperAdminProfile() {
             </motion.button>
           </div>
         </motion.div>
-
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -431,9 +381,7 @@ function SuperAdminProfile() {
             cols={12}
             className="absolute right-0 top-0 bottom-0 w-1/2 md:w-2/5 z-0"
           />
-
           <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-gradient-to-tr from-emerald-600/10 to-transparent rounded-full blur-2xl pointer-events-none" />
-
           <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
               <div className="relative group shrink-0">
@@ -466,7 +414,6 @@ function SuperAdminProfile() {
                   <Camera className="w-4 h-4" />
                 </button>
               </div>
-
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                   <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight capitalize">
@@ -477,30 +424,25 @@ function SuperAdminProfile() {
                     Super Admin
                   </span>
                 </div>
-
                 <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center justify-center sm:justify-start gap-1.5">
                   <ShieldCheck className="w-4 h-4" />
                   <span>Super Administrator</span>
                 </p>
-
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-y-2 gap-x-4 pt-2 text-xs text-gray-600 dark:text-gray-400">
                   <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-gray-800">
                     <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span className="truncate max-w-[200px]">{currentAdmin.Email}</span>
                   </div>
-
                   {currentAdmin.PhoneNumber && (
                     <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-gray-800">
                       <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>{currentAdmin.PhoneNumber}</span>
                     </div>
                   )}
-
                   <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-gray-800">
                     <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>India</span>
                   </div>
-
                   <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900/80 px-2.5 py-1 rounded-lg border border-gray-200/80 dark:border-gray-800">
                     <CalendarDays className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     <span>Joined on {formattedJoinedDate}</span>
@@ -508,7 +450,6 @@ function SuperAdminProfile() {
                 </div>
               </div>
             </div>
-
             <div className="hidden lg:block border-l border-gray-200 dark:border-gray-800/80 pl-6 max-w-xs shrink-0 self-center relative z-10">
               <p className="text-4xl text-emerald-600 dark:text-emerald-400 font-serif leading-none mb-2">
                 &ldquo;
@@ -519,7 +460,6 @@ function SuperAdminProfile() {
             </div>
           </div>
         </motion.div>
-
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -546,7 +486,6 @@ function SuperAdminProfile() {
               </div>
             </div>
           </Link>
-
           <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Appointed Admins</span>
@@ -564,7 +503,6 @@ function SuperAdminProfile() {
               </div>
             </div>
           </div>
-
           <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Active Squads</span>
@@ -582,7 +520,6 @@ function SuperAdminProfile() {
               </div>
             </div>
           </div>
-
           <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm hover:border-emerald-500/40 transition-all flex flex-col justify-between group">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Total Users</span>
@@ -601,7 +538,6 @@ function SuperAdminProfile() {
             </div>
           </div>
         </motion.div>
-
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
           <div className="lg:col-span-8 space-y-6">
             <AnimatePresence mode="wait">
@@ -638,7 +574,6 @@ function SuperAdminProfile() {
                       <X className="w-5 h-5" />
                     </button>
                   </div>
-
                   <form onSubmit={handleSave} className="space-y-5">
                     <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
                       <div className="relative w-16 h-16 rounded-xl bg-emerald-600/10 border border-emerald-500/20 overflow-hidden flex items-center justify-center shrink-0">
@@ -667,7 +602,6 @@ function SuperAdminProfile() {
                         </button>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div className="space-y-1.5 sm:col-span-2">
                         <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
@@ -686,7 +620,6 @@ function SuperAdminProfile() {
                           />
                         </div>
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                           Email Address <span className="text-rose-500">*</span>
@@ -704,7 +637,6 @@ function SuperAdminProfile() {
                           />
                         </div>
                       </div>
-
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                           Phone Number <span className="text-rose-500">*</span>
@@ -722,7 +654,6 @@ function SuperAdminProfile() {
                           />
                         </div>
                       </div>
-
                       <div className="space-y-1.5 sm:col-span-2">
                         <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                           Account Type (System Managed)
@@ -738,7 +669,6 @@ function SuperAdminProfile() {
                         </div>
                       </div>
                     </div>
-
                     <div className="pt-4 flex items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-800">
                       <button
                         type="button"
@@ -748,7 +678,6 @@ function SuperAdminProfile() {
                       >
                         Cancel
                       </button>
-
                       <button
                         type="submit"
                         disabled={saving}
@@ -791,7 +720,6 @@ function SuperAdminProfile() {
                       </span>
                     </div>
                   </div>
-
                   <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
                     {credentialItems.map((item, idx) => (
                       <div
@@ -801,7 +729,6 @@ function SuperAdminProfile() {
                         <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
                           {item.label}
                         </span>
-
                         <div className="flex items-center gap-2">
                           <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white break-all">
                             {item.value}
@@ -821,8 +748,9 @@ function SuperAdminProfile() {
                 </motion.div>
               )}
             </AnimatePresence>
+            <TwoFactorSettingsCard />
+            <ActiveSessionsCard />
           </div>
-
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -833,7 +761,6 @@ function SuperAdminProfile() {
               <h3 className="text-base font-bold text-gray-900 dark:text-white mb-4">
                 Quick Actions
               </h3>
-
               <div className="space-y-3 relative z-10">
                 <Link
                   to="/sidebar/events"
@@ -850,7 +777,6 @@ function SuperAdminProfile() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 group-hover:text-emerald-500 transition-all" />
                 </Link>
-
                 <Link
                   to="/sidebar/notification"
                   className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900/70 border border-gray-200/80 dark:border-gray-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
@@ -866,7 +792,6 @@ function SuperAdminProfile() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 group-hover:text-emerald-500 transition-all" />
                 </Link>
-
                 <Link
                   to="/sidebar/feedback"
                   className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900/70 border border-gray-200/80 dark:border-gray-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
@@ -882,7 +807,6 @@ function SuperAdminProfile() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-400 group-hover:translate-x-1 group-hover:text-emerald-500 transition-all" />
                 </Link>
-
                 <Link
                   to="/sidebar"
                   className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900/70 border border-gray-200/80 dark:border-gray-800 hover:border-emerald-500/40 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-all group cursor-pointer"
@@ -902,7 +826,6 @@ function SuperAdminProfile() {
             </div>
           </motion.div>
         </div>
-
         <div className="text-center pt-4 pb-2 text-xs text-gray-400 dark:text-gray-600">
           <p>© 2026 AYOJAN Event Management System • Authorized Super Administrator Session</p>
         </div>
@@ -910,5 +833,4 @@ function SuperAdminProfile() {
     </div>
   );
 }
-
 export default SuperAdminProfile;

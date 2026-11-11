@@ -1,5 +1,4 @@
 const db = require("../../config/db");
-
 const getAllRoles = (req, res) => {
     const query = "SELECT Id, RoleName, Description, CreatedAt FROM roles ORDER BY Id ASC";
     db.query(query, (err, results) => {
@@ -9,7 +8,6 @@ const getAllRoles = (req, res) => {
         res.status(200).json({ roles: results });
     });
 };
-
 const getRoleById = (req, res) => {
     const { id } = req.params;
     const query = "SELECT Id, RoleName, Description, CreatedAt FROM roles WHERE Id = ?";
@@ -23,7 +21,6 @@ const getRoleById = (req, res) => {
         res.status(200).json({ role: results[0] });
     });
 };
-
 module.exports = {
     getAllRoles,
     getRoleById

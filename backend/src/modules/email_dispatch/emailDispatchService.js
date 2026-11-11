@@ -1,13 +1,11 @@
 const db = require('../../config/db');
 const nodemailer = require('nodemailer');
-
 const getTransporter = () => {
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
     const port = Number(process.env.SMTP_PORT) || 587;
     const secure = process.env.SMTP_SECURE === 'true' || port === 465;
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-
     if (host === 'smtp.gmail.com' || (user && user.endsWith('@gmail.com'))) {
         return nodemailer.createTransport({
             service: 'gmail',
@@ -15,7 +13,6 @@ const getTransporter = () => {
             tls: { rejectUnauthorized: false }
         });
     }
-
     return nodemailer.createTransport({
         host,
         port,
@@ -24,10 +21,7 @@ const getTransporter = () => {
         tls: { rejectUnauthorized: false }
     });
 };
-
-/**
- * Record an email dispatch attempt
- */
+// Record an email dispatch attempt
 const recordEmailLog = ({
     recipientEmail,
     recipientName = null,
@@ -46,7 +40,6 @@ const recordEmailLog = ({
                 Status, ErrorMessage, EventId, SenderAdminId, PayloadSnippet
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-
         db.query(query, [
             recipientEmail,
             recipientName,
@@ -63,10 +56,7 @@ const recordEmailLog = ({
         });
     });
 };
-
-/**
- * Get paginated email logs with filters & summary stats
- */
+// Get paginated email logs with filters & summary stats
 const getEmailLogs = ({
     page = 1,
     limit = 25,
@@ -78,38 +68,29 @@ const getEmailLogs = ({
         const pageNum = Math.max(1, parseInt(page, 10) || 1);
         const limitNum = Math.min(200, Math.max(5, parseInt(limit, 10) || 25));
         const offset = (pageNum - 1) * limitNum;
-
         const conditions = [];
         const params = [];
-
         if (status && status !== 'ALL') {
             conditions.push('Status = ?');
             params.push(status);
         }
-
         if (emailType && emailType !== 'ALL') {
             conditions.push('EmailType = ?');
             params.push(emailType.toUpperCase());
         }
-
         if (search && search.trim()) {
             const term = `%${search.trim()}%`;
             conditions.push('(RecipientEmail LIKE ? OR RecipientName LIKE ? OR Subject LIKE ?)');
             params.push(term, term, term);
         }
-
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
         const countQuery = `SELECT COUNT(*) AS total FROM email_dispatch_logs ${whereClause}`;
-
         db.query(countQuery, params, (countErr, countResult) => {
             if (countErr) return reject(countErr);
-
             const total = countResult[0]?.total || 0;
             const totalPages = Math.ceil(total / limitNum) || 1;
-
             const dataQuery = `
-                SELECT 
+                SELECT
                     Id, RecipientEmail, RecipientName, Subject, EmailType,
                     Status, ErrorMessage, EventId, SenderAdminId, SentAt,
                     RetryCount, PayloadSnippet
@@ -118,23 +99,19 @@ const getEmailLogs = ({
                 ORDER BY SentAt DESC, Id DESC
                 LIMIT ? OFFSET ?
             `;
-
             db.query(dataQuery, [...params, limitNum, offset], (dataErr, rows) => {
                 if (dataErr) return reject(dataErr);
-
                 // Stats query
                 const statsQuery = `
-                    SELECT 
+                    SELECT
                         COUNT(*) AS totalSent,
                         SUM(CASE WHEN Status = 'Delivered' THEN 1 ELSE 0 END) AS delivered,
                         SUM(CASE WHEN Status = 'Failed' THEN 1 ELSE 0 END) AS failed,
                         SUM(CASE WHEN Status = 'Pending' THEN 1 ELSE 0 END) AS pending
                     FROM email_dispatch_logs
                 `;
-
                 db.query(statsQuery, (statsErr, statsResult) => {
                     const stats = statsResult?.[0] || { totalSent: 0, delivered: 0, failed: 0, pending: 0 };
-
                     resolve({
                         logs: rows || [],
                         pagination: {
@@ -158,20 +135,15 @@ const getEmailLogs = ({
         });
     });
 };
-
-/**
- * Retry dispatching a failed email
- */
+// Retry dispatching a failed email
 const retryEmail = (logId) => {
     return new Promise((resolve, reject) => {
         db.query('SELECT * FROM email_dispatch_logs WHERE Id = ?', [logId], async (err, rows) => {
             if (err || !rows.length) return reject(new Error('Email log not found'));
             const log = rows[0];
-
             try {
                 const transporter = getTransporter();
                 const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AYOJAN" <no-reply@ayojan.live>';
-
                 await transporter.sendMail({
                     from: fromAddress,
                     to: log.RecipientEmail,
@@ -179,9 +151,8 @@ const retryEmail = (logId) => {
                     text: log.PayloadSnippet || log.Subject,
                     html: `<p>${log.PayloadSnippet || log.Subject}</p>`
                 });
-
                 db.query(`
-                    UPDATE email_dispatch_logs 
+                    UPDATE email_dispatch_logs
                     SET Status = 'Delivered', ErrorMessage = NULL, RetryCount = RetryCount + 1, SentAt = CURRENT_TIMESTAMP
                     WHERE Id = ?
                 `, [logId], () => {
@@ -189,8 +160,8 @@ const retryEmail = (logId) => {
                 });
             } catch (sendErr) {
                 db.query(`
-                    UPDATE email_dispatch_logs 
-                    SET Status = 'Failed', ErrorMessage = ?, RetryCount = RetryCount + 1 
+                    UPDATE email_dispatch_logs
+                    SET Status = 'Failed', ErrorMessage = ?, RetryCount = RetryCount + 1
                     WHERE Id = ?
                 `, [sendErr.message, logId], () => {
                     reject(sendErr);
@@ -199,14 +170,10 @@ const retryEmail = (logId) => {
         });
     });
 };
-
-/**
- * Send test diagnostic email
- */
+// Send test diagnostic email
 const sendTestEmail = async ({ to, subject = 'AYOJAN Telemetry Diagnostic Test', body = 'Test email dispatch verification' }) => {
     const transporter = getTransporter();
     const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AYOJAN" <no-reply@ayojan.live>';
-
     const info = await transporter.sendMail({
         from: fromAddress,
         to,
@@ -219,7 +186,6 @@ const sendTestEmail = async ({ to, subject = 'AYOJAN Telemetry Diagnostic Test',
             </div>
         `
     });
-
     await recordEmailLog({
         recipientEmail: to,
         recipientName: 'Diagnostic Receiver',
@@ -228,17 +194,12 @@ const sendTestEmail = async ({ to, subject = 'AYOJAN Telemetry Diagnostic Test',
         status: 'Delivered',
         payloadSnippet: body
     });
-
     return info;
 };
-
-/**
- * Seed initial sample logs if empty
- */
+// Seed initial sample logs if empty
 const seedInitialEmailLogsIfEmpty = () => {
     db.query('SELECT COUNT(*) AS count FROM email_dispatch_logs', (err, res) => {
         if (err || !res || res[0].count > 0) return;
-
         const sample = [
             {
                 recipientEmail: 'rahul.lead@univ.edu',
@@ -273,17 +234,13 @@ const seedInitialEmailLogsIfEmpty = () => {
                 errorMessage: '550 5.1.1 The email account that you tried to reach does not exist.'
             }
         ];
-
         sample.forEach(item => recordEmailLog(item));
     });
 };
-
 setTimeout(seedInitialEmailLogsIfEmpty, 2500);
-
 module.exports = {
     recordEmailLog,
     getEmailLogs,
     retryEmail,
     sendTestEmail
 };
-

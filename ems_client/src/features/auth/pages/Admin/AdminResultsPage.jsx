@@ -38,13 +38,10 @@ import {
 import { getTrackVisibility, isSoloTeamSize } from '../../../../lib/utils';
 import useTheme from '../../../../Hooks/useTheme';
 import useToast from '../../../../Hooks/useToast';
-
 function AdminResultsPage({ track = 'Physical' }) {
   const toast = useToast();
   const { theme: appTheme } = useTheme();
-
   const isDark = appTheme === 'dark';
-
   const storedAdmin = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -52,9 +49,7 @@ function AdminResultsPage({ track = 'Physical' }) {
       return {};
     }
   }, []);
-
   const eventId = storedAdmin?.EventId || storedAdmin?.eventId;
-
   const [eventData, setEventData] = useState(null);
   const [resultsData, setResultsData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,7 +59,6 @@ function AdminResultsPage({ track = 'Physical' }) {
   const [expandedTeamId, setExpandedTeamId] = useState(null);
   const [publishing, setPublishing] = useState(false);
   const [updatingRound, setUpdatingRound] = useState(false);
-
   // Standard Admin Portal Emerald & Neutral Design System (Independent of event colors)
   const theme = useMemo(() => {
     return {
@@ -83,11 +77,9 @@ function AdminResultsPage({ track = 'Physical' }) {
       iconColor: isDark ? '#34d399' : '#059669',
     };
   }, [isDark]);
-
   const rawMode = eventData?.HackathonMode || storedAdmin?.HackathonMode;
   const { isBoth } = getTrackVisibility(rawMode, eventData?.Location || storedAdmin?.Location);
   const isIndividual = isSoloTeamSize(eventData?.TeamSize || storedAdmin?.TeamSize);
-
   // Fetch Event Branding Data
   useEffect(() => {
     if (!eventId) return;
@@ -98,7 +90,6 @@ function AdminResultsPage({ track = 'Physical' }) {
       })
       .catch((err) => console.error('Failed to load event for results:', err));
   }, [eventId]);
-
   // Fetch Comprehensive Evaluation Results & Breakdown
   const fetchResults = useCallback(async () => {
     if (!eventId) return;
@@ -131,23 +122,19 @@ function AdminResultsPage({ track = 'Physical' }) {
       setLoading(false);
     }
   }, [eventId, track, toast]);
-
   useEffect(() => {
     fetchResults();
   }, [fetchResults]);
-
   const rounds = resultsData?.rounds || [];
   const teams = resultsData?.teams || resultsData?.leaderboard || [];
   const summary = resultsData?.summary || {};
   const allEvaluators = resultsData?.evaluators || resultsData?.allEvaluators || [];
-
   // Active Selected Round Object (if current tab is a round)
   const selectedRound = useMemo(() => {
     if (activeTab === 'overall') return null;
     const roundId = activeTab.replace('round_', '');
     return rounds.find((r) => String(r.Id) === String(roundId)) || rounds[0] || null;
   }, [rounds, activeTab]);
-
   // Filtered Teams for Display
   const filteredTeams = useMemo(() => {
     return teams.filter((t) => {
@@ -162,10 +149,8 @@ function AdminResultsPage({ track = 'Physical' }) {
           return false;
         }
       }
-
       // 2. Status filter
       if (statusFilter === 'all') return true;
-
       if (selectedRound) {
         // Specific round status
         const rb = (t.roundBreakdown || []).find((b) => b.roundId === selectedRound.Id);
@@ -178,15 +163,12 @@ function AdminResultsPage({ track = 'Physical' }) {
         if (statusFilter === 'evaluated') return isEvaluated;
         if (statusFilter === 'pending') return !isEvaluated;
       }
-
       return true;
     });
   }, [teams, searchQuery, statusFilter, selectedRound]);
-
   // Sorted Teams based on Active Tab
   const sortedDisplayTeams = useMemo(() => {
     const list = [...filteredTeams];
-
     if (selectedRound) {
       // Sort by this round's average score descending
       return list.sort((a, b) => {
@@ -195,11 +177,9 @@ function AdminResultsPage({ track = 'Physical' }) {
         return scoreB - scoreA;
       });
     }
-
     // Overall Tab: Sort by total score descending
     return list.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
   }, [filteredTeams, selectedRound]);
-
   // Overall Podium Winners (Top 3)
   const topThreeOverall = useMemo(() => {
     return [...teams]
@@ -207,14 +187,12 @@ function AdminResultsPage({ track = 'Physical' }) {
       .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))
       .slice(0, 3);
   }, [teams]);
-
   // Export Results as CSV
   const handleExportCSV = () => {
     if (!teams || teams.length === 0) {
       toast.error('No results data to export');
       return;
     }
-
     let csvContent = 'data:text/csv;charset=utf-8,';
     // Header
     const headers = [
@@ -229,7 +207,6 @@ function AdminResultsPage({ track = 'Physical' }) {
       'Percentage (%)'
     ];
     csvContent += headers.map((h) => `"${h}"`).join(',') + '\r\n';
-
     // Rows
     teams.forEach((t) => {
       const row = [
@@ -248,7 +225,6 @@ function AdminResultsPage({ track = 'Physical' }) {
       ];
       csvContent += row.map((cell) => `"${cell}"`).join(',') + '\r\n';
     });
-
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
@@ -258,7 +234,6 @@ function AdminResultsPage({ track = 'Physical' }) {
     document.body.removeChild(link);
     toast.success('Results exported to CSV successfully');
   };
-
   // Toggle Round Publish Live
   const handleTogglePublishRound = async (round) => {
     if (!round) return;
@@ -279,7 +254,6 @@ function AdminResultsPage({ track = 'Physical' }) {
       setPublishing(false);
     }
   };
-
   // Toggle Round Open / Close (Evaluators can grade when Open)
   const handleToggleRoundOpen = async (round) => {
     if (!round) return;
@@ -301,7 +275,6 @@ function AdminResultsPage({ track = 'Physical' }) {
       setUpdatingRound(false);
     }
   };
-
   // Toggle Evaluator Score Edit Permission (Allow / Lock Score Edits)
   const handleToggleAllowScoreEdit = async (round) => {
     if (!round) return;
@@ -323,7 +296,6 @@ function AdminResultsPage({ track = 'Physical' }) {
       setUpdatingRound(false);
     }
   };
-
   // Toggle Overall Leaderboard Publish Live
   const handleTogglePublishOverall = async () => {
     if (!eventId) return;
@@ -344,7 +316,6 @@ function AdminResultsPage({ track = 'Physical' }) {
       setPublishing(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6 font-sans transition-colors duration-300">
       {/* Header Banner */}
@@ -384,7 +355,6 @@ function AdminResultsPage({ track = 'Physical' }) {
             </div>
           </div>
         </div>
-
         {/* Action Buttons */}
         <div className="flex items-center gap-2.5">
           <button
@@ -394,7 +364,6 @@ function AdminResultsPage({ track = 'Physical' }) {
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Refresh</span>
           </button>
-
           <button
             onClick={handleExportCSV}
             className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-md"
@@ -409,7 +378,6 @@ function AdminResultsPage({ track = 'Physical' }) {
           </button>
         </div>
       </div>
-
       {/* KPI Cards Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-3xl bg-white dark:bg-zinc-950/70 border border-slate-200/80 dark:border-zinc-800/80 shadow-sm flex items-center gap-4">
@@ -428,7 +396,6 @@ function AdminResultsPage({ track = 'Physical' }) {
             <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{summary.totalRegisteredTeams || 0}</h3>
           </div>
         </div>
-
         <div className="p-5 rounded-3xl bg-white dark:bg-zinc-950/70 border border-slate-200/80 dark:border-zinc-800/80 shadow-sm flex items-center gap-4">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border"
@@ -450,7 +417,6 @@ function AdminResultsPage({ track = 'Physical' }) {
             </h3>
           </div>
         </div>
-
         <div className="p-5 rounded-3xl bg-white dark:bg-zinc-950/70 border border-slate-200/80 dark:border-zinc-800/80 shadow-sm flex items-center gap-4">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border"
@@ -467,7 +433,6 @@ function AdminResultsPage({ track = 'Physical' }) {
             <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{rounds.length}</h3>
           </div>
         </div>
-
         <div className="p-5 rounded-3xl bg-white dark:bg-zinc-950/70 border border-slate-200/80 dark:border-zinc-800/80 shadow-sm flex items-center gap-4">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border"
@@ -488,14 +453,12 @@ function AdminResultsPage({ track = 'Physical' }) {
           </div>
         </div>
       </div>
-
       {/* ── WEBSITE SIGNATURE THEME TABS ── */}
       <div className="relative pt-4">
         <div className="relative z-10 -mb-px flex items-end gap-2 overflow-x-auto scrollbar-thin">
           {rounds.map((round) => {
             const tabKey = `round_${round.Id}`;
             const isActive = activeTab === tabKey;
-
             return (
               <button
                 key={round.Id}
@@ -519,7 +482,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                 ) : (
                   <div className="absolute inset-0 z-0 rounded-t-2xl border border-slate-200 dark:border-zinc-800/80 bg-slate-100/90 dark:bg-zinc-900/60 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
                 )}
-
                 <span className={`relative z-20 flex items-center gap-2 ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'}`}>
                   <ClipboardList className="h-4 w-4" style={{ color: isActive ? theme.accent : undefined }} />
                   <span>{round.RoundName}</span>
@@ -549,7 +511,6 @@ function AdminResultsPage({ track = 'Physical' }) {
               </button>
             );
           })}
-
           {/* OVERALL LEADERBOARD TAB (LAST TAB) */}
           <button
             type="button"
@@ -572,7 +533,6 @@ function AdminResultsPage({ track = 'Physical' }) {
             ) : (
               <div className="absolute inset-0 z-0 rounded-t-2xl border border-slate-200 dark:border-zinc-800/80 bg-slate-100/90 dark:bg-zinc-900/60 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
             )}
-
             <span className={`relative z-20 flex items-center gap-2 ${activeTab === 'overall' ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200'}`}>
               <Trophy className="h-4 w-4 text-amber-500" />
               <span>Overall Leaderboard</span>
@@ -595,7 +555,6 @@ function AdminResultsPage({ track = 'Physical' }) {
             </span>
           </button>
         </div>
-
         {/* ── TAB CONTENT PANEL ── */}
         <section
           role="tabpanel"
@@ -626,7 +585,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                   </p>
                 )}
               </div>
-
               <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
                 <div className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-700 dark:text-gray-300 shadow-xs">
                   <strong className="text-slate-900 dark:text-white">{selectedRound.questions?.length || 0}</strong> Evaluation Criteria
@@ -641,7 +599,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                 >
                   Max Marks: {selectedRound.totalMaxMarks} pts
                 </div>
-
                 {/* Open / Close Round Status Toggle */}
                 <button
                   type="button"
@@ -666,7 +623,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                     </>
                   )}
                 </button>
-
                 {/* Evaluator Score Edit Permission Toggle */}
                 <button
                   type="button"
@@ -691,7 +647,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                     </>
                   )}
                 </button>
-
                 {/* Publish Round Results Button */}
                 <button
                   type="button"
@@ -718,7 +673,6 @@ function AdminResultsPage({ track = 'Physical' }) {
               </div>
             </div>
           )}
-
           {/* Overall Publish & Status Bar */}
           {activeTab === 'overall' && (
             <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
@@ -742,7 +696,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                   </p>
                 </div>
               </div>
-
               <button
                 type="button"
                 disabled={publishing}
@@ -767,7 +720,6 @@ function AdminResultsPage({ track = 'Physical' }) {
               </button>
             </div>
           )}
-
           {/* Overall Podium Showcase (When 'overall' tab is active) */}
           {activeTab === 'overall' && topThreeOverall.length > 0 && (
             <div
@@ -782,7 +734,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                   {isBoth ? `Overall Hackathon Winners Podium (${track} Track)` : 'Overall Hackathon Winners Podium'}
                 </h2>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {topThreeOverall.map((team, idx) => {
                   const medals = [
@@ -791,7 +742,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                     { rank: '3rd Place', badge: 'bg-amber-700/20 text-amber-700 dark:text-amber-500 border-amber-700/40' }
                   ];
                   const medal = medals[idx] || medals[0];
-
                   return (
                     <div
                       key={team.Id}
@@ -805,7 +755,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                           {team.totalScore} <span className="text-xs font-normal text-slate-400 dark:text-gray-500">/ {team.maxPossibleScore} pts</span>
                         </span>
                       </div>
-
                       <div>
                         <h3 className="text-base font-bold text-slate-900 dark:text-white line-clamp-1">
                           {isIndividual ? (team.TeamLeadName || team.TeamName?.replace(/\s*\(Individual\)/gi, '')) : team.TeamName}
@@ -815,7 +764,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                           <span className="truncate">{team.College || 'Institution'}</span>
                         </p>
                       </div>
-
                       <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-gray-400">
                         {!isIndividual ? (
                           <span>Lead: <strong className="text-slate-800 dark:text-gray-200">{team.TeamLeadName || 'Unknown'}</strong></span>
@@ -832,7 +780,6 @@ function AdminResultsPage({ track = 'Physical' }) {
               </div>
             </div>
           )}
-
           {/* Controls: Search & Status Filter */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
             <div className="relative flex-1 max-w-md">
@@ -845,7 +792,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                 className="w-full bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl pl-10 pr-3 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:outline-none transition-colors"
               />
             </div>
-
             {/* Status Filter */}
             <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 text-xs">
               {[
@@ -870,7 +816,6 @@ function AdminResultsPage({ track = 'Physical' }) {
               })}
             </div>
           </div>
-
           {/* Results List */}
           {loading ? (
             <div className="py-12 flex flex-col items-center justify-center text-slate-500 dark:text-gray-400 gap-3">
@@ -892,14 +837,11 @@ function AdminResultsPage({ track = 'Physical' }) {
             <div className="space-y-3">
               {sortedDisplayTeams.map((team, idx) => {
                 const isExpanded = expandedTeamId === team.Id;
-
                 // If viewing specific round
                 const currentRoundData = selectedRound
                   ? (team.roundBreakdown || []).find((rb) => rb.roundId === selectedRound.Id)
                   : null;
-
                 const isRoundEvaluated = currentRoundData?.hasEvaluated;
-
                 return (
                   <div
                     key={team.Id}
@@ -922,7 +864,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                         >
                           {team.rank ? `#${team.rank}` : idx + 1}
                         </div>
-
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
@@ -934,7 +875,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                               </span>
                             )}
                           </div>
-
                           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-gray-400">
                             {!isIndividual && (
                               <span className="flex items-center gap-1">
@@ -949,7 +889,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                           </div>
                         </div>
                       </div>
-
                       {/* Right Side: Score Status or Marks */}
                       <div className="flex items-center justify-between sm:justify-end gap-5">
                         {/* WHEN A SPECIFIC ROUND TAB IS ACTIVE */}
@@ -977,7 +916,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                             )}
                           </div>
                         )}
-
                         {/* WHEN OVERALL TAB IS ACTIVE */}
                         {activeTab === 'overall' && (
                           <div className="flex items-center gap-4">
@@ -998,7 +936,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                                 </div>
                               ))}
                             </div>
-
                             {/* Overall Score */}
                             <div className="text-right">
                               {team.roundsEvaluatedCount > 0 ? (
@@ -1024,7 +961,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                             </div>
                           </div>
                         )}
-
                         {/* Expand / Collapse Chevron */}
                         <button
                           type="button"
@@ -1034,7 +970,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                         </button>
                       </div>
                     </div>
-
                     {/* Detailed Multi-Evaluator Breakdown Drawer */}
                     <AnimatePresence>
                       {isExpanded && (
@@ -1052,7 +987,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                               <p className="text-slate-800 dark:text-gray-200 font-medium">{team.ProblemStatementTitle}</p>
                             </div>
                           )}
-
                           {/* If in Specific Round Tab: Show all Evaluators who scored this round */}
                           {selectedRound && (
                             <div className="space-y-3">
@@ -1067,7 +1001,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                                   </span>
                                 )}
                               </div>
-
                               {(!currentRoundData?.submissions || currentRoundData.submissions.length === 0) ? (
                                 <div className="p-6 text-center rounded-2xl bg-white dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 shadow-xs">
                                   <Clock className="w-6 h-6 text-amber-500 dark:text-amber-400 mx-auto mb-1.5" />
@@ -1095,7 +1028,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                                             <p className="text-[10px] text-slate-400 dark:text-gray-500">{sub.evaluatorCollege}</p>
                                           )}
                                         </div>
-
                                         <span
                                           className="px-2.5 py-1 rounded-xl text-xs font-extrabold border"
                                           style={{
@@ -1107,7 +1039,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                                           Awarded: {sub.totalScore} / {sub.maxPossibleScore} pts
                                         </span>
                                       </div>
-
                                       {/* Question by question rubric score */}
                                       {sub.scoresData && sub.scoresData.length > 0 ? (
                                         <div className="space-y-1.5 pt-1">
@@ -1124,7 +1055,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                                           ))}
                                         </div>
                                       ) : null}
-
                                       {/* Qualitative Feedback */}
                                       {sub.feedback && (
                                         <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 text-xs text-slate-700 dark:text-gray-300 space-y-0.5">
@@ -1140,14 +1070,12 @@ function AdminResultsPage({ track = 'Physical' }) {
                               )}
                             </div>
                           )}
-
                           {/* If in Overall Tab: Show all rounds and their evaluators */}
                           {activeTab === 'overall' && (
                             <div className="space-y-3">
                               <h4 className="text-xs font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">
                                 All Rounds Detailed Scoring History
                               </h4>
-
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 {(team.roundBreakdown || []).map((rb) => (
                                   <div
@@ -1171,7 +1099,6 @@ function AdminResultsPage({ track = 'Physical' }) {
                                         </span>
                                       )}
                                     </div>
-
                                     {rb.hasEvaluated ? (
                                       <div className="space-y-1.5 text-xs text-slate-500 dark:text-gray-400">
                                         <p className="text-[11px]">
@@ -1206,5 +1133,4 @@ function AdminResultsPage({ track = 'Physical' }) {
     </div>
   );
 }
-
 export default AdminResultsPage;

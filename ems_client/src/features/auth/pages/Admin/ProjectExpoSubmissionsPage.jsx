@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
 import AppConfirmModal from '../../../../components/Molecules/AppConfirmModal';
+import Pagination from '../../../../components/Molecules/Pagination';
 import {
   FileText,
   Search,
@@ -26,14 +27,11 @@ import {
   Check,
   Award
 } from 'lucide-react';
-
 const STATUS_FILTERS = ['ALL', 'SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'CHANGES_REQUESTED', 'REJECTED', 'FINALIZED'];
-
 export default function ProjectExpoSubmissionsPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const { eventId: urlEventId } = useParams();
-
   const admin = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -41,26 +39,24 @@ export default function ProjectExpoSubmissionsPage() {
       return {};
     }
   }, []);
-
   const eventId = urlEventId || admin?.EventId || 34;
-
   const [submissions, setSubmissions] = useState([]);
   const [domains, setDomains] = useState([]);
   const [loading, setLoading] = useState(true);
-
   // Filters & Search
   const [search, setSearch] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(9);
   // Modal state for full project review
   const [viewingProject, setViewingProject] = useState(null);
-
   // Review action modal state
   const [actionTarget, setActionTarget] = useState(null);
   const [feedbackInput, setFeedbackInput] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
-
   const loadData = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -69,10 +65,8 @@ export default function ProjectExpoSubmissionsPage() {
         fetch(`${API_BASE_URL}/api/project-expo/${eventId}/submissions`),
         fetch(`${API_BASE_URL}/api/project-expo/${eventId}/domains`)
       ]);
-
       const subData = await subRes.json();
       const domData = await domRes.json();
-
       if (subData.success && Array.isArray(subData.submissions)) {
         setSubmissions(subData.submissions);
       }
@@ -85,10 +79,14 @@ export default function ProjectExpoSubmissionsPage() {
       setLoading(false);
     }
   }, [eventId, toast]);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Reset pagination on filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, selectedDomain, selectedStatus, pageSize]);
 
   const stats = useMemo(() => {
     const total = submissions.length;
@@ -106,18 +104,20 @@ export default function ProjectExpoSubmissionsPage() {
         (sub.TeamName || '').toLowerCase().includes(search.toLowerCase()) ||
         (sub.LeaderName || '').toLowerCase().includes(search.toLowerCase()) ||
         (sub.LeaderEmail || '').toLowerCase().includes(search.toLowerCase());
-
       const matchDomain =
         selectedDomain === 'ALL' ||
         String(sub.DomainId) === String(selectedDomain) ||
         (sub.DomainName || '') === selectedDomain;
-
       const matchStatus = selectedStatus === 'ALL' || sub.Status === selectedStatus;
-
       return matchSearch && matchDomain && matchStatus;
     });
   }, [submissions, search, selectedDomain, selectedStatus]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredSubmissions.length / pageSize));
+  const paginatedSubmissions = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredSubmissions.slice(start, start + pageSize);
+  }, [filteredSubmissions, currentPage, pageSize]);
   const handleOpenReviewModal = (submission, actionType) => {
     setActionTarget({
       submissionId: submission.Id,
@@ -127,7 +127,6 @@ export default function ProjectExpoSubmissionsPage() {
     });
     setFeedbackInput(submission.AdminFeedback || '');
   };
-
   const handleConfirmReview = async () => {
     if (!actionTarget) return;
     try {
@@ -140,12 +139,10 @@ export default function ProjectExpoSubmissionsPage() {
           adminFeedback: feedbackInput
         })
       });
-
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.message || 'Review submission failed');
       }
-
       toast.success(`Project marked as ${actionTarget.actionType}`);
       setActionTarget(null);
       setFeedbackInput('');
@@ -156,37 +153,35 @@ export default function ProjectExpoSubmissionsPage() {
       setSubmittingReview(false);
     }
   };
-
   const getStatusBadge = (status) => {
     switch (status) {
       case 'APPROVED':
       case 'FINALIZED':
         return (
-          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-            • Approved
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            Approved
           </span>
         );
       case 'CHANGES_REQUESTED':
         return (
-          <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-            • Correction Required
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+            Correction Required
           </span>
         );
       case 'REJECTED':
         return (
-          <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
-            • Rejected
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            Rejected
           </span>
         );
       default:
         return (
-          <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
-            • Under Review
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-700">
+            Under Review
           </span>
         );
     }
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-black p-8 flex items-center justify-center">
@@ -197,7 +192,6 @@ export default function ProjectExpoSubmissionsPage() {
       </div>
     );
   }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -208,14 +202,13 @@ export default function ProjectExpoSubmissionsPage() {
       {/* ── HEADER ── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 pt-6 sm:px-6 md:px-8 max-w-7xl mx-auto">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-heading">
             Project Submissions & Abstract Review
           </h1>
-          <p className="text-emerald-700 dark:text-emerald-500 text-sm sm:text-base mt-1">
+          <p className="text-gray-500 dark:text-zinc-400 text-sm sm:text-base mt-1">
             Review prototype dossiers, verify technical architecture decks, and grant stall approvals
           </p>
         </div>
-
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -227,7 +220,6 @@ export default function ProjectExpoSubmissionsPage() {
           </button>
         </div>
       </div>
-
       <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
         {/* ── STATS TILES ── */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
@@ -240,7 +232,6 @@ export default function ProjectExpoSubmissionsPage() {
               <FileText className="w-6 h-6" />
             </div>
           </div>
-
           <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm transition hover:shadow-md flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Approved for Exhibition</p>
@@ -250,7 +241,6 @@ export default function ProjectExpoSubmissionsPage() {
               <CheckCircle2 className="w-6 h-6" />
             </div>
           </div>
-
           <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm transition hover:shadow-md flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-amber-600 dark:text-amber-400">Under Technical Review</p>
@@ -260,7 +250,6 @@ export default function ProjectExpoSubmissionsPage() {
               <Clock className="w-6 h-6" />
             </div>
           </div>
-
           <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm transition hover:shadow-md flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Corrections Requested</p>
@@ -271,7 +260,6 @@ export default function ProjectExpoSubmissionsPage() {
             </div>
           </div>
         </div>
-
         {/* ── SEARCH & FILTERS ── */}
         <div className="bg-white dark:bg-black rounded-2xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           <div className="relative flex-1">
@@ -284,7 +272,6 @@ export default function ProjectExpoSubmissionsPage() {
               className="w-full pl-11 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500 transition"
             />
           </div>
-
           <div className="flex items-center gap-3 flex-wrap">
             <select
               value={selectedDomain}
@@ -298,7 +285,6 @@ export default function ProjectExpoSubmissionsPage() {
                 </option>
               ))}
             </select>
-
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
@@ -312,7 +298,6 @@ export default function ProjectExpoSubmissionsPage() {
             </select>
           </div>
         </div>
-
         {/* ── SUBMISSIONS LIST ── */}
         {filteredSubmissions.length === 0 ? (
           <div className="bg-white dark:bg-black rounded-2xl p-12 sm:p-16 border border-gray-200 dark:border-zinc-800 text-center">
@@ -323,90 +308,100 @@ export default function ProjectExpoSubmissionsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSubmissions.map((sub) => (
-              <div
-                key={sub.Id}
-                className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-gray-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 truncate">
-                      • {sub.DomainName || 'General Engineering'}
-                    </span>
-                    {getStatusBadge(sub.Status)}
-                  </div>
-
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug mb-2">
-                    {sub.ProjectTitle}
-                  </h3>
-
-                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed mb-4">
-                    {sub.Abstract || sub.ProblemStatement || 'No abstract preview provided.'}
-                  </p>
-
-                  {/* Team & Booth Metadata Box */}
-                  <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-900/40 border border-gray-100 dark:border-zinc-800 space-y-2 mb-4 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">Team:</span>
-                      <strong className="text-gray-900 dark:text-white font-medium truncate max-w-[160px]">
-                        {sub.TeamName}
-                      </strong>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 dark:text-gray-400">Lead:</span>
-                      <span className="text-gray-700 dark:text-gray-300 truncate max-w-[160px]">
-                        {sub.LeaderName}
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedSubmissions.map((sub) => (
+                <div
+                  key={sub.Id}
+                  className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-gray-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <span className="inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border border-gray-200 dark:border-zinc-700 truncate">
+                        {sub.DomainName || 'General Engineering'}
                       </span>
+                      {getStatusBadge(sub.Status)}
                     </div>
-                    {sub.BoothNumber && (
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-200/60 dark:border-zinc-800">
-                        <span className="text-gray-500 dark:text-gray-400">Allocated Stall:</span>
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                          <Building2 className="w-3 h-3" />
-                          <span>{sub.BoothNumber}</span>
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug mb-2 font-heading">
+                      {sub.ProjectTitle}
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed mb-4">
+                      {sub.Abstract || sub.ProblemStatement || 'No abstract preview provided.'}
+                    </p>
+                    {/* Team & Booth Metadata Box */}
+                    <div className="p-4 rounded-xl bg-gray-50 dark:bg-zinc-900/40 border border-gray-100 dark:border-zinc-800 space-y-2 mb-4 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">Team:</span>
+                        <strong className="text-gray-900 dark:text-white font-medium truncate max-w-[160px]">
+                          {sub.TeamName}
+                        </strong>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500 dark:text-gray-400">Lead:</span>
+                        <span className="text-gray-700 dark:text-gray-300 truncate max-w-[160px]">
+                          {sub.LeaderName}
                         </span>
                       </div>
-                    )}
+                      {sub.BoothNumber && (
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-200/60 dark:border-zinc-800">
+                          <span className="text-gray-500 dark:text-gray-400">Allocated Stall:</span>
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            <span>{sub.BoothNumber}</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setViewingProject(sub)}
+                      className="font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>View Dossier</span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      {sub.Status !== 'APPROVED' && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenReviewModal(sub, 'APPROVED')}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-semibold hover:bg-emerald-100 transition cursor-pointer"
+                        >
+                          Approve
+                        </button>
+                      )}
+                      {sub.Status !== 'CHANGES_REQUESTED' && (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenReviewModal(sub, 'CHANGES_REQUESTED')}
+                          className="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-500/40 text-amber-700 dark:text-amber-300 font-semibold hover:bg-amber-100 transition cursor-pointer"
+                        >
+                          Correct
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
 
-                <div className="pt-4 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setViewingProject(sub)}
-                    className="font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Eye className="w-4 h-4" />
-                    <span>View Dossier</span>
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    {sub.Status !== 'APPROVED' && (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenReviewModal(sub, 'APPROVED')}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-semibold hover:bg-emerald-100 transition cursor-pointer"
-                      >
-                        Approve
-                      </button>
-                    )}
-                    {sub.Status !== 'CHANGES_REQUESTED' && (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenReviewModal(sub, 'CHANGES_REQUESTED')}
-                        className="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-500/40 text-amber-700 dark:text-amber-300 font-semibold hover:bg-amber-100 transition cursor-pointer"
-                      >
-                        Correct
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+            {/* Pagination Component */}
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 overflow-hidden">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredSubmissions.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[6, 9, 12, 24]}
+                itemName="submissions"
+              />
+            </div>
           </div>
         )}
-
         {/* ── PROJECT DETAILS DRAWER / MODAL ── */}
         <AnimatePresence>
           {viewingProject && (
@@ -418,7 +413,6 @@ export default function ProjectExpoSubmissionsPage() {
                 onClick={() => setViewingProject(null)}
                 className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
               />
-
               <motion.div
                 initial={{ opacity: 0, scale: 0.96, y: 12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -427,8 +421,8 @@ export default function ProjectExpoSubmissionsPage() {
               >
                 <div className="flex items-start justify-between pb-4 border-b border-gray-100 dark:border-zinc-800">
                   <div>
-                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      • {viewingProject.DomainName || 'General Engineering'}
+                    <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-semibold bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 border border-gray-200 dark:border-zinc-700">
+                      {viewingProject.DomainName || 'General Engineering'}
                     </span>
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white mt-1">
                       {viewingProject.ProjectTitle}
@@ -445,7 +439,6 @@ export default function ProjectExpoSubmissionsPage() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-
                 <div className="space-y-5 text-sm">
                   {viewingProject.ProblemStatement && (
                     <div className="space-y-1.5">
@@ -457,7 +450,6 @@ export default function ProjectExpoSubmissionsPage() {
                       </p>
                     </div>
                   )}
-
                   <div className="space-y-1.5">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       Project Abstract
@@ -466,7 +458,6 @@ export default function ProjectExpoSubmissionsPage() {
                       {viewingProject.Abstract || 'No abstract provided.'}
                     </p>
                   </div>
-
                   {viewingProject.ProposedSolution && (
                     <div className="space-y-1.5">
                       <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -477,7 +468,6 @@ export default function ProjectExpoSubmissionsPage() {
                       </p>
                     </div>
                   )}
-
                   {viewingProject.TechnologiesUsed && (
                     <div className="space-y-1.5">
                       <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -488,7 +478,6 @@ export default function ProjectExpoSubmissionsPage() {
                       </p>
                     </div>
                   )}
-
                   {/* Resource URLs */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                     {viewingProject.GithubRepoUrl && (
@@ -521,7 +510,6 @@ export default function ProjectExpoSubmissionsPage() {
                     )}
                   </div>
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-zinc-800">
                   <button
                     type="button"
@@ -546,7 +534,6 @@ export default function ProjectExpoSubmissionsPage() {
             </div>
           )}
         </AnimatePresence>
-
         {/* ── REVIEW ACTION MODAL ── */}
         <AnimatePresence>
           {actionTarget && (
@@ -558,7 +545,6 @@ export default function ProjectExpoSubmissionsPage() {
                 onClick={() => !submittingReview && setActionTarget(null)}
                 className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
               />
-
               <motion.div
                 initial={{ opacity: 0, scale: 0.96, y: 12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -583,7 +569,6 @@ export default function ProjectExpoSubmissionsPage() {
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-
                 <div className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -597,7 +582,6 @@ export default function ProjectExpoSubmissionsPage() {
                       className="w-full p-3.5 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white outline-none focus:border-emerald-500 transition resize-none"
                     />
                   </div>
-
                   <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-zinc-800">
                     <button
                       type="button"

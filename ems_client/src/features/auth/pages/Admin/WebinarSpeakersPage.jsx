@@ -19,7 +19,6 @@ import {
   Award,
   Globe
 } from 'lucide-react';
-
 const WEBINAR_ROLES = [
   'Keynote Speaker',
   'Guest Speaker / Industry Leader',
@@ -30,7 +29,6 @@ const WEBINAR_ROLES = [
   'Distinguished Dignitary',
   'Custom Role'
 ];
-
 export default function WebinarSpeakersPage() {
   const toast = useToast();
   const admin = useMemo(() => {
@@ -40,18 +38,14 @@ export default function WebinarSpeakersPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-
   const [formData, setFormData] = useState({
     name: '',
     role: 'Keynote Speaker',
@@ -62,7 +56,6 @@ export default function WebinarSpeakersPage() {
     phone: '',
     photo: ''
   });
-
   const fetchSpeakers = async () => {
     if (!eventId) return;
     try {
@@ -78,11 +71,9 @@ export default function WebinarSpeakersPage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchSpeakers();
   }, [eventId]);
-
   const handleOpenAdd = () => {
     setEditingId(null);
     setFormData({
@@ -97,7 +88,6 @@ export default function WebinarSpeakersPage() {
     });
     setIsModalOpen(true);
   };
-
   const handleOpenEdit = (member) => {
     setEditingId(member.Id);
     const isPreset = WEBINAR_ROLES.slice(0, -1).includes(member.Role);
@@ -113,7 +103,6 @@ export default function WebinarSpeakersPage() {
     });
     setIsModalOpen(true);
   };
-
   const handleDelete = async (id) => {
     if (!window.confirm('Remove this speaker from the webinar panel?')) return;
     try {
@@ -128,18 +117,15 @@ export default function WebinarSpeakersPage() {
       toast.error('Failed to remove speaker');
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
       toast.error('Speaker name is required');
       return;
     }
-
     const finalRole = formData.isCustomRole
       ? (formData.customRole.trim() || 'Keynote Speaker')
       : formData.role;
-
     const payload = {
       EventId: eventId,
       Name: formData.name.trim(),
@@ -150,7 +136,6 @@ export default function WebinarSpeakersPage() {
       Type: 'faculty',
       Photo: formData.photo || null
     };
-
     try {
       setSubmitting(true);
       if (editingId) {
@@ -179,7 +164,6 @@ export default function WebinarSpeakersPage() {
       setSubmitting(false);
     }
   };
-
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {
       const roleLower = (m.Role || '').toLowerCase();
@@ -188,18 +172,15 @@ export default function WebinarSpeakersPage() {
         (roleFilter === 'speakers' && (roleLower.includes('speaker') || roleLower.includes('keynote'))) ||
         (roleFilter === 'panel' && roleLower.includes('panel')) ||
         (roleFilter === 'hosts' && (roleLower.includes('host') || roleLower.includes('moderator') || roleLower.includes('coordinator')));
-
       const q = searchQuery.toLowerCase();
       const matchesSearch =
         (m.Name || '').toLowerCase().includes(q) ||
         (m.Role || '').toLowerCase().includes(q) ||
         (m.Department || '').toLowerCase().includes(q) ||
         (m.Email || '').toLowerCase().includes(q);
-
       return matchesFilter && matchesSearch;
     });
   }, [members, roleFilter, searchQuery]);
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black p-4 sm:p-6 md:p-8 space-y-6">
       {/* Top Header Card */}
@@ -216,7 +197,6 @@ export default function WebinarSpeakersPage() {
             Highlight distinguished thought leaders, guest dignitaries, panel discussion members, and session moderators delivering this webinar.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
           <button
             onClick={fetchSpeakers}
@@ -234,7 +214,6 @@ export default function WebinarSpeakersPage() {
           </button>
         </div>
       </div>
-
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-72">
@@ -247,7 +226,6 @@ export default function WebinarSpeakersPage() {
             className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
           />
         </div>
-
         <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-200/60 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 self-stretch sm:self-auto overflow-x-auto">
           {[
             { id: 'all', label: `All (${members.length})` },
@@ -269,7 +247,6 @@ export default function WebinarSpeakersPage() {
           ))}
         </div>
       </div>
-
       {/* Grid */}
       {loading ? (
         <div className="p-12 text-center text-slate-400">
@@ -320,7 +297,6 @@ export default function WebinarSpeakersPage() {
                     {member.Role}
                   </span>
                 </div>
-
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors">
                     {member.Name}
@@ -339,7 +315,6 @@ export default function WebinarSpeakersPage() {
                   )}
                 </div>
               </div>
-
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-zinc-800/80">
                 <button
                   onClick={() => handleOpenEdit(member)}
@@ -360,7 +335,6 @@ export default function WebinarSpeakersPage() {
           ))}
         </div>
       )}
-
       {/* Modal */}
       <AnimatePresence>
         {isModalOpen && (
@@ -387,7 +361,6 @@ export default function WebinarSpeakersPage() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -402,7 +375,6 @@ export default function WebinarSpeakersPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                     Webinar Role *
@@ -426,7 +398,6 @@ export default function WebinarSpeakersPage() {
                     ))}
                   </select>
                 </div>
-
                 {formData.isCustomRole && (
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -441,7 +412,6 @@ export default function WebinarSpeakersPage() {
                     />
                   </div>
                 )}
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                     Organization / Company / Affiliation
@@ -454,7 +424,6 @@ export default function WebinarSpeakersPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -481,7 +450,6 @@ export default function WebinarSpeakersPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                     Profile Photo URL (Optional)
@@ -494,7 +462,6 @@ export default function WebinarSpeakersPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
                   <button
                     type="button"

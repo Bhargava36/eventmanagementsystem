@@ -67,15 +67,16 @@ export default function TechTracksBentoSection() {
   const navigate = useNavigate();
   const threeMountRef = useRef(null);
   const cardsRef = useRef([]);
+  const sectionRef = useRef(null);
+  const headerRef = useRef(null);
+  const gridRef = useRef(null);
 
-  // 1. Three.js Subtle 3D Ambient Node Particles in Background
   useEffect(() => {
     const mount = threeMountRef.current;
     if (!mount) return;
 
     const width = mount.clientWidth || 1000;
     const height = mount.clientHeight || 500;
-
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
     camera.position.z = 18;
@@ -86,7 +87,6 @@ export default function TechTracksBentoSection() {
     mount.innerHTML = '';
     mount.appendChild(renderer.domElement);
 
-    // Create 3D floating geometric polyhedra representing domains
     const geometryGroup = new THREE.Group();
     scene.add(geometryGroup);
 
@@ -106,10 +106,8 @@ export default function TechTracksBentoSection() {
     shapes[0].position.set(-10, 3, -5);
     shapes[1].position.set(10, -2, -6);
     shapes[2].position.set(2, 6, -8);
-
     shapes.forEach((s) => geometryGroup.add(s));
 
-    // Particle constellation
     const pCount = 60;
     const pPos = new Float32Array(pCount * 3);
     for (let i = 0; i < pCount; i++) {
@@ -117,6 +115,7 @@ export default function TechTracksBentoSection() {
       pPos[i * 3 + 1] = (Math.random() - 0.5) * 18;
       pPos[i * 3 + 2] = (Math.random() - 0.5) * 12;
     }
+
     const pGeo = new THREE.BufferGeometry();
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
     const pMat = new THREE.PointsMaterial({
@@ -125,6 +124,7 @@ export default function TechTracksBentoSection() {
       transparent: true,
       opacity: 0.4,
     });
+
     const pMesh = new THREE.Points(pGeo, pMat);
     geometryGroup.add(pMesh);
 
@@ -148,8 +148,8 @@ export default function TechTracksBentoSection() {
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
-    window.addEventListener('resize', onResize);
 
+    window.addEventListener('resize', onResize);
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', onResize);
@@ -163,14 +163,8 @@ export default function TechTracksBentoSection() {
     };
   }, []);
 
-  const sectionRef = useRef(null);
-  const headerRef = useRef(null);
-  const gridRef = useRef(null);
-
-  // 2. GSAP ScrollTrigger Scroll-Reveal & 3D Interactive Card Tilt
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Header reveal (re-triggers whenever on screen)
       if (headerRef.current) {
         gsap.from(headerRef.current, {
           scrollTrigger: {
@@ -186,7 +180,6 @@ export default function TechTracksBentoSection() {
         });
       }
 
-      // 6 Cards Stagger reveal (re-triggers whenever on screen)
       const cards = cardsRef.current.filter(Boolean);
       if (cards.length) {
         gsap.from(cards, {
@@ -207,20 +200,16 @@ export default function TechTracksBentoSection() {
     }, sectionRef);
 
     const cleanups = [];
-
     cardsRef.current.forEach((card) => {
       if (!card) return;
-
       const onMouseMove = (e) => {
         const rect = card.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
-
         const rotateX = -((y - centerY) / centerY) * 8;
         const rotateY = ((x - centerX) / centerX) * 8;
-
         gsap.to(card, {
           rotateX,
           rotateY,
@@ -245,7 +234,6 @@ export default function TechTracksBentoSection() {
 
       card.addEventListener('mousemove', onMouseMove);
       card.addEventListener('mouseleave', onMouseLeave);
-
       cleanups.push(() => {
         card.removeEventListener('mousemove', onMouseMove);
         card.removeEventListener('mouseleave', onMouseLeave);
@@ -264,13 +252,11 @@ export default function TechTracksBentoSection() {
       id="domains"
       className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative overflow-hidden scroll-mt-20"
     >
-      {/* Three.js Ambient 3D Particle Layer */}
       <div
         ref={threeMountRef}
         className="absolute inset-0 pointer-events-none z-0 opacity-40"
       />
 
-      {/* Header with ScrollReveal */}
       <div
         ref={headerRef}
         className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16 relative z-10"
@@ -293,7 +279,6 @@ export default function TechTracksBentoSection() {
         </Link>
       </div>
 
-      {/* Grid of 6 interactive 3D Tilt cards with ScrollReveal */}
       <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
         {TRACKS.map((track, idx) => {
           const IconComp = track.icon;

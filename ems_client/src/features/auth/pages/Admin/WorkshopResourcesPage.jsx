@@ -17,7 +17,6 @@ import {
   BookOpen,
   X
 } from 'lucide-react';
-
 export default function WorkshopResourcesPage() {
   const toast = useToast();
   const admin = useMemo(() => {
@@ -27,9 +26,7 @@ export default function WorkshopResourcesPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeType, setActiveType] = useState('all');
@@ -37,14 +34,12 @@ export default function WorkshopResourcesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
-
   const [formData, setFormData] = useState({
     Title: '',
     ResourceType: 'Document / PDF',
     ResourceUrl: '',
     Description: ''
   });
-
   const fetchResources = async () => {
     if (!eventId) return;
     try {
@@ -60,11 +55,9 @@ export default function WorkshopResourcesPage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchResources();
   }, [eventId]);
-
   const filteredResources = useMemo(() => {
     return resources.filter((r) => {
       const matchesType = activeType === 'all' || r.ResourceType === activeType;
@@ -74,14 +67,12 @@ export default function WorkshopResourcesPage() {
       return matchesType && matchesSearch;
     });
   }, [resources, activeType, searchQuery]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.Title.trim() || !formData.ResourceUrl.trim()) {
       toast.error('Title and Resource URL are required');
       return;
     }
-
     try {
       setSaving(true);
       const res = await fetch(`${API_BASE_URL}/api/workshops/${eventId}/resources`, {
@@ -89,12 +80,10 @@ export default function WorkshopResourcesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || 'Failed to create resource');
       }
-
       toast.success('Resource added successfully');
       setIsModalOpen(false);
       setFormData({ Title: '', ResourceType: 'Document / PDF', ResourceUrl: '', Description: '' });
@@ -106,7 +95,6 @@ export default function WorkshopResourcesPage() {
       setSaving(false);
     }
   };
-
   const handleDelete = async (resourceId) => {
     if (!window.confirm('Delete this resource?')) return;
     try {
@@ -121,21 +109,18 @@ export default function WorkshopResourcesPage() {
       toast.error('Failed to delete resource');
     }
   };
-
   const handleCopy = (url, id) => {
     navigator.clipboard.writeText(url);
     setCopiedId(id);
     toast.success('Link copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
   };
-
   const getResourceIcon = (type) => {
     if (type?.includes('Code') || type?.includes('Repo')) return FolderGit2;
     if (type?.includes('Video') || type?.includes('Recording')) return Video;
     if (type?.includes('Slides') || type?.includes('PPT')) return BookOpen;
     return FileText;
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black p-4 sm:p-6 md:p-8 space-y-6">
       {/* Header */}
@@ -152,7 +137,6 @@ export default function WorkshopResourcesPage() {
             Distribute presentation slides, starter codebases, GitHub repositories, lecture recordings, and reference cheat sheets directly to registered attendees.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
           <button
             onClick={fetchResources}
@@ -170,7 +154,6 @@ export default function WorkshopResourcesPage() {
           </button>
         </div>
       </div>
-
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 scrollbar-none">
@@ -188,7 +171,6 @@ export default function WorkshopResourcesPage() {
             </button>
           ))}
         </div>
-
         <div className="relative w-full sm:w-64">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -200,7 +182,6 @@ export default function WorkshopResourcesPage() {
           />
         </div>
       </div>
-
       {/* Resources Grid */}
       {loading ? (
         <div className="py-20 text-center flex flex-col items-center justify-center">
@@ -228,7 +209,6 @@ export default function WorkshopResourcesPage() {
           {filteredResources.map((res, idx) => {
             const Icon = getResourceIcon(res.ResourceType);
             const isCopied = copiedId === res.Id;
-
             return (
               <motion.div
                 key={res.Id}
@@ -243,7 +223,6 @@ export default function WorkshopResourcesPage() {
                       <Icon className="w-3 h-3" />
                       {res.ResourceType}
                     </span>
-
                     <button
                       onClick={() => handleDelete(res.Id)}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
@@ -252,18 +231,15 @@ export default function WorkshopResourcesPage() {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-
                   <h3 className="font-bold text-base text-slate-900 dark:text-white line-clamp-2">
                     {res.Title}
                   </h3>
-
                   {res.Description && (
                     <p className="text-xs text-slate-500 dark:text-zinc-400 mt-2 line-clamp-3 leading-relaxed">
                       {res.Description}
                     </p>
                   )}
                 </div>
-
                 <div className="pt-4 mt-4 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between gap-2">
                   <button
                     onClick={() => handleCopy(res.ResourceUrl, res.Id)}
@@ -273,7 +249,6 @@ export default function WorkshopResourcesPage() {
                     {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{isCopied ? 'Copied' : 'Copy'}</span>
                   </button>
-
                   <a
                     href={res.ResourceUrl}
                     target="_blank"
@@ -289,7 +264,6 @@ export default function WorkshopResourcesPage() {
           })}
         </div>
       )}
-
       {/* Add Resource Modal */}
       <AnimatePresence>
         {isModalOpen && (
@@ -309,7 +283,6 @@ export default function WorkshopResourcesPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
@@ -324,7 +297,6 @@ export default function WorkshopResourcesPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-900 dark:text-white text-sm outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                     Resource Type
@@ -341,7 +313,6 @@ export default function WorkshopResourcesPage() {
                     <option value="Reference Link">Reference Link</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                     Resource URL / File Link *
@@ -355,7 +326,6 @@ export default function WorkshopResourcesPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-900 dark:text-white text-sm outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                     Notes / Description (Optional)
@@ -368,7 +338,6 @@ export default function WorkshopResourcesPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-900 dark:text-white text-sm outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-zinc-800">
                   <button
                     type="button"

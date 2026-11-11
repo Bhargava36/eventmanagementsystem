@@ -1,23 +1,18 @@
 import React, { useState, Suspense, lazy } from 'react';
 import { Route, Routes, Navigate, useParams } from 'react-router-dom';
-
 function DirectVirtualEventRedirect() {
   const { id } = useParams();
   return <Navigate to={`/user/events/${id}/virtual`} replace />;
 }
-
 // Layouts, Wrappers & Immediate Essentials
 import PublicLayout from '../components/Templates/PublicLayout';
 import ProtectedRoute from '../components/Organisms/ProtectedRoute';
 import Unauthorized from '../components/ui/Unauthorized';
 import ThreePreloader from '../components/ui/ThreePreloader';
 import ScrollToTopOnNavigate from '../components/ui/ScrollToTopOnNavigate';
+import AdminEventTypeRoute from '../components/Organisms/AdminEventTypeRoute';
 import { normalizeHackathonMode } from '../lib/utils';
-
-
-
 // ── LAZY LOADED ROUTE CHUNKS FOR LIGHTNING FAST INITIAL BUNDLE ──
-
 // Public Pages
 const HomePage = lazy(() => import('../features/public/pages/HomePage'));
 const ExploreEvents = lazy(() => import('../features/public/pages/ExploreEvents'));
@@ -30,7 +25,6 @@ const ForgotPasswordPage = lazy(() => import('../features/auth/pages/ForgotPassw
 const TermsOfService = lazy(() => import('../features/public/pages/TermsOfService'));
 const PrivacyNotice = lazy(() => import('../features/public/pages/PrivacyNotice'));
 const PoliciesPage = lazy(() => import('../features/public/pages/PoliciesPage'));
-
 // SuperAdmin Pages
 const Login = lazy(() => import('../features/auth/pages/SuperAdmin/Login'));
 const Register = lazy(() => import('../features/auth/pages/SuperAdmin/Register'));
@@ -44,7 +38,8 @@ const EventInfo = lazy(() => import('../features/auth/pages/SuperAdmin/EventInfo
 const AllUsersPage = lazy(() => import('../features/auth/pages/SuperAdmin/AllUsersPage'));
 const LogsDashboard = lazy(() => import('../features/auth/pages/SuperAdmin/LogsDashboard'));
 const OperationsHub = lazy(() => import('../features/auth/pages/SuperAdmin/OperationsHub'));
-
+const SecurityCenter = lazy(() => import('../features/auth/pages/SuperAdmin/SecurityCenter'));
+const SystemMonitoring = lazy(() => import('../features/auth/pages/SuperAdmin/SystemMonitoring'));
 // Admin Pages
 const AdminSidebar = lazy(() => import('../components/Organisms/AdminSidebar'));
 const MyEventsPage = lazy(() => import('../features/auth/pages/Admin/MyEventsPage'));
@@ -93,7 +88,6 @@ const ProjectExpoBoothsPage = lazy(() => import('../features/auth/pages/Admin/Pr
 const ProjectExpoSchedulesPage = lazy(() => import('../features/auth/pages/Admin/ProjectExpoSchedulesPage'));
 const ProjectExpoEvaluationPage = lazy(() => import('../features/auth/pages/Admin/ProjectExpoEvaluationPage'));
 const ProjectExpoResultsPage = lazy(() => import('../features/auth/pages/Admin/ProjectExpoResultsPage'));
-
 // User Pages
 const UserSidebar = lazy(() => import('../components/Organisms/UserSidebar'));
 const UserLogin = lazy(() => import('../features/auth/pages/Users/UserLogin'));
@@ -106,30 +100,23 @@ const MyTeams = lazy(() => import('../features/auth/pages/Users/MyTeams'));
 const TeamInfo = lazy(() => import('../features/auth/pages/Users/TeamInfo'));
 const UserProfile = lazy(() => import('../features/auth/pages/Users/UserProfile'));
 const UserCompetitions = lazy(() => import('../features/auth/pages/Users/UserCompetitions'));
-
 // Evaluator Pages
 const EvaluatorLogin = lazy(() => import('../features/auth/pages/Evaluator/EvaluatorLogin'));
 const EvaluatorDashboard = lazy(() => import('../features/auth/pages/Evaluator/EvaluatorDashboard'));
 const EvaluateTeamPage = lazy(() => import('../features/auth/pages/Evaluator/EvaluateTeamPage'));
-
 function AdminModeRoute({ allowedModes, children }) {
   let admin = {};
-
   try {
     admin = JSON.parse(localStorage.getItem('admin') || '{}');
   } catch {
     admin = {};
   }
-
   const mode = normalizeHackathonMode(admin?.HackathonMode, admin?.Location);
-
   if (!mode || !allowedModes.includes(mode)) {
     return <Navigate to="/admin/dashboard" replace />;
   }
-
   return children;
 }
-
 function App() {
   const [isReady, setIsReady] = useState(() => {
     // Only run the full preloader once per session to maintain quick subsequent navigation
@@ -139,17 +126,14 @@ function App() {
       return false;
     }
   });
-
   const handlePreloaderComplete = () => {
     setIsReady(true);
   };
-
   return (
     <div className="min-h-screen bg-white dark:bg-black">
       <ScrollToTopOnNavigate />
       {/* Three.js 4-Dots Official Website Preloader - Runs once per browser session */}
       {!isReady && <ThreePreloader onComplete={handlePreloaderComplete} />}
-
       {/* Website loads and renders on-demand with Suspense */}
       {isReady && (
         <Suspense >
@@ -185,9 +169,7 @@ function App() {
               <Route path="/not-found" element={<NotFound />} />
               <Route path="*" element={<NotFound />} />
             </Route>
-
             <Route path="/unauthorized" element={<Unauthorized />} />
-
             <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
               <Route path="/sidebar" element={<Sidebar />}>
                 <Route index element={<SuperAdminDashboard />} />
@@ -196,6 +178,9 @@ function App() {
                 <Route path="events" element={<EventsDashboard />} />
                 <Route path="users" element={<AllUsersPage />} />
                 <Route path="operations" element={<OperationsHub />} />
+                <Route path="security" element={<SecurityCenter />} />
+                <Route path="system-monitoring" element={<SystemMonitoring />} />
+                <Route path="monitoring" element={<SystemMonitoring />} />
                 <Route path="email-dispatch" element={<OperationsHub defaultTab="email" />} />
                 <Route path="backup" element={<OperationsHub defaultTab="backup" />} />
                 <Route path="webhooks" element={<OperationsHub defaultTab="webhooks" />} />
@@ -205,17 +190,79 @@ function App() {
                 <Route path="profile/:id" element={<SuperAdminProfile />} />
               </Route>
             </Route>
-
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
               <Route path="/admin" element={<AdminSidebar />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="my-events" element={<MyEventsPage />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="virtual-event" element={<AdminModeRoute allowedModes={['virtual', 'both']}> <AdminVirtualEvent /> </AdminModeRoute>} />
-                <Route path="physical-event" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AdminPhysicalEvent /> </AdminModeRoute>} />
-                <Route path="core-team" element={<CoreTeam />} />
-                <Route path="teams" element={<TeamsDashboard />} />
-                <Route path="teams/:id" element={<TeamDetails />} />
+
+                {/* ── HACKATHON / COMPETITIVE TRACK ROUTES ── */}
+                <Route
+                  path="virtual-event"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Hackathon']} allowedModes={['virtual', 'both']}>
+                      <AdminVirtualEvent />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="physical-event"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Hackathon']} allowedModes={['physical', 'both']}>
+                      <AdminPhysicalEvent />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="virtual-results"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Hackathon']} allowedModes={['virtual', 'both']}>
+                      <AdminResultsPage track="Virtual" />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="physical-results"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Hackathon']} allowedModes={['physical', 'both']}>
+                      <AdminResultsPage track="Physical" />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="core-team"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Hackathon']}>
+                      <CoreTeam />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="evaluators"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Hackathon']}>
+                      <Evaluators />
+                    </AdminEventTypeRoute>
+                  }
+                />
+
+                {/* ── SHARED OPERATIONS & LOGISTICS ROUTES ── */}
+                <Route
+                  path="teams"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Hackathon', 'Project Expo', 'Workshop', 'Webinar', 'Seminar', 'Conference']}>
+                      <TeamsDashboard />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="teams/:id"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Hackathon', 'Project Expo', 'Workshop', 'Webinar', 'Seminar', 'Conference']}>
+                      <TeamDetails />
+                    </AdminEventTypeRoute>
+                  }
+                />
                 <Route path="settings" element={<AdminEventSettings />} />
                 <Route path="profile" element={<AdminProfile />} />
                 <Route path="profile/:id" element={<AdminProfile />} />
@@ -226,41 +273,229 @@ function App() {
                 <Route path="id-card/designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage /> </AdminModeRoute>} />
                 <Route path="team-card-designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <TeamCardDesignerPage /> </AdminModeRoute>} />
                 <Route path="team-card/designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <TeamCardDesignerPage /> </AdminModeRoute>} />
-                <Route path="evaluators" element={<Evaluators />} />
                 <Route path="broadcast-emailer" element={<EventBroadcastEmailer />} />
-                <Route path="physical-results" element={<AdminModeRoute allowedModes={['physical', 'both']}> <AdminResultsPage track="Physical" /> </AdminModeRoute>} />
-                <Route path="virtual-results" element={<AdminModeRoute allowedModes={['virtual', 'both']}> <AdminResultsPage track="Virtual" /> </AdminModeRoute>} />
                 <Route path="feedback" element={<AdminFeedback />} />
-                <Route path="workshop/curriculum" element={<WorkshopSessionsPage />} />
-                <Route path="workshop/resources" element={<WorkshopResourcesPage />} />
-                <Route path="workshop/attendance" element={<WorkshopAttendancePage />} />
-                <Route path="workshop/instructors" element={<WorkshopInstructorsPage />} />
-                <Route path="webinar/agenda" element={<WebinarAgendaPage />} />
-                <Route path="webinar/resources" element={<WebinarResourcesPage />} />
-                <Route path="webinar/attendance" element={<WebinarAttendancePage />} />
-                <Route path="webinar/speakers" element={<WebinarSpeakersPage />} />
-                <Route path="webinar/qa" element={<WebinarQAModeration />} />
-                <Route path="seminar/overview" element={<SeminarOverviewPage />} />
-                <Route path="seminar/speakers" element={<SeminarSpeakersPage />} />
-                <Route path="seminar/agenda" element={<SeminarAgendaPage />} />
-                <Route path="seminar/attendance" element={<SeminarAttendancePage />} />
-                <Route path="seminar/resources" element={<SeminarResourcesPage />} />
-                <Route path="alumni/overview" element={<AlumniOverviewPage />} />
-                <Route path="alumni/agenda" element={<AlumniAgendaPage />} />
-                <Route path="alumni/speakers" element={<AlumniAgendaPage />} />
-                <Route path="alumni/registrations" element={<AlumniRegistrationsPage />} />
-                <Route path="alumni/attendance" element={<AlumniAttendancePage />} />
-                <Route path="alumni/invites" element={<AlumniInvitesPage />} />
-                <Route path="alumni/memories" element={<AlumniMemoriesPage />} />
-                <Route path="expo/settings" element={<ProjectExpoSettingsPage />} />
-                <Route path="expo/projects" element={<ProjectExpoSubmissionsPage />} />
-                <Route path="expo/booths" element={<ProjectExpoBoothsPage />} />
-                <Route path="expo/schedules" element={<ProjectExpoSchedulesPage />} />
-                <Route path="expo/evaluation" element={<ProjectExpoEvaluationPage />} />
-                <Route path="expo/results" element={<ProjectExpoResultsPage />} />
+
+                {/* ── WORKSHOP ROUTES ── */}
+                <Route
+                  path="workshop/curriculum"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Workshop']}>
+                      <WorkshopSessionsPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="workshop/resources"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Workshop']}>
+                      <WorkshopResourcesPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="workshop/attendance"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Workshop']}>
+                      <WorkshopAttendancePage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="workshop/instructors"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Workshop']}>
+                      <WorkshopInstructorsPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+
+                {/* ── WEBINAR ROUTES ── */}
+                <Route
+                  path="webinar/agenda"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Webinar']}>
+                      <WebinarAgendaPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="webinar/resources"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Webinar']}>
+                      <WebinarResourcesPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="webinar/attendance"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Webinar']}>
+                      <WebinarAttendancePage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="webinar/speakers"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Webinar']}>
+                      <WebinarSpeakersPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="webinar/qa"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Webinar']}>
+                      <WebinarQAModeration />
+                    </AdminEventTypeRoute>
+                  }
+                />
+
+                {/* ── SEMINAR / CONFERENCE ROUTES ── */}
+                <Route
+                  path="seminar/overview"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Seminar', 'Conference']}>
+                      <SeminarOverviewPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="seminar/speakers"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Seminar', 'Conference']}>
+                      <SeminarSpeakersPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="seminar/agenda"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Seminar', 'Conference']}>
+                      <SeminarAgendaPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="seminar/attendance"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Seminar', 'Conference']}>
+                      <SeminarAttendancePage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="seminar/resources"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Seminar', 'Conference']}>
+                      <SeminarResourcesPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+
+                {/* ── ALUMNI MEET ROUTES ── */}
+                <Route
+                  path="alumni/overview"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Alumni Meet']}>
+                      <AlumniOverviewPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="alumni/agenda"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Alumni Meet']}>
+                      <AlumniAgendaPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="alumni/speakers"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Alumni Meet']}>
+                      <AlumniAgendaPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="alumni/registrations"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Alumni Meet']}>
+                      <AlumniRegistrationsPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="alumni/attendance"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Alumni Meet']}>
+                      <AlumniAttendancePage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="alumni/invites"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Alumni Meet']}>
+                      <AlumniInvitesPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="alumni/memories"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Alumni Meet']}>
+                      <AlumniMemoriesPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+
+                {/* ── PROJECT EXPO ROUTES ── */}
+                <Route path="expo/settings" element={<Navigate to="/admin/settings" replace />} />
+                <Route
+                  path="expo/projects"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Project Expo']}>
+                      <ProjectExpoSubmissionsPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="expo/booths"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Project Expo']}>
+                      <ProjectExpoBoothsPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="expo/schedules"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Project Expo']}>
+                      <ProjectExpoSchedulesPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="expo/evaluation"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Project Expo']}>
+                      <ProjectExpoEvaluationPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
+                <Route
+                  path="expo/results"
+                  element={
+                    <AdminEventTypeRoute allowedTypes={['Project Expo']}>
+                      <ProjectExpoResultsPage />
+                    </AdminEventTypeRoute>
+                  }
+                />
               </Route>
             </Route>
-
             <Route element={<ProtectedRoute allowedRoles={['user']} redirectPath="/user/login" />}>
               <Route path="/user" element={<UserSidebar />}>
                 <Route index element={<Navigate to="dashboard" replace />} />
@@ -276,12 +511,10 @@ function App() {
                 <Route path="profile/:id" element={<UserProfile />} />
               </Route>
             </Route>
-
             <Route element={<ProtectedRoute allowedRoles={['evaluator']} redirectPath="/evaluator/login" />}>
               <Route path="/evaluator/dashboard" element={<EvaluatorDashboard />} />
               <Route path="/evaluator/evaluate/:roundId/:teamId" element={<EvaluateTeamPage />} />
             </Route>
-
             <Route path="/verify-id" element={<VerifyIdPage />} />
           </Routes>
         </Suspense>
@@ -289,5 +522,4 @@ function App() {
     </div>
   );
 }
-
 export default App;

@@ -35,20 +35,16 @@ import {
 } from "lucide-react";
 import PrizePodiumStage from "../../../../components/Molecules/PrizePodiumStage";
 import { getTrackVisibility, getEventTypeInfo, isSoloTeamSize } from "../../../../lib/utils";
-
 function formatDate(date) {
     if (!date) return "Not available";
-
     return new Date(date).toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
         year: "numeric"
     });
 }
-
 function formatTime(date) {
     if (!date) return "";
-
     return new Date(date).toLocaleString("en-IN", {
         day: "2-digit",
         month: "short",
@@ -56,12 +52,10 @@ function formatTime(date) {
         minute: "2-digit"
     });
 }
-
 function AdminDashboard() {
     const navigate = useNavigate();
     const admin = JSON.parse(localStorage.getItem("admin") || "null");
     const eventId = admin?.EventId;
-
     const cacheKey = eventId ? `admin_dashboard_cache_${eventId}` : null;
     const cachedData = (() => {
         try {
@@ -70,9 +64,7 @@ function AdminDashboard() {
             return null;
         }
     })();
-
     const [event, setEvent] = useState(cachedData?.event || null);
-
     const {
         mode: currentMode,
         isBoth: isBothMode,
@@ -84,7 +76,6 @@ function AdminDashboard() {
         event?.HackathonMode || admin?.HackathonMode,
         event?.Location || admin?.Location
     );
-
     const [usersCount, setUsersCount] = useState(cachedData?.usersCount ?? 0);
     const [teamsCount, setTeamsCount] = useState(cachedData?.teamsCount ?? 0);
     const [pendingCount, setPendingCount] = useState(cachedData?.pendingCount ?? 0);
@@ -98,26 +89,20 @@ function AdminDashboard() {
         }
         return 0;
     });
-
     const [recentRegistrations, setRecentRegistrations] = useState(cachedData?.recentRegistrations || []);
     const [recentActivities, setRecentActivities] = useState(cachedData?.recentActivities || []);
-
     const [loading, setLoading] = useState(!cachedData);
     const [error, setError] = useState("");
-
     const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
-
     const [prizes, setPrizes] = useState([
         {
             name: "",
             amount: ""
         }
     ]);
-
     const [declaredPrizes, setDeclaredPrizes] = useState(cachedData?.declaredPrizes || []);
     const [activePrizeTab, setActivePrizeTab] = useState("Physical");
     const [modalPrizeTab, setModalPrizeTab] = useState("Physical");
-
     const [isGuidelinesModalOpen, setIsGuidelinesModalOpen] = useState(false);
     const [guidelinesLoading, setGuidelinesLoading] = useState(false);
     const [guidelinesActiveTab, setGuidelinesActiveTab] = useState("virtual");
@@ -130,7 +115,6 @@ function AdminDashboard() {
         Facilities: "",
         Requirements: ""
     });
-
     useEffect(() => {
         if (isVirtualMode) {
             setActivePrizeTab("Virtual");
@@ -146,7 +130,6 @@ function AdminDashboard() {
             setGuidelinesActiveTab("virtual");
         }
     }, [event?.HackathonMode, isVirtualMode, isPhysicalMode, isBothMode]);
-
     const openGuidelinesModal = () => {
         if (event) {
             setGuidelinesData({
@@ -161,7 +144,6 @@ function AdminDashboard() {
         }
         setIsGuidelinesModalOpen(true);
     };
-
     const handleSaveGuidelines = async (e) => {
         e.preventDefault();
         try {
@@ -176,17 +158,14 @@ function AdminDashboard() {
                     body: JSON.stringify(guidelinesData)
                 }
             );
-
             const data = await response.json();
             if (!response.ok) {
                 throw new Error(data.message || "Failed to update event guidelines");
             }
-
             setEvent((prev) => ({
                 ...prev,
                 ...guidelinesData
             }));
-
             setIsGuidelinesModalOpen(false);
             alert("Event guidelines saved successfully!");
         } catch (err) {
@@ -196,7 +175,6 @@ function AdminDashboard() {
             setGuidelinesLoading(false);
         }
     };
-
     useEffect(() => {
         if (eventId) {
             fetchDashboard();
@@ -204,7 +182,6 @@ function AdminDashboard() {
             setLoading(false);
             setError("No event assigned to this admin.");
         }
-
         const handleEventUpdated = () => {
             if (cacheKey) {
                 try {
@@ -215,20 +192,17 @@ function AdminDashboard() {
                 fetchDashboard();
             }
         };
-
         window.addEventListener('admin-event-updated', handleEventUpdated);
         return () => {
             window.removeEventListener('admin-event-updated', handleEventUpdated);
         };
     }, [eventId, cacheKey]);
-
     const fetchDashboard = async () => {
         try {
             if (!cachedData) {
                 setLoading(true);
             }
             setError("");
-
             // Fast path: Fetch single consolidated summary endpoint (~190ms)
             try {
                 const summaryRes = await fetch(`${API_BASE_URL}/api/events/${eventId}/dashboard-summary`);
@@ -245,7 +219,6 @@ function AdminDashboard() {
                                 window.dispatchEvent(new Event('admin-event-updated'));
                             }
                         } catch (e) {}
-
                         if (data.event.StartDate) {
                             const startDate = new Date(data.event.StartDate);
                             const today = new Date();
@@ -260,7 +233,6 @@ function AdminDashboard() {
                         setTeamsCount(data.teamsCount || 0);
                         setPendingCount(data.pendingCount || 0);
                         setLoading(false);
-
                         // Cache for instant 0ms subsequent renders
                         if (cacheKey) {
                             localStorage.setItem(cacheKey, JSON.stringify(data));
@@ -269,57 +241,51 @@ function AdminDashboard() {
                     }
                 }
             } catch (summaryErr) {
-                console.warn("Summary endpoint failed, falling back to parallel requests:", summaryErr);
-            }
-
-            // Fallback: parallel fetch all individual endpoints
-            const [eventRes, prizesRes, regRes, actRes, countRes, teamsRes, pendingRes] = await Promise.allSettled([
-                fetch(`${API_BASE_URL}/api/events/${eventId}`).then(r => r.ok ? r.json() : null),
-                fetch(`${API_BASE_URL}/api/event_prizes/event/${eventId}`).then(r => r.ok ? r.json() : null),
-                fetch(`${API_BASE_URL}/api/event_reg/recent`).then(r => r.ok ? r.json() : null),
-                fetch(`${API_BASE_URL}/api/event_reg/activities`).then(r => r.ok ? r.json() : null),
-                fetch(`${API_BASE_URL}/api/event_reg/event/${eventId}/count`).then(r => r.ok ? r.json() : null),
-                fetch(`${API_BASE_URL}/api/teams/event/${eventId}/count`).then(r => r.ok ? r.json() : null),
-                fetch(`${API_BASE_URL}/api/event_reg/event/${eventId}/pending-count`).then(r => r.ok ? r.json() : null)
-            ]);
-
-            if (eventRes.status === "fulfilled" && eventRes.value) {
-                const currentEvent = eventRes.value.event || null;
-                setEvent(currentEvent);
-                if (currentEvent?.StartDate) {
-                    const startDate = new Date(currentEvent.StartDate);
-                    const today = new Date();
-                    const difference = startDate - today;
-                    const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
-                    setRemainingDays(Math.max(days, 0));
+                console.warn("Summary endpoint failed:", summaryErr);
+                // Check if local cached dashboard data is available to prevent request storms
+                if (cacheKey) {
+                    try {
+                        const localCached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+                        if (localCached && localCached.event) {
+                            setEvent(localCached.event);
+                            setDeclaredPrizes(localCached.declaredPrizes || []);
+                            setRecentRegistrations(localCached.recentRegistrations || []);
+                            setRecentActivities(localCached.recentActivities || []);
+                            setUsersCount(localCached.usersCount || 0);
+                            setTeamsCount(localCached.teamsCount || 0);
+                            setPendingCount(localCached.pendingCount || 0);
+                            setLoading(false);
+                            return;
+                        }
+                    } catch (_) {}
                 }
+                // If no cache, fetch only the single event record rather than hammering 7 parallel endpoints
+                try {
+                    const eventRes = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
+                    if (eventRes.ok) {
+                        const evData = await eventRes.json();
+                        const currentEvent = evData.event || (Array.isArray(evData) ? evData[0] : evData);
+                        if (currentEvent) {
+                            setEvent(currentEvent);
+                            if (currentEvent.StartDate) {
+                                const startDate = new Date(currentEvent.StartDate);
+                                const today = new Date();
+                                const difference = startDate - today;
+                                const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
+                                setRemainingDays(Math.max(days, 0));
+                            }
+                        }
+                    }
+                } catch (_) {}
+                setLoading(false);
+                return;
             }
-            if (prizesRes.status === "fulfilled" && prizesRes.value) {
-                setDeclaredPrizes(prizesRes.value.prizes || prizesRes.value.eventPrizes || []);
-            }
-            if (regRes.status === "fulfilled" && regRes.value) {
-                setRecentRegistrations(regRes.value.registrations || regRes.value.recentRegistrations || []);
-            }
-            if (actRes.status === "fulfilled" && actRes.value) {
-                setRecentActivities(actRes.value.activities || []);
-            }
-            if (countRes.status === "fulfilled" && countRes.value) {
-                setUsersCount(countRes.value.count || 0);
-            }
-            if (teamsRes.status === "fulfilled" && teamsRes.value) {
-                setTeamsCount(teamsRes.value.count || 0);
-            }
-            if (pendingRes.status === "fulfilled" && pendingRes.value) {
-                setPendingCount(pendingRes.value.count || 0);
-            }
-            setLoading(false);
         } catch (error) {
             console.error("ADMIN DASHBOARD ERROR:", error);
             setError(error.message);
             setLoading(false);
         }
     };
-
     const openPrizeModal = () => {
         const isDual = isBothMode;
         const singleTrack = isVirtualMode ? "Virtual" : isPhysicalMode ? "Physical" : "Overall";
@@ -348,7 +314,6 @@ function AdminDashboard() {
         }
         setIsPrizeModalOpen(true);
     };
-
     const handlePrizeChange = (index, field, value) => {
         setPrizes((currentPrizes) =>
             currentPrizes.map((prize, prizeIndex) =>
@@ -361,7 +326,6 @@ function AdminDashboard() {
             )
         );
     };
-
     const addPrize = (targetTrack) => {
         const isDual = isBothMode;
         const singleTrack = isVirtualMode ? "Virtual" : isPhysicalMode ? "Physical" : "Overall";
@@ -378,7 +342,6 @@ function AdminDashboard() {
             }
         ]);
     };
-
     const removePrize = (index) => {
         setPrizes((currentPrizes) =>
             currentPrizes.filter(
@@ -386,27 +349,22 @@ function AdminDashboard() {
             )
         );
     };
-
     const handleDeclarePrizes = async (e) => {
         e.preventDefault();
-
         try {
             if (!eventId) {
                 alert("No event assigned to this admin.");
                 return;
             }
-
             const validPrizes = prizes.filter(
                 (prize) =>
                     prize.name.trim() !== "" &&
                     prize.amount !== ""
             );
-
             if (validPrizes.length === 0) {
                 alert("Please add at least one prize with a name and amount.");
                 return;
             }
-
             const trackRankCounters = {};
             const payload = {
                 prizes: validPrizes.map((prize) => {
@@ -419,7 +377,6 @@ function AdminDashboard() {
                     };
                 })
             };
-
             const response = await fetch(
                 `${API_BASE_URL}/api/event_prizes/event/${eventId}`,
                 {
@@ -430,19 +387,15 @@ function AdminDashboard() {
                     body: JSON.stringify(payload)
                 }
             );
-
             const data = await response.json();
-
             if (!response.ok) {
                 throw new Error(
                     data.message || "Failed to declare prizes"
                 );
             }
-
             const prizeResponse = await fetch(
                 `${API_BASE_URL}/api/event_prizes/event/${eventId}`
             );
-
             if (prizeResponse.ok) {
                 const prizeData = await prizeResponse.json();
                 setDeclaredPrizes(
@@ -451,7 +404,6 @@ function AdminDashboard() {
                     []
                 );
             }
-
             // Also reload event data to update track pools on the dashboard immediately
             const evRes = await fetch(`${API_BASE_URL}/api/events/${eventId}`);
             if (evRes.ok) {
@@ -459,16 +411,13 @@ function AdminDashboard() {
                 const refreshed = evData.event || evData;
                 setEvent(refreshed);
             }
-
             setIsPrizeModalOpen(false);
             alert("Prizes declared successfully.");
-
         } catch (error) {
             console.error("DECLARE PRIZE ERROR:", error);
             alert(error.message);
         }
     };
-
     const getPrizeAmount = (prize) => {
         return (
             prize.Prize ||
@@ -477,7 +426,6 @@ function AdminDashboard() {
             "0"
         );
     };
-
     const getPrizeRank = (prize, index) => {
         return (
             prize.PrizeRank ||
@@ -485,7 +433,6 @@ function AdminDashboard() {
             index + 1
         );
     };
-
     const getRegistrationName = (registration) => {
         return (
             registration.TeamName ||
@@ -497,7 +444,6 @@ function AdminDashboard() {
             "Registration"
         );
     };
-
     const getLeaderName = (registration) => {
         return (
             registration.LeaderName ||
@@ -509,7 +455,6 @@ function AdminDashboard() {
             "User"
         );
     };
-
     const getRegistrationStatus = (registration) => {
         return (
             registration.status ||
@@ -517,7 +462,6 @@ function AdminDashboard() {
             "Pending"
         );
     };
-
     const getActivityName = (activity) => {
         return (
             activity.TeamName ||
@@ -529,7 +473,6 @@ function AdminDashboard() {
             "Registration"
         );
     };
-
     const getActivityLeader = (activity) => {
         return (
             activity.LeaderName ||
@@ -541,7 +484,6 @@ function AdminDashboard() {
             "User"
         );
     };
-
     const getActivityStatus = (activity) => {
         return (
             activity.Status ||
@@ -549,7 +491,6 @@ function AdminDashboard() {
             "pending"
         );
     };
-
     const getActivityDate = (activity) => {
         return (
             activity.CreatedAt ||
@@ -560,10 +501,8 @@ function AdminDashboard() {
             activity.date
         );
     };
-
     const typeInfo = getEventTypeInfo(event?.EventType || admin?.EventType);
     const isSolo = isSoloTeamSize(event?.TeamSize || admin?.TeamSize) || typeInfo.isWorkshop || typeInfo.isSeminar;
-
     const stats = [
         {
             title: "Total Registrations",
@@ -586,23 +525,17 @@ function AdminDashboard() {
             icon: Clock
         }
     ];
-
-
-
     if (error) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center p-5">
                 <div className="bg-white dark:bg-black border border-red-200 dark:border-red-900 rounded-xl p-6 text-center max-w-md w-full">
                     <AlertCircle className="w-10 h-10 text-red-500 mx-auto" />
-
                     <h2 className="text-lg font-semibold mt-3 text-gray-900 dark:text-white">
                         Unable to load dashboard
                     </h2>
-
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                         {error}
                     </p>
-
                     <button
                         onClick={fetchDashboard}
                         className="mt-5 px-4 py-2 rounded-lg bg-emerald-700 text-white hover:bg-emerald-800"
@@ -613,7 +546,6 @@ function AdminDashboard() {
             </div>
         );
     }
-
     return (
         <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -621,19 +553,15 @@ function AdminDashboard() {
             transition={{ duration: 0.35, ease: "easeOut" }}
             className="min-h-screen bg-gray-50 dark:bg-black transition-colors"
         >
-
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 pt-5 sm:px-6 md:px-8">
-
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                         Dashboard
                     </h1>
-
                     <p className="text-emerald-700 dark:text-emerald-500 text-sm sm:text-base mt-1">
                         Overview of your assigned event
                     </p>
                 </div>
-
                 <div className="flex flex-wrap items-center gap-3">
                     <button
                         type="button"
@@ -643,7 +571,6 @@ function AdminDashboard() {
                         <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                         Manage Guidelines
                     </button>
-
                     {typeInfo?.isWorkshop ? (
                         <button
                             type="button"
@@ -665,14 +592,10 @@ function AdminDashboard() {
                     ) : null}
                 </div>
             </div>
-
             <div className="p-4 sm:p-6 md:p-8 space-y-6">
-
                 <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-
                     {stats.map((stat, index) => {
                         const Icon = stat.icon;
-
                         return (
                             <motion.div
                                 key={index}
@@ -683,39 +606,30 @@ function AdminDashboard() {
                                 className="bg-white dark:bg-black rounded-xl p-4 sm:p-5 border border-gray-200 dark:border-zinc-800 shadow-sm transition-shadow hover:shadow-md"
                             >
                                 <div className="flex items-start justify-between gap-3">
-
                                     <div>
                                         <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                             {stat.title}
                                         </p>
-
                                         <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-1">
                                             {stat.value}
                                         </p>
                                     </div>
-
                                     <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                         <Icon className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
                                     </div>
-
                                 </div>
                             </motion.div>
                         );
                     })}
-
                 </div>
-
                 <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, delay: 0.2 }}
                     className="bg-white dark:bg-black rounded-xl border border-emerald-700 dark:border-emerald-500 shadow-sm overflow-hidden"
                 >
-
                     <div className="p-5 sm:p-6">
-
                         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-5">
-
                             <div>
                                 <div className="flex items-center gap-2">
                                     <p className="text-sm text-emerald-700 dark:text-emerald-500 font-medium">
@@ -727,72 +641,55 @@ function AdminDashboard() {
                                         </span>
                                     )}
                                 </div>
-
                                 <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mt-1">
                                     {event?.EventName || "Event"}
                                 </h2>
-
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 w-full text-justify">
                                     {event?.Description || "No event description available."}
                                 </p>
                             </div>
-
                             <span className="w-fit capitalize px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500">
                                 {event?.status || "upcoming"}
                             </span>
-
                         </div>
-
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
-
                             <div className="flex gap-3">
                                 <CalendarDays className="w-5 h-5 text-emerald-700 dark:text-emerald-500 shrink-0" />
-
                                 <div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                         Event Dates
                                     </p>
-
                                     <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
                                         {formatDate(event?.StartDate)}
                                     </p>
-
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                         to {formatDate(event?.EndDate)}
                                     </p>
                                 </div>
                             </div>
-
                             <div className="flex gap-3">
                                 <MapPin className="w-5 h-5 text-emerald-700 dark:text-emerald-500 shrink-0" />
-
                                 <div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                         Location
                                     </p>
-
                                     <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
                                         {event?.Location || "Not available"}
                                     </p>
                                 </div>
                             </div>
-
                             <div className="flex gap-3">
                                 <Timer className="w-5 h-5 text-emerald-700 dark:text-emerald-500 shrink-0" />
-
                                 <div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
                                         Remaining
                                     </p>
-
                                     <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
                                         {remainingDays} Days
                                     </p>
                                 </div>
                             </div>
-
                         </div>
-
                         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
                             <div className="flex items-center justify-between mb-4">
                                 <div>
@@ -813,7 +710,6 @@ function AdminDashboard() {
                                     Edit Guidelines
                                 </button>
                             </div>
-
                             {isBothMode ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-4 rounded-xl border border-emerald-100 dark:border-zinc-800 bg-emerald-50/30 dark:bg-black space-y-3">
@@ -834,7 +730,6 @@ function AdminDashboard() {
                                             </p>
                                         </div>
                                     </div>
-
                                     <div className="p-4 rounded-xl border border-emerald-100 dark:border-zinc-800 bg-emerald-50/30 dark:bg-black space-y-3">
                                         <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider">
                                             <Building2 className="w-3.5 h-3.5" />
@@ -875,10 +770,8 @@ function AdminDashboard() {
                                 </div>
                             )}
                         </div>
-
                     </div>
                 </motion.div>
-
                 {typeInfo?.isWorkshop && (
                     <motion.section
                         initial={{ opacity: 0, y: 12 }}
@@ -899,7 +792,6 @@ function AdminDashboard() {
                                 </p>
                             </div>
                         </div>
-
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <button
                                 onClick={() => navigate('/admin/workshop/curriculum')}
@@ -915,7 +807,6 @@ function AdminDashboard() {
                                     Schedule day-wise sessions, assign trainers & meet/lab rooms.
                                 </p>
                             </button>
-
                             <button
                                 onClick={() => navigate('/admin/workshop/resources')}
                                 className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 text-left hover:border-emerald-500 transition group cursor-pointer"
@@ -930,7 +821,6 @@ function AdminDashboard() {
                                     Upload slides, codebases, GitHub repositories & recordings.
                                 </p>
                             </button>
-
                             <button
                                 onClick={() => navigate('/admin/workshop/instructors')}
                                 className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 text-left hover:border-emerald-500 transition group cursor-pointer"
@@ -945,7 +835,6 @@ function AdminDashboard() {
                                     Add lead trainers, industry speakers, lab TAs & coordinators.
                                 </p>
                             </button>
-
                             <button
                                 onClick={() => navigate('/admin/workshop/attendance')}
                                 className="p-5 rounded-2xl border border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-950/20 text-left hover:border-emerald-500 transition group cursor-pointer"
@@ -963,7 +852,6 @@ function AdminDashboard() {
                         </div>
                     </motion.section>
                 )}
-
                 {typeInfo?.isWebinar && (
                     <motion.section
                         initial={{ opacity: 0, y: 12 }}
@@ -984,7 +872,6 @@ function AdminDashboard() {
                                 </p>
                             </div>
                         </div>
-
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <button
                                 onClick={() => navigate('/admin/webinar/agenda')}
@@ -1000,7 +887,6 @@ function AdminDashboard() {
                                     Organize real-time talks, keynote slots, meet links &amp; panel agendas.
                                 </p>
                             </button>
-
                             <button
                                 onClick={() => navigate('/admin/webinar/resources')}
                                 className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/60 text-left hover:border-emerald-500 transition group cursor-pointer"
@@ -1015,7 +901,6 @@ function AdminDashboard() {
                                     Publish keynote presentation slides, video replays &amp; delegate briefs.
                                 </p>
                             </button>
-
                             <button
                                 onClick={() => navigate('/admin/webinar/speakers')}
                                 className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/60 text-left hover:border-emerald-500 transition group cursor-pointer"
@@ -1030,7 +915,6 @@ function AdminDashboard() {
                                     Add keynote speakers, panel discussion leads &amp; guest dignitaries.
                                 </p>
                             </button>
-
                             <button
                                 onClick={() => navigate('/admin/webinar/attendance')}
                                 className="p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-zinc-950/60 text-left hover:border-emerald-500 transition group cursor-pointer"
@@ -1048,7 +932,6 @@ function AdminDashboard() {
                         </div>
                     </motion.section>
                 )}
-
                 {!typeInfo?.isWorkshop && !typeInfo?.isWebinar && !typeInfo?.isSeminar && (
                 <motion.section
                     initial={{ opacity: 0, y: 12 }}
@@ -1077,24 +960,19 @@ function AdminDashboard() {
                             {declaredPrizes.length > 0 ? "Edit Prize Money" : "Add Prize Money"}
                         </button>
                     </div>
-
                     {(() => {
                         const physicalPrizesList = declaredPrizes.filter((p) => (p.Track || '').toLowerCase() === 'physical');
                         const virtualPrizesList = declaredPrizes.filter((p) => (p.Track || '').toLowerCase() === 'virtual');
                         const overallPrizesList = declaredPrizes.filter((p) => (p.Track || '').toLowerCase() === 'overall' || !p.Track);
-
                         const isDualTrackEvent = isBothMode;
-
                         const currentTrackPrizes = isDualTrackEvent
                             ? (activePrizeTab === 'Virtual'
                                 ? (virtualPrizesList.length > 0 ? virtualPrizesList : overallPrizesList)
                                 : (physicalPrizesList.length > 0 ? physicalPrizesList : overallPrizesList))
                             : declaredPrizes;
-
                         const firstPrizeObj = currentTrackPrizes.find((p) => Number(p.PrizeRank) === 1) || (currentTrackPrizes.length > 0 ? currentTrackPrizes[0] : null);
                         const secondPrizeObj = currentTrackPrizes.find((p) => Number(p.PrizeRank) === 2) || (currentTrackPrizes.length > 1 && currentTrackPrizes[1] !== firstPrizeObj ? currentTrackPrizes[1] : null);
                         const thirdPrizeObj = currentTrackPrizes.find((p) => Number(p.PrizeRank) === 3) || (currentTrackPrizes.length > 2 && currentTrackPrizes[2] !== firstPrizeObj && currentTrackPrizes[2] !== secondPrizeObj ? currentTrackPrizes[2] : null);
-
                         const formatPrizeText = (val, fallback) => {
                             if (!val) return fallback;
                             const str = String(val).trim();
@@ -1104,7 +982,6 @@ function AdminDashboard() {
                             }
                             return str;
                         };
-
                         const activeTrackPool = isDualTrackEvent
                             ? (activePrizeTab === 'Virtual' ? (event?.VirtualPrizeMoney || event?.PrizeMoney) : (event?.PhysicalPrizeMoney || event?.PrizeMoney))
                             : isVirtualMode
@@ -1112,33 +989,25 @@ function AdminDashboard() {
                                 : isPhysicalMode
                                     ? (event?.PhysicalPrizeMoney || event?.PrizeMoney)
                                     : event?.PrizeMoney;
-
                         const firstPrizeAmount = formatPrizeText(firstPrizeObj?.Prize || (currentTrackPrizes.length === 0 ? activeTrackPool : null), activePrizeTab === 'Virtual' ? 'Virtual Champion' : 'Grand Champion');
                         const secondPrizeAmount = formatPrizeText(secondPrizeObj?.Prize, 'Runner Up');
                         const thirdPrizeAmount = formatPrizeText(thirdPrizeObj?.Prize, 'Second Runner Up');
-
                         const isVirtualPrizeTrack = isDualTrackEvent
                             ? activePrizeTab === 'Virtual'
                             : isVirtualMode;
-
                         const firstPrizeDesc = isVirtualPrizeTrack
                             ? 'Virtual Grand Champion • Gold Trophy & Direct Incubation'
                             : 'On-Campus Grand Champion • Gold Trophy & Incubation';
-
                         const secondPrizeDesc = isVirtualPrizeTrack
                             ? 'Virtual First Runner Up • Silver Trophy & Cloud Credits'
                             : 'On-Campus First Runner Up • Silver Trophy & Mentorship';
-
                         const thirdPrizeDesc = isVirtualPrizeTrack
                             ? 'Virtual Second Runner Up • Bronze Shield & Certificates'
                             : 'On-Campus Second Runner Up • Bronze Shield & Swag';
-
                         const firstPrizeTrack = isDualTrackEvent ? activePrizeTab : (firstPrizeObj?.Track || null);
                         const secondPrizeTrack = isDualTrackEvent ? activePrizeTab : (secondPrizeObj?.Track || null);
                         const thirdPrizeTrack = isDualTrackEvent ? activePrizeTab : (thirdPrizeObj?.Track || null);
-
                         const additionalPrizes = currentTrackPrizes.filter((p) => p !== firstPrizeObj && p !== secondPrizeObj && p !== thirdPrizeObj);
-
                         return (
                             <div className="space-y-0">
                                 {/* Track Tabs for Dual Track Hackathons matching Event Details Page */}
@@ -1170,7 +1039,6 @@ function AdminDashboard() {
                                                         ) : (
                                                             <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 z-0" />
                                                         )}
-
                                                         <span className={`relative z-20 flex items-center gap-2 ${
                                                             isActive
                                                                 ? 'text-slate-900 dark:text-white'
@@ -1186,7 +1054,6 @@ function AdminDashboard() {
                                                 );
                                             })}
                                         </div>
-
                                         {activeTrackPool && (
                                             <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold self-start sm:self-auto mb-2">
                                                 <Trophy className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -1195,7 +1062,6 @@ function AdminDashboard() {
                                         )}
                                     </div>
                                 )}
-
                                 {currentTrackPrizes.length > 0 || activeTrackPool ? (
                                     <div>
                                         {/* Podium Component from Event Details Page */}
@@ -1209,7 +1075,6 @@ function AdminDashboard() {
                                                 thirdDesc={thirdPrizeDesc}
                                             />
                                         </div>
-
                                         {/* Additional Rank Prizes / Special Recognitions */}
                                         {additionalPrizes.length > 0 && (
                                             <div className="space-y-3 mt-6">
@@ -1270,87 +1135,62 @@ function AdminDashboard() {
                     })()}
                 </motion.section>
                 )}
-
                 <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, delay: 0.3 }}
                     className="grid grid-cols-1 xl:grid-cols-2 gap-6"
                 >
-
                     <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm">
-
                         <div className="flex items-center justify-between mb-5">
-
                             <div>
                                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                                     Recent Registrations
                                 </h2>
-
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     Latest registrations for this event
                                 </p>
                             </div>
-
                             <UsersRound className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
-
                         </div>
-
                         {recentRegistrations.length === 0 ? (
                             <div className="py-10 text-center">
-
                                 <Users className="w-8 h-8 mx-auto text-gray-400" />
-
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                                     No registrations yet
                                 </p>
-
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-
                                 <table className="w-full text-sm">
-
                                     <thead>
                                         <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-zinc-800">
-
                                             <th className="pb-3 font-medium">
                                                 Team / User
                                             </th>
-
                                             <th className="pb-3 font-medium">
                                                 Leader
                                             </th>
-
                                             <th className="pb-3 font-medium">
                                                 Status
                                             </th>
-
                                         </tr>
                                     </thead>
-
                                     <tbody>
-
                                         {recentRegistrations.slice(0, 5).map((registration, index) => {
-
                                             const status = getRegistrationStatus(registration);
-
                                             return (
                                                 <tr
                                                     key={registration.Id || registration.id || index}
                                                     className="border-b border-gray-100 dark:border-zinc-800/60"
                                                 >
-
                                                     <td className="py-3 font-medium text-gray-900 dark:text-white">
                                                         {getRegistrationName(registration)}
                                                     </td>
-
                                                     <td className="py-3 text-gray-600 dark:text-gray-300">
                                                         {getLeaderName(registration)}
                                                     </td>
-
                                                     <td className="py-3">
-
                                                         <span
                                                             className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                                                                 status.toLowerCase() === "approved"
@@ -1362,96 +1202,65 @@ function AdminDashboard() {
                                                         >
                                                             {status}
                                                         </span>
-
                                                     </td>
-
                                                 </tr>
                                             );
                                         })}
-
                                     </tbody>
-
                                 </table>
-
                             </div>
                         )}
-
                     </div>
-
                     <div className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm">
-
                         <div className="flex items-center justify-between mb-5">
-
                             <div>
                                 <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                                     Recent Activities
                                 </h2>
-
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     Latest activity in your event
                                 </p>
                             </div>
-
                             <Activity className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
-
                         </div>
-
                         {recentActivities.length === 0 ? (
                             <div className="py-10 text-center">
-
                                 <Activity className="w-8 h-8 mx-auto text-gray-400" />
-
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
                                     No recent activities
                                 </p>
-
                             </div>
                         ) : (
                             <div className="space-y-4">
-
                                 {recentActivities.slice(0, 5).map((activity, index) => {
-
                                     const status = getActivityStatus(activity);
-
                                     return (
                                         <div
                                             key={activity.Id || activity.id || index}
                                             className="flex items-start gap-3"
                                         >
-
                                             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 shrink-0">
-
                                                 {status.toLowerCase() === "approved" ? (
                                                     <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                                 ) : (
                                                     <UserPlus className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                                 )}
-
                                             </div>
-
                                             <div className="min-w-0 flex-1">
-
                                                 <p className="text-sm text-gray-900 dark:text-white font-medium">
                                                     New registration from{" "}
                                                     {getActivityName(activity)}
                                                 </p>
-
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                                     Leader: {getActivityLeader(activity)}
                                                 </p>
-
                                                 <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-1">
-
                                                     <Clock className="w-3 h-3" />
-
                                                     {getActivityDate(activity)
                                                         ? formatTime(getActivityDate(activity))
                                                         : "Recently"}
-
                                                 </div>
-
                                             </div>
-
                                             <span
                                                 className={`text-[10px] px-2 py-1 rounded-full ${
                                                     status.toLowerCase() === "approved"
@@ -1463,109 +1272,82 @@ function AdminDashboard() {
                                             >
                                                 {status}
                                             </span>
-
                                         </div>
                                     );
                                 })}
-
                             </div>
                         )}
-
                     </div>
-
                 </motion.div>
-
                 <motion.div
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.35, delay: 0.35 }}
                     className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm"
                 >
-
                     <div className="flex items-center justify-between mb-5">
-
                         <div>
                             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                                 Event Information
                             </h2>
-
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 Details of your assigned event
                             </p>
                         </div>
-
                         <CalendarDays className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
-
                     </div>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 Event Name
                             </p>
-
                             <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
                                 {event?.EventName || "Not available"}
                             </p>
                         </div>
-
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 Event Type
                             </p>
-
                             <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
                                 {event?.EventType || "Not available"}
                             </p>
                         </div>
-
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 Location
                             </p>
-
                             <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
                                 {event?.Location || "Not available"}
                             </p>
                         </div>
-
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 Registration Start
                             </p>
-
                             <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
                                 {formatDate(event?.RegistrationStart)}
                             </p>
                         </div>
-
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 Registration End
                             </p>
-
                             <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">
                                 {formatDate(event?.RegistrationEnd)}
                             </p>
                         </div>
-
                         <div>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                 Event Status
                             </p>
-
                             <p className="text-sm font-medium capitalize text-emerald-700 dark:text-emerald-500 mt-1">
                                 {event?.status || "Upcoming"}
                             </p>
                         </div>
-
                     </div>
-
                 </motion.div>
-
             </div>
-
             {isPrizeModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="max-h-[92vh] w-full max-w-xl overflow-hidden rounded-3xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-2xl flex flex-col">
@@ -1587,30 +1369,23 @@ function AdminDashboard() {
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-
                         {/* Track Tabs & Content */}
                         {(() => {
                             const isDual = isBothMode;
-
                             const physicalPrizes = prizes
                                 .map((prize, originalIndex) => ({ ...prize, originalIndex }))
                                 .filter(p => (p.track || '').toLowerCase() === 'physical');
-
                             const virtualPrizes = prizes
                                 .map((prize, originalIndex) => ({ ...prize, originalIndex }))
                                 .filter(p => (p.track || '').toLowerCase() === 'virtual');
-
                             const physicalTotal = physicalPrizes.reduce((sum, p) => sum + (parseFloat(String(p.amount).replace(/[^0-9.]/g, '')) || 0), 0);
                             const virtualTotal = virtualPrizes.reduce((sum, p) => sum + (parseFloat(String(p.amount).replace(/[^0-9.]/g, '')) || 0), 0);
-
                             const currentTrackPrizes = isDual
                                 ? (modalPrizeTab.toLowerCase() === 'virtual' ? virtualPrizes : physicalPrizes)
                                 : prizes.map((prize, originalIndex) => ({ ...prize, originalIndex }));
-
                             const currentTrackTotal = modalPrizeTab.toLowerCase() === 'virtual'
                                 ? virtualTotal
                                 : physicalTotal;
-
                             return (
                                 <>
                                     {isDual && (
@@ -1648,7 +1423,6 @@ function AdminDashboard() {
                                             </div>
                                         </div>
                                     )}
-
                                     {/* Modal Body / Scrollable Content */}
                                     <form
                                         onSubmit={handleDeclarePrizes}
@@ -1670,7 +1444,6 @@ function AdminDashboard() {
                                                         </p>
                                                     </div>
                                                 </div>
-
                                                 <div className="text-right">
                                                     <span className="text-[10px] font-semibold text-gray-400 block uppercase tracking-wider">
                                                         Track Total
@@ -1681,7 +1454,6 @@ function AdminDashboard() {
                                                 </div>
                                             </div>
                                         )}
-
                                         {/* List of Prizes for Current Track */}
                                         <div className="space-y-3">
                                             {currentTrackPrizes.length === 0 ? (
@@ -1709,7 +1481,6 @@ function AdminDashboard() {
                                                                     {isDual ? `${modalPrizeTab} Track` : ''} Prize {cardIdx + 1}
                                                                 </span>
                                                             </div>
-
                                                             {prizes.length > 1 && (
                                                                 <button
                                                                     type="button"
@@ -1721,7 +1492,6 @@ function AdminDashboard() {
                                                                 </button>
                                                             )}
                                                         </div>
-
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                             <div className="space-y-1">
                                                                 <label className="block text-xs font-bold text-gray-700 dark:text-zinc-300">
@@ -1741,7 +1511,6 @@ function AdminDashboard() {
                                                                     className="w-full rounded-xl border border-gray-200 dark:border-zinc-800 bg-gray-50/50 dark:bg-black px-3.5 py-2.5 text-xs font-semibold text-gray-900 dark:text-white outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
                                                                 />
                                                             </div>
-
                                                             <div className="space-y-1">
                                                                 <label className="block text-xs font-bold text-gray-700 dark:text-zinc-300">
                                                                     Prize Money (₹)
@@ -1767,7 +1536,6 @@ function AdminDashboard() {
                                                 ))
                                             )}
                                         </div>
-
                                         <button
                                             type="button"
                                             onClick={() => addPrize(modalPrizeTab)}
@@ -1776,7 +1544,6 @@ function AdminDashboard() {
                                             <Plus className="w-3.5 h-3.5" />
                                             <span>Add {isDual ? `${modalPrizeTab} Prize` : 'Another Prize'}</span>
                                         </button>
-
                                         {/* Footer Summary & Action Buttons */}
                                         <div className="pt-4 border-t border-gray-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             {isDual ? (
@@ -1788,7 +1555,6 @@ function AdminDashboard() {
                                                     <span>Total: <strong className="text-emerald-600 dark:text-emerald-400">₹{(physicalTotal + virtualTotal).toLocaleString('en-IN')}</strong></span>
                                                 </div>
                                             ) : <div />}
-
                                             <div className="flex items-center gap-2 self-end sm:self-auto">
                                                 <button
                                                     type="button"
@@ -1797,7 +1563,6 @@ function AdminDashboard() {
                                                 >
                                                     Cancel
                                                 </button>
-
                                                 <button
                                                     type="submit"
                                                     className="rounded-xl bg-emerald-700 dark:bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-emerald-800 dark:hover:bg-emerald-500 transition shadow-sm cursor-pointer"
@@ -1813,7 +1578,6 @@ function AdminDashboard() {
                     </div>
                 </div>
             )}
-
             {isGuidelinesModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-2xl">
@@ -1839,7 +1603,6 @@ function AdminDashboard() {
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-
                         <form onSubmit={handleSaveGuidelines} className="p-6 space-y-6">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2">
@@ -1856,7 +1619,6 @@ function AdminDashboard() {
                                     This description is stored in the dedicated event_descriptions table and displayed across participant views.
                                 </p>
                             </div>
-
                             {isBothMode ? (
                                 <div className="space-y-4">
                                     <div className="flex items-end gap-2 overflow-x-auto border-b border-gray-200 dark:border-zinc-800 -mb-[1px]">
@@ -1882,7 +1644,6 @@ function AdminDashboard() {
                                                     ) : (
                                                         <div className="absolute inset-0 rounded-t-xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 z-0" />
                                                     )}
-
                                                     <span className={`relative z-20 flex items-center gap-2 ${
                                                         isActive
                                                             ? 'text-slate-900 dark:text-white'
@@ -1898,7 +1659,6 @@ function AdminDashboard() {
                                             );
                                         })}
                                     </div>
-
                                     {guidelinesActiveTab === 'virtual' && (
                                         <div className="p-4 rounded-xl border border-emerald-100 dark:border-zinc-800 bg-emerald-50/20 dark:bg-black space-y-4">
                                             <div>
@@ -1927,7 +1687,6 @@ function AdminDashboard() {
                                             </div>
                                         </div>
                                     )}
-
                                     {guidelinesActiveTab === 'physical' && (
                                         <div className="p-4 rounded-xl border border-emerald-100 dark:border-zinc-800 bg-emerald-50/20 dark:bg-black space-y-4">
                                             <div>
@@ -2001,7 +1760,6 @@ function AdminDashboard() {
                                     </div>
                                 </div>
                             )}
-
                             <div className="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-800 pt-4">
                                 <button
                                     type="button"
@@ -2023,9 +1781,7 @@ function AdminDashboard() {
                     </div>
                 </div>
             )}
-
         </motion.div>
     );
 }
-
 export default AdminDashboard;

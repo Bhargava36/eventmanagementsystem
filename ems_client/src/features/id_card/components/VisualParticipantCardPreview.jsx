@@ -13,11 +13,7 @@ import {
   downloadSingleCardImage,
   generateCombinedPdf
 } from '../services/idCardPdfGenerator';
-
-/**
- * VisualParticipantCardPreview
- * Renders the participant ID card using the exact saved visual designer template
- */
+// VisualParticipantCardPreview Renders the participant ID card using the exact saved visual designer template
 export default function VisualParticipantCardPreview({
   participant,
   template,
@@ -29,38 +25,31 @@ export default function VisualParticipantCardPreview({
   const [downloading, setDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 440, height: 620 });
-
   const participantName =
     participant?.ParticipantName ||
     participant?.UserName ||
     participant?.Name ||
     'Participant';
-
   const cardNumber =
     participant?.IdCardNumber ||
     participant?.idCardNumber ||
     participant?.RegistrationId ||
     'PASS-ACTIVE';
-
   const teamName =
     participant?.TeamName ||
     participant?.teamName ||
     'Independent';
-
   // Render card onto canvas using active template configuration
   useEffect(() => {
     let isCancelled = false;
-
     const render = async () => {
       if (!canvasRef.current || !participant) return;
       setRendering(true);
-
       try {
         const sideConfig =
           typeof template?.FrontConfig === 'string'
             ? JSON.parse(template.FrontConfig)
             : template?.FrontConfig || {};
-
         const orientation = template?.Orientation || 'portrait';
         const cardWidth =
           Number(sideConfig.canvasWidth) ||
@@ -68,9 +57,7 @@ export default function VisualParticipantCardPreview({
         const cardHeight =
           Number(sideConfig.canvasHeight) ||
           (orientation === 'portrait' ? 620 : 440);
-
         setDimensions({ width: cardWidth, height: cardHeight });
-
         // Render card canvas with 2x resolution
         await renderCardSideCanvas(
           canvasRef.current,
@@ -92,14 +79,11 @@ export default function VisualParticipantCardPreview({
         }
       }
     };
-
     render();
-
     return () => {
       isCancelled = true;
     };
   }, [participant, template, event]);
-
   // Handle PNG Image Download
   const handleDownloadPng = async () => {
     setDownloading(true);
@@ -113,7 +97,6 @@ export default function VisualParticipantCardPreview({
       setDownloading(false);
     }
   };
-
   // Handle PDF Download
   const handleDownloadPdf = async () => {
     setDownloading(true);
@@ -129,14 +112,12 @@ export default function VisualParticipantCardPreview({
       setDownloading(false);
     }
   };
-
   // Handle Direct Print
   const handlePrint = () => {
     if (!canvasRef.current) return;
     const dataUrl = canvasRef.current.toDataURL('image/png');
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-
     printWindow.document.write(`
       <html>
         <head>
@@ -154,7 +135,6 @@ export default function VisualParticipantCardPreview({
     `);
     printWindow.document.close();
   };
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/80 backdrop-blur-sm p-4 sm:p-6"
@@ -184,7 +164,6 @@ export default function VisualParticipantCardPreview({
               ID: {cardNumber} • Team: {teamName}
             </p>
           </div>
-
           <button
             type="button"
             onClick={onClose}
@@ -194,7 +173,6 @@ export default function VisualParticipantCardPreview({
             <X className="h-5 w-5" />
           </button>
         </div>
-
         {/* Canvas Display with Loading Indicator */}
         <div className="relative mx-auto flex items-center justify-center p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800/80 min-h-[380px]">
           {rendering && (
@@ -205,7 +183,6 @@ export default function VisualParticipantCardPreview({
               </p>
             </div>
           )}
-
           <canvas
             ref={canvasRef}
             style={{
@@ -218,7 +195,6 @@ export default function VisualParticipantCardPreview({
             className="rounded-xl shadow-2xl object-contain border border-zinc-700/50"
           />
         </div>
-
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
           <div className="flex items-center gap-2">
@@ -231,7 +207,6 @@ export default function VisualParticipantCardPreview({
               <Download className="w-4 h-4 text-emerald-400" />
               <span>Download PNG</span>
             </button>
-
             <button
               type="button"
               disabled={downloading || rendering}
@@ -241,7 +216,6 @@ export default function VisualParticipantCardPreview({
               <FileText className="w-4 h-4 text-sky-400" />
               <span>Download PDF</span>
             </button>
-
             <button
               type="button"
               disabled={downloading || rendering}
@@ -252,7 +226,6 @@ export default function VisualParticipantCardPreview({
               <Printer className="w-4 h-4" />
             </button>
           </div>
-
           <button
             type="button"
             onClick={onClose}

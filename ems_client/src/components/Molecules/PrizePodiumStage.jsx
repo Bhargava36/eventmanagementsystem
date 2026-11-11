@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-
 export default function PrizePodiumStage({
   firstAmount = '—',
   firstDesc = 'Grand Champion',
@@ -20,29 +19,24 @@ export default function PrizePodiumStage({
           <filter id="podiumGroundBlurShared" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="8" />
           </filter>
-
           <filter id="centerDropShadowShared" x="-10%" y="-10%" width="120%" height="120%">
             <feDropShadow dx="0" dy="8" stdDeviation="12" floodColor="#000000" floodOpacity="0.35" />
           </filter>
-
           <linearGradient id="amberPedestalGradShared" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#EA580C" />
             <stop offset="30%" stopColor="#D97706" />
             <stop offset="100%" stopColor="#9A3412" />
           </linearGradient>
-
           <linearGradient id="greenPedestalGradShared" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#059669" />
             <stop offset="40%" stopColor="#047857" />
             <stop offset="100%" stopColor="#064E3B" />
           </linearGradient>
-
           <linearGradient id="bluePedestalGradShared" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#0284C7" />
             <stop offset="40%" stopColor="#0369A1" />
             <stop offset="100%" stopColor="#075985" />
           </linearGradient>
-
           <linearGradient id="trophyGoldShared" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#FEF08A" />
             <stop offset="25%" stopColor="#FACC15" />
@@ -53,7 +47,6 @@ export default function PrizePodiumStage({
             <stop offset="0%" stopColor="#FEF9C3" />
             <stop offset="100%" stopColor="#FACC15" />
           </linearGradient>
-
           <linearGradient id="trophySilverShared" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#FFFFFF" />
             <stop offset="30%" stopColor="#E2E8F0" />
@@ -64,7 +57,6 @@ export default function PrizePodiumStage({
             <stop offset="0%" stopColor="#FFFFFF" />
             <stop offset="100%" stopColor="#CBD5E1" />
           </linearGradient>
-
           <linearGradient id="trophyBronzeShared" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#FFEDD5" />
             <stop offset="30%" stopColor="#FB923C" />
@@ -76,7 +68,6 @@ export default function PrizePodiumStage({
             <stop offset="100%" stopColor="#EA580C" />
           </linearGradient>
         </defs>
-
         <ellipse
           cx="450"
           cy="572"
@@ -85,25 +76,21 @@ export default function PrizePodiumStage({
           fill="rgba(0,0,0,0.22)"
           filter="url(#podiumGroundBlurShared)"
         />
-
         {/* Silver Pedestal (2nd place - left) */}
         <g id="pedestal-left">
           <polygon points="110,360 340,360 355,390 110,390" fill="#F59E0B" />
           <polygon points="110,390 360,390 360,570 120,570" fill="url(#amberPedestalGradShared)" />
         </g>
-
         {/* Bronze Pedestal (3rd place - right) */}
         <g id="pedestal-right">
           <polygon points="560,405 790,405 790,430 540,430" fill="#38BDF8" />
           <polygon points="540,430 790,430 780,570 540,570" fill="url(#bluePedestalGradShared)" />
         </g>
-
         {/* Gold Pedestal (1st place - center) */}
         <g id="pedestal-center">
           <polygon points="330,270 570,270 590,300 310,300" fill="#10B981" />
           <polygon points="310,300 590,300 575,570 325,570" fill="url(#greenPedestalGradShared)" filter="url(#centerDropShadowShared)" />
         </g>
-
         {/* Silver Trophy Group (2nd) */}
         <g id="silver-trophy-group">
           <rect x="185" y="340" width="80" height="20" rx="2" fill="#3E181D" stroke="#5C252B" strokeWidth="1.2" />
@@ -126,7 +113,6 @@ export default function PrizePodiumStage({
           <circle cx="225" cy="266" r="11.5" fill="#475569" />
           <text x="225" y="271.5" textAnchor="middle" fontSize="15" fontWeight="900" fontFamily="system-ui, sans-serif" fill="#FFFFFF">2</text>
         </g>
-
         {/* Gold Trophy Group (1st) */}
         <g id="gold-trophy-group">
           <rect x="400" y="246" width="100" height="24" rx="2" fill="#3E181D" stroke="#5C252B" strokeWidth="1.5" />
@@ -149,7 +135,6 @@ export default function PrizePodiumStage({
           <circle cx="450" cy="156" r="14.5" fill="#D97706" />
           <text x="450" y="162.5" textAnchor="middle" fontSize="19" fontWeight="900" fontFamily="system-ui, sans-serif" fill="#FFFFFF">1</text>
         </g>
-
         {/* Bronze Trophy Group (3rd) */}
         <g id="bronze-trophy-group">
           <rect x="638" y="387" width="74" height="18" rx="2" fill="#3E181D" stroke="#5C252B" strokeWidth="1.2" />
@@ -172,7 +157,6 @@ export default function PrizePodiumStage({
           <circle cx="675" cy="317" r="10.5" fill="#7C2D12" />
           <text x="675" y="322" textAnchor="middle" fontSize="14" fontWeight="900" fontFamily="system-ui, sans-serif" fill="#FFFFFF">3</text>
         </g>
-
         {/* Text Cards on Pedestals */}
         <foreignObject x="115" y="405" width="220" height="155">
           <div className="h-full flex flex-col items-center justify-start text-center text-white px-2 pt-1 select-none">
@@ -185,10 +169,8 @@ export default function PrizePodiumStage({
             <p className="text-[10px] text-white/95 font-medium leading-relaxed max-w-[170px] line-clamp-2">
               {secondDesc}
             </p>
-            
           </div>
         </foreignObject>
-
         <foreignObject x="320" y="325" width="260" height="235">
           <div className="h-full flex flex-col items-center justify-start text-center text-white px-3 pt-2 select-none">
             <div className="border border-white/90 rounded-md px-3.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-xs mb-2.5">
@@ -200,10 +182,8 @@ export default function PrizePodiumStage({
             <p className="text-xs text-white/95 font-medium leading-relaxed max-w-[210px] line-clamp-3">
               {firstDesc}
             </p>
-            
           </div>
         </foreignObject>
-
         <foreignObject x="560" y="445" width="220" height="115">
           <div className="h-full flex flex-col items-center justify-start text-center text-white px-2 pt-1 select-none">
             <div className="border border-white/90 rounded px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-white shadow-xs mb-1.5">
@@ -215,7 +195,6 @@ export default function PrizePodiumStage({
             <p className="text-[10px] text-white/95 font-medium leading-relaxed max-w-[170px] line-clamp-2">
               {thirdDesc}
             </p>
-            
           </div>
         </foreignObject>
       </svg>

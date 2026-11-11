@@ -1,9 +1,52 @@
 const db = require('../../config/db');
-
-/**
- * Log an activity to activity_logs table asynchronously
- */
-const logActivity = async ({
+let lastDbLimitWarningTime = 0;
+const logQueue = [];
+const MAX_LOG_QUEUE = 500;
+const BATCH_SIZE = 25;
+const FLUSH_INTERVAL_MS = 4000;
+let isFlushing = false;
+// Flush accumulated log entries in a single multi-row INSERT query. Eliminates connection churn and query overhead.
+const flushLogs = async () => {
+    if (isFlushing || logQueue.length === 0) return true;
+    isFlushing = true;
+    // Take up to 50 logs per batch
+    const batch = logQueue.splice(0, 50);
+    const query = `
+        INSERT INTO activity_logs (
+            Level, Category, Action, Message, UserId, UserEmail, UserRole,
+            TargetId, TargetType, IpAddress, UserAgent, HttpMethod, Endpoint,
+            StatusCode, ExecutionTimeMs, Metadata
+        ) VALUES ?
+    `;
+    return new Promise((resolve) => {
+        db.query(query, [batch], (err) => {
+            isFlushing = false;
+            if (err) {
+                if (err.message?.includes('max_connections_per_hour') || err.code === 'ER_USER_LIMIT_REACHED') {
+                    const now = Date.now();
+                    if (now - lastDbLimitWarningTime > 60000) {
+                        lastDbLimitWarningTime = now;
+                        console.warn('[LoggerService] Database hourly connection limit reached on MySQL host. Throttling log inserts.');
+                    }
+                    // Drop failed batch so memory doesn't leak under MySQL exhaustion
+                    return resolve(false);
+                }
+                console.error('[LoggerService] Failed to record batch logs:', err.message);
+                return resolve(false);
+            }
+            // If backlog remains above threshold, trigger next slice
+            if (logQueue.length >= BATCH_SIZE) {
+                setImmediate(flushLogs);
+            }
+            resolve(true);
+        });
+    });
+};
+// Periodic flush timer every 4 seconds
+const flushTimer = setInterval(flushLogs, FLUSH_INTERVAL_MS);
+if (flushTimer.unref) flushTimer.unref();
+// Log an activity to memory buffer. Flushed to MySQL in batches every 4s or when 25 logs accumulate.
+const logActivity = ({
     level = 'INFO',
     category = 'SYSTEM',
     action,
@@ -31,31 +74,19 @@ const logActivity = async ({
         let actorId = userId;
         let actorEmail = userEmail;
         let actorRole = userRole;
-
         if (req) {
             ip = ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || req.ip || null;
             ua = ua || req.headers['user-agent'] || null;
             method = method || req.method || null;
             path = path || req.originalUrl || req.url || null;
-
             if (!actorId && req.user) {
                 actorId = req.user.Id || req.user.id || null;
                 actorEmail = req.user.Email || req.user.email || null;
                 actorRole = req.user.Role || req.user.role || req.user.RoleName || null;
             }
         }
-
         const normalizedMetadata = metadata ? (typeof metadata === 'string' ? metadata : JSON.stringify(metadata)) : null;
-
-        const query = `
-            INSERT INTO activity_logs (
-                Level, Category, Action, Message, UserId, UserEmail, UserRole,
-                TargetId, TargetType, IpAddress, UserAgent, HttpMethod, Endpoint,
-                StatusCode, ExecutionTimeMs, Metadata
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-
-        const values = [
+        const row = [
             level.toUpperCase(),
             category.toUpperCase(),
             action || 'SYSTEM_ACTION',
@@ -73,20 +104,19 @@ const logActivity = async ({
             executionTimeMs ? Math.round(Number(executionTimeMs)) : null,
             normalizedMetadata
         ];
-
-        db.query(query, values, (err) => {
-            if (err) {
-                console.error('[LoggerService] Failed to record log:', err.message);
-            }
-        });
+        // Guard against memory buildup
+        if (logQueue.length >= MAX_LOG_QUEUE) {
+            logQueue.shift(); // Evict oldest log
+        }
+        logQueue.push(row);
+        if (logQueue.length >= BATCH_SIZE) {
+            flushLogs();
+        }
     } catch (err) {
-        console.error('[LoggerService] Exception logging activity:', err.message);
+        console.error('[LoggerService] Exception enqueueing log:', err.message);
     }
 };
-
-/**
- * Get paginated logs with dynamic filtering & summary stats
- */
+// Get paginated logs with dynamic filtering & summary stats
 const getLogs = ({
     page = 1,
     limit = 25,
@@ -101,57 +131,45 @@ const getLogs = ({
         const pageNum = Math.max(1, parseInt(page, 10) || 1);
         const limitNum = Math.min(200, Math.max(5, parseInt(limit, 10) || 25));
         const offset = (pageNum - 1) * limitNum;
-
         const conditions = [];
         const params = [];
-
         if (level && level !== 'ALL') {
             conditions.push('Level = ?');
             params.push(level.toUpperCase());
         }
-
         if (category && category !== 'ALL') {
             conditions.push('Category = ?');
             params.push(category.toUpperCase());
         }
-
         if (userId) {
             conditions.push('UserId = ?');
             params.push(Number(userId));
         }
-
         if (startDate) {
             conditions.push('Timestamp >= ?');
             params.push(startDate);
         }
-
         if (endDate) {
             conditions.push('Timestamp <= ?');
             params.push(endDate);
         }
-
         if (search && search.trim()) {
             const term = `%${search.trim()}%`;
             conditions.push('(Action LIKE ? OR Message LIKE ? OR UserEmail LIKE ? OR Endpoint LIKE ? OR IpAddress LIKE ?)');
             params.push(term, term, term, term, term);
         }
-
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
         // Count query
         const countQuery = `SELECT COUNT(*) AS total FROM activity_logs ${whereClause}`;
-
         db.query(countQuery, params, (countErr, countResult) => {
             if (countErr) {
                 return reject(countErr);
             }
-
             const total = countResult[0]?.total || 0;
             const totalPages = Math.ceil(total / limitNum) || 1;
-
             // Data query
             const dataQuery = `
-                SELECT 
+                SELECT
                     Id, Timestamp, Level, Category, Action, Message,
                     UserId, UserEmail, UserRole, TargetId, TargetType,
                     IpAddress, UserAgent, HttpMethod, Endpoint, StatusCode,
@@ -161,14 +179,11 @@ const getLogs = ({
                 ORDER BY Timestamp DESC, Id DESC
                 LIMIT ? OFFSET ?
             `;
-
             const dataParams = [...params, limitNum, offset];
-
             db.query(dataQuery, dataParams, (dataErr, rows) => {
                 if (dataErr) {
                     return reject(dataErr);
                 }
-
                 // Parse Metadata JSON safely
                 const sanitizedRows = rows.map((r) => {
                     let parsedMeta = null;
@@ -184,10 +199,9 @@ const getLogs = ({
                         Metadata: parsedMeta
                     };
                 });
-
                 // Compute telemetry stats for top metrics bar
                 const statsQuery = `
-                    SELECT 
+                    SELECT
                         COUNT(*) AS total24h,
                         SUM(CASE WHEN Level = 'ERROR' OR Level = 'CRITICAL' THEN 1 ELSE 0 END) AS errors24h,
                         SUM(CASE WHEN Level = 'WARN' THEN 1 ELSE 0 END) AS warnings24h,
@@ -196,7 +210,6 @@ const getLogs = ({
                     FROM activity_logs
                     WHERE Timestamp >= NOW() - INTERVAL 24 HOUR
                 `;
-
                 db.query(statsQuery, (statsErr, statsResult) => {
                     const stats = statsResult?.[0] || {
                         total24h: 0,
@@ -205,7 +218,6 @@ const getLogs = ({
                         uniqueUsers24h: 0,
                         avgLatencyMs: 0
                     };
-
                     resolve({
                         logs: sanitizedRows,
                         pagination: {
@@ -229,11 +241,9 @@ const getLogs = ({
         });
     });
 };
-
-/**
- * Seed initial sample logs if table is completely empty
- */
+// Seed initial sample logs if table is completely empty (gated behind SEED_SAMPLE_LOGS)
 const seedInitialLogsIfEmpty = () => {
+    if (process.env.SEED_SAMPLE_LOGS !== 'true') return;
     db.query('SELECT COUNT(*) as count FROM activity_logs', (err, res) => {
         if (err || !res) return;
         if (res[0].count === 0) {
@@ -299,17 +309,13 @@ const seedInitialLogsIfEmpty = () => {
                     executionTimeMs: 65
                 }
             ];
-
             sampleLogs.forEach((item) => logActivity(item));
         }
     });
 };
-
-setTimeout(seedInitialLogsIfEmpty, 2000);
-
 module.exports = {
     logActivity,
     getLogs,
+    flushLogs,
     seedInitialLogsIfEmpty
 };
-

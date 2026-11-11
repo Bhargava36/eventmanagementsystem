@@ -5,7 +5,6 @@ import { Printer, Download, FileText } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { renderCardSide } from "@/features/id_card/services/idCardRenderer";
 import { CARD_SIZES } from "@/features/id_card/components/IdCardDesigner";
-
 const getValue = (obj, ...keys) => {
   for (const key of keys) {
     const value = obj?.[key];
@@ -15,16 +14,13 @@ const getValue = (obj, ...keys) => {
   }
   return "";
 };
-
 const loadImage = (src) =>
   new Promise((resolve) => {
     if (!src) return resolve(null);
-
     let resolvedSrc = src;
     if (typeof resolvedSrc === 'string' && resolvedSrc.startsWith('/uploads')) {
       resolvedSrc = `${API_BASE_URL}${resolvedSrc}`;
     }
-
     const image = new Image();
     image.crossOrigin = "anonymous";
     image.onload = () => resolve(image);
@@ -32,11 +28,9 @@ const loadImage = (src) =>
       // Do NOT load without crossOrigin as that taints canvas and blocks PDF download!
       resolve(null);
     };
-
     image.src = resolvedSrc;
     setTimeout(() => resolve(null), 7000);
   });
-
 const hexToRgb = (hex, fallback = { r: 16, g: 185, b: 129 }) => {
   if (!hex || typeof hex !== 'string') return fallback;
   let clean = hex.replace('#', '').trim();
@@ -47,14 +41,12 @@ const hexToRgb = (hex, fallback = { r: 16, g: 185, b: 129 }) => {
   const b = parseInt(clean.substring(4, 6), 16);
   return isNaN(r) || isNaN(g) || isNaN(b) ? fallback : { r, g, b };
 };
-
 // ISO 216 Standard A6 Dimensions: 105mm × 148mm
 // Base design units: 620 × 874 (ratio 105:148)
 // Rendered at 2x scale for 300 DPI print quality: 1240 × 1748 px
 const BASE_W = 620;
 const BASE_H = 874;
 const RENDER_SCALE = 2;
-
 export default function ParticipantIdCanvas({
   participant,
   event,
@@ -65,14 +57,12 @@ export default function ParticipantIdCanvas({
   const qrRef = useRef(null);
   const [usingCustomTemplate, setUsingCustomTemplate] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 380, height: 600 });
-
   const eventId =
     propEventId ||
     event?.EventId ||
     participant?.EventId ||
     (event?.Id && event.Id !== (participant?.UserId || participant?.Id) ? event.Id : "") ||
     "";
-
   const name =
     getValue(
       participant,
@@ -82,13 +72,10 @@ export default function ParticipantIdCanvas({
       "name",
       "FullName"
     ) || "Participant";
-
   const college =
     getValue(participant, "College", "college", "CollegeName") || "AITAM COLLEGE";
-
   const team =
     getValue(participant, "TeamName", "teamName") || "MASONS";
-
   const userId = getValue(
     participant,
     "UserId",
@@ -96,20 +83,15 @@ export default function ParticipantIdCanvas({
     "Id",
     "id"
   );
-
   const eventName =
     getValue(event, "EventName", "eventName", "Name", "name") ||
     "AVISHKAAR";
-
   // Event Theme Colors dynamically pulled from event settings
   const primaryColor =
     getValue(event, "PrimaryColor", "ThemeColor", "themeColor") || "#00E5FF";
-
   const secondaryColor =
     getValue(event, "SecondaryColor", "AccentColor", "accentColor") || "#FFFFFF";
-
   const { r, g, b } = hexToRgb(primaryColor, { r: 0, g: 229, b: 255 });
-
   const photo = getValue(
     participant,
     "Photo",
@@ -121,46 +103,36 @@ export default function ParticipantIdCanvas({
     "UserPhoto",
     "userPhoto"
   );
-
   // Custom ID Card Background uploaded by admin in Event Settings
   const customBackgroundUrl =
     getValue(event, "IdCardBackground", "idCardBackground") ||
     getValue(participant, "IdCardBackground", "idCardBackground");
-
   const verificationUrl = (() => {
     const params = new URLSearchParams({
       eventId: String(eventId ?? ""),
       userId: String(userId ?? ""),
       idCardNumber: String(cardNumber ?? ""),
     });
-
     return `${window.location.origin}/verify-id?${params.toString()}`;
   })();
-
   useEffect(() => {
     let cancelled = false;
-
     const drawBuiltInCard = async () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
-
       // Exact Standard A6 Sheet size (105mm × 148mm @ 300 DPI)
       canvas.width = BASE_W * RENDER_SCALE;   // 1240 px
       canvas.height = BASE_H * RENDER_SCALE; // 1748 px
-
       ctx.save();
       ctx.scale(RENDER_SCALE, RENDER_SCALE);
-
       const rounded = (x, y, width, height, radius, color) => {
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.roundRect(x, y, width, height, radius);
         ctx.fill();
       };
-
       const strokeRounded = (x, y, width, height, radius, strokeColor, lineWidth = 1) => {
         ctx.strokeStyle = strokeColor;
         ctx.lineWidth = lineWidth;
@@ -168,7 +140,6 @@ export default function ParticipantIdCanvas({
         ctx.roundRect(x, y, width, height, radius);
         ctx.stroke();
       };
-
       const drawCenteredText = (val, centerY, font, color, maxW = BASE_W - 40) => {
         ctx.font = font;
         ctx.fillStyle = color;
@@ -179,14 +150,11 @@ export default function ParticipantIdCanvas({
         }
         ctx.fillText(str, BASE_W / 2, centerY);
       };
-
       const [photoImage, customBgImage] = await Promise.all([
         loadImage(photo),
         loadImage(customBackgroundUrl),
       ]);
-
       if (cancelled) return;
-
       // 1. BACKGROUND: Use Admin Custom Uploaded Background if present, else Cyber Space Grid
       if (customBgImage) {
         // Draw admin uploaded background
@@ -200,7 +168,6 @@ export default function ParticipantIdCanvas({
         bgGrad.addColorStop(1, "#000000");
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, BASE_W, BASE_H);
-
         // Cyber Matrix Dot/Grid Pattern
         ctx.save();
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.06)`;
@@ -212,7 +179,6 @@ export default function ParticipantIdCanvas({
           }
         }
         ctx.restore();
-
         // Outer Glowing A6 Frame in Event Theme Color
         ctx.save();
         ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
@@ -220,14 +186,12 @@ export default function ParticipantIdCanvas({
         strokeRounded(12, 12, BASE_W - 24, BASE_H - 24, 20, `rgba(${r}, ${g}, ${b}, 0.45)`, 1.5);
         ctx.restore();
       }
-
       // 2. TOP HEADER
       // Top Right: AITAM wordmark and crest emblem (matching Image 2)
       ctx.textAlign = "right";
       ctx.font = "bold 26px 'Georgia', serif";
       ctx.fillStyle = "#FFFFFF";
       ctx.fillText("aitam", BASE_W - 80, 56);
-
       ctx.font = "bold 7.5px Arial";
       ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
       ctx.fillText("ADITYA INSTITUTE OF", BASE_W - 44, 72);
@@ -235,7 +199,6 @@ export default function ParticipantIdCanvas({
       ctx.font = "italic 7px Arial";
       ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
       ctx.fillText("An Autonomous Institution", BASE_W - 44, 92);
-
       // Crest emblem box (Red/Gold)
       rounded(BASE_W - 74, 34, 30, 36, 5, "rgba(220, 38, 38, 0.25)");
       strokeRounded(BASE_W - 74, 34, 30, 36, 5, "#DC2626", 1.2);
@@ -243,7 +206,6 @@ export default function ParticipantIdCanvas({
       ctx.textAlign = "center";
       ctx.font = "bold 15px Arial";
       ctx.fillText("🏛", BASE_W - 59, 58);
-
       // Top Center/Left: Event Name and Season in Event Theme Color
       ctx.save();
       ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.8)`;
@@ -253,12 +215,10 @@ export default function ParticipantIdCanvas({
       ctx.fillStyle = primaryColor;
       ctx.fillText(eventName.toUpperCase(), 44, 62);
       ctx.restore();
-
       ctx.textAlign = "start";
       ctx.font = "bold 12px Arial";
       ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
       ctx.fillText("SEASON 4", 44, 84);
-
       // 3. CENTER PARTICIPANT PHOTO
       // Portrait rectangular box with rounded corners and neon glow in theme color
       const photoW = 280;
@@ -266,19 +226,16 @@ export default function ParticipantIdCanvas({
       const photoX = (BASE_W - photoW) / 2;
       const photoY = 120;
       const photoRadius = 18;
-
       ctx.save();
       ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.85)`;
       ctx.shadowBlur = 18;
       strokeRounded(photoX, photoY, photoW, photoH, photoRadius, primaryColor, 3);
       ctx.restore();
-
       // Clip photo inside
       ctx.save();
       ctx.beginPath();
       ctx.roundRect(photoX, photoY, photoW, photoH, photoRadius);
       ctx.clip();
-
       if (photoImage) {
         // Draw photo with cover crop
         const imgRatio = photoImage.width / photoImage.height;
@@ -287,7 +244,6 @@ export default function ParticipantIdCanvas({
         let sHeight = photoImage.height;
         let sX = 0;
         let sY = 0;
-
         if (imgRatio > boxRatio) {
           sWidth = photoImage.height * boxRatio;
           sX = (photoImage.width - sWidth) / 2;
@@ -295,13 +251,11 @@ export default function ParticipantIdCanvas({
           sHeight = photoImage.width / boxRatio;
           sY = (photoImage.height - sHeight) / 2;
         }
-
         ctx.drawImage(photoImage, sX, sY, sWidth, sHeight, photoX, photoY, photoW, photoH);
       } else {
         // Futuristic fallback box with initials
         ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.15)`;
         ctx.fillRect(photoX, photoY, photoW, photoH);
-
         const initials = name
           .split(/\s+/)
           .filter(Boolean)
@@ -309,17 +263,14 @@ export default function ParticipantIdCanvas({
           .map((part) => part.charAt(0))
           .join("")
           .toUpperCase() || "P";
-
         ctx.textAlign = "center";
         ctx.font = "900 64px Arial";
         ctx.fillStyle = primaryColor;
         ctx.fillText(initials, photoX + photoW / 2, photoY + photoH / 2 + 22);
       }
       ctx.restore();
-
       // Inner border refinement
       strokeRounded(photoX, photoY, photoW, photoH, photoRadius, `rgba(${r}, ${g}, ${b}, 0.4)`, 1);
-
       // 4. PARTICIPANT IDENTITY SECTION (Centered below photo - Room No removed as requested)
       // Name (Bold futuristic white uppercase)
       ctx.save();
@@ -327,18 +278,14 @@ export default function ParticipantIdCanvas({
       ctx.shadowBlur = 8;
       drawCenteredText(name.toUpperCase(), 468, "900 27px 'Arial Black', Arial", "#FFFFFF", BASE_W - 60);
       ctx.restore();
-
       // College / Institution in Event Theme Color
       drawCenteredText(college.toUpperCase(), 498, "bold 15px Arial", primaryColor, BASE_W - 60);
-
       // Team Name in light silver / white
       drawCenteredText(team.toUpperCase(), 526, "bold 14px Arial", "rgba(255, 255, 255, 0.85)", BASE_W - 80);
-
       // 5. SCANNABLE QR CODE (Centered)
       const qrSize = 110;
       const qrY = 560;
       const qrX = (BASE_W - qrSize) / 2;
-
       // Clean white rounded box
       rounded(qrX, qrY, qrSize, qrSize, 12, "#FFFFFF");
       ctx.save();
@@ -346,7 +293,6 @@ export default function ParticipantIdCanvas({
       ctx.shadowBlur = 8;
       strokeRounded(qrX, qrY, qrSize, qrSize, 12, primaryColor, 2);
       ctx.restore();
-
       const svg = qrRef.current?.querySelector("svg");
       if (svg) {
         const serialized = new XMLSerializer().serializeToString(svg);
@@ -357,14 +303,12 @@ export default function ParticipantIdCanvas({
           ctx.drawImage(qrImg, qrX + 6, qrY + 6, qrSize - 12, qrSize - 12);
         }
       }
-
       // 6. BOTTOM CYBER WIREFRAME GLOBE GRAPHIC (rendered if no custom background overrides it)
       if (!customBgImage) {
         ctx.save();
         const globeCenterX = BASE_W / 2;
         const globeCenterY = BASE_H + 180;
         const globeRadius = 300;
-
         // Radial ambient neon glow in event theme color behind the globe
         const glowGrad = ctx.createRadialGradient(
           globeCenterX,
@@ -381,7 +325,6 @@ export default function ParticipantIdCanvas({
         ctx.beginPath();
         ctx.arc(globeCenterX, globeCenterY - 60, 280, 0, Math.PI * 2);
         ctx.fill();
-
         // Horizon glowing digital arc
         ctx.strokeStyle = primaryColor;
         ctx.lineWidth = 3;
@@ -390,7 +333,6 @@ export default function ParticipantIdCanvas({
         ctx.beginPath();
         ctx.arc(globeCenterX, globeCenterY, globeRadius, Math.PI * 1.18, Math.PI * 1.82);
         ctx.stroke();
-
         // Dotted / wireframe perspective latitude & longitude grid matrix lines
         ctx.shadowBlur = 0;
         ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.35)`;
@@ -407,13 +349,10 @@ export default function ParticipantIdCanvas({
         }
         ctx.restore();
       }
-
       ctx.restore(); // Restore scale
     };
-
     const drawIdCard = async () => {
       if (cancelled) return;
-
       if (eventId) {
         try {
           const res = await fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/templates?cardType=id_card`);
@@ -429,7 +368,6 @@ export default function ParticipantIdCanvas({
                 console.error("Error parsing ID Card FrontConfig:", e);
               }
             }
-
             if (frontConfig && typeof frontConfig === 'object' && Array.isArray(frontConfig.elements) && canvasRef.current) {
               setUsingCustomTemplate(true);
               const participantData = {
@@ -453,14 +391,12 @@ export default function ParticipantIdCanvas({
                 event_date: event?.EventDate || event?.Date || '2026',
                 department: participant?.Department || participant?.Branch || 'Engineering & Technology'
               };
-
               const orientation = activeTpl?.Orientation || frontConfig?.orientation || 'portrait';
               const matchedSize = (CARD_SIZES || []).find(s => s.id === (frontConfig?.cardSizeId || activeTpl?.CardSizeId)) || { portrait: { width: 380, height: 600 }, landscape: { width: 600, height: 380 } };
               const sizeObj = matchedSize[orientation] || matchedSize.portrait || { width: 380, height: 600 };
               const cardWidth = sizeObj.width;
               const cardHeight = sizeObj.height;
               setDimensions({ width: cardWidth, height: cardHeight });
-
               await renderCardSide(
                 canvasRef.current,
                 frontConfig,
@@ -480,14 +416,11 @@ export default function ParticipantIdCanvas({
           console.warn("Failed to load custom ID card template, using built-in design:", err);
         }
       }
-
       setUsingCustomTemplate(false);
       setDimensions({ width: BASE_W, height: BASE_H });
       await drawBuiltInCard();
     };
-
     drawIdCard();
-
     return () => {
       cancelled = true;
     };
@@ -509,12 +442,10 @@ export default function ParticipantIdCanvas({
     verificationUrl,
     customBackgroundUrl,
   ]);
-
   // Direct PDF Download (Responsive to portrait / landscape template)
   const downloadPdf = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     try {
       const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
       const isLandscape = dimensions.width > dimensions.height;
@@ -525,7 +456,6 @@ export default function ParticipantIdCanvas({
         unit: "mm",
         format: [pdfW, pdfH],
       });
-
       pdf.addImage(dataUrl, "JPEG", 0, 0, pdfW, pdfH, undefined, 'FAST');
       pdf.save(`${name.replace(/\s+/g, "_")}_IDCard.pdf`);
     } catch (err) {
@@ -549,11 +479,9 @@ export default function ParticipantIdCanvas({
       }
     }
   };
-
   const downloadPng = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     try {
       const link = document.createElement("a");
       link.download = `${name.replace(/\s+/g, "_")}_IDCard.png`;
@@ -563,18 +491,15 @@ export default function ParticipantIdCanvas({
       alert("Unable to download image. Please check image permissions.");
     }
   };
-
   const printCard = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const dataUrl = canvas.toDataURL("image/png");
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       alert("Please allow popups to print the ID card.");
       return;
     }
-
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -610,13 +535,11 @@ export default function ParticipantIdCanvas({
     `);
     printWindow.document.close();
   };
-
   return (
     <div className="w-full">
       <div ref={qrRef} className="hidden" aria-hidden="true">
         <QRCodeSVG value={verificationUrl} size={180} level="M" />
       </div>
-
       {/* Dimension & Custom Template Badge */}
       <div className="mb-2 flex items-center justify-between text-[11px] font-semibold text-slate-400">
         <span className="inline-flex items-center gap-1" style={{ color: primaryColor }}>
@@ -632,7 +555,6 @@ export default function ParticipantIdCanvas({
           {usingCustomTemplate ? 'Designer Template' : '105 × 148 mm (300 DPI)'}
         </span>
       </div>
-
       <canvas
         ref={canvasRef}
         aria-label={`Official ID Pass for ${name}`}
@@ -643,7 +565,6 @@ export default function ParticipantIdCanvas({
           boxShadow: `0 20px 40px rgba(${r}, ${g}, ${b}, 0.15)`
         }}
       />
-
       <div className="mt-4 grid grid-cols-3 gap-2">
         <button
           type="button"
@@ -655,7 +576,6 @@ export default function ParticipantIdCanvas({
           <FileText className="h-4 w-4" />
           <span>Download PDF</span>
         </button>
-
         <button
           type="button"
           onClick={downloadPng}
@@ -665,7 +585,6 @@ export default function ParticipantIdCanvas({
           <Download className="h-4 w-4" />
           <span>Save PNG</span>
         </button>
-
         <button
           type="button"
           onClick={printCard}

@@ -7,9 +7,6 @@ import {
   MessageSquareQuote
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
-
-
-
 const resolveAvatarUrl = (photo, name) => {
   if (photo && typeof photo === 'string' && photo.trim().length > 0) {
     let trimmed = photo.trim();
@@ -24,10 +21,7 @@ const resolveAvatarUrl = (photo, name) => {
   }
   return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name || 'AY')}&backgroundColor=10b981,059669,047857`;
 };
-
-/**
- * 5 Testimonials styled exclusively with Emerald, Pure White & Black
- */
+// 5 Testimonials styled exclusively with Emerald, Pure White & Black
 const DEFAULT_TESTIMONIALS = [
   {
     id: 't-1',
@@ -80,28 +74,23 @@ const DEFAULT_TESTIMONIALS = [
       'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&h=256&q=80',
   },
 ];
-
 export default function PlatformTestimonialsSection() {
   const [testimonials, setTestimonials] = useState(DEFAULT_TESTIMONIALS);
   const [activeIndex, setActiveIndex] = useState(2); // Center card (Rohan Mehta)
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef(0);
   const total = testimonials.length;
-
   const [mouseTilt, setMouseTilt] = useState({ x: 0, y: 0 });
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== 'undefined' ? window.innerWidth : 1200
   );
-
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
   const isMobile = windowWidth < 640;
   const isTablet = windowWidth >= 640 && windowWidth < 1024;
-
   // Fetch live reviews directly from database
   useEffect(() => {
     let isMounted = true;
@@ -112,7 +101,6 @@ export default function PlatformTestimonialsSection() {
         `${API_BASE_URL}/api/feedback`,
         `/api/feedback`,
       ];
-
       for (const url of endpoints) {
         try {
           const res = await fetch(url);
@@ -133,7 +121,6 @@ export default function PlatformTestimonialsSection() {
                   hasPhoto,
                 };
               });
-
               if (formatted.length >= 3) {
                 setTestimonials(formatted);
                 setActiveIndex(Math.min(2, Math.floor(formatted.length / 2)));
@@ -151,15 +138,12 @@ export default function PlatformTestimonialsSection() {
       isMounted = false;
     };
   }, []);
-
   const handlePrev = useCallback(() => {
     setActiveIndex((prev) => (prev === 0 ? total - 1 : prev - 1));
   }, [total]);
-
   const handleNext = useCallback(() => {
     setActiveIndex((prev) => (prev === total - 1 ? 0 : prev + 1));
   }, [total]);
-
   // Gentle 6s slide rotation when not hovered
   useEffect(() => {
     if (isPaused) return;
@@ -168,12 +152,10 @@ export default function PlatformTestimonialsSection() {
     }, 6000);
     return () => clearInterval(timer);
   }, [isPaused, handleNext]);
-
   // Touch swipe support for mobile
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
   };
-
   const handleTouchEnd = (e) => {
     const diff = touchStartX.current - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 40) {
@@ -181,7 +163,6 @@ export default function PlatformTestimonialsSection() {
       else handlePrev();
     }
   };
-
   // Subtle interactive 3D mouse parallax
   const handleMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -192,26 +173,20 @@ export default function PlatformTestimonialsSection() {
       y: x * 14, // subtle horizontal pan (-7° to +7°)
     });
   };
-
   const handleMouseLeave = () => {
     setIsPaused(false);
     setMouseTilt({ x: 0, y: 0 });
   };
-
-  /**
-   * 3D Cylindrical arc transform calculation (Full-Width Responsive Spread)
-   */
+  // 3D Cylindrical arc transform calculation (Full-Width Responsive Spread)
   const getCardTransform = (idx) => {
     let diff = idx - activeIndex;
     if (diff > total / 2) diff -= total;
     if (diff < -total / 2) diff += total;
-
     // Dynamically scale distances according to windowWidth so cards fill the entire screen
     const screenHalf = windowWidth / 2;
     const nearX = isMobile ? 150 : isTablet ? 260 : Math.min(screenHalf * 0.44, 450);
     const farX = isMobile ? 280 : isTablet ? 490 : Math.min(screenHalf * 0.84, 860);
     const extremeX = isMobile ? 400 : isTablet ? 680 : Math.min(screenHalf * 1.2, 1250);
-
     if (diff === 0) {
       // CENTER HERO CARD: Swoops forward in 3D space with high Z-depth
       return {
@@ -297,7 +272,6 @@ export default function PlatformTestimonialsSection() {
       };
     }
   };
-
   return (
     <section
       id="testimonials"
@@ -307,7 +281,6 @@ export default function PlatformTestimonialsSection() {
     >
       {/* Soft Emerald Ambient Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] sm:w-[1200px] h-[350px] bg-emerald-500/[0.04] dark:bg-emerald-500/[0.05] rounded-full blur-[120px] pointer-events-none" />
-
       {/* ===================== HEADER SECTION ===================== */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-12 relative z-10">
         <motion.div
@@ -324,20 +297,17 @@ export default function PlatformTestimonialsSection() {
               Trusted by Teams
             </span>
           </h2>
-
           {/* Subtitle */}
           <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 leading-relaxed font-normal">
             See what our users say about their experience, growth, and the impact we've made in their journey.
           </p>
         </motion.div>
       </div>
-
       {/* ===================== FULL-WIDTH 3D CAROUSEL STAGE ===================== */}
       <div className="relative w-full overflow-hidden">
         {/* Soft edge fade masks for seamless full-bleed depth */}
         <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 sm:w-32 lg:w-48 bg-gradient-to-r from-white dark:from-black to-transparent z-30" />
         <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 sm:w-32 lg:w-48 bg-gradient-to-l from-white dark:from-black to-transparent z-30" />
-
         {/* Floating Left Navigation Arrow Button (Middle) */}
         <button
           onClick={(e) => {
@@ -349,7 +319,6 @@ export default function PlatformTestimonialsSection() {
         >
           <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
         </button>
-
         {/* Floating Right Navigation Arrow Button (Middle) */}
         <button
           onClick={(e) => {
@@ -361,8 +330,7 @@ export default function PlatformTestimonialsSection() {
         >
           <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
         </button>
-
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 60, scale: 0.94, filter: 'blur(8px)' }}
           whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
           viewport={{ once: false, amount: 0.15 }}
@@ -375,16 +343,15 @@ export default function PlatformTestimonialsSection() {
           style={{ perspective: '1600px', transformStyle: 'preserve-3d' }}
         >
           {/* Subtle Ground Ring (Full width) */}
-          <div 
+          <div
             className="absolute -bottom-2 w-[1200px] lg:w-[1600px] max-w-[98vw] h-[160px] rounded-[100%] border border-zinc-200 dark:border-zinc-800/80 pointer-events-none"
             style={{
               transform: 'rotateX(72deg)',
               background: 'radial-gradient(circle, rgba(16,185,129,0.025) 0%, transparent 70%)',
             }}
           />
-
           {/* 3D Carousel Cards Container with dynamic cursor parallax (Spans full width) */}
-          <motion.div 
+          <motion.div
             animate={{
               rotateX: mouseTilt.x,
               rotateY: mouseTilt.y,
@@ -396,7 +363,6 @@ export default function PlatformTestimonialsSection() {
             {testimonials.map((item, idx) => {
               const transform = getCardTransform(idx);
               const isCenter = idx === activeIndex;
-
               return (
                 <motion.div
                   key={item.id}
@@ -438,7 +404,6 @@ export default function PlatformTestimonialsSection() {
                     <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center text-lg sm:text-xl font-serif font-black shadow-xs bg-emerald-500/5 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-500/15">
                       <MessageSquareQuote />
                     </div>
-
                     {/* Rating Stars */}
                     <div className="flex items-center gap-1">
                       {Array.from({ length: 5 }).map((_, i) => (
@@ -453,7 +418,6 @@ export default function PlatformTestimonialsSection() {
                       ))}
                     </div>
                   </div>
-
                   {/* Testimonial Quote Text */}
                   <div className="my-auto py-2">
                     <p
@@ -466,7 +430,6 @@ export default function PlatformTestimonialsSection() {
                       "{item.quote}"
                     </p>
                   </div>
-
                   {/* Customer Avatar & Bio (With User Photo Support & Fallback) */}
                   <div className="flex items-center gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-900">
                     <div className="relative shrink-0">
@@ -504,7 +467,6 @@ export default function PlatformTestimonialsSection() {
             })}
           </motion.div>
         </motion.div>
-
         {/* Pagination Indicators with Active Live Countdown Progress Bar (Composited GPU Animation) */}
         <div className="flex items-center justify-center pt-5 relative z-40">
           <style>{`
@@ -542,7 +504,6 @@ export default function PlatformTestimonialsSection() {
             })}
           </div>
         </div>
-
       </div>
     </section>
   );

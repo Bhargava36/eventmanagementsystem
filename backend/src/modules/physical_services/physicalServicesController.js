@@ -1,20 +1,16 @@
 const physicalServicesService = require("./physicalServicesService");
-
 const parsePositiveId = (value) => {
     const id = Number(value);
     return Number.isInteger(id) && id > 0 ? id : null;
 };
-
 const getTeamPreference = async (req, res) => {
     const teamId = parsePositiveId(req.params.teamId);
     const userId = parsePositiveId(req.query.userId);
-
     if (!teamId || !userId) {
         return res.status(400).json({
             message: "Valid team and user IDs are required."
         });
     }
-
     try {
         const preference = await physicalServicesService.getTeamPreference(
             teamId,
@@ -25,7 +21,6 @@ const getTeamPreference = async (req, res) => {
                 message: "Team membership or physical registration was not found."
             });
         }
-
         return res.status(200).json({
             preference: {
                 accommodationRequested: Boolean(
@@ -71,19 +66,17 @@ const getTeamPreference = async (req, res) => {
         });
     }
 };
-
 const saveTeamPreference = async (req, res) => {
     const teamId = parsePositiveId(req.params.teamId);
     const userId = parsePositiveId(req.body.userId);
-    const { 
-        accommodationRequested, 
+    const {
+        accommodationRequested,
         foodAccepted,
         totalAmount,
         paymentRefId,
         paymentReceiptUrl,
         paymentNotes
     } = req.body;
-
     if (
         !teamId ||
         !userId ||
@@ -94,7 +87,6 @@ const saveTeamPreference = async (req, res) => {
             message: "Valid IDs and boolean service selections are required."
         });
     }
-
     try {
         const preference = await physicalServicesService.saveTeamPreference(
             teamId,
@@ -132,13 +124,11 @@ const saveTeamPreference = async (req, res) => {
         });
     }
 };
-
 const getFoodParticipants = async (req, res) => {
     const eventId = parsePositiveId(req.params.eventId);
     if (!eventId) {
         return res.status(400).json({ message: "Valid event ID is required." });
     }
-
     try {
         const participants =
             await physicalServicesService.getFoodParticipants(eventId);
@@ -153,13 +143,11 @@ const getFoodParticipants = async (req, res) => {
         });
     }
 };
-
 const getAccommodationParticipants = async (req, res) => {
     const eventId = parsePositiveId(req.params.eventId);
     if (!eventId) {
         return res.status(400).json({ message: "Valid event ID is required." });
     }
-
     try {
         const participants =
             await physicalServicesService.getAccommodationParticipants(eventId);
@@ -174,13 +162,11 @@ const getAccommodationParticipants = async (req, res) => {
         });
     }
 };
-
 const getEventTeamPreferences = async (req, res) => {
     const eventId = parsePositiveId(req.params.eventId);
     if (!eventId) {
         return res.status(400).json({ message: "Valid event ID is required." });
     }
-
     try {
         const preferences =
             await physicalServicesService.getEventTeamPreferences(eventId);
@@ -192,17 +178,14 @@ const getEventTeamPreferences = async (req, res) => {
         });
     }
 };
-
 const generateFoodTokens = async (req, res) => {
     const eventId = parsePositiveId(req.params.eventId);
     const mealType = String(req.body.mealType || "").toLowerCase();
-
     if (!eventId || !["tiffin", "lunch", "dinner"].includes(mealType)) {
         return res.status(400).json({
             message: "Valid event ID and meal type are required."
         });
     }
-
     try {
         const result = await physicalServicesService.generateFoodTokens(
             eventId,
@@ -222,13 +205,11 @@ const generateFoodTokens = async (req, res) => {
         });
     }
 };
-
 const getFacilityBookings = async (req, res) => {
     const eventId = parsePositiveId(req.params.eventId);
     if (!eventId) {
         return res.status(400).json({ message: "Valid event ID is required." });
     }
-
     try {
         const bookings = await physicalServicesService.getFacilityBookings(eventId);
         return res.status(200).json({
@@ -242,18 +223,15 @@ const getFacilityBookings = async (req, res) => {
         });
     }
 };
-
 const updateBookingStatus = async (req, res) => {
     const eventId = parsePositiveId(req.params.eventId);
     const teamId = parsePositiveId(req.params.teamId);
     const { bookingStatus, adminRemarks } = req.body;
-
     if (!eventId || !teamId || !bookingStatus) {
         return res.status(400).json({
             message: "Event ID, Team ID, and bookingStatus are required."
         });
     }
-
     try {
         const result = await physicalServicesService.updateBookingStatus(
             eventId,
@@ -273,13 +251,11 @@ const updateBookingStatus = async (req, res) => {
         });
     }
 };
-
 const verifyFoodToken = async (req, res) => {
     const token = String(req.body.token || req.query.token || "").trim();
     if (!token) {
         return res.status(400).json({ message: "Food token code is required." });
     }
-
     try {
         const tokenInfo = await physicalServicesService.verifyFoodToken(token);
         return res.status(200).json({
@@ -294,13 +270,11 @@ const verifyFoodToken = async (req, res) => {
         return res.status(500).json({ message: "Failed to verify food token." });
     }
 };
-
 const redeemFoodToken = async (req, res) => {
     const token = String(req.body.token || "").trim();
     if (!token) {
         return res.status(400).json({ message: "Food token code is required." });
     }
-
     try {
         const result = await physicalServicesService.redeemFoodToken(token);
         return res.status(200).json(result);
@@ -315,7 +289,6 @@ const redeemFoodToken = async (req, res) => {
         return res.status(500).json({ message: "Failed to redeem food token." });
     }
 };
-
 module.exports = {
     getTeamPreference,
     saveTeamPreference,
@@ -328,4 +301,3 @@ module.exports = {
     verifyFoodToken,
     redeemFoodToken
 };
-

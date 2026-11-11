@@ -15,12 +15,10 @@ import {
   FileText,
   UserCheck,
   GraduationCap,
-
 } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import useToast from "../../../../Hooks/useToast";
 import { getEventTypeInfo } from "../../../../lib/utils";
-
 const ALUMNI_CATEGORIES = [
   { id: "Reunion Announcement", label: "Reunion Announcement" },
   { id: "Gate Pass & Banquet", label: "Gate Pass & Banquet Entry" },
@@ -30,7 +28,6 @@ const ALUMNI_CATEGORIES = [
   { id: "Important Notice", label: "Important Notice" },
   { id: "Emergency", label: "Urgent Notification" },
 ];
-
 const WORKSHOP_CATEGORIES = [
   { id: "Announcement", label: "Announcement" },
   { id: "Important Alert", label: "Important Alert" },
@@ -39,7 +36,6 @@ const WORKSHOP_CATEGORIES = [
   { id: "Study Materials", label: "Study Materials & Code" },
   { id: "Emergency", label: "Emergency" },
 ];
-
 const WEBINAR_CATEGORIES = [
   { id: "Live Broadcast Link", label: "Live Broadcast Link" },
   { id: "Keynote Announcement", label: "Keynote Announcement" },
@@ -49,7 +45,6 @@ const WEBINAR_CATEGORIES = [
   { id: "Delegate Feedback", label: "Delegate Feedback & Certificate" },
   { id: "Emergency", label: "Urgent Notification" },
 ];
-
 const SEMINAR_CATEGORIES = [
   { id: "Keynote Announcement", label: "Keynote Announcement" },
   { id: "Auditorium & Gate Pass", label: "Auditorium & Gate Pass" },
@@ -59,7 +54,6 @@ const SEMINAR_CATEGORIES = [
   { id: "Important Notice", label: "Important Notice" },
   { id: "Emergency", label: "Urgent Notification" },
 ];
-
 const EXPO_CATEGORIES = [
   { id: "Stall Allocation", label: "Stall & Booth Allocation" },
   { id: "Presentation Schedule", label: "Demo Slot & Schedule" },
@@ -70,10 +64,8 @@ const EXPO_CATEGORIES = [
   { id: "Important Notice", label: "Important Notice" },
   { id: "Emergency", label: "Urgent Notification" },
 ];
-
 export default function EventBroadcastEmailer() {
   const toast = useToast();
-
   const [admin, setAdmin] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("admin") || "{}");
@@ -81,20 +73,17 @@ export default function EventBroadcastEmailer() {
       return {};
     }
   });
-
   const eventId = admin?.EventId || "";
   const typeInfo = getEventTypeInfo(admin?.EventType);
-
   const CATEGORIES = typeInfo.isProjectExpo
     ? EXPO_CATEGORIES
     : typeInfo.isAlumni
     ? ALUMNI_CATEGORIES
-    : typeInfo.isSeminar 
-    ? SEMINAR_CATEGORIES 
-    : typeInfo.isWebinar 
-    ? WEBINAR_CATEGORIES 
+    : typeInfo.isSeminar
+    ? SEMINAR_CATEGORIES
+    : typeInfo.isWebinar
+    ? WEBINAR_CATEGORIES
     : WORKSHOP_CATEGORIES;
-
   const [activeTab, setActiveTab] = useState("compose"); // 'compose' | 'history'
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
@@ -103,23 +92,21 @@ export default function EventBroadcastEmailer() {
       ? "Stall Allocation"
       : typeInfo.isAlumni
       ? "Reunion Announcement"
-      : typeInfo.isSeminar 
-      ? "Keynote Announcement" 
-      : typeInfo.isWebinar 
-      ? "Live Broadcast Link" 
+      : typeInfo.isSeminar
+      ? "Keynote Announcement"
+      : typeInfo.isWebinar
+      ? "Live Broadcast Link"
       : "Announcement"
   );
   const [recipientFilter, setRecipientFilter] = useState("all");
   const [organizerName, setOrganizerName] = useState(
-    admin?.AdminName 
-      ? `${admin.AdminName} (${typeInfo.isProjectExpo ? 'Project Expo Director' : typeInfo.isAlumni ? 'Alumni Relations Chair' : typeInfo.isSeminar ? 'Conference Chair' : typeInfo.isWebinar ? 'Webinar Host' : typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})` 
+    admin?.AdminName
+      ? `${admin.AdminName} (${typeInfo.isProjectExpo ? 'Project Expo Director' : typeInfo.isAlumni ? 'Alumni Relations Chair' : typeInfo.isSeminar ? 'Conference Chair' : typeInfo.isWebinar ? 'Webinar Host' : typeInfo.isWorkshop ? 'Workshop Lead' : 'Organizing Lead'})`
       : (typeInfo.isProjectExpo ? "Project Expo Organizing Committee" : typeInfo.isAlumni ? "Alumni Relations & Homecoming Committee" : typeInfo.isSeminar ? "Seminar Organizing Committee" : typeInfo.isWebinar ? "Webinar Organizing Team" : "Event Organizing Team")
   );
-
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [broadcasts, setBroadcasts] = useState([]);
-
   // Audience filters tailored for Project Expo vs Alumni vs Seminar vs Webinar vs Workshop vs Hackathon
   const recipientFilters = typeInfo.isProjectExpo
     ? [
@@ -282,7 +269,6 @@ export default function EventBroadcastEmailer() {
           icon: ShieldCheck,
         },
       ];
-
   // Quick 1-click broadcast templates
   const quickTemplates = typeInfo.isProjectExpo
     ? [
@@ -448,7 +434,6 @@ export default function EventBroadcastEmailer() {
           msg: `Hello Participants,\n\nRound 1 judging commences in 30 minutes. All teams must have their working prototypes and presentation slide decks ready at their assigned table desks.`,
         },
       ];
-
   // Listen for active event updates from sidebar or switcher
   useEffect(() => {
     const handleEventUpdated = (e) => {
@@ -458,7 +443,6 @@ export default function EventBroadcastEmailer() {
         setAdmin(updated);
       } catch (err) {}
     };
-
     window.addEventListener("admin-event-updated", handleEventUpdated);
     window.addEventListener("storage", handleEventUpdated);
     return () => {
@@ -466,7 +450,6 @@ export default function EventBroadcastEmailer() {
       window.removeEventListener("storage", handleEventUpdated);
     };
   }, []);
-
   // Fetch broadcasts history
   const fetchBroadcastHistory = async () => {
     if (!eventId) return;
@@ -483,11 +466,9 @@ export default function EventBroadcastEmailer() {
       setHistoryLoading(false);
     }
   };
-
   useEffect(() => {
     fetchBroadcastHistory();
   }, [eventId]);
-
   const handleSendBroadcast = async (e) => {
     e?.preventDefault();
     if (!eventId) {
@@ -502,7 +483,6 @@ export default function EventBroadcastEmailer() {
       toast.error("Please enter your broadcast message.");
       return;
     }
-
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/events/${eventId}/broadcasts`, {
@@ -517,12 +497,10 @@ export default function EventBroadcastEmailer() {
           organizerName: organizerName.trim(),
         }),
       });
-
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.message || "Failed to dispatch broadcast.");
       }
-
       toast.success(data.message || "Broadcast successfully dispatched via SMTP!");
       setSubject("");
       setMessage("");
@@ -534,7 +512,6 @@ export default function EventBroadcastEmailer() {
       setLoading(false);
     }
   };
-
   const getCategoryBadgeClass = (cat) => {
     const c = String(cat || "").toLowerCase();
     if (c.includes("emergency") || c.includes("urgent")) {
@@ -563,7 +540,6 @@ export default function EventBroadcastEmailer() {
     }
     return "text-emerald-600 dark:text-emerald-400 font-bold";
   };
-
   const getCategoryHeaderStyle = (cat) => {
     const c = String(cat || "").toLowerCase();
     if (c.includes("emergency") || c.includes("urgent")) {
@@ -656,7 +632,6 @@ export default function EventBroadcastEmailer() {
       borderAccent: "border-l-emerald-500",
     };
   };
-
   return (
     <div className="bg-slate-50 dark:bg-black min-h-screen text-slate-900 dark:text-zinc-100 transition-colors p-4 sm:p-6 md:p-8 lg:p-10 font-sans">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -711,7 +686,6 @@ export default function EventBroadcastEmailer() {
                 : "Dispatch mass email announcements and evaluation notices directly to participants and team leads."}
             </p>
           </div>
-
           {/* Navigation Tabs - No pills, rectangular rounded-xl */}
           <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-200/60 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
             <button
@@ -740,7 +714,6 @@ export default function EventBroadcastEmailer() {
             </button>
           </div>
         </motion.div>
-
         {/* Tab 1: COMPOSE BROADCAST */}
         {activeTab === "compose" && (
           <motion.div
@@ -775,7 +748,6 @@ export default function EventBroadcastEmailer() {
                   ))}
                 </div>
               </div>
-
               <form
                 onSubmit={handleSendBroadcast}
                 className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-5"
@@ -814,7 +786,6 @@ export default function EventBroadcastEmailer() {
                     })}
                   </div>
                 </div>
-
                 {/* Category Selection — Rectangular tags, no pills */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-2">
@@ -837,7 +808,6 @@ export default function EventBroadcastEmailer() {
                     ))}
                   </div>
                 </div>
-
                 {/* Subject */}
                 <div>
                   <label
@@ -864,7 +834,6 @@ export default function EventBroadcastEmailer() {
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
-
                 {/* Message Body */}
                 <div>
                   <label
@@ -883,7 +852,6 @@ export default function EventBroadcastEmailer() {
                     className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition leading-relaxed resize-y font-mono"
                   />
                 </div>
-
                 {/* Organizer Sender Tag */}
                 <div>
                   <label
@@ -909,7 +877,6 @@ export default function EventBroadcastEmailer() {
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
-
                 {/* Dispatch Button */}
                 <div className="pt-2">
                   <motion.button
@@ -934,7 +901,6 @@ export default function EventBroadcastEmailer() {
                 </div>
               </form>
             </div>
-
             {/* Email Live Preview Column */}
             <div className="lg:col-span-5 space-y-4">
               <div className="flex items-center justify-between">
@@ -946,7 +912,6 @@ export default function EventBroadcastEmailer() {
                   SMTP Delivery Preview
                 </span>
               </div>
-
               {/* Styled Mock Email Container */}
               <div className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm">
                 <div className="bg-slate-100 dark:bg-zinc-900 px-4 py-3 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs text-slate-500">
@@ -957,7 +922,6 @@ export default function EventBroadcastEmailer() {
                   </div>
                   <span className="font-mono text-[10px]">smtp.ayojan-mail.com</span>
                 </div>
-
                 <div className={`${getCategoryHeaderStyle(category).bg} p-5 text-white space-y-1.5 transition-colors`}>
                   <div className="text-[11px] font-extrabold tracking-wider uppercase text-white/90">
                     {getCategoryHeaderStyle(category).tag}
@@ -966,24 +930,19 @@ export default function EventBroadcastEmailer() {
                     {admin?.EventName || "Event Announcement"}
                   </h3>
                 </div>
-
                 <div className="p-5 space-y-4 text-xs">
                   <div className={`text-xs font-bold uppercase tracking-wider ${getCategoryBadgeClass(category)}`}>
                     • {category}
                   </div>
-
                   <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
                     {subject || "Subject line preview will appear here..."}
                   </h4>
-
                   <p className="text-slate-600 dark:text-zinc-400 font-medium">
                     Dear {typeInfo.isAlumni ? "Distinguished Alumnus" : typeInfo.isSeminar || typeInfo.isWebinar ? "Delegate" : typeInfo.isWorkshop ? "Workshop Attendee" : "Participant"},
                   </p>
-
                   <div className={`p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 border-l-4 ${getCategoryHeaderStyle(category).borderAccent} text-slate-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap font-mono text-[11px]`}>
                     {message || "Your broadcast announcement text will be formatted and delivered directly to the inbox of verified attendees."}
                   </div>
-
                   <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 text-[11px] text-slate-500 dark:text-zinc-400 space-y-0.5">
                     <p><strong>Dispatched by:</strong> {organizerName || "Operations Team"}</p>
                     <p className="text-[10px] text-slate-400">Sent via AYOJAN Event Broadcast Protocol.</p>
@@ -993,7 +952,6 @@ export default function EventBroadcastEmailer() {
             </div>
           </motion.div>
         )}
-
         {/* Tab 2: BROADCAST HISTORY */}
         {activeTab === "history" && (
           <motion.div
@@ -1017,7 +975,6 @@ export default function EventBroadcastEmailer() {
                 <span>Refresh</span>
               </button>
             </div>
-
             {broadcasts.length === 0 ? (
               <div className="text-center py-16 text-slate-400 text-xs border border-dashed border-slate-200 dark:border-zinc-800 rounded-2xl">
                 No email broadcasts sent yet for this event.
@@ -1040,11 +997,9 @@ export default function EventBroadcastEmailer() {
                         {new Date(b.SentAt).toLocaleString("en-IN")}
                       </span>
                     </div>
-
                     <p className="text-xs text-slate-600 dark:text-zinc-300 line-clamp-2 leading-relaxed">
                       {b.Message}
                     </p>
-
                     <div className="flex items-center gap-4 text-[11px] text-slate-500 pt-1">
                       <span className="flex items-center gap-1 text-emerald-600 font-bold">
                         <CheckCircle2 className="w-3.5 h-3.5" />

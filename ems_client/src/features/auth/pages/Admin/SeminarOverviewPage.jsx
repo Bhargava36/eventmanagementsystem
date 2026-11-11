@@ -20,11 +20,9 @@ import {
   ShieldCheck,
   Save
 } from 'lucide-react';
-
 export default function SeminarOverviewPage() {
   const navigate = useNavigate();
   const toast = useToast();
-
   const admin = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -32,23 +30,19 @@ export default function SeminarOverviewPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [eventData, setEventData] = useState(null);
   const [delegates, setDelegates] = useState([]);
   const [speakers, setSpeakers] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savingVenue, setSavingVenue] = useState(false);
-
   // Editable venue state
   const [venueForm, setVenueForm] = useState({
     AuditoriumVenue: '',
     MaxCapacity: 200,
     Location: ''
   });
-
   const loadAllData = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -59,7 +53,6 @@ export default function SeminarOverviewPage() {
         fetch(`${API_BASE_URL}/api/seminars/${eventId}/speakers`),
         fetch(`${API_BASE_URL}/api/seminars/${eventId}/sessions`)
       ]);
-
       if (evRes.ok) {
         const ev = await evRes.json();
         const cur = Array.isArray(ev) ? ev[0] : (ev.event || ev);
@@ -70,17 +63,14 @@ export default function SeminarOverviewPage() {
           Location: cur.Location || ''
         });
       }
-
       if (delRes.ok) {
         const dData = await delRes.json();
         setDelegates(dData.delegates || []);
       }
-
       if (spkRes.ok) {
         const sData = await spkRes.json();
         setSpeakers(sData.speakers || []);
       }
-
       if (sesRes.ok) {
         const seData = await sesRes.json();
         setSessions(seData.sessions || []);
@@ -92,11 +82,9 @@ export default function SeminarOverviewPage() {
       setLoading(false);
     }
   }, [eventId, toast]);
-
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
-
   // Save venue settings
   const handleSaveVenue = async (e) => {
     e.preventDefault();
@@ -121,14 +109,11 @@ export default function SeminarOverviewPage() {
       setSavingVenue(false);
     }
   };
-
   const checkedInCount = useMemo(() => {
     return delegates.filter((d) => d.CheckInStatus === 'CheckedIn').length;
   }, [delegates]);
-
   const capacity = Number(venueForm.MaxCapacity) || 200;
   const fillPercentage = Math.min(100, Math.round((delegates.length / capacity) * 100));
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 font-sans">
       {/* Header Banner */}
@@ -145,7 +130,6 @@ export default function SeminarOverviewPage() {
             Auditorium venue logistics, keynote speaker coordination, delegate gate check-in, and conference proceedings.
           </p>
         </div>
-
         <button
           onClick={loadAllData}
           disabled={loading}
@@ -156,7 +140,6 @@ export default function SeminarOverviewPage() {
           <span className="text-xs font-semibold">Refresh</span>
         </button>
       </div>
-
       {/* KPI Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
@@ -177,7 +160,6 @@ export default function SeminarOverviewPage() {
             />
           </div>
         </div>
-
         <div className="p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
             <div>
@@ -198,7 +180,6 @@ export default function SeminarOverviewPage() {
             />
           </div>
         </div>
-
         <div className="p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
             <div>
@@ -214,7 +195,6 @@ export default function SeminarOverviewPage() {
             <div className="bg-emerald-500 h-full rounded-full w-full" />
           </div>
         </div>
-
         <div className="p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group">
           <div className="flex items-center justify-between">
             <div>
@@ -231,7 +211,6 @@ export default function SeminarOverviewPage() {
           </div>
         </div>
       </div>
-
       {/* Main Grid: Venue Setup & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Venue & Seating Capacity Config */}
@@ -247,7 +226,6 @@ export default function SeminarOverviewPage() {
               </div>
             </div>
           </div>
-
           <form onSubmit={handleSaveVenue} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -266,7 +244,6 @@ export default function SeminarOverviewPage() {
                   />
                 </div>
               </div>
-
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                   Maximum Seating Capacity
@@ -285,7 +262,6 @@ export default function SeminarOverviewPage() {
                 </div>
               </div>
             </div>
-
             <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-xs font-bold text-slate-800 dark:text-zinc-200">Auditorium Seating Occupancy</p>
@@ -301,7 +277,6 @@ export default function SeminarOverviewPage() {
                 {delegates.length >= capacity ? 'Capacity Full' : `${fillPercentage}% Reserved`}
               </span>
             </div>
-
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
@@ -314,14 +289,12 @@ export default function SeminarOverviewPage() {
             </div>
           </form>
         </div>
-
         {/* Quick Module Navigation */}
         <div className="p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-4">
           <div className="border-b border-slate-100 dark:border-zinc-800/80 pb-3">
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">Seminar Modules</h2>
             <p className="text-xs text-slate-500 dark:text-zinc-400">Direct access to seminar operations</p>
           </div>
-
           <div className="space-y-2.5">
             <button
               onClick={() => navigate('/admin/seminar/speakers')}
@@ -338,7 +311,6 @@ export default function SeminarOverviewPage() {
               </div>
               <ArrowRight className="w-4 h-4 text-slate-400 dark:text-zinc-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition" />
             </button>
-
             <button
               onClick={() => navigate('/admin/seminar/agenda')}
               className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/70 dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-slate-100 dark:hover:bg-zinc-900/40 transition group text-left cursor-pointer"
@@ -354,7 +326,6 @@ export default function SeminarOverviewPage() {
               </div>
               <ArrowRight className="w-4 h-4 text-slate-400 dark:text-zinc-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition" />
             </button>
-
             <button
               onClick={() => navigate('/admin/seminar/attendance')}
               className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/70 dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-slate-100 dark:hover:bg-zinc-900/40 transition group text-left cursor-pointer"
@@ -370,7 +341,6 @@ export default function SeminarOverviewPage() {
               </div>
               <ArrowRight className="w-4 h-4 text-slate-400 dark:text-zinc-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition" />
             </button>
-
             <button
               onClick={() => navigate('/admin/seminar/resources')}
               className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-slate-50/70 dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:bg-slate-100 dark:hover:bg-zinc-900/40 transition group text-left cursor-pointer"

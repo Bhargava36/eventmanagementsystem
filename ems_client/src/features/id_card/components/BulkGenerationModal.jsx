@@ -22,7 +22,6 @@ import {
   downloadSingleCardImage
 } from '../services/idCardPdfGenerator';
 import { renderCardSide } from '../services/idCardRenderer';
-
 export default function BulkGenerationModal({
   isOpen,
   onClose,
@@ -42,21 +41,17 @@ export default function BulkGenerationModal({
   const [previewParticipant, setPreviewParticipant] = useState(null);
   const [activeTemplate, setActiveTemplate] = useState(template);
   const [batchResult, setBatchResult] = useState(null);
-
   useEffect(() => {
     if (template) setActiveTemplate(template);
   }, [template]);
-
   // Fetch participants when modal opens
   useEffect(() => {
     if (!isOpen || !eventId) return;
-
     setStage('confirm');
     setErrorMsg('');
     setExportMessage('');
     setBatchResult(null);
     setLoadingParticipants(true);
-
     fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/participants`)
       .then((res) => res.json())
       .then((data) => {
@@ -70,7 +65,6 @@ export default function BulkGenerationModal({
       .finally(() => {
         setLoadingParticipants(false);
       });
-
     // Fetch latest saved template to guarantee visual designer sync
     fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/templates`)
       .then((res) => res.json())
@@ -83,19 +77,15 @@ export default function BulkGenerationModal({
       })
       .catch((err) => console.error('Failed to sync template in bulk modal:', err));
   }, [isOpen, eventId]);
-
   if (!isOpen) return null;
-
   const handleStartGeneration = async () => {
     if (participants.length === 0) {
       setErrorMsg('No eligible participants found for this event.');
       return;
     }
-
     setStage('generating');
     setErrorMsg('');
     setProgress({ current: 0, total: participants.length, percentage: 0, currentName: 'Initializing batch...' });
-
     try {
       // 1. Call Backend to create batch and secure verification tokens
       const token = localStorage.getItem('token');
@@ -109,16 +99,13 @@ export default function BulkGenerationModal({
           templateId: activeTemplate?.Id || null
         })
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to initialize generation batch.');
-
       setBatchResult(data);
       const updatedList = Array.isArray(data.participants) && data.participants.length > 0
         ? data.participants
         : participants;
       setParticipants(updatedList);
-
       // 2. Pre-cache/warm cards with live progress simulation
       const total = updatedList.length;
       for (let i = 0; i < total; i++) {
@@ -133,7 +120,6 @@ export default function BulkGenerationModal({
           await new Promise((r) => setTimeout(r, 16));
         }
       }
-
       setStage('completed');
       if (onCompleted) onCompleted(data);
     } catch (err) {
@@ -141,7 +127,6 @@ export default function BulkGenerationModal({
       setStage('error');
     }
   };
-
   const handleExport = async (type) => {
     setExportingType(type);
     setExportMessage('');
@@ -172,7 +157,6 @@ export default function BulkGenerationModal({
       setExportingType(null);
     }
   };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-sm overflow-y-auto">
       <div className="relative w-full max-w-2xl rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl overflow-hidden my-auto">
@@ -199,7 +183,6 @@ export default function BulkGenerationModal({
             <X className="h-5 w-5" />
           </button>
         </div>
-
         {/* Modal Body */}
         <div className="p-6 space-y-6">
           {errorMsg && (
@@ -208,7 +191,6 @@ export default function BulkGenerationModal({
               <span>{errorMsg}</span>
             </div>
           )}
-
           {/* STAGE 1: CONFIRMATION & PREVIEW */}
           {stage === 'confirm' && (
             <div className="space-y-5">
@@ -247,7 +229,6 @@ export default function BulkGenerationModal({
                   </p>
                 </div>
               </div>
-
               {/* Front Side Card Notice */}
               <div className="p-3.5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/60 flex items-center justify-between">
                 <div>
@@ -262,7 +243,6 @@ export default function BulkGenerationModal({
                   Front Side Only
                 </span>
               </div>
-
               {/* Summary notice */}
               <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 text-xs text-slate-600 dark:text-zinc-300 space-y-1">
                 <p className="font-bold text-emerald-600 dark:text-emerald-400">
@@ -278,7 +258,6 @@ export default function BulkGenerationModal({
                   • Output options include Combined PDF, Multi-card A4 Sheets with cut marks, and ZIP of individual PNGs.
                 </p>
               </div>
-
               <div className="flex items-center justify-end gap-3 pt-3">
                 <button
                   type="button"
@@ -300,14 +279,12 @@ export default function BulkGenerationModal({
               </div>
             </div>
           )}
-
           {/* STAGE 2: LIVE GENERATION PROGRESS */}
           {stage === 'generating' && (
             <div className="py-8 text-center space-y-6">
               <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center animate-pulse">
                 <RefreshCw className="h-8 w-8 animate-spin" />
               </div>
-
               <div>
                 <h4 className="text-lg font-black text-slate-900 dark:text-white">
                   Generating Participant Badges...
@@ -316,7 +293,6 @@ export default function BulkGenerationModal({
                   Binding dynamic fields, encoding encrypted QR tokens, and building high-res vector canvases.
                 </p>
               </div>
-
               {/* Progress Bar */}
               <div className="max-w-md mx-auto space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold">
@@ -336,7 +312,6 @@ export default function BulkGenerationModal({
               </div>
             </div>
           )}
-
           {/* STAGE 3: COMPLETED & DOWNLOAD CENTER */}
           {stage === 'completed' && (
             <div className="space-y-6">
@@ -353,14 +328,12 @@ export default function BulkGenerationModal({
                   </p>
                 </div>
               </div>
-
               {exportMessage && (
                 <div className="p-3 rounded-xl bg-slate-100 dark:bg-zinc-900 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                   <span>{exportMessage}</span>
                 </div>
               )}
-
               {/* 3 Main Export Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* 1. Combined PDF */}
@@ -385,7 +358,6 @@ export default function BulkGenerationModal({
                     <Download className="h-3 w-3" /> Download PDF
                   </span>
                 </button>
-
                 {/* 2. Print Sheets (A4 with cut marks) */}
                 <button
                   type="button"
@@ -408,7 +380,6 @@ export default function BulkGenerationModal({
                     <Download className="h-3 w-3" /> Download Sheets
                   </span>
                 </button>
-
                 {/* 3. ZIP Archive */}
                 <button
                   type="button"
@@ -432,7 +403,6 @@ export default function BulkGenerationModal({
                   </span>
                 </button>
               </div>
-
               {/* Participant Card Quick Preview Section */}
               <div className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900/50 space-y-3">
                 <div className="flex items-center justify-between">
@@ -443,7 +413,6 @@ export default function BulkGenerationModal({
                     Click to download single card
                   </span>
                 </div>
-
                 <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-zinc-800">
                   {participants.slice(0, 50).map((p, idx) => (
                     <div
@@ -475,7 +444,6 @@ export default function BulkGenerationModal({
                   )}
                 </div>
               </div>
-
               <div className="flex justify-end pt-2">
                 <button
                   type="button"
@@ -487,7 +455,6 @@ export default function BulkGenerationModal({
               </div>
             </div>
           )}
-
           {/* STAGE: ERROR */}
           {stage === 'error' && (
             <div className="text-center py-6 space-y-4">

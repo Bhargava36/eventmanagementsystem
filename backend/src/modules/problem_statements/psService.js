@@ -1,12 +1,10 @@
 const db = require('../../config/db');
-
 // ========================
 // ADMIN: CRUD Themes for an Event
 // ========================
-
 const getAllThemes = (eventId, callback) => {
     const query = `
-        SELECT et.*, 
+        SELECT et.*,
                COUNT(eps.Id) AS StatementCount
         FROM event_themes et
         LEFT JOIN event_problem_statements eps ON eps.EventId = et.EventId AND LOWER(eps.Theme) = LOWER(et.ThemeName)
@@ -16,7 +14,6 @@ const getAllThemes = (eventId, callback) => {
     `;
     db.query(query, [eventId], callback);
 };
-
 const createTheme = (eventId, data, callback) => {
     const { ThemeName, Description, DisplayOrder, ImageUrl } = data;
     const query = `INSERT INTO event_themes (EventId, ThemeName, Description, DisplayOrder, ImageUrl) VALUES (?, ?, ?, ?, ?)`;
@@ -25,24 +22,20 @@ const createTheme = (eventId, data, callback) => {
         callback(null, { id: result.insertId, message: 'Theme created successfully' });
     });
 };
-
 const updateTheme = (id, data, callback) => {
     const { ThemeName, Description, DisplayOrder, ImageUrl } = data;
     const query = `UPDATE event_themes SET ThemeName = ?, Description = ?, DisplayOrder = ?, ImageUrl = ? WHERE Id = ?`;
     db.query(query, [ThemeName, Description || '', DisplayOrder || 0, ImageUrl || null, id], callback);
 };
-
 const deleteTheme = (id, callback) => {
     db.query(`DELETE FROM event_themes WHERE Id = ?`, [id], callback);
 };
-
 // ========================
 // ADMIN: CRUD Problem Statements for an Event
 // ========================
-
 const getAllByEvent = (eventId, callback) => {
     const query = `
-        SELECT eps.*, 
+        SELECT eps.*,
                COUNT(pss.Id) AS SelectedTeams
         FROM event_problem_statements eps
         LEFT JOIN problem_statement_selections pss ON pss.ProblemStatementId = eps.Id
@@ -52,7 +45,6 @@ const getAllByEvent = (eventId, callback) => {
     `;
     db.query(query, [eventId], callback);
 };
-
 const createProblemStatement = (eventId, data, callback) => {
     const { ProblemCode, Title, Description, Category, Theme, MaxTeams, DisplayOrder } = data;
     const query = `
@@ -64,37 +56,30 @@ const createProblemStatement = (eventId, data, callback) => {
         callback(null, { id: result.insertId, message: 'Problem statement created successfully' });
     });
 };
-
 const updateProblemStatement = (id, data, callback) => {
     const { ProblemCode, Title, Description, Category, Theme, MaxTeams, DisplayOrder } = data;
     const query = `
-        UPDATE event_problem_statements 
+        UPDATE event_problem_statements
         SET ProblemCode = ?, Title = ?, Description = ?, Category = ?, Theme = ?, MaxTeams = ?, DisplayOrder = ?
         WHERE Id = ?
     `;
     db.query(query, [ProblemCode, Title, Description || null, Category || null, Theme || null, MaxTeams || 5, DisplayOrder || 0, id], callback);
 };
-
 const deleteProblemStatement = (id, callback) => {
     db.query(`DELETE FROM event_problem_statements WHERE Id = ?`, [id], callback);
 };
-
 // ========================
 // ADMIN: Publish / Unpublish Themes & Problem Statements
 // ========================
-
 const publishTheme = (eventId, published, callback) => {
     db.query(`UPDATE events SET ThemePublished = ? WHERE Id = ?`, [published ? 1 : 0, eventId], callback);
 };
-
 const publishProblemStatements = (eventId, published, callback) => {
     db.query(`UPDATE events SET ProblemStatementsPublished = ? WHERE Id = ?`, [published ? 1 : 0, eventId], callback);
 };
-
 const publishPhysicalProblemStatements = (eventId, published, callback) => {
     db.query(`UPDATE events SET PhysicalPSPublished = ? WHERE Id = ?`, [published ? 1 : 0, eventId], callback);
 };
-
 const setSelectionDeadline = (eventId, deadline, callback) => {
     let mysqlVal = null;
     if (deadline) {
@@ -105,7 +90,6 @@ const setSelectionDeadline = (eventId, deadline, callback) => {
     }
     db.query(`UPDATE events SET PSSelectionDeadline = ? WHERE Id = ?`, [mysqlVal, eventId], callback);
 };
-
 const setPhysicalSelectionDeadline = (eventId, deadline, callback) => {
     let mysqlVal = null;
     if (deadline) {
@@ -116,19 +100,16 @@ const setPhysicalSelectionDeadline = (eventId, deadline, callback) => {
     }
     db.query(`UPDATE events SET PhysicalPSSelectionDeadline = ? WHERE Id = ?`, [mysqlVal, eventId], callback);
 };
-
 const setMaxTeamsPerStatement = (eventId, maxTeams, callback) => {
     db.query(`UPDATE events SET PSMaxTeamsPerStatement = ? WHERE Id = ?`, [maxTeams || 5, eventId], callback);
 };
-
 const setPhysicalMaxTeamsPerStatement = (eventId, maxTeams, callback) => {
     db.query(`UPDATE events SET PhysicalPSMaxTeamsPerStatement = ? WHERE Id = ?`, [maxTeams || 5, eventId], callback);
 };
-
 const getPublishStatus = (eventId, callback) => {
     db.query(
         `SELECT ThemePublished, ProblemStatementsPublished, PSSelectionDeadline, PSMaxTeamsPerStatement,
-                PhysicalPSMode, PhysicalPSPublished, PhysicalPSSelectionDeadline, PhysicalPSMaxTeamsPerStatement 
+                PhysicalPSMode, PhysicalPSPublished, PhysicalPSSelectionDeadline, PhysicalPSMaxTeamsPerStatement
          FROM events WHERE Id = ?`,
         [eventId],
         (err, rows) => {
@@ -137,16 +118,14 @@ const getPublishStatus = (eventId, callback) => {
         }
     );
 };
-
 // ========================
 // TEAM: Select a Problem Statement (Thread-Safe + Leader Verification)
 // ========================
-
 const selectProblemStatement = (eventId, teamId, problemStatementId, userId = null, userRole = null, callback = () => {}) => {
     // 1. Check if problem statements are published
     db.query(
-        `SELECT HackathonMode, ProblemStatementsPublished, PSSelectionDeadline, 
-                PhysicalPSMode, PhysicalPSPublished, PhysicalPSSelectionDeadline 
+        `SELECT HackathonMode, ProblemStatementsPublished, PSSelectionDeadline,
+                PhysicalPSMode, PhysicalPSPublished, PhysicalPSSelectionDeadline
          FROM events WHERE Id = ?`,
         [eventId],
         (err, evRows) => {
@@ -155,32 +134,27 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
             if (!ev) {
                 return callback({ status: 404, message: 'Event not found.' });
             }
-
             // Determine if team is participating physically or virtually
             db.query(
-                `SELECT er.ParticipationMode 
-                 FROM registered_teams rt 
-                 LEFT JOIN event_registrations er ON er.TeamId = rt.Id AND er.EventId = rt.EventId 
+                `SELECT er.ParticipationMode
+                 FROM registered_teams rt
+                 LEFT JOIN event_registrations er ON er.TeamId = rt.Id AND er.EventId = rt.EventId
                  WHERE rt.Id = ?`,
                 [teamId],
                 (tErr, tRows) => {
                     const isPhysicalTeam = tRows && tRows.length > 0 && String(tRows[0].ParticipationMode || '').toLowerCase() === 'physical';
                     const isPhysicalOnlyEvent = String(ev.HackathonMode || '').toLowerCase() === 'physical';
-
                     // For physical team/event: check PhysicalPSPublished (or fallback to ProblemStatementsPublished)
                     const isPublished = (isPhysicalTeam || isPhysicalOnlyEvent)
                         ? (Boolean(ev.PhysicalPSPublished) || Boolean(ev.ProblemStatementsPublished))
                         : Boolean(ev.ProblemStatementsPublished);
-
                     if (!isPublished) {
                         return callback({ status: 400, message: 'Problem statements are not published yet by organizers.' });
                     }
-
                     // 2. Check deadline with timezone-safe UTC normalization
                     const activeDeadline = (isPhysicalTeam || isPhysicalOnlyEvent)
                         ? (ev.PhysicalPSSelectionDeadline || ev.PSSelectionDeadline)
                         : ev.PSSelectionDeadline;
-
                     if (activeDeadline) {
                         let deadlineMs = 0;
                         if (activeDeadline instanceof Date) {
@@ -195,29 +169,25 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
                             return callback({ status: 400, message: 'Problem statement selection deadline has passed.' });
                         }
                     }
-
         // 3. Verify Team Leader authorization if userId provided and not an admin
         const proceedWithSelection = () => {
             db.getConnection((connErr, conn) => {
                 if (connErr) return callback(connErr);
-
                 conn.beginTransaction((txErr) => {
                     if (txErr) {
                         conn.release();
                         return callback(txErr);
                     }
-
                     // Check if statement exists, and count other teams already assigned to it with lock
                     const checkSql = `
                         SELECT eps.Id, eps.MaxTeams,
-                               (SELECT COUNT(*) 
-                                FROM problem_statement_selections pss 
+                               (SELECT COUNT(*)
+                                FROM problem_statement_selections pss
                                 WHERE pss.ProblemStatementId = eps.Id AND pss.TeamId != ?) AS CurrentOtherTeams
                         FROM event_problem_statements eps
                         WHERE eps.Id = ? AND eps.EventId = ?
                         FOR UPDATE
                     `;
-
                     conn.query(checkSql, [teamId, problemStatementId, eventId], (psErr, psRows) => {
                         if (psErr) {
                             return conn.rollback(() => {
@@ -225,14 +195,12 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
                                 callback(psErr);
                             });
                         }
-
                         if (!psRows || psRows.length === 0) {
                             return conn.rollback(() => {
                                 conn.release();
                                 callback({ status: 404, message: 'Problem statement not found for this event.' });
                             });
                         }
-
                         const ps = psRows[0];
                         if (ps.CurrentOtherTeams >= ps.MaxTeams) {
                             return conn.rollback(() => {
@@ -240,14 +208,12 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
                                 callback({ status: 400, message: `This problem statement has already reached its limit (${ps.MaxTeams} teams). Please select another.` });
                             });
                         }
-
                         // Upsert: Record team's selection
                         const upsertQuery = `
                             INSERT INTO problem_statement_selections (EventId, TeamId, ProblemStatementId, SelectionType)
                             VALUES (?, ?, ?, 'manual')
                             ON DUPLICATE KEY UPDATE ProblemStatementId = VALUES(ProblemStatementId), SelectionType = 'manual', SelectedAt = CURRENT_TIMESTAMP
                         `;
-
                         conn.query(upsertQuery, [eventId, teamId, problemStatementId], (insErr) => {
                             if (insErr) {
                                 return conn.rollback(() => {
@@ -255,7 +221,6 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
                                     callback(insErr);
                                 });
                             }
-
                             conn.commit((commitErr) => {
                                 conn.release();
                                 if (commitErr) return callback(commitErr);
@@ -266,7 +231,6 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
                 });
             });
         };
-
         const checkExistingSelectionThenProceed = () => {
             if (userRole === 'admin') {
                 return proceedWithSelection();
@@ -286,7 +250,6 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
                 }
             );
         };
-
         if (userId && userRole !== 'admin') {
             db.query(
                 `SELECT Id, TeamLeadUserId FROM registered_teams WHERE Id = ? AND EventId = ?`,
@@ -308,14 +271,12 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
     });
 });
 };
-
 // ========================
 // GET: Selections with Team & PS details
 // ========================
-
 const getSelectionsByEvent = (eventId, callback) => {
     const query = `
-        SELECT 
+        SELECT
             pss.Id, pss.TeamId, pss.ProblemStatementId, pss.SelectionType, pss.SelectedAt,
             t.TeamName, t.College, t.TeamSize,
             eps.ProblemCode, eps.Title AS ProblemTitle, eps.Category, eps.MaxTeams,
@@ -330,14 +291,12 @@ const getSelectionsByEvent = (eventId, callback) => {
     `;
     db.query(query, [eventId], callback);
 };
-
 // ========================
 // TEAM: Get specific team's selection
 // ========================
-
 const getTeamSelection = (eventId, teamId, callback) => {
     const query = `
-        SELECT 
+        SELECT
             pss.Id, pss.TeamId, pss.ProblemStatementId, pss.SelectionType, pss.SelectedAt,
             eps.ProblemCode, eps.Title AS ProblemTitle, eps.Description, eps.Category, eps.Theme, eps.MaxTeams
         FROM problem_statement_selections pss
@@ -349,28 +308,24 @@ const getTeamSelection = (eventId, teamId, callback) => {
         callback(null, rows[0] || null);
     });
 };
-
 // ========================
 // ADMIN: Auto-assign remaining teams
 // ========================
-
 const autoAssignRemainingTeams = (eventId, callback) => {
     // 1. Get all teams for this event that haven't selected a PS yet
     const unselectedTeamsQuery = `
         SELECT t.Id AS TeamId, t.TeamName
         FROM registered_teams t
         LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
-        WHERE t.EventId = ? 
+        WHERE t.EventId = ?
           AND (er.ParticipationMode IS NULL OR LOWER(er.ParticipationMode) = 'virtual' OR LOWER(er.ParticipationMode) = 'both')
           AND t.Id NOT IN (SELECT pss.TeamId FROM problem_statement_selections pss WHERE pss.EventId = ?)
     `;
-
     db.query(unselectedTeamsQuery, [eventId, eventId], (err, unselectedTeams) => {
         if (err) return callback(err);
         if (!unselectedTeams || unselectedTeams.length === 0) {
             return callback(null, { message: 'All teams have already selected a problem statement.', assigned: 0 });
         }
-
         // 2. Get all PS with remaining capacity
         const psQuery = `
             SELECT eps.Id, eps.MaxTeams, COUNT(pss.Id) AS CurrentCount
@@ -381,19 +336,16 @@ const autoAssignRemainingTeams = (eventId, callback) => {
             HAVING CurrentCount < eps.MaxTeams
             ORDER BY CurrentCount ASC, eps.DisplayOrder ASC
         `;
-
         db.query(psQuery, [eventId], (err2, availablePS) => {
             if (err2) return callback(err2);
             if (!availablePS || availablePS.length === 0) {
                 return callback(null, { message: 'No problem statements have remaining capacity.', assigned: 0 });
             }
-
             // Round-robin assign
             let psIndex = 0;
             let assignedCount = 0;
             const currentCounts = availablePS.map(ps => ps.CurrentCount);
             const insertValues = [];
-
             for (const team of unselectedTeams) {
                 // Find next PS with capacity
                 let found = false;
@@ -410,11 +362,9 @@ const autoAssignRemainingTeams = (eventId, callback) => {
                 }
                 if (!found) break; // No more room
             }
-
             if (insertValues.length === 0) {
                 return callback(null, { message: 'No remaining capacity for auto-assignment.', assigned: 0 });
             }
-
             const bulkInsertQuery = `
                 INSERT INTO problem_statement_selections (EventId, TeamId, ProblemStatementId, SelectionType)
                 VALUES ?
@@ -427,14 +377,12 @@ const autoAssignRemainingTeams = (eventId, callback) => {
         });
     });
 };
-
 // ========================
 // ADMIN: Reassign a team's selection
 // ========================
-
 const reassignTeamSelection = (selectionId, newProblemStatementId, callback) => {
     const query = `
-        UPDATE problem_statement_selections 
+        UPDATE problem_statement_selections
         SET ProblemStatementId = ?, SelectionType = 'admin_reassigned', SelectedAt = CURRENT_TIMESTAMP
         WHERE Id = ?
     `;
@@ -446,22 +394,18 @@ const reassignTeamSelection = (selectionId, newProblemStatementId, callback) => 
         });
     });
 };
-
 // ========================
 // ADMIN: Remove a team's selection
 // ========================
-
 const removeSelection = (selectionId, callback) => {
     db.query(`DELETE FROM problem_statement_selections WHERE Id = ?`, [selectionId], callback);
 };
-
 // ========================
 // PARTICIPANT-SUBMITTED PROBLEM STATEMENTS (Physical/Open Hackathons)
 // ========================
-
 const getParticipantStatementsByEvent = (eventId, callback) => {
     const query = `
-        SELECT 
+        SELECT
             pps.*,
             t.TeamName, t.College, t.TeamSize,
             u.UserName AS TeamLeadName, u.Email AS TeamLeadEmail, u.Mobile AS TeamLeadMobile
@@ -473,7 +417,6 @@ const getParticipantStatementsByEvent = (eventId, callback) => {
     `;
     db.query(query, [eventId], callback);
 };
-
 const getParticipantStatementByTeam = (eventId, teamId, callback) => {
     const query = `
         SELECT pps.*
@@ -485,18 +428,16 @@ const getParticipantStatementByTeam = (eventId, teamId, callback) => {
         callback(null, rows && rows.length > 0 ? rows[0] : null);
     });
 };
-
 const upsertParticipantStatement = (eventId, teamId, data, userId = null, callback = () => {}) => {
     const { ThemeName, Category, Title, Description, TechStack } = data;
     if (!Title || !Title.trim()) {
         return callback({ status: 400, message: 'Problem Statement Title is required.' });
     }
-
     const query = `
-        INSERT INTO participant_problem_statements 
+        INSERT INTO participant_problem_statements
             (EventId, TeamId, ThemeName, Category, Title, Description, TechStack, SubmittedByUserId, Status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Approved')
-        ON DUPLICATE KEY UPDATE 
+        ON DUPLICATE KEY UPDATE
             ThemeName = VALUES(ThemeName),
             Category = VALUES(Category),
             Title = VALUES(Title),
@@ -505,7 +446,6 @@ const upsertParticipantStatement = (eventId, teamId, data, userId = null, callba
             SubmittedByUserId = COALESCE(VALUES(SubmittedByUserId), SubmittedByUserId),
             UpdatedAt = CURRENT_TIMESTAMP
     `;
-
     db.query(
         query,
         [eventId, teamId, ThemeName || null, Category || 'Software', Title.trim(), Description ? Description.trim() : null, TechStack ? TechStack.trim() : null, userId || null],
@@ -515,17 +455,15 @@ const upsertParticipantStatement = (eventId, teamId, data, userId = null, callba
         }
     );
 };
-
 const updateParticipantStatementStatus = (id, data, callback) => {
     const { Status, AdminRemarks } = data;
     const query = `
-        UPDATE participant_problem_statements 
+        UPDATE participant_problem_statements
         SET Status = ?, AdminRemarks = ?, UpdatedAt = CURRENT_TIMESTAMP
         WHERE Id = ?
     `;
     db.query(query, [Status || 'Approved', AdminRemarks || null, id], callback);
 };
-
 module.exports = {
     getAllThemes,
     createTheme,

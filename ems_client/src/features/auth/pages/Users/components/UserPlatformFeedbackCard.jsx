@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Star, Send, CheckCircle2, MessageSquare, Laptop, ThumbsUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
-
 export default function UserPlatformFeedbackCard({ user }) {
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
@@ -11,14 +10,12 @@ export default function UserPlatformFeedbackCard({ user }) {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
-
   const categories = [
     'Platform UI/UX',
     'Feature Request',
     'Speed & Performance',
     'General Experience',
   ];
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!comments.trim()) {
@@ -27,7 +24,6 @@ export default function UserPlatformFeedbackCard({ user }) {
     }
     setError('');
     setLoading(true);
-
     try {
       const response = await fetch(`${API_BASE_URL}/api/platform-feedback`, {
         method: 'POST',
@@ -42,12 +38,10 @@ export default function UserPlatformFeedbackCard({ user }) {
           comments: comments.trim(),
         }),
       });
-
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message || 'Failed to submit review');
       }
-
       setSubmitted(true);
       setComments('');
     } catch (err) {
@@ -56,7 +50,6 @@ export default function UserPlatformFeedbackCard({ user }) {
       setLoading(false);
     }
   };
-
   return (
     <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 p-5 sm:p-6 shadow-sm overflow-hidden relative">
       <div className="flex items-center justify-between gap-3 mb-4">
@@ -73,12 +66,10 @@ export default function UserPlatformFeedbackCard({ user }) {
             </p>
           </div>
         </div>
-
         <span className="hidden sm:inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
           Super Admin Review
         </span>
       </div>
-
       <AnimatePresence mode="wait">
         {submitted ? (
           <motion.div
@@ -135,7 +126,6 @@ export default function UserPlatformFeedbackCard({ user }) {
                 </span>
               </div>
             </div>
-
             {/* Category selection */}
             <div className="flex flex-wrap gap-2">
               {categories.map((cat) => (
@@ -153,7 +143,6 @@ export default function UserPlatformFeedbackCard({ user }) {
                 </button>
               ))}
             </div>
-
             {/* Comment field */}
             <div>
               <textarea
@@ -169,7 +158,6 @@ export default function UserPlatformFeedbackCard({ user }) {
                 {error && <span className="text-red-500 font-medium">{error}</span>}
               </div>
             </div>
-
             {/* Submit button */}
             <div className="flex justify-end">
               <button

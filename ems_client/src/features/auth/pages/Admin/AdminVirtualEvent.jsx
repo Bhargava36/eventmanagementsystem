@@ -54,7 +54,6 @@ import {
 } from 'lucide-react';
 import useToast from '../../../../Hooks/useToast';
 import { getEventTypeInfo } from '../../../../lib/utils';
-
 function formatDate(date) {
   if (!date) return 'Not set';
   try {
@@ -69,7 +68,6 @@ function formatDate(date) {
     return date;
   }
 }
-
 function formatTime(date) {
   if (!date) return '';
   try {
@@ -84,12 +82,10 @@ function formatTime(date) {
     return '';
   }
 }
-
 export default function AdminVirtualEvent() {
   const toast = useToast();
   const storedAdmin = JSON.parse(localStorage.getItem('admin') || '{}');
   const [currentEventId, setCurrentEventId] = useState(storedAdmin?.EventId || null);
-
   const [event, setEvent] = useState(null);
   const [teams, setTeams] = useState([]);
   const [timelines, setTimelines] = useState([]);
@@ -99,10 +95,8 @@ export default function AdminVirtualEvent() {
   const [savingMeetUrl, setSavingMeetUrl] = useState(false);
   const [copiedMeet, setCopiedMeet] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-
   // Main Page Folder Tab ('control' | 'themes' | 'statements' | 'selections' | 'settings' | 'teams' | 'schedule')
   const [activeTab, setActiveTab] = useState('control');
-
   // Themes State
   const [themes, setThemes] = useState([]);
   const [themesLoading, setThemesLoading] = useState(false);
@@ -114,7 +108,6 @@ export default function AdminVirtualEvent() {
     DisplayOrder: 0
   });
   const [themeSaving, setThemeSaving] = useState(false);
-
   // Problem Statements State
   const [problemStatements, setProblemStatements] = useState([]);
   const [selections, setSelections] = useState([]);
@@ -125,7 +118,6 @@ export default function AdminVirtualEvent() {
     PSSelectionDeadline: null,
     PSMaxTeamsPerStatement: 5
   });
-
   // PS CRUD Form
   const [showPsForm, setShowPsForm] = useState(false);
   const [editingPsId, setEditingPsId] = useState(null);
@@ -142,16 +134,13 @@ export default function AdminVirtualEvent() {
   const [autoAssigning, setAutoAssigning] = useState(false);
   const [reassignModal, setReassignModal] = useState({ open: false, selection: null, selectedPsId: '' });
   const [reassigning, setReassigning] = useState(false);
-
   // Grouping / filtering
   const [psThemeFilter, setPsThemeFilter] = useState('ALL');
   const [expandedThemes, setExpandedThemes] = useState({});
-
   // PS Settings Form - Selection Timer in minutes
   const [deadlineMinutes, setDeadlineMinutes] = useState(15);
   const [adminTimerLeft, setAdminTimerLeft] = useState(null);
   const [maxTeamsInput, setMaxTeamsInput] = useState(5);
-
   // Live countdown for admin
   useEffect(() => {
     const deadlineStr = publishStatus?.PSSelectionDeadline;
@@ -159,7 +148,6 @@ export default function AdminVirtualEvent() {
       setAdminTimerLeft(null);
       return;
     }
-
     let targetDate;
     if (deadlineStr instanceof Date) {
       targetDate = deadlineStr.getTime();
@@ -169,12 +157,10 @@ export default function AdminVirtualEvent() {
       targetDate = new Date(normalized).getTime();
       if (isNaN(targetDate)) targetDate = new Date(s).getTime();
     }
-
     if (isNaN(targetDate)) {
       setAdminTimerLeft(null);
       return;
     }
-
     const updateTimer = () => {
       const now = Date.now();
       const diff = targetDate - now;
@@ -187,12 +173,10 @@ export default function AdminVirtualEvent() {
         setAdminTimerLeft({ expired: false, hours, minutes, seconds });
       }
     };
-
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [publishStatus?.PSSelectionDeadline]);
-
   useEffect(() => {
     const init = async () => {
       let eid = currentEventId;
@@ -212,7 +196,6 @@ export default function AdminVirtualEvent() {
           console.error('Failed to resolve admin event:', e);
         }
       }
-
       if (eid) {
         loadData(eid);
       } else {
@@ -221,7 +204,6 @@ export default function AdminVirtualEvent() {
     };
     init();
   }, []);
-
   const loadData = async (eid) => {
     try {
       setLoading(true);
@@ -230,20 +212,17 @@ export default function AdminVirtualEvent() {
         fetch(`${API_BASE_URL}/api/teams/event/${eid}`),
         fetch(`${API_BASE_URL}/api/event_timelines/event/${eid}`)
       ]);
-
       if (evRes.status === 'fulfilled' && evRes.value.ok) {
         const evData = await evRes.value.json();
         const evObj = Array.isArray(evData) ? evData[0] : (evData.event || evData);
         setEvent(evObj);
         setMeetUrlInput(evObj.VirtualMeetUrl || '');
       }
-
       if (teamsRes.status === 'fulfilled' && teamsRes.value.ok) {
         const tData = await teamsRes.value.json();
         const list = Array.isArray(tData) ? tData : (tData.teams || []);
         setTeams(list);
       }
-
       if (timeRes.status === 'fulfilled' && timeRes.value.ok) {
         const tlData = await timeRes.value.json();
         const list = Array.isArray(tlData) ? tlData : (tlData.timelines || []);
@@ -256,7 +235,6 @@ export default function AdminVirtualEvent() {
       setLoading(false);
     }
   };
-
   // Load Problem Statement & Themes Data
   const loadPSData = useCallback(async () => {
     if (!currentEventId) return;
@@ -268,17 +246,14 @@ export default function AdminVirtualEvent() {
         fetch(`${API_BASE_URL}/api/problem-statements/event/${currentEventId}/publish-status`),
         fetch(`${API_BASE_URL}/api/problem-statements/event/${currentEventId}/themes`)
       ]);
-
       if (psRes.status === 'fulfilled' && psRes.value.ok) {
         const data = await psRes.value.json();
         setProblemStatements(data.problemStatements || []);
       }
-
       if (selRes.status === 'fulfilled' && selRes.value.ok) {
         const data = await selRes.value.json();
         setSelections(data.selections || []);
       }
-
       if (statusRes.status === 'fulfilled' && statusRes.value.ok) {
         const data = await statusRes.value.json();
         setPublishStatus(data);
@@ -290,7 +265,6 @@ export default function AdminVirtualEvent() {
         }
         setMaxTeamsInput(data.PSMaxTeamsPerStatement || 5);
       }
-
       if (themesRes.status === 'fulfilled' && themesRes.value.ok) {
         const data = await themesRes.value.json();
         setThemes(data.themes || []);
@@ -301,30 +275,24 @@ export default function AdminVirtualEvent() {
       setPsLoading(false);
     }
   }, [currentEventId]);
-
   useEffect(() => {
     if (currentEventId) {
       loadPSData();
     }
   }, [currentEventId, loadPSData]);
-
   // Real-time updates via WebSocket (Auto-sync when teams make selections or admin actions take place)
   useEffect(() => {
     if (!currentEventId) return;
-
     let socket = null;
     let reconnectTimer = null;
     let isMounted = true;
-
     const connectWS = () => {
       try {
         const wsBase = (API_BASE_URL || 'http://localhost:3000').replace(/^http/, 'ws');
         socket = new WebSocket(wsBase);
-
         socket.onopen = () => {
           socket.send(JSON.stringify({ type: 'JOIN_EVENT', eventId: currentEventId }));
         };
-
         socket.onmessage = (msgEvent) => {
           try {
             const data = JSON.parse(msgEvent.data);
@@ -335,13 +303,11 @@ export default function AdminVirtualEvent() {
             // Ignore parse error
           }
         };
-
         socket.onclose = () => {
           if (isMounted) {
             reconnectTimer = setTimeout(connectWS, 3000);
           }
         };
-
         socket.onerror = () => {
           socket.close();
         };
@@ -349,9 +315,7 @@ export default function AdminVirtualEvent() {
         console.warn('WebSocket connection failed:', e);
       }
     };
-
     connectWS();
-
     return () => {
       isMounted = false;
       if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -366,7 +330,6 @@ export default function AdminVirtualEvent() {
       }
     };
   }, [currentEventId, loadPSData]);
-
   const handleUpdateStatus = async (newStatus) => {
     if (!currentEventId) return;
     try {
@@ -376,19 +339,16 @@ export default function AdminVirtualEvent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ VirtualStatus: newStatus })
       });
-
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.message || 'Status update failed');
       }
-
       const data = await res.json();
       setEvent((prev) => ({
         ...prev,
         VirtualStatus: newStatus,
         VirtualStartedAt: data.event?.VirtualStartedAt || (newStatus === 'LIVE' ? new Date().toISOString() : prev?.VirtualStartedAt)
       }));
-
       if (newStatus === 'LIVE') {
         toast.success('Virtual Event is now LIVE! Participants can join from the event page.');
       } else if (newStatus === 'COMPLETED') {
@@ -403,7 +363,6 @@ export default function AdminVirtualEvent() {
       setActionLoading(false);
     }
   };
-
   const handleSaveMeetUrl = async () => {
     if (!currentEventId) return;
     try {
@@ -413,12 +372,10 @@ export default function AdminVirtualEvent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ VirtualMeetUrl: meetUrlInput.trim() })
       });
-
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.message || 'Failed to save meeting URL');
       }
-
       setEvent((prev) => ({ ...prev, VirtualMeetUrl: meetUrlInput.trim() }));
       toast.success('Virtual meeting link updated successfully!');
     } catch (err) {
@@ -428,7 +385,6 @@ export default function AdminVirtualEvent() {
       setSavingMeetUrl(false);
     }
   };
-
   const copyMeetLink = () => {
     if (!meetUrlInput) return;
     navigator.clipboard.writeText(meetUrlInput);
@@ -436,17 +392,14 @@ export default function AdminVirtualEvent() {
     toast.success('Meeting link copied to clipboard!');
     setTimeout(() => setCopiedMeet(false), 2000);
   };
-
   // =============================================
   // THEME MANAGEMENT HANDLERS
   // =============================================
-
   const resetThemeForm = () => {
     setThemeForm({ ThemeName: '', Description: '', DisplayOrder: 0 });
     setEditingThemeId(null);
     setShowThemeForm(false);
   };
-
   const handleSaveTheme = async () => {
     if (!themeForm.ThemeName.trim()) {
       toast.error('Theme Name is required');
@@ -458,18 +411,15 @@ export default function AdminVirtualEvent() {
         ? `${API_BASE_URL}/api/problem-statements/themes/${editingThemeId}`
         : `${API_BASE_URL}/api/problem-statements/event/${currentEventId}/themes`;
       const method = editingThemeId ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(themeForm)
       });
-
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.message || 'Failed to save theme');
       }
-
       toast.success(editingThemeId ? 'Theme updated successfully!' : 'Theme added successfully!');
       resetThemeForm();
       loadPSData();
@@ -479,7 +429,6 @@ export default function AdminVirtualEvent() {
       setThemeSaving(false);
     }
   };
-
   const handleEditTheme = (theme) => {
     setThemeForm({
       ThemeName: theme.ThemeName,
@@ -489,7 +438,6 @@ export default function AdminVirtualEvent() {
     setEditingThemeId(theme.Id);
     setShowThemeForm(true);
   };
-
   const handleDeleteTheme = async (themeId, themeName) => {
     if (!confirm(`Are you sure you want to delete theme "${themeName}"?`)) return;
     try {
@@ -501,7 +449,6 @@ export default function AdminVirtualEvent() {
       toast.error('Failed to delete theme');
     }
   };
-
   // Quick action: Add Problem Statement directly to a specific theme
   const handleAddStatementToTheme = (themeName) => {
     resetPsForm();
@@ -509,11 +456,9 @@ export default function AdminVirtualEvent() {
     setShowPsForm(true);
     setActiveTab('statements');
   };
-
   // =============================================
   // PROBLEM STATEMENT HANDLERS
   // =============================================
-
   const handlePublishTheme = async (publish) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${currentEventId}/publish-theme`, {
@@ -528,7 +473,6 @@ export default function AdminVirtualEvent() {
       toast.error('Failed to update theme status');
     }
   };
-
   const handlePublishPS = async (publish) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${currentEventId}/publish-statements`, {
@@ -543,7 +487,6 @@ export default function AdminVirtualEvent() {
       toast.error('Failed to update problem statement status');
     }
   };
-
   const handleSetDeadlineByMinutes = async (mins) => {
     if (!currentEventId) return;
     const minutesToUse = Number(mins !== undefined ? mins : deadlineMinutes);
@@ -566,7 +509,6 @@ export default function AdminVirtualEvent() {
       toast.error('Failed to set deadline timer');
     }
   };
-
   const handleClearDeadline = async () => {
     if (!currentEventId) return;
     try {
@@ -582,7 +524,6 @@ export default function AdminVirtualEvent() {
       toast.error('Failed to clear timer');
     }
   };
-
   const handleSaveMaxTeams = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${currentEventId}/max-teams`, {
@@ -597,13 +538,11 @@ export default function AdminVirtualEvent() {
       toast.error('Failed to set max teams');
     }
   };
-
   const resetPsForm = () => {
     setPsForm({ ProblemCode: '', Title: '', Description: '', Category: '', Theme: '', MaxTeams: 5, DisplayOrder: 0 });
     setEditingPsId(null);
     setShowPsForm(false);
   };
-
   const handleSaveProblemStatement = async () => {
     if (!psForm.ProblemCode.trim() || !psForm.Title.trim()) {
       toast.error('Problem Code and Title are required');
@@ -615,18 +554,15 @@ export default function AdminVirtualEvent() {
         ? `${API_BASE_URL}/api/problem-statements/${editingPsId}`
         : `${API_BASE_URL}/api/problem-statements/event/${currentEventId}`;
       const method = editingPsId ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(psForm)
       });
-
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.message || 'Failed');
       }
-
       toast.success(editingPsId ? 'Problem statement updated!' : 'Problem statement created!');
       resetPsForm();
       loadPSData();
@@ -636,7 +572,6 @@ export default function AdminVirtualEvent() {
       setPsSaving(false);
     }
   };
-
   const handleEditPS = (ps) => {
     setPsForm({
       ProblemCode: ps.ProblemCode,
@@ -650,7 +585,6 @@ export default function AdminVirtualEvent() {
     setEditingPsId(ps.Id);
     setShowPsForm(true);
   };
-
   const handleDeletePS = async (id) => {
     if (!confirm('Delete this problem statement? Associated team selections will also be removed.')) return;
     try {
@@ -662,7 +596,6 @@ export default function AdminVirtualEvent() {
       toast.error('Failed to delete');
     }
   };
-
   const handleAutoAssign = async () => {
     if (!confirm('Auto-assign problem statements to all unselected virtual teams?')) return;
     try {
@@ -680,7 +613,6 @@ export default function AdminVirtualEvent() {
       setAutoAssigning(false);
     }
   };
-
   const handleOpenReassign = (sel) => {
     setReassignModal({
       open: true,
@@ -688,7 +620,6 @@ export default function AdminVirtualEvent() {
       selectedPsId: String(sel.ProblemStatementId || '')
     });
   };
-
   const handleConfirmReassign = async () => {
     if (!reassignModal.selection || !reassignModal.selectedPsId) return;
     try {
@@ -709,7 +640,6 @@ export default function AdminVirtualEvent() {
       setReassigning(false);
     }
   };
-
   const handleRemoveSelection = async (selId, teamName) => {
     if (!confirm(`Remove selection for "${teamName}"?`)) return;
     try {
@@ -721,7 +651,6 @@ export default function AdminVirtualEvent() {
       toast.error('Failed to remove selection');
     }
   };
-
   // Group problem statements by Theme
   const statementsByTheme = useMemo(() => {
     const map = {};
@@ -729,27 +658,22 @@ export default function AdminVirtualEvent() {
     themes.forEach(t => {
       map[t.ThemeName] = [];
     });
-
     // Populate problem statements
     problemStatements.forEach(ps => {
       const themeKey = ps.Theme?.trim() || 'General / Uncategorized';
       if (!map[themeKey]) map[themeKey] = [];
       map[themeKey].push(ps);
     });
-
     return map;
   }, [themes, problemStatements]);
-
   // Derived Values
   const isLive = event?.VirtualStatus === 'LIVE';
   const isCompleted = event?.VirtualStatus === 'COMPLETED';
   const isNotStarted = !isLive && !isCompleted;
-
   const virtualTeams = teams.filter((t) => {
     const mode = t.ParticipationMode || '';
     return mode.toLowerCase() === 'virtual' || (!mode && event?.HackathonMode === 'Virtual');
   });
-
   const filteredTeams = virtualTeams.filter((t) => {
     const q = searchQuery.toLowerCase();
     return (
@@ -759,17 +683,14 @@ export default function AdminVirtualEvent() {
       (t.College && t.College.toLowerCase().includes(q))
     );
   });
-
   const totalVirtualParticipants = virtualTeams.reduce(
     (acc, t) => acc + Number(t.MemberCount || t.TeamSize || 1),
     0
   );
-
   const typeInfo = getEventTypeInfo(event?.EventType || storedAdmin?.EventType);
   const themePublished = !!publishStatus.ThemePublished;
   const psPublished = !!publishStatus.ProblemStatementsPublished;
   const unselectedTeamCount = Math.max(0, virtualTeams.length - selections.length);
-
   if (loading) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
@@ -778,7 +699,6 @@ export default function AdminVirtualEvent() {
       </div>
     );
   }
-
   if (!currentEventId || !event) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
@@ -790,7 +710,6 @@ export default function AdminVirtualEvent() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-slate-50/60 dark:bg-black p-4 sm:p-6 md:p-8 space-y-6">
       {/* Top Header */}
@@ -801,11 +720,9 @@ export default function AdminVirtualEvent() {
               <Radio className="h-3.5 w-3.5 animate-pulse" />
               {typeInfo.isWorkshop ? 'Online Workshop Control Room' : typeInfo.isSeminar ? 'Virtual Broadcast Room' : 'Virtual Event Control Room'}
             </div>
-
             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${typeInfo.badgeColor}`}>
               {typeInfo.label}
             </span>
-
             {(typeInfo.isHackathon || typeInfo.isCodingContest) && (
               <>
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition ${
@@ -816,7 +733,6 @@ export default function AdminVirtualEvent() {
                   {themePublished ? <Eye className="h-3 w-3 text-emerald-500" /> : <EyeOff className="h-3 w-3 text-slate-400" />}
                   <span>Themes: {themePublished ? 'Published' : 'Draft'}</span>
                 </span>
-
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition ${
                   psPublished
                     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-500/20'
@@ -828,7 +744,6 @@ export default function AdminVirtualEvent() {
               </>
             )}
           </div>
-
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             {event.EventName}
           </h1>
@@ -836,7 +751,6 @@ export default function AdminVirtualEvent() {
             Real-time management for virtual hackathon rooms, live Google Meet sessions, themes, and problem statement distribution.
           </p>
         </div>
-
         {/* Status Pill & Refresh */}
         <div className="flex items-center gap-3">
           {isLive ? (
@@ -858,7 +772,6 @@ export default function AdminVirtualEvent() {
               <span>Not Started Yet</span>
             </div>
           )}
-
           <button
             type="button"
             onClick={() => { loadData(currentEventId); loadPSData(); }}
@@ -869,15 +782,14 @@ export default function AdminVirtualEvent() {
           </button>
         </div>
       </div>
-
       {/* Folder Tabs Navigation for Entire Virtual Event Management */}
       <div className="space-y-0">
         <div className="flex items-end gap-1.5 overflow-x-auto scrollbar-none relative z-10 -mb-px">
           {[
-            { 
-              key: 'control', 
-              label: typeInfo.isSeminar ? 'Broadcast Room & Meet' : (typeInfo.isWorkshop ? 'Workshop Room & Meet' : 'Control Room & Meet'), 
-              icon: Radio 
+            {
+              key: 'control',
+              label: typeInfo.isSeminar ? 'Broadcast Room & Meet' : (typeInfo.isWorkshop ? 'Workshop Room & Meet' : 'Control Room & Meet'),
+              icon: Radio
             },
             ...((typeInfo.isHackathon || typeInfo.isCodingContest) ? [
               { key: 'themes', label: `Themes (${themes.length})`, icon: Layers },
@@ -909,7 +821,6 @@ export default function AdminVirtualEvent() {
                 ) : (
                   <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200/60 dark:hover:bg-zinc-800/60 transition" />
                 )}
-
                 <span className={`relative z-20 flex items-center gap-2 ${
                   isActive
                     ? 'text-slate-900 dark:text-white'
@@ -925,10 +836,8 @@ export default function AdminVirtualEvent() {
             );
           })}
         </div>
-
         {/* Connected Card Container for the entire page */}
         <div className="rounded-3xl rounded-tl-none bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm relative z-0 overflow-hidden p-6 sm:p-8">
-
           {/* ============================================================ */}
           {/* TAB 1: CONTROL ROOM & LIVE MEETING LINK */}
           {/* ============================================================ */}
@@ -968,7 +877,6 @@ export default function AdminVirtualEvent() {
                       )}
                     </p>
                   </div>
-
                   <div className="flex flex-wrap items-center gap-3">
                     {isNotStarted ? (
                       <button
@@ -995,7 +903,6 @@ export default function AdminVirtualEvent() {
                           <StopCircle className="h-4 w-4" />
                           <span>Conclude Event</span>
                         </button>
-
                         <button
                           type="button"
                           disabled={actionLoading}
@@ -1020,7 +927,6 @@ export default function AdminVirtualEvent() {
                   </div>
                 </div>
               </div>
-
               {/* Google Meet & Quick Stats */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Google Meet Configuration */}
@@ -1036,7 +942,6 @@ export default function AdminVirtualEvent() {
                       </span>
                     )}
                   </div>
-
                   <div className="space-y-3">
                     <label className="text-xs text-slate-500 dark:text-zinc-400">
                       Provide the meeting link where mentors, juries, and participants will connect.
@@ -1052,7 +957,6 @@ export default function AdminVirtualEvent() {
                           className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
                         />
                       </div>
-
                       <button
                         type="button"
                         disabled={savingMeetUrl}
@@ -1062,7 +966,6 @@ export default function AdminVirtualEvent() {
                         {savingMeetUrl ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                         <span>Save Link</span>
                       </button>
-
                       {event.VirtualMeetUrl && (
                         <>
                           <button
@@ -1087,14 +990,12 @@ export default function AdminVirtualEvent() {
                     </div>
                   </div>
                 </div>
-
                 {/* Quick Virtual Track Overview */}
                 <div className="bg-slate-50/70 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800 p-6 rounded-3xl shadow-xs space-y-4">
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-emerald-500" />
                     Virtual Track Stats
                   </h3>
-
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-4 rounded-2xl bg-white dark:bg-black border border-slate-200/80 dark:border-zinc-800">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Virtual Teams</span>
@@ -1105,7 +1006,6 @@ export default function AdminVirtualEvent() {
                       <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{totalVirtualParticipants}</p>
                     </div>
                   </div>
-
                   <div className="space-y-2 text-xs text-slate-600 dark:text-zinc-300 border-t border-slate-200/60 dark:border-zinc-800 pt-3">
                     <div className="flex justify-between">
                       <span className="text-slate-400">Virtual Start Date:</span>
@@ -1126,7 +1026,6 @@ export default function AdminVirtualEvent() {
               </div>
             </div>
           )}
-
           {/* ============================================================ */}
           {/* TAB 2: THEMES & DOMAINS MANAGEMENT */}
           {/* ============================================================ */}
@@ -1142,7 +1041,6 @@ export default function AdminVirtualEvent() {
                   Define overarching domains (e.g. AI/ML, Web3, FinTech). You can attach multiple problem statements to each theme.
                 </p>
               </div>
-
               <button
                 type="button"
                 onClick={() => { resetThemeForm(); setShowThemeForm(true); }}
@@ -1152,7 +1050,6 @@ export default function AdminVirtualEvent() {
                 <span>Add New Theme</span>
               </button>
             </div>
-
             {/* Theme Form (Modal/Inline) */}
             <AnimatePresence>
               {showThemeForm && (
@@ -1171,7 +1068,6 @@ export default function AdminVirtualEvent() {
                       <X className="h-4 w-4 text-slate-400" />
                     </button>
                   </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block mb-1">
@@ -1185,7 +1081,6 @@ export default function AdminVirtualEvent() {
                         className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition"
                       />
                     </div>
-
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block mb-1">
                         Display Order
@@ -1198,7 +1093,6 @@ export default function AdminVirtualEvent() {
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block mb-1">
                       Theme Description
@@ -1211,7 +1105,6 @@ export default function AdminVirtualEvent() {
                       className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition"
                     />
                   </div>
-
                   <div className="flex items-center justify-end gap-2 pt-1">
                     <button
                       type="button"
@@ -1233,7 +1126,6 @@ export default function AdminVirtualEvent() {
                 </motion.div>
               )}
             </AnimatePresence>
-
             {/* Themes Grid */}
             {themes.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1255,16 +1147,13 @@ export default function AdminVirtualEvent() {
                             {statementsForTheme.length} {statementsForTheme.length === 1 ? 'Statement' : 'Statements'}
                           </span>
                         </div>
-
                         <h4 className="text-base font-bold text-slate-900 dark:text-white">
                           {theme.ThemeName}
                         </h4>
-
                         <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed line-clamp-3">
                           {theme.Description || 'No description provided.'}
                         </p>
                       </div>
-
                       {/* Theme Actions */}
                       <div className="pt-3 border-t border-slate-100 dark:border-zinc-800 space-y-2">
                         <button
@@ -1275,7 +1164,6 @@ export default function AdminVirtualEvent() {
                           <Plus className="h-3.5 w-3.5" />
                           <span>Add Problem Statement Here</span>
                         </button>
-
                         <div className="flex items-center justify-end gap-1.5 pt-1">
                           <button
                             type="button"
@@ -1310,7 +1198,6 @@ export default function AdminVirtualEvent() {
             )}
           </div>
         )}
-
         {/* ============================================================ */}
         {/* TAB 3: PROBLEM STATEMENTS ORGANIZED BY THEME */}
         {/* ============================================================ */}
@@ -1326,7 +1213,6 @@ export default function AdminVirtualEvent() {
                   Organized under official event themes.
                 </p>
               </div>
-
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -1338,7 +1224,6 @@ export default function AdminVirtualEvent() {
                 </button>
               </div>
             </div>
-
             {/* PS Form (Inline) */}
             <AnimatePresence>
               {showPsForm && (
@@ -1357,7 +1242,6 @@ export default function AdminVirtualEvent() {
                       <X className="h-4 w-4 text-slate-400" />
                     </button>
                   </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block mb-1">
@@ -1371,7 +1255,6 @@ export default function AdminVirtualEvent() {
                         className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition"
                       />
                     </div>
-
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block mb-1">
                         Theme / Track *
@@ -1392,7 +1275,6 @@ export default function AdminVirtualEvent() {
                         </datalist>
                       </div>
                     </div>
-
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block mb-1">
                         Category / Domain
@@ -1406,7 +1288,6 @@ export default function AdminVirtualEvent() {
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block mb-1">
                       Problem Statement Title *
@@ -1419,7 +1300,6 @@ export default function AdminVirtualEvent() {
                       className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition"
                     />
                   </div>
-
                   <div>
                     <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block mb-1">
                       Description & Deliverables
@@ -1432,7 +1312,6 @@ export default function AdminVirtualEvent() {
                       className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition"
                     />
                   </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block mb-1">
@@ -1447,7 +1326,6 @@ export default function AdminVirtualEvent() {
                         className="w-full px-3 py-2 rounded-xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition"
                       />
                     </div>
-
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 block mb-1">
                         Display Order
@@ -1460,7 +1338,6 @@ export default function AdminVirtualEvent() {
                       />
                     </div>
                   </div>
-
                   <div className="flex items-center justify-end gap-2 pt-2">
                     <button
                       type="button"
@@ -1482,7 +1359,6 @@ export default function AdminVirtualEvent() {
                 </motion.div>
               )}
             </AnimatePresence>
-
             {/* STATEMENTS GROUPED UNDER EACH THEME */}
             <div className="space-y-6">
               {Object.keys(statementsByTheme).map((themeName) => {
@@ -1506,7 +1382,6 @@ export default function AdminVirtualEvent() {
                           </span>
                         </div>
                       </div>
-
                       <button
                         type="button"
                         onClick={() => handleAddStatementToTheme(themeName)}
@@ -1516,7 +1391,6 @@ export default function AdminVirtualEvent() {
                         <span>Add Statement under this theme</span>
                       </button>
                     </div>
-
                     {list.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {list.map((ps) => {
@@ -1539,21 +1413,17 @@ export default function AdminVirtualEvent() {
                                     </span>
                                   )}
                                 </div>
-
                                 <h5 className="font-bold text-sm text-slate-900 dark:text-white leading-snug">
                                   {ps.Title}
                                 </h5>
-
                                 <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
                                   {ps.Description || 'No description.'}
                                 </p>
                               </div>
-
                               <div className="pt-2 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-between text-xs">
                                 <span className={`font-semibold ${isFull ? 'text-rose-500' : 'text-slate-500 dark:text-zinc-400'}`}>
                                   {count} / {max} teams selected {isFull && '(Full)'}
                                 </span>
-
                                 <div className="flex items-center gap-1">
                                   <button
                                     type="button"
@@ -1588,7 +1458,6 @@ export default function AdminVirtualEvent() {
             </div>
           </div>
         )}
-
         {/* ============================================================ */}
         {/* TAB 4: TEAM SELECTIONS LIST & AUTO-ASSIGN */}
         {/* ============================================================ */}
@@ -1605,7 +1474,6 @@ export default function AdminVirtualEvent() {
                   {selections.length} teams have selected • {unselectedTeamCount} teams pending
                 </p>
               </div>
-
               {unselectedTeamCount > 0 && (
                 <button
                   type="button"
@@ -1618,7 +1486,6 @@ export default function AdminVirtualEvent() {
                 </button>
               )}
             </div>
-
             {/* Selections Table */}
             {selections.length > 0 ? (
               <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-zinc-800">
@@ -1747,7 +1614,6 @@ export default function AdminVirtualEvent() {
             )}
           </div>
         )}
-
         {/* ============================================================ */}
         {/* TAB 5: PUBLISH WORKFLOW & SELECTION SETTINGS */}
         {/* ============================================================ */}
@@ -1769,7 +1635,6 @@ export default function AdminVirtualEvent() {
                     </p>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => handlePublishTheme(!themePublished)}
@@ -1783,7 +1648,6 @@ export default function AdminVirtualEvent() {
                 </button>
               </div>
             </div>
-
             {/* Step 2: Problem Statements Publishing */}
             <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-3">
               <div className="flex items-center justify-between sm:flex-row flex-col gap-3">
@@ -1802,7 +1666,6 @@ export default function AdminVirtualEvent() {
                     </p>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   disabled={!themePublished}
@@ -1819,7 +1682,6 @@ export default function AdminVirtualEvent() {
                 </button>
               </div>
             </div>
-
             {/* Selection Deadline Setting in Minutes */}
             <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1832,7 +1694,6 @@ export default function AdminVirtualEvent() {
                     Set timer duration in minutes. Participants will see a live ticking countdown badge in their dashboard.
                   </p>
                 </div>
-
                 {adminTimerLeft && !adminTimerLeft.expired && (
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-black animate-pulse">
                     <Timer className="h-3.5 w-3.5" />
@@ -1848,7 +1709,6 @@ export default function AdminVirtualEvent() {
                   </div>
                 )}
               </div>
-
               {/* Expired & Unassigned Teams Callout */}
               {adminTimerLeft && adminTimerLeft.expired && unselectedTeamCount > 0 && (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400">
@@ -1872,7 +1732,6 @@ export default function AdminVirtualEvent() {
                   </button>
                 </div>
               )}
-
               {/* Quick Minutes Preset Buttons */}
               <div className="flex items-center gap-2 flex-wrap pt-1">
                 <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Quick Presets:</span>
@@ -1894,7 +1753,6 @@ export default function AdminVirtualEvent() {
                   </button>
                 ))}
               </div>
-
               {/* Custom Minutes Input & Action */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
                 <div className="flex items-center gap-2">
@@ -1909,7 +1767,6 @@ export default function AdminVirtualEvent() {
                   />
                   <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Minutes</span>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => handleSetDeadlineByMinutes(deadlineMinutes)}
@@ -1917,7 +1774,6 @@ export default function AdminVirtualEvent() {
                 >
                   Start Timer ({deadlineMinutes} Min)
                 </button>
-
                 {publishStatus?.PSSelectionDeadline && (
                   <button
                     type="button"
@@ -1929,7 +1785,6 @@ export default function AdminVirtualEvent() {
                 )}
               </div>
             </div>
-
             {/* Max Teams Per Statement Limit */}
             <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 space-y-3">
               <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1959,7 +1814,6 @@ export default function AdminVirtualEvent() {
             </div>
           </div>
         )}
-
         {/* ============================================================ */}
         {/* TAB 6: REGISTERED VIRTUAL TEAMS */}
         {/* ============================================================ */}
@@ -1975,7 +1829,6 @@ export default function AdminVirtualEvent() {
                   Teams registered with Participation Mode set to Virtual or Both ({filteredTeams.length} of {virtualTeams.length} shown)
                 </p>
               </div>
-
               <div className="relative min-w-[240px]">
                 <Search className="absolute left-3.5 top-3 h-3.5 w-3.5 text-slate-400" />
                 <input
@@ -1987,7 +1840,6 @@ export default function AdminVirtualEvent() {
                 />
               </div>
             </div>
-
             {filteredTeams.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-500 dark:text-zinc-400 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800">
                 No virtual teams found matching your search.
@@ -2051,7 +1903,6 @@ export default function AdminVirtualEvent() {
             )}
           </div>
         )}
-
         {/* ============================================================ */}
         {/* TAB 7: SCHEDULE & MILESTONES */}
         {/* ============================================================ */}
@@ -2071,7 +1922,6 @@ export default function AdminVirtualEvent() {
                 {timelines.length} Milestones
               </span>
             </div>
-
             {timelines.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
                 {timelines.map((tl, index) => (
@@ -2097,7 +1947,6 @@ export default function AdminVirtualEvent() {
             )}
           </div>
         )}
-
         </div>
       </div>
       {/* Admin Reassign Problem Statement Modal */}
@@ -2133,7 +1982,6 @@ export default function AdminVirtualEvent() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-
               <div className="space-y-3 pt-1">
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 text-xs">
                   <span className="font-bold text-slate-400 uppercase text-[10px] tracking-wider block mb-0.5">Currently Assigned:</span>
@@ -2141,7 +1989,6 @@ export default function AdminVirtualEvent() {
                     {reassignModal.selection.ProblemCode}: {reassignModal.selection.ProblemTitle}
                   </p>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1.5">
                     Select New Problem Statement
@@ -2160,7 +2007,6 @@ export default function AdminVirtualEvent() {
                   </select>
                 </div>
               </div>
-
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800/80">
                 <button
                   type="button"

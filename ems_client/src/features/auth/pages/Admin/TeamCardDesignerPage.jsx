@@ -4,11 +4,9 @@ import { Users, AlertTriangle, ArrowLeft, Palette, Sliders, ShieldAlert, Loader2
 import IdCardDesigner from '@/features/id_card/components/IdCardDesigner';
 import { API_BASE_URL } from '@/lib/api';
 import { isSoloTeamSize } from '@/lib/utils';
-
 export default function TeamCardDesignerPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-
   const getAssignedEventId = () => {
     try {
       return String(JSON.parse(localStorage.getItem('admin') || 'null')?.EventId || '');
@@ -16,7 +14,6 @@ export default function TeamCardDesignerPage() {
       return '';
     }
   };
-
   const getStoredAdmin = () => {
     try {
       return JSON.parse(localStorage.getItem('admin') || 'null') || {};
@@ -24,20 +21,16 @@ export default function TeamCardDesignerPage() {
       return {};
     }
   };
-
   const eventId = searchParams.get('eventId')?.trim() || getAssignedEventId();
   const templateId = searchParams.get('templateId')?.trim() || null;
-
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   useEffect(() => {
     if (!eventId) {
       setLoading(false);
       return;
     }
-
     let isMounted = true;
     fetch(`${API_BASE_URL}/api/events/${encodeURIComponent(eventId)}`)
       .then((res) => {
@@ -63,18 +56,15 @@ export default function TeamCardDesignerPage() {
           setLoading(false);
         }
       });
-
     return () => {
       isMounted = false;
     };
   }, [eventId]);
-
   // Determine if this event is team-based
   const adminData = getStoredAdmin();
   const rawTeamSize = event?.TeamSize || adminData?.TeamSize;
   const isIndividual = isSoloTeamSize(rawTeamSize);
   const isTeamBasedEvent = !isIndividual;
-
   // 1. Loading State
   if (loading) {
     return (
@@ -86,7 +76,6 @@ export default function TeamCardDesignerPage() {
       </div>
     );
   }
-
   // 2. Disabled View if Individual / Solo Event
   if (!isTeamBasedEvent) {
     return (
@@ -95,7 +84,6 @@ export default function TeamCardDesignerPage() {
           {/* Accent glow backdrop */}
           <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
           {/* Header Tag */}
           <div className="flex items-center justify-between gap-3 mb-6 pb-5 border-b border-slate-200 dark:border-zinc-800">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-bold">
@@ -106,7 +94,6 @@ export default function TeamCardDesignerPage() {
               Team Size: <span className="font-bold text-amber-600 dark:text-amber-300">{rawTeamSize || 'Individual (1)'}</span>
             </span>
           </div>
-
           {/* Main Visual */}
           <div className="flex items-start gap-4 mb-6">
             <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-zinc-800/80 border border-emerald-200 dark:border-zinc-700/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-inner">
@@ -124,7 +111,6 @@ export default function TeamCardDesignerPage() {
               </p>
             </div>
           </div>
-
           {/* Quick Guidance Box */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 mb-6 text-xs text-slate-600 dark:text-zinc-400 space-y-2">
             <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
@@ -136,7 +122,6 @@ export default function TeamCardDesignerPage() {
               <li>Or switch the event to a team event in <strong className="text-slate-800 dark:text-zinc-200">Event Settings</strong> if this is meant to be a team hackathon.</li>
             </ul>
           </div>
-
           {/* Actions */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <button
@@ -147,7 +132,6 @@ export default function TeamCardDesignerPage() {
               <Palette className="w-4 h-4" />
               <span>Go to ID Card Designer</span>
             </button>
-
             <button
               type="button"
               onClick={() => navigate(`/admin/settings?eventId=${encodeURIComponent(eventId)}`)}
@@ -156,7 +140,6 @@ export default function TeamCardDesignerPage() {
               <Sliders className="w-4 h-4" />
               <span>Event Settings</span>
             </button>
-
             <button
               type="button"
               onClick={() => navigate(`/admin/physical-event?eventId=${encodeURIComponent(eventId)}`)}
@@ -170,7 +153,6 @@ export default function TeamCardDesignerPage() {
       </div>
     );
   }
-
   // 3. Render Dedicated Team Card Designer Studio for Team-based Events
   return (
     <IdCardDesigner

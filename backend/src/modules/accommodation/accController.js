@@ -1,5 +1,5 @@
 const accServices = require("../accommodation/accServices.js");
-
+const { recordMutation } = require("../security/auditService");
 // Blocks Controllers
 const addBlock = async (req, res) => {
     try {
@@ -16,14 +16,22 @@ const addBlock = async (req, res) => {
                 message: "Gender must be either 'Boys' or 'Girls'."
             });
         }
-
         const block = await accServices.createBlock({
             EventId: EventId ? Number(EventId) : null,
             BlockName,
             Gender,
             Description
         });
-
+        recordMutation({
+            actor: req.user,
+            module: 'accommodation',
+            action: 'CREATE_BLOCK',
+            entityType: 'accommodation_block',
+            entityId: block?.id,
+            eventId: EventId ? Number(EventId) : null,
+            newState: { BlockName, Gender, Description },
+            req
+        });
         return res.status(201).json({
             success: true,
             message: "Accommodation block created successfully.",
@@ -37,7 +45,6 @@ const addBlock = async (req, res) => {
         });
     }
 };
-
 const getAllBlocks = async (req, res) => {
     try {
         const eventId = req.query.eventId ? Number(req.query.eventId) : null;
@@ -54,7 +61,6 @@ const getAllBlocks = async (req, res) => {
         });
     }
 };
-
 const getBlockById = async (req, res) => {
     try {
         const id = Number(req.params.id);
@@ -77,7 +83,6 @@ const getBlockById = async (req, res) => {
         });
     }
 };
-
 const editBlock = async (req, res) => {
     try {
         const id = Number(req.params.id);
@@ -108,7 +113,6 @@ const editBlock = async (req, res) => {
         });
     }
 };
-
 const removeBlock = async (req, res) => {
     try {
         const id = Number(req.params.id);
@@ -125,7 +129,6 @@ const removeBlock = async (req, res) => {
         });
     }
 };
-
 // Rooms Controllers
 const addAccommodation = async (req, res) => {
     const { EventId, BlockId = null, room_num, Type, Gender, Capacity, Occupied = 0, UserId = null, Status = "Available" } = req.body;
@@ -135,7 +138,6 @@ const addAccommodation = async (req, res) => {
             message: "Room number, type, and capacity are required."
         });
     }
-
     if (!Number.isInteger(Number(Capacity)) || Number(Capacity) < 1 || !Number.isInteger(Number(Occupied)) || Number(Occupied) < 0 || Number(Occupied) > Number(Capacity)) {
         return res.status(400).json({
             success: false,
@@ -148,7 +150,6 @@ const addAccommodation = async (req, res) => {
             message: "Invalid room status."
         });
     }
-
     try {
         const roomData = {
             EventId: EventId ? Number(EventId) : (req.query.eventId ? Number(req.query.eventId) : null),
@@ -162,6 +163,16 @@ const addAccommodation = async (req, res) => {
             Status
         };
         const result = await accServices.createRoom(roomData);
+        recordMutation({
+            actor: req.user,
+            module: 'accommodation',
+            action: 'CREATE_ROOM',
+            entityType: 'accommodation_room',
+            entityId: result?.id || result?.insertId,
+            eventId: roomData.EventId,
+            newState: roomData,
+            req
+        });
         return res.status(201).json({
             success: true,
             message: "Accommodation room created successfully.",
@@ -181,7 +192,6 @@ const addAccommodation = async (req, res) => {
         });
     }
 };
-
 const getAllAccommodation = (req, res) => {
     const eventId = req.query.eventId ? Number(req.query.eventId) : null;
     accServices.getAllRooms(eventId, (err, result) => {
@@ -198,7 +208,6 @@ const getAllAccommodation = (req, res) => {
         });
     });
 };
-
 const getAccommodationById = (req, res) => {
     const { id } = req.params;
     accServices.getRoomById(id, (err, result) => {
@@ -221,12 +230,10 @@ const getAccommodationById = (req, res) => {
         });
     });
 };
-
 const allocateStudents = async (req, res) => {
     const roomId = Number(req.params.id);
     const eventId = Number(req.body.eventId);
     const studentIds = req.body.studentIds;
-
     if (
         !Number.isInteger(roomId) || roomId < 1 ||
         !Number.isInteger(eventId) || eventId < 1 ||
@@ -238,9 +245,18 @@ const allocateStudents = async (req, res) => {
             message: "A valid room ID, event ID and array of participant IDs are required."
         });
     }
-
     try {
         const result = await accServices.allocateStudents(roomId, eventId, studentIds);
+        recordMutation({
+            actor: req.user,
+            module: 'accommodation',
+            action: 'ALLOCATE_ROOM',
+            entityType: 'accommodation_room',
+            entityId: roomId,
+            eventId,
+            newState: { roomId, studentIds },
+            req
+        });
         return res.status(200).json({
             success: true,
             message: "Students allocated successfully.",
@@ -254,20 +270,26 @@ const allocateStudents = async (req, res) => {
         });
     }
 };
-
 const deallocateStudent = async (req, res) => {
     const roomId = Number(req.params.id);
     const userId = Number(req.params.userId || req.body.userId);
-
     if (!Number.isInteger(roomId) || roomId < 1 || !Number.isInteger(userId) || userId < 1) {
         return res.status(400).json({
             success: false,
             message: "Valid room ID and user ID are required."
         });
     }
-
     try {
         const result = await accServices.deallocateStudent(roomId, userId);
+        recordMutation({
+            actor: req.user,
+            module: 'accommodation',
+            action: 'DEALLOCATE_ROOM',
+            entityType: 'accommodation_room',
+            entityId: roomId,
+            newState: { roomId, userId },
+            req
+        });
         return res.status(200).json({
             success: true,
             message: "Student deallocated successfully from room.",
@@ -281,18 +303,15 @@ const deallocateStudent = async (req, res) => {
         });
     }
 };
-
 const editAccommodation = async (req, res) => {
     const { id } = req.params;
     const { EventId, BlockId = null, room_num, Type, Gender, Capacity, Occupied, UserId = null, Status } = req.body;
-
     if (!room_num || !Type || Capacity == null || Occupied == null || !Status) {
         return res.status(400).json({
             success: false,
             message: "Room number, type, capacity, occupied count and status are required."
         });
     }
-
     try {
         const roomData = {
             EventId: EventId ? Number(EventId) : (req.query.eventId ? Number(req.query.eventId) : null),
@@ -325,7 +344,6 @@ const editAccommodation = async (req, res) => {
         });
     }
 };
-
 const removeAccommodation = (req, res) => {
     const { id } = req.params;
     accServices.deleteRoom(id, (err, deleted) => {
@@ -348,7 +366,6 @@ const removeAccommodation = (req, res) => {
         });
     });
 };
-
 module.exports = {
     addBlock,
     getAllBlocks,

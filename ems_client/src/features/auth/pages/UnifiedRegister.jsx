@@ -28,7 +28,6 @@ import WaveBackground from "../../../components/Molecules/WaveBackground";
 import PasswordStrengthMeter from "../../../components/Molecules/PasswordStrengthMeter";
 import { motion, AnimatePresence } from "framer-motion";
 import useToast from "../../../Hooks/useToast";
-
 const logoElement = (
   <div className="relative w-5 h-5 flex items-center justify-center">
     <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -37,7 +36,6 @@ const logoElement = (
     <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
   </div>
 );
-
 const REGISTER_CONFIGS = {
   super_admin: {
     role: "super_admin",
@@ -79,7 +77,6 @@ const REGISTER_CONFIGS = {
     successMsg: "Super Admin account created successfully!",
     redirectPath: "/superadmin/login",
   },
-
   admin: {
     role: "admin",
     roleName: "Organizer",
@@ -120,7 +117,6 @@ const REGISTER_CONFIGS = {
     successMsg: "Organizer account created successfully!",
     redirectPath: "/admin/login",
   },
-
   user: {
     role: "user",
     roleName: "Participant",
@@ -162,7 +158,6 @@ const REGISTER_CONFIGS = {
     redirectPath: "/user/login",
   },
 };
-
 function getActiveRole(pathname, propRole) {
   if (propRole && REGISTER_CONFIGS[propRole]) {
     return propRole;
@@ -175,15 +170,12 @@ function getActiveRole(pathname, propRole) {
   }
   return "user";
 }
-
 function UnifiedRegister({ role: propRole }) {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
-
   const activeRole = getActiveRole(location.pathname, propRole);
   const config = REGISTER_CONFIGS[activeRole];
-
   const [formData, setFormData] = useState({
     UserName: "",
     Email: "",
@@ -197,7 +189,6 @@ function UnifiedRegister({ role: propRole }) {
     Gender: "Male",
     EventId: "",
   });
-
   const [touched, setTouched] = useState({
     UserName: false,
     Email: false,
@@ -207,19 +198,16 @@ function UnifiedRegister({ role: propRole }) {
     College: false,
     EventId: false,
   });
-
   const [submitted, setSubmitted] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [shakeForm, setShakeForm] = useState(false);
-
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const nameRegex = /^[a-zA-Z\s.'-]+$/;
   const phoneOnlyDigits = /^[0-9]+$/;
   const phoneValidRegex = /^[6-9]\d{9}$/;
-
   const getUserNameError = () => {
     const val = formData.UserName.trim();
     if (!val) {
@@ -233,14 +221,12 @@ function UnifiedRegister({ role: propRole }) {
     }
     return "";
   };
-
   const getEmailError = () => {
     const val = formData.Email.trim();
     if (!val) return "Email address is required";
     if (!emailRegex.test(val)) return "Please enter a valid email (e.g. name@domain.com)";
     return "";
   };
-
   const getPhoneError = () => {
     const val = activeRole === "super_admin" ? formData.PhoneNumber.trim() : formData.Mobile.trim();
     if (!val) return "Mobile number is required";
@@ -249,7 +235,6 @@ function UnifiedRegister({ role: propRole }) {
     if (!phoneValidRegex.test(val)) return "Mobile number should start with 6, 7, 8, or 9";
     return "";
   };
-
   const getPasswordError = () => {
     const val = formData.Password;
     if (!val) return "Password is required";
@@ -260,13 +245,11 @@ function UnifiedRegister({ role: propRole }) {
     if (!/[^A-Za-z0-9]/.test(val)) return "Password must contain at least one special symbol (!@#$...)";
     return "";
   };
-
   const getConfirmPasswordError = () => {
     if (!formData.confirmPassword) return "Please confirm your password";
     if (formData.Password !== formData.confirmPassword) return "Passwords do not match";
     return "";
   };
-
   const getCollegeError = () => {
     if (activeRole === "user") {
       const val = formData.College.trim();
@@ -275,7 +258,6 @@ function UnifiedRegister({ role: propRole }) {
     }
     return "";
   };
-
   const getEventIdError = () => {
     if (activeRole === "admin") {
       const val = formData.EventId.trim();
@@ -283,7 +265,6 @@ function UnifiedRegister({ role: propRole }) {
     }
     return "";
   };
-
   const userNameError = getUserNameError();
   const emailError = getEmailError();
   const phoneError = getPhoneError();
@@ -291,7 +272,6 @@ function UnifiedRegister({ role: propRole }) {
   const confirmPasswordError = getConfirmPasswordError();
   const collegeError = getCollegeError();
   const eventIdError = getEventIdError();
-
   const showUserNameError = (submitted || touched.UserName || formData.UserName.length > 0) && userNameError;
   const showEmailError = (submitted || touched.Email || formData.Email.length > 0) && emailError;
   const showPhoneError =
@@ -304,7 +284,6 @@ function UnifiedRegister({ role: propRole }) {
     (submitted || touched.confirmPassword || formData.confirmPassword.length > 0) && confirmPasswordError;
   const showCollegeError = (submitted || touched.College || formData.College.length > 0) && collegeError;
   const showEventIdError = (submitted || touched.EventId || formData.EventId.length > 0) && eventIdError;
-
   const isUserNameValid = (touched.UserName || formData.UserName.length > 0) && !userNameError;
   const isEmailValid = (touched.Email || formData.Email.length > 0) && !emailError;
   const isPhoneValid =
@@ -316,26 +295,21 @@ function UnifiedRegister({ role: propRole }) {
     formData.confirmPassword.length > 0 && formData.Password === formData.confirmPassword && !passwordError;
   const isCollegeValid = activeRole === "user" && (touched.College || formData.College.length > 0) && !collegeError;
   const isEventIdValid = activeRole === "admin" && (touched.EventId || formData.EventId.length > 0) && !eventIdError;
-
   const triggerShake = () => {
     setShakeForm(true);
     setTimeout(() => setShakeForm(false), 500);
   };
-
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitted(true);
-
     setTouched({
       UserName: true,
       Email: true,
@@ -345,7 +319,6 @@ function UnifiedRegister({ role: propRole }) {
       College: true,
       EventId: true,
     });
-
     const hasAnyError =
       userNameError ||
       emailError ||
@@ -354,7 +327,6 @@ function UnifiedRegister({ role: propRole }) {
       confirmPasswordError ||
       collegeError ||
       eventIdError;
-
     if (hasAnyError) {
       triggerShake();
       const firstError =
@@ -369,10 +341,8 @@ function UnifiedRegister({ role: propRole }) {
       toast.error(firstError);
       return;
     }
-
     try {
       setLoading(true);
-
       let payload = {};
       if (activeRole === "super_admin") {
         payload = {
@@ -401,19 +371,15 @@ function UnifiedRegister({ role: propRole }) {
           Gender: formData.Gender || "Male",
         };
       }
-
       const res = await fetch(config.apiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         throw new Error(data.error || data.message || "Registration failed");
       }
-
       toast.success(config.successMsg);
       navigate(config.redirectPath);
     } catch (err) {
@@ -425,7 +391,6 @@ function UnifiedRegister({ role: propRole }) {
       setLoading(false);
     }
   };
-
   return (
     <motion.div
       className="relative w-full min-h-screen overflow-hidden bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300 pt-28 sm:pt-32 lg:pt-36 pb-16"
@@ -433,7 +398,6 @@ function UnifiedRegister({ role: propRole }) {
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
       <WaveBackground />
-
       <div className="relative z-10 flex flex-col lg:flex-row mx-4 sm:mx-8 lg:mx-12 xl:mx-20 gap-8 lg:gap-14 items-center lg:items-start justify-center">
         <div className="hidden lg:flex flex-col w-full lg:w-5/12 xl:w-5/12 p-0 lg:p-6 xl:p-8">
           <AnimatePresence mode="wait">
@@ -447,7 +411,6 @@ function UnifiedRegister({ role: propRole }) {
               <p className="text-sm font-semibold tracking-widest text-emerald-700 dark:text-emerald-400 mb-4">
                 {config.badge}
               </p>
-
               <h1 className="text-3xl lg:text-5xl font-bold tracking-tight">
                 {config.titleFirst}
               </h1>
@@ -456,11 +419,9 @@ function UnifiedRegister({ role: propRole }) {
                   {config.titleHighlight}
                 </span>
               </h1>
-
               <p className="text-gray-700 dark:text-gray-300 mt-4 lg:mt-6 text-base lg:text-lg leading-relaxed max-w-xl">
                 {config.description}
               </p>
-
               <div className="flex flex-col gap-4 lg:gap-5 mt-6 lg:mt-8">
                 {config.features.map((feature, idx) => {
                   const Icon = feature.icon;
@@ -490,7 +451,6 @@ function UnifiedRegister({ role: propRole }) {
             </motion.div>
           </AnimatePresence>
         </div>
-
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -525,7 +485,6 @@ function UnifiedRegister({ role: propRole }) {
               autoComplete="new-password"
               aria-hidden="true"
             />
-
             <div className="mb-6 sm:mb-8 text-center">
               <div className="border-2 border-emerald-500 w-12 h-12 p-2 mb-3 rounded-full mx-auto flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm">
                 {logoElement}
@@ -540,7 +499,6 @@ function UnifiedRegister({ role: propRole }) {
                 {config.formSubtitle}
               </p>
             </div>
-
             <AnimatePresence>
               {error && (
                 <motion.div
@@ -554,7 +512,6 @@ function UnifiedRegister({ role: propRole }) {
                 </motion.div>
               )}
             </AnimatePresence>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
               <div className="relative w-full">
                 <User
@@ -599,7 +556,6 @@ function UnifiedRegister({ role: propRole }) {
                 >
                   {activeRole === "admin" ? "Admin Name" : "Full Name"}
                 </label>
-
                 {isUserNameValid && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.5 }}
@@ -609,7 +565,6 @@ function UnifiedRegister({ role: propRole }) {
                     <Check className="w-4 h-4" />
                   </motion.div>
                 )}
-
                 <AnimatePresence>
                   {showUserNameError && (
                     <motion.div
@@ -625,7 +580,6 @@ function UnifiedRegister({ role: propRole }) {
                   )}
                 </AnimatePresence>
               </div>
-
               <div className="relative w-full">
                 <Mail
                   className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
@@ -669,7 +623,6 @@ function UnifiedRegister({ role: propRole }) {
                 >
                   Email Address
                 </label>
-
                 {isEmailValid && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.5 }}
@@ -679,7 +632,6 @@ function UnifiedRegister({ role: propRole }) {
                     <Check className="w-4 h-4" />
                   </motion.div>
                 )}
-
                 <AnimatePresence>
                   {showEmailError && (
                     <motion.div
@@ -695,7 +647,6 @@ function UnifiedRegister({ role: propRole }) {
                   )}
                 </AnimatePresence>
               </div>
-
               <div className="relative w-full">
                 <Phone
                   className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
@@ -743,7 +694,6 @@ function UnifiedRegister({ role: propRole }) {
                 >
                   10-Digit Mobile Number
                 </label>
-
                 {isPhoneValid && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.5 }}
@@ -753,7 +703,6 @@ function UnifiedRegister({ role: propRole }) {
                     <Check className="w-4 h-4" />
                   </motion.div>
                 )}
-
                 <AnimatePresence>
                   {showPhoneError && (
                     <motion.div
@@ -769,7 +718,6 @@ function UnifiedRegister({ role: propRole }) {
                   )}
                 </AnimatePresence>
               </div>
-
               {activeRole === "user" && (
                 <div className="relative w-full">
                   <VenusAndMars className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400 pointer-events-none" />
@@ -798,7 +746,6 @@ function UnifiedRegister({ role: propRole }) {
                   </label>
                 </div>
               )}
-
               {activeRole === "user" && (
                 <div className="relative w-full">
                   <GraduationCap
@@ -843,7 +790,6 @@ function UnifiedRegister({ role: propRole }) {
                   >
                     College / Institution
                   </label>
-
                   {isCollegeValid && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.5 }}
@@ -853,7 +799,6 @@ function UnifiedRegister({ role: propRole }) {
                       <Check className="w-4 h-4" />
                     </motion.div>
                   )}
-
                   <AnimatePresence>
                     {showCollegeError && (
                       <motion.div
@@ -870,7 +815,6 @@ function UnifiedRegister({ role: propRole }) {
                   </AnimatePresence>
                 </div>
               )}
-
               {activeRole === "user" && (
                 <div className="relative w-full">
                   <Map className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400 pointer-events-none" />
@@ -896,7 +840,6 @@ function UnifiedRegister({ role: propRole }) {
                   </label>
                 </div>
               )}
-
               {activeRole === "user" && (
                 <div className="relative w-full">
                   <MapPin className="absolute left-0 top-3 w-5 h-5 text-emerald-700 dark:text-emerald-400 pointer-events-none" />
@@ -922,7 +865,6 @@ function UnifiedRegister({ role: propRole }) {
                   </label>
                 </div>
               )}
-
               {activeRole === "admin" && (
                 <div className="relative w-full">
                   <CalendarDays
@@ -967,7 +909,6 @@ function UnifiedRegister({ role: propRole }) {
                   >
                     Assigned Event ID
                   </label>
-
                   {isEventIdValid && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.5 }}
@@ -977,7 +918,6 @@ function UnifiedRegister({ role: propRole }) {
                       <Check className="w-4 h-4" />
                     </motion.div>
                   )}
-
                   <AnimatePresence>
                     {showEventIdError && (
                       <motion.div
@@ -994,7 +934,6 @@ function UnifiedRegister({ role: propRole }) {
                   </AnimatePresence>
                 </div>
               )}
-
               <div className="relative w-full">
                 <Lock
                   className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
@@ -1038,7 +977,6 @@ function UnifiedRegister({ role: propRole }) {
                 >
                   Password
                 </label>
-
                 <div className="absolute right-2 top-2.5 flex items-center gap-1.5">
                   {isPasswordValid && (
                     <motion.div
@@ -1062,7 +1000,6 @@ function UnifiedRegister({ role: propRole }) {
                     )}
                   </button>
                 </div>
-
                 <AnimatePresence>
                   {showPasswordError && (
                     <motion.div
@@ -1078,7 +1015,6 @@ function UnifiedRegister({ role: propRole }) {
                   )}
                 </AnimatePresence>
               </div>
-
               <div className="relative w-full">
                 <Lock
                   className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
@@ -1122,7 +1058,6 @@ function UnifiedRegister({ role: propRole }) {
                 >
                   Confirm Password
                 </label>
-
                 <div className="absolute right-2 top-2.5 flex items-center gap-1.5">
                   {isConfirmValid && (
                     <motion.div
@@ -1146,7 +1081,6 @@ function UnifiedRegister({ role: propRole }) {
                     )}
                   </button>
                 </div>
-
                 <AnimatePresence>
                   {showConfirmPasswordError && (
                     <motion.div
@@ -1175,7 +1109,6 @@ function UnifiedRegister({ role: propRole }) {
                 </AnimatePresence>
               </div>
             </div>
-
             <AnimatePresence>
               {Boolean(formData.Password) && (
                 <motion.div
@@ -1192,7 +1125,6 @@ function UnifiedRegister({ role: propRole }) {
                 </motion.div>
               )}
             </AnimatePresence>
-
             <div className="mt-8">
               <button
                 type="submit"
@@ -1202,7 +1134,6 @@ function UnifiedRegister({ role: propRole }) {
                 {loading ? "Creating account..." : "Complete Registration"}
               </button>
             </div>
-
             <p className="text-center mt-5 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               {config.loginPrompt.split("?")[0]}?{" "}
               <Link
@@ -1212,7 +1143,6 @@ function UnifiedRegister({ role: propRole }) {
                 {config.loginPrompt.split("?")[1] || "Sign in"}
               </Link>
             </p>
-
             <div className="border-t border-gray-200 dark:border-white/10 mt-6 pt-4">
               <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 text-xs">
                 <Lock className="w-3.5 h-3.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -1225,5 +1155,4 @@ function UnifiedRegister({ role: propRole }) {
     </motion.div>
   );
 }
-
 export default UnifiedRegister;

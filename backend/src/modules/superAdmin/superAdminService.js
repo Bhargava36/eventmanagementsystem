@@ -1,16 +1,13 @@
 const db = require('../../config/db');
 const bcrypt = require('bcrypt');
-
 const createAdmin = async (UserName, Email, Password, PhoneNumber, callback) => {
     try {
         const hashedPassword = await bcrypt.hash(Password, 10);
         const trimmedEmail = (Email || '').trim().toLowerCase();
-
         // Check if user already exists
         const checkQuery = "SELECT Id FROM users WHERE LOWER(Email) = ?";
         db.query(checkQuery, [trimmedEmail], (chkErr, chkRows) => {
             if (chkErr) return callback(chkErr, null);
-
             if (chkRows && chkRows.length > 0) {
                 const updateQuery = "UPDATE users SET UserName = ?, Password = ?, Mobile = ?, RoleId = 1 WHERE Id = ?";
                 db.query(updateQuery, [UserName, hashedPassword, PhoneNumber, chkRows[0].Id], (upErr, upRes) => {
@@ -31,12 +28,11 @@ const createAdmin = async (UserName, Email, Password, PhoneNumber, callback) => 
         return callback(err, null);
     }
 };
-
 const loginAdmin = (Email, callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile AS PhoneNumber, u.Mobile, u.Photo, u.Password, u.CreatedAt AS created_at, r.RoleName 
-        FROM users u 
-        JOIN roles r ON u.RoleId = r.Id 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile AS PhoneNumber, u.Mobile, u.Photo, u.Password, u.CreatedAt AS created_at, u.TwoFactorEnabled, r.RoleName
+        FROM users u
+        JOIN roles r ON u.RoleId = r.Id
         WHERE LOWER(u.Email) = LOWER(?) AND r.RoleName = 'super_admin'
     `;
     db.query(query, [Email], (err, result) => {
@@ -46,24 +42,20 @@ const loginAdmin = (Email, callback) => {
         return callback(null, result);
     });
 };
-
 const getAdminProfile = (id, callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile AS PhoneNumber, u.Mobile, u.Photo, u.CreatedAt AS created_at, r.RoleName 
-        FROM users u 
-        JOIN roles r ON u.RoleId = r.Id 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile AS PhoneNumber, u.Mobile, u.Photo, u.CreatedAt AS created_at, r.RoleName
+        FROM users u
+        JOIN roles r ON u.RoleId = r.Id
         WHERE u.Id = ? AND r.RoleName = 'super_admin'
     `;
-
     db.query(query, [id], (err, result) => {
         if (err) {
             return callback(err, null);
         }
-
         return callback(null, result);
     });
 };
-
 const updateAdmin = (id, UserName, Email, PhoneNumber, Photo, callback) => {
     let query, values;
     if (Photo !== undefined) {
@@ -80,7 +72,6 @@ const updateAdmin = (id, UserName, Email, PhoneNumber, Photo, callback) => {
         return callback(null, result);
     });
 };
-
 module.exports = {
     createAdmin,
     loginAdmin,

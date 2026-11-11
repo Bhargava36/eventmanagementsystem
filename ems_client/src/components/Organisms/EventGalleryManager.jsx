@@ -11,19 +11,16 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import useToast from '../../Hooks/useToast';
-
 export default function EventGalleryManager({ eventId }) {
   const toast = useToast();
   const [gallery, setGallery] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [uploading, setUploading] = useState(false);
-
   const [form, setForm] = useState({
     Caption: '',
     Images: [], // array of uploaded urls
   });
-
   const fetchGallery = async () => {
     if (!eventId) return;
     try {
@@ -39,11 +36,9 @@ export default function EventGalleryManager({ eventId }) {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchGallery();
   }, [eventId]);
-
   const handleOpenAdd = () => {
     setForm({
       Caption: '',
@@ -51,21 +46,17 @@ export default function EventGalleryManager({ eventId }) {
     });
     setShowModal(true);
   };
-
   const handleMultipleFiles = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-
     try {
       setUploading(true);
       const fd = new FormData();
       files.forEach((f) => fd.append('files', f));
-
       const res = await fetch(`${API_BASE_URL}/api/upload/multiple`, {
         method: 'POST',
         body: fd,
       });
-
       const data = await res.json();
       if (res.ok && data.urls) {
         setForm((prev) => ({
@@ -82,21 +73,18 @@ export default function EventGalleryManager({ eventId }) {
       setUploading(false);
     }
   };
-
   const handleRemoveUploadedImage = (idx) => {
     setForm((prev) => ({
       ...prev,
       Images: prev.Images.filter((_, i) => i !== idx),
     }));
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.Images.length === 0) {
       toast.error('Please upload at least one photo');
       return;
     }
-
     try {
       const items = form.Images.map((url, idx) => ({
         ImageUrl: url,
@@ -104,7 +92,6 @@ export default function EventGalleryManager({ eventId }) {
         Season: 'Highlights',
         DisplayOrder: idx,
       }));
-
       const res = await fetch(`${API_BASE_URL}/api/gallery/bulk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,7 +100,6 @@ export default function EventGalleryManager({ eventId }) {
           items,
         }),
       });
-
       const data = await res.json();
       if (res.ok) {
         toast.success(`${form.Images.length} photos added to gallery`);
@@ -126,7 +112,6 @@ export default function EventGalleryManager({ eventId }) {
       toast.error(err.message || 'Failed to save photos to gallery');
     }
   };
-
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this photo from gallery?')) return;
     try {
@@ -143,7 +128,6 @@ export default function EventGalleryManager({ eventId }) {
       toast.error('Error removing photo');
     }
   };
-
   const modalContent = showModal ? (
     <AnimatePresence>
       <motion.div
@@ -177,7 +161,6 @@ export default function EventGalleryManager({ eventId }) {
               <X className="w-4 h-4" />
             </button>
           </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
@@ -201,7 +184,6 @@ export default function EventGalleryManager({ eventId }) {
                 />
               </label>
             </div>
-
             {form.Images.length > 0 && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
@@ -237,7 +219,6 @@ export default function EventGalleryManager({ eventId }) {
                 </div>
               </div>
             )}
-
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                 Optional Caption
@@ -250,7 +231,6 @@ export default function EventGalleryManager({ eventId }) {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-slate-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
-
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-zinc-800">
               <button
                 type="button"
@@ -272,7 +252,6 @@ export default function EventGalleryManager({ eventId }) {
       </motion.div>
     </AnimatePresence>
   ) : null;
-
   return (
     <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-5">
       {/* Header */}
@@ -295,7 +274,6 @@ export default function EventGalleryManager({ eventId }) {
             </p>
           </div>
         </div>
-
         <button
           type="button"
           onClick={handleOpenAdd}
@@ -305,7 +283,6 @@ export default function EventGalleryManager({ eventId }) {
           <span>Add Photos</span>
         </button>
       </div>
-
       {/* Gallery Photo Grid */}
       {loading ? (
         <div className="py-8 text-center text-xs text-slate-400">Loading gallery...</div>
@@ -333,7 +310,6 @@ export default function EventGalleryManager({ eventId }) {
                   alt={item.Caption || 'Gallery'}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
-
                 <div className="absolute top-1.5 right-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
@@ -344,7 +320,6 @@ export default function EventGalleryManager({ eventId }) {
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
-
                 {item.Caption && (
                   <div className="absolute bottom-0 inset-x-0 p-1.5 bg-black/75 backdrop-blur-xs text-[10px] text-white truncate">
                     {item.Caption}
@@ -355,7 +330,6 @@ export default function EventGalleryManager({ eventId }) {
           })}
         </div>
       )}
-
       {/* Render modal directly into document.body to fix tabs overlap bug */}
       {typeof document !== 'undefined' && modalContent && createPortal(modalContent, document.body)}
     </div>

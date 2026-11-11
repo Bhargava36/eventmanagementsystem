@@ -32,27 +32,21 @@ import { Link } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import useToast from '../../../../Hooks/useToast';
 import { validateEventDates } from '../../../../lib/utils';
-
 const getStatusStyles = (status) => {
   switch (status?.toLowerCase()) {
     case 'upcoming':
       return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-500';
-
     case 'ongoing':
       return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-500';
-
     case 'completed':
       return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
-
     default:
       return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
   }
 };
-
 const getCategoryStyles = () => {
   return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-500';
 };
-
 const COLOR_PRESETS = [
   {
     name: 'Emerald Brand',
@@ -100,10 +94,8 @@ const COLOR_PRESETS = [
     TertiaryTextColor: '#FFFFFF'
   }
 ];
-
 function EventsDashboard() {
   const toast = useToast();
-
   const [eventData, setEventData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -118,7 +110,6 @@ function EventsDashboard() {
   const [selectedMode, setSelectedMode] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
   const initialForm = {
     EventName: '',
     Description: '',
@@ -159,9 +150,7 @@ function EventsDashboard() {
     MaxCapacity: 200,
     MaxAdmins: 3
   };
-
   const [formData, setFormData] = useState(initialForm);
-
   const sortOptions = [
     'Latest First',
     'Oldest First',
@@ -170,31 +159,24 @@ function EventsDashboard() {
     'Start Date (Earliest)',
     'Start Date (Latest)'
   ];
-
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedStatus, selectedType, selectedMode, sortValue, itemsPerPage]);
-
   useEffect(() => {
     fetchEvents();
   }, []);
-
   const fetchEvents = async () => {
     try {
       setLoading(true);
-
       const res = await fetch(
         `${API_BASE_URL}/api/events/`
       );
-
       const data = await res.json();
-
       if (!res.ok) {
         throw new Error(
           data.message || 'Failed to fetch events'
         );
       }
-
       setEventData(data.events || []);
     } catch (error) {
       console.error('Fetch events error:', error);
@@ -203,16 +185,13 @@ function EventsDashboard() {
       setLoading(false);
     }
   };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData((previousData) => {
       const next = {
         ...previousData,
         [name]: value
       };
-
       if (name === 'EventType') {
         const lower = String(value || '').toLowerCase();
         if (lower.includes('webinar')) {
@@ -257,11 +236,9 @@ function EventsDashboard() {
           }
         }
       }
-
       return next;
     });
   };
-
   const compressImage = (file) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -294,18 +271,15 @@ function EventsDashboard() {
       reader.readAsDataURL(file);
     });
   };
-
   const resolvePosterUrl = (url) => {
     if (!url) return '';
     if (typeof url !== 'string') return url?.url || '';
     if (url.startsWith('/uploads')) return `${API_BASE_URL}${url}`;
     return url;
   };
-
   const handlePosterUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-
     for (const file of files) {
       if (!file.type.startsWith('image/')) {
         toast.error(`${file.name} is not a valid image file.`);
@@ -314,12 +288,10 @@ function EventsDashboard() {
       try {
         const uploadData = new FormData();
         uploadData.append('file', file);
-
         const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
           method: 'POST',
           body: uploadData
         });
-
         if (uploadRes.ok) {
           const result = await uploadRes.json();
           const fileUrl = result.fileUrl || result.url;
@@ -350,14 +322,12 @@ function EventsDashboard() {
     }
     e.target.value = '';
   };
-
   const handleRemovePoster = (indexToRemove) => {
     setFormData((prev) => ({
       ...prev,
       Posters: (prev.Posters || []).filter((_, idx) => idx !== indexToRemove)
     }));
   };
-
   const handleSetPrimaryPoster = (indexToPrimary) => {
     setFormData((prev) => {
       const posters = [...(prev.Posters || [])];
@@ -370,7 +340,6 @@ function EventsDashboard() {
       };
     });
   };
-
   const validateStep = (step) => {
     if (step === 1) {
       if (!formData.EventName?.trim()) {
@@ -383,7 +352,6 @@ function EventsDashboard() {
       }
       return true;
     }
-
     if (step === 2) {
       const mode = formData.HackathonMode || 'Physical';
       if (mode === 'Both' || mode === 'Virtual and Physical') {
@@ -458,7 +426,6 @@ function EventsDashboard() {
       }
       return true;
     }
-
     if (step === 3) {
       if (!formData.TeamSize?.trim()) {
         toast.error('Please specify Participation Format / Team Size.');
@@ -470,7 +437,6 @@ function EventsDashboard() {
       }
       return true;
     }
-
     if (step === 4) {
       if (!colorSelected) {
         toast.error('Please select an event theme preset or customize brand colors before submitting.');
@@ -492,10 +458,8 @@ function EventsDashboard() {
       }
       return true;
     }
-
     return true;
   };
-
   const handleNextStep = () => {
     if (validateStep(currentStep)) {
       if (currentStep < 4) {
@@ -503,16 +467,13 @@ function EventsDashboard() {
       }
     }
   };
-
   const handleCreateEvent = async (e) => {
     if (e) e.preventDefault();
-
     // Guard: Under NO circumstances allow premature submission before Step 4!
     if (currentStep < 4) {
       handleNextStep();
       return;
     }
-
     // Validate all steps from 1 to 4 before calling backend
     for (let s = 1; s <= 4; s++) {
       if (!validateStep(s)) {
@@ -520,11 +481,9 @@ function EventsDashboard() {
         return;
       }
     }
-
     try {
       setCreating(true);
       const payload = { ...formData };
-
       if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') {
         payload.StartDate = formData.VirtualStartDate || formData.StartDate;
         payload.EndDate = formData.PhysicalEndDate || formData.EndDate;
@@ -573,7 +532,6 @@ function EventsDashboard() {
         payload.PhysicalRequirements = payload.Requirements;
         payload.PhysicalPrizeMoney = formData.PhysicalPrizeMoney || formData.PrizeMoney;
       }
-
       const res = await fetch(
         `${API_BASE_URL}/api/events/create`,
         {
@@ -584,24 +542,18 @@ function EventsDashboard() {
           body: JSON.stringify(payload)
         }
       );
-
       const data = await res.json();
-
       if (!res.ok) {
         throw new Error(
           data.message || 'Event creation failed'
         );
       }
-
       toast.success('Event created successfully with branding colors!');
-
       // Notify other views and admin components to refresh
       window.dispatchEvent(new Event('admin-event-updated'));
-
       setFormData(initialForm);
       setCurrentStep(1);
       setShowCreateForm(false);
-
       fetchEvents();
     } catch (error) {
       console.error('Create event error:', error);
@@ -612,10 +564,8 @@ function EventsDashboard() {
       setCreating(false);
     }
   };
-
   const filteredAndSortedEvents = useMemo(() => {
     let list = [...eventData];
-
     // 1. Text Search Filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -628,17 +578,14 @@ function EventsDashboard() {
         return name.includes(q) || desc.includes(q) || loc.includes(q) || type.includes(q) || slug.includes(q);
       });
     }
-
     // 2. Status Filter
     if (selectedStatus !== 'all') {
       list = list.filter((ev) => (ev.EventStatus || '').toLowerCase() === selectedStatus.toLowerCase());
     }
-
     // 3. Event Type Filter
     if (selectedType !== 'all') {
       list = list.filter((ev) => (ev.EventType || '').toLowerCase().includes(selectedType.toLowerCase()));
     }
-
     // 4. Mode Filter
     if (selectedMode !== 'all') {
       list = list.filter((ev) => {
@@ -649,7 +596,6 @@ function EventsDashboard() {
         return mode.includes(selectedMode.toLowerCase());
       });
     }
-
     // 5. Sorting
     list.sort((a, b) => {
       switch (sortValue) {
@@ -668,15 +614,12 @@ function EventsDashboard() {
           return new Date(b.CreatedAt || 0).getTime() - new Date(a.CreatedAt || 0).getTime();
       }
     });
-
     return list;
   }, [eventData, searchQuery, selectedStatus, selectedType, selectedMode, sortValue]);
-
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedEvents.length / itemsPerPage));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
   const paginatedEvents = filteredAndSortedEvents.slice(startIndex, startIndex + itemsPerPage);
-
   const hasActiveFilters = searchQuery.trim() !== '' || selectedStatus !== 'all' || selectedType !== 'all' || selectedMode !== 'all';
   const resetFilters = () => {
     setSearchQuery('');
@@ -685,12 +628,10 @@ function EventsDashboard() {
     setSelectedMode('all');
     setSortValue('Latest First');
   };
-
   const totalEvents = eventData.length;
   const upcomingEvents = eventData.filter((event) => event.EventStatus?.toLowerCase() === 'upcoming').length;
   const ongoingEvents = eventData.filter((event) => event.EventStatus?.toLowerCase() === 'ongoing').length;
   const completedEvents = eventData.filter((event) => event.EventStatus?.toLowerCase() === 'completed').length;
-
   const openCreateForm = () => {
     setFormData(initialForm);
     setCurrentStep(1);
@@ -699,7 +640,6 @@ function EventsDashboard() {
     setCreating(false);
     setShowCreateForm(true);
   };
-
   const closeCreateForm = () => {
     setFormData(initialForm);
     setCurrentStep(1);
@@ -708,10 +648,8 @@ function EventsDashboard() {
     setCreating(false);
     setShowCreateForm(false);
   };
-
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors">
-
       <motion.div
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -725,12 +663,10 @@ function EventsDashboard() {
           <h1 className="text-2xl sm:text-3xl font-bold text-black dark:text-white">
             Events
           </h1>
-
           <p className="text-sm text-emerald-700 dark:text-emerald-500 mt-1">
             Create, manage and monitor all events organized in the system.
           </p>
         </div>
-
         <motion.button
           onClick={openCreateForm}
           whileHover={{ scale: 1.03 }}
@@ -741,7 +677,6 @@ function EventsDashboard() {
           Create Event
         </motion.button>
       </motion.div>
-
       <AnimatePresence>
         {showCreateForm && (
           <motion.div
@@ -774,12 +709,10 @@ function EventsDashboard() {
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                     Create Event
                   </h2>
-
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Create and configure your event
                   </p>
                 </div>
-
                 <button
                   type="button"
                   onClick={closeCreateForm}
@@ -788,7 +721,6 @@ function EventsDashboard() {
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
-
               <div className="px-7 pt-6">
                 <div className="flex items-center">
                   {[1, 2, 3, 4].map((step) => {
@@ -844,7 +776,6 @@ function EventsDashboard() {
                             {stepTitles[step - 1]}
                           </span>
                         </button>
-
                         {step < 4 && (
                           <div
                             className={`h-1 flex-1 mx-2 rounded mb-4 ${
@@ -858,7 +789,6 @@ function EventsDashboard() {
                     );
                   })}
                 </div>
-
                 <div className="mt-5">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {currentStep === 1 && 'Basic Information & Event Type'}
@@ -866,13 +796,11 @@ function EventsDashboard() {
                     {currentStep === 3 && 'Participation Format & Venue / Platform'}
                     {currentStep === 4 && 'Event Colors & Branding Setup'}
                   </h3>
-
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Step {currentStep} of 4 {currentStep === 4 ? '— Required: Setup colors to create event' : ''}
                   </p>
                 </div>
               </div>
-
               <form
                 onSubmit={handleCreateEvent}
                 onKeyDown={(e) => {
@@ -887,7 +815,6 @@ function EventsDashboard() {
                 }}
               >
                 <div className="px-7 py-6">
-
                   {currentStep === 1 && (
                     <div className="space-y-5">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -895,7 +822,6 @@ function EventsDashboard() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Event Name
                           </label>
-
                           <input
                             type="text"
                             name="EventName"
@@ -906,12 +832,10 @@ function EventsDashboard() {
                             className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
                           />
                         </div>
-
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Event Type
                           </label>
-
                           <select
                             name="EventType"
                             value={formData.EventType}
@@ -952,7 +876,6 @@ function EventsDashboard() {
                           </select>
                         </div>
                       </div>
-
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -979,35 +902,30 @@ function EventsDashboard() {
                           </p>
                         </div>
                       </div>
-
                       {formData.EventType === 'Alumni Meet' && (
                         <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>Alumni Meet selected: Configured for campus reunions, solo alumni digital VIP pass with guests (+1), and banquet dining.</span>
                         </div>
                       )}
-
                       {formData.EventType === 'Project Expo' && (
                         <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>Project Expo selected: Configured for project prototypes, booth/stall allocation, multi-domain tracks, and jury evaluation.</span>
                         </div>
                       )}
-
                       {formData.EventType === 'Webinar' && (
                         <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>Webinar selected: Flow will automatically lock to 100% Virtual live streaming with solo delegate passes.</span>
                         </div>
                       )}
-
                       {(formData.EventType === 'Seminar' || formData.EventType === 'Conference') && (
                         <div className="space-y-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/20">
                           <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                             <span>Seminar / Conference: Configured for campus auditorium venue, solo delegate entry passes, and keynote proceedings.</span>
                           </div>
-
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
                             <div>
                               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1022,7 +940,6 @@ function EventsDashboard() {
                                 className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
                               />
                             </div>
-
                             <div>
                               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Maximum Seating Capacity (Seats) *
@@ -1041,7 +958,6 @@ function EventsDashboard() {
                           </div>
                         </div>
                       )}
-
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1051,7 +967,6 @@ function EventsDashboard() {
                             {(formData.Posters || []).length} uploaded
                           </span>
                         </div>
-
                         <label className="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-xl p-5 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50/50 dark:bg-black">
                           <UploadCloud className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mb-2" />
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1068,7 +983,6 @@ function EventsDashboard() {
                             className="hidden"
                           />
                         </label>
-
                         {(formData.Posters || []).length > 0 && (
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                             {formData.Posters.map((poster, index) => (
@@ -1081,7 +995,6 @@ function EventsDashboard() {
                                   alt={`Poster ${index + 1}`}
                                   className="w-full h-full object-cover"
                                 />
-
                                 <div className="absolute top-1.5 left-1.5">
                                   {index === 0 ? (
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-600 text-white shadow">
@@ -1097,7 +1010,6 @@ function EventsDashboard() {
                                     </button>
                                   )}
                                 </div>
-
                                 <button
                                   type="button"
                                   onClick={() => handleRemovePoster(index)}
@@ -1112,7 +1024,6 @@ function EventsDashboard() {
                       </div>
                     </div>
                   )}
-
                   {currentStep === 2 && (
                     <div className="space-y-5">
                       <div>
@@ -1182,7 +1093,6 @@ function EventsDashboard() {
                           </div>
                         )}
                       </div>
-
                       {formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical' ? (
                         <div className="space-y-4">
                           <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
@@ -1245,7 +1155,6 @@ function EventsDashboard() {
                               </div>
                             </div>
                           </div>
-
                           <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
                             <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider">
                               <MapPin className="w-3.5 h-3.5" />
@@ -1320,7 +1229,6 @@ function EventsDashboard() {
                                 Closes before Event Starts
                               </span>
                             </div>
-
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -1350,7 +1258,6 @@ function EventsDashboard() {
                               </div>
                             </div>
                           </div>
-
                           {/* 2. Event Schedule Second */}
                           <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
                             <div className="flex items-center justify-between">
@@ -1362,7 +1269,6 @@ function EventsDashboard() {
                                 Official Duration
                               </span>
                             </div>
-
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -1410,7 +1316,6 @@ function EventsDashboard() {
                       )}
                     </div>
                   )}
-
                   {currentStep === 3 && (
                     <div className="space-y-5">
                       <div className="flex items-center justify-between p-3.5 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-zinc-800">
@@ -1430,7 +1335,6 @@ function EventsDashboard() {
                           Change in Step 1
                         </button>
                       </div>
-
                       {formData.EventType === 'Webinar' ? (
                         <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -1455,7 +1359,6 @@ function EventsDashboard() {
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Participation Format
                           </label>
-
                           <div className="grid grid-cols-2 gap-2">
                             <button
                               type="button"
@@ -1471,7 +1374,6 @@ function EventsDashboard() {
                               <User className="w-3.5 h-3.5" />
                               <span>Individual (Solo)</span>
                             </button>
-
                             <button
                               type="button"
                               onClick={() => {
@@ -1496,7 +1398,6 @@ function EventsDashboard() {
                           )}
                         </div>
                       )}
-
                       {/* Team Configuration if Team is selected */}
                       {formData.TeamSize !== '1' && formData.TeamSize?.toLowerCase() !== 'solo' && formData.TeamSize?.toLowerCase() !== 'individual' && (
                         <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
@@ -1509,7 +1410,6 @@ function EventsDashboard() {
                               Configured: {formData.TeamSize || '2-4'} Members
                             </span>
                           </div>
-
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             <button
                               type="button"
@@ -1556,7 +1456,6 @@ function EventsDashboard() {
                               Fixed: 2 Members
                             </button>
                           </div>
-
                           <div className="pt-1">
                             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                               Or customize team size specification:
@@ -1577,19 +1476,16 @@ function EventsDashboard() {
                           </div>
                         </div>
                       )}
-
                       {formData.TeamSize === '1' && (
                         <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/30 dark:bg-emerald-950/20 text-xs font-medium text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>Individual event: Participants will be registered directly in 1 click without needing to create a team.</span>
                         </div>
                       )}
-
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           {formData.EventType === 'Webinar' ? 'Webinar Live Broadcast Link / Platform URL' : 'Location / Venue'}
                         </label>
-
                         <input
                           type="text"
                           name="Location"
@@ -1600,7 +1496,6 @@ function EventsDashboard() {
                           className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-black text-gray-900 dark:text-white"
                         />
                       </div>
-
                       {(formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') ? (
                         <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 space-y-4">
                           <div className="flex items-center gap-2">
@@ -1610,7 +1505,6 @@ function EventsDashboard() {
                               <p className="text-xs text-gray-500 dark:text-gray-400">Specify separate prize money for the Physical and Virtual tracks of this event.</p>
                             </div>
                           </div>
-
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -1625,7 +1519,6 @@ function EventsDashboard() {
                                 className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm"
                               />
                             </div>
-
                             <div>
                               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                 Virtual Track Prize Money
@@ -1640,7 +1533,6 @@ function EventsDashboard() {
                               />
                             </div>
                           </div>
-
                           <div className="flex items-center justify-between pt-2 border-t border-amber-200/60 dark:border-amber-800/40 text-xs">
                             <span className="text-gray-600 dark:text-gray-400 font-medium">Combined Pool Note</span>
                             <span className="font-extrabold text-amber-600 dark:text-amber-400">
@@ -1667,7 +1559,6 @@ function EventsDashboard() {
                           </div>
                         </div>
                       )}
-
                       <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 flex items-start gap-3">
                         <Users className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                         <div>
@@ -1681,7 +1572,6 @@ function EventsDashboard() {
                       </div>
                     </div>
                   )}
-
                   {currentStep === 4 && (
                     <div className="space-y-6">
                       {/* Brand Info Banner */}
@@ -1696,7 +1586,6 @@ function EventsDashboard() {
                           </p>
                         </div>
                       </div>
-
                       {/* Selection Status Banner */}
                       {!colorSelected ? (
                         <div className="p-3.5 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/30 flex items-start gap-3">
@@ -1726,7 +1615,6 @@ function EventsDashboard() {
                           </span>
                         </div>
                       )}
-
                       {/* Quick Palette Presets */}
                       <div>
                         <div className="flex items-center gap-1.5 mb-2.5">
@@ -1790,7 +1678,6 @@ function EventsDashboard() {
                           })}
                         </div>
                       </div>
-
                       {/* Live Brand Preview Card */}
                       <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black">
                         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2.5">
@@ -1844,7 +1731,6 @@ function EventsDashboard() {
                           </div>
                         </div>
                       </div>
-
                       {/* Manual Color Pickers */}
                       <div>
                         <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
@@ -1863,7 +1749,6 @@ function EventsDashboard() {
                               <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                 {label}
                               </label>
-
                               <div className="flex items-center gap-2">
                                 <input
                                   type="color"
@@ -1878,7 +1763,6 @@ function EventsDashboard() {
                                   }}
                                   className="w-11 h-10 rounded-lg cursor-pointer border border-gray-200 dark:border-gray-700 p-0.5 bg-white dark:bg-black shrink-0"
                                 />
-
                                 <input
                                   type="text"
                                   name={name}
@@ -1900,7 +1784,6 @@ function EventsDashboard() {
                     </div>
                   )}
                 </div>
-
                 <div className="flex items-center justify-between px-7 py-5 border-t border-gray-200 dark:border-gray-800">
                   <div>
                     {currentStep > 1 && (
@@ -1913,7 +1796,6 @@ function EventsDashboard() {
                       </button>
                     )}
                   </div>
-
                   <div className="flex gap-3">
                     <button
                       type="button"
@@ -1922,7 +1804,6 @@ function EventsDashboard() {
                     >
                       Cancel
                     </button>
-
                     {currentStep < 4 ? (
                       <button
                         type="button"
@@ -1967,7 +1848,6 @@ function EventsDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
-
       <div className="p-4 sm:p-6 md:p-8 space-y-6">
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -1989,16 +1869,13 @@ function EventsDashboard() {
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Calendar className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
-
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
               Total Events
             </p>
-
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
               {totalEvents}
             </p>
           </div>
-
           <div
             onClick={() => setSelectedStatus('upcoming')}
             className={`bg-white dark:bg-black rounded-xl p-4 sm:p-5 border cursor-pointer transition-all hover:border-emerald-500/50 shadow-sm ${
@@ -2010,16 +1887,13 @@ function EventsDashboard() {
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <CheckCircle2 className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
-
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
               Upcoming Events
             </p>
-
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
               {upcomingEvents}
             </p>
           </div>
-
           <div
             onClick={() => setSelectedStatus('ongoing')}
             className={`bg-white dark:bg-black rounded-xl p-4 sm:p-5 border cursor-pointer transition-all hover:border-emerald-500/50 shadow-sm ${
@@ -2031,16 +1905,13 @@ function EventsDashboard() {
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Radio className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
-
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
               Ongoing Events
             </p>
-
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
               {ongoingEvents}
             </p>
           </div>
-
           <div
             onClick={() => setSelectedStatus('completed')}
             className={`bg-white dark:bg-black rounded-xl p-4 sm:p-5 border cursor-pointer transition-all hover:border-emerald-500/50 shadow-sm ${
@@ -2052,17 +1923,14 @@ function EventsDashboard() {
             <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20 w-fit">
               <Clock className="w-5 h-5 text-emerald-700 dark:text-emerald-500" />
             </div>
-
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
               Completed Events
             </p>
-
             <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
               {completedEvents}
             </p>
           </div>
         </motion.div>
-
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -2083,7 +1951,6 @@ function EventsDashboard() {
                     {filteredAndSortedEvents.length} of {totalEvents}
                   </span>
                 </div>
-
                 {/* Status Filter Tabs */}
                 <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 text-xs">
                   {[
@@ -2117,7 +1984,6 @@ function EventsDashboard() {
                   })}
                 </div>
               </div>
-
               {/* Sort selector */}
               <div className="flex items-center gap-2 self-end lg:self-center">
                 <span className="text-xs text-gray-400 hidden sm:inline">Sort:</span>
@@ -2130,7 +1996,6 @@ function EventsDashboard() {
                     <span>{sortValue}</span>
                     <ChevronDown className={`w-3.5 h-3.5 transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
                   </button>
-
                   {sortOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 rounded-xl shadow-lg z-20 overflow-hidden py-1">
                       {sortOptions.map((option) => (
@@ -2155,7 +2020,6 @@ function EventsDashboard() {
                 </div>
               </div>
             </div>
-
             {/* Filter controls row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-2.5 pt-1">
               <div className="relative lg:col-span-5">
@@ -2177,7 +2041,6 @@ function EventsDashboard() {
                   </button>
                 )}
               </div>
-
               <div className="lg:col-span-3">
                 <select
                   value={selectedType}
@@ -2194,7 +2057,6 @@ function EventsDashboard() {
                   <option value="tech fest">Tech Fest</option>
                 </select>
               </div>
-
               <div className="lg:col-span-2">
                 <select
                   value={selectedMode}
@@ -2207,7 +2069,6 @@ function EventsDashboard() {
                   <option value="both">Both / Hybrid</option>
                 </select>
               </div>
-
               <div className="lg:col-span-2 flex items-center">
                 {hasActiveFilters ? (
                   <button
@@ -2233,7 +2094,6 @@ function EventsDashboard() {
               </div>
             </div>
           </div>
-
           <div className="overflow-x-auto">
             <table className="w-full text-xs sm:text-sm min-w-[650px]">
               <thead>
@@ -2244,25 +2104,20 @@ function EventsDashboard() {
                   <th className="px-4 sm:px-6 py-3 font-medium">
                     Event
                   </th>
-
                   <th className="px-3 sm:px-4 py-3 font-medium hidden sm:table-cell">
                     Category
                   </th>
-
                   <th className="px-3 sm:px-4 py-3 font-medium hidden md:table-cell">
                     Start Date
                   </th>
-
                   <th className="px-3 sm:px-4 py-3 font-medium">
                     Status
                   </th>
-
                   <th className="px-4 sm:px-6 py-3 font-medium text-center">
                     Action
                   </th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading && (
                   <tr>
@@ -2277,7 +2132,6 @@ function EventsDashboard() {
                     </td>
                   </tr>
                 )}
-
                 {!loading &&
                   filteredAndSortedEvents.length === 0 && (
                     <tr>
@@ -2310,7 +2164,6 @@ function EventsDashboard() {
                       </td>
                     </tr>
                   )}
-
                 {!loading &&
                   paginatedEvents.map(
                     (event, index) => (
@@ -2336,7 +2189,6 @@ function EventsDashboard() {
                         <td className="px-4 sm:px-6 py-3 sm:py-4 text-gray-400 text-xs font-mono">
                           {String(startIndex + index + 1).padStart(2, '0')}
                         </td>
-
                         <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <div className="flex items-center gap-2 sm:gap-3">
                             {event.Posters && event.Posters.length > 0 ? (
@@ -2350,19 +2202,16 @@ function EventsDashboard() {
                                 <Calendar className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-700 dark:text-emerald-500" />
                               </div>
                             )}
-
                             <div className="min-w-0">
                               <p className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white truncate max-w-xs sm:max-w-md">
                                 {event.EventName}
                               </p>
-
                               <div className="flex flex-wrap items-center gap-2 mt-1">
                                 {event.HackathonMode && (
                                   <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-zinc-700">
                                     {event.HackathonMode}
                                   </span>
                                 )}
-
                                 {event.PhysicalPrizeMoney && (
                                   <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
                                     Physical: {event.PhysicalPrizeMoney}
@@ -2382,7 +2231,6 @@ function EventsDashboard() {
                             </div>
                           </div>
                         </td>
-
                         <td className="px-3 sm:px-4 py-3 sm:py-4 hidden sm:table-cell">
                           <span
                             className={`text-xs px-2.5 py-1 rounded-full font-semibold ${getCategoryStyles()}`}
@@ -2390,7 +2238,6 @@ function EventsDashboard() {
                             {event.EventType || 'General'}
                           </span>
                         </td>
-
                         <td className="px-3 sm:px-4 py-3 sm:py-4 text-gray-600 dark:text-gray-300 hidden md:table-cell">
                           <p className="text-xs sm:text-sm whitespace-nowrap">
                             {event.StartDate ? new Date(event.StartDate).toLocaleDateString('en-GB', {
@@ -2400,7 +2247,6 @@ function EventsDashboard() {
                             }) : 'Date TBD'}
                           </p>
                         </td>
-
                         <td className="px-3 sm:px-4 py-3 sm:py-4">
                           <span
                             className={`text-xs px-2.5 py-1 rounded-full font-semibold ${getStatusStyles(
@@ -2410,7 +2256,6 @@ function EventsDashboard() {
                             {event.EventStatus || 'Active'}
                           </span>
                         </td>
-
                         <td className="px-4 sm:px-6 py-3 sm:py-4 text-center">
                           <Link
                             to={`/sidebar/eventinfo/${event.Id}`}
@@ -2427,14 +2272,12 @@ function EventsDashboard() {
               </tbody>
             </table>
           </div>
-
           {filteredAndSortedEvents.length > 0 && (
             <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-50/50 dark:bg-black">
               <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 <span>
                   Showing <span className="font-semibold text-gray-900 dark:text-white">{startIndex + 1}</span> to <span className="font-semibold text-gray-900 dark:text-white">{Math.min(startIndex + itemsPerPage, filteredAndSortedEvents.length)}</span> of <span className="font-semibold text-gray-900 dark:text-white">{filteredAndSortedEvents.length}</span> events
                 </span>
-
                 <div className="hidden sm:flex items-center gap-1.5 ml-2 border-l border-gray-200 dark:border-zinc-800 pl-3">
                   <span className="text-xs text-gray-400">Per page:</span>
                   <select
@@ -2452,7 +2295,6 @@ function EventsDashboard() {
                   </select>
                 </div>
               </div>
-
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
@@ -2472,7 +2314,6 @@ function EventsDashboard() {
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-
                 <div className="flex items-center gap-1 px-1">
                   {Array.from({ length: totalPages }, (_, i) => i + 1)
                     .filter((p) => p === 1 || p === totalPages || Math.abs(p - safeCurrentPage) <= 1)
@@ -2502,7 +2343,6 @@ function EventsDashboard() {
                       )
                     )}
                 </div>
-
                 <button
                   type="button"
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
@@ -2529,5 +2369,4 @@ function EventsDashboard() {
     </div>
   );
 }
-
 export default EventsDashboard;

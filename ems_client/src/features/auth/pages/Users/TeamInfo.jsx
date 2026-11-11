@@ -68,7 +68,6 @@ import AlumniDigitalPassCard from './components/AlumniDigitalPassCard';
 import ProjectExpoParticipantCard from './components/ProjectExpoParticipantCard';
 import ParticipantAttendanceView from './components/ParticipantAttendanceView';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../../../../lib/calendarUtils';
-
 function formatDate(date) {
     if (!date) return "Not available";
     return new Date(date).toLocaleDateString("en-IN", {
@@ -77,36 +76,28 @@ function formatDate(date) {
         year: "numeric"
     });
 }
-
 function getInitial(name) {
     if (!name) return "?";
     return name.trim().charAt(0).toUpperCase();
 }
-
 function isTeamLead(role) {
     return role?.toLowerCase().replace(/\s/g, "") === "teamlead" || (role || "").toLowerCase().includes("lead");
 }
-
 function TeamInfo() {
     const navigate = useNavigate();
     const { teamId } = useParams();
     const { theme: appTheme } = useTheme();
-
     const isDark = appTheme === "dark";
-
     const [teamData, setTeamData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [currentUserId, setCurrentUserId] = useState(null);
     const [eventDetails, setEventDetails] = useState(null);
     const { user: authUser } = useAuth();
-
     const user = authUser || (() => {
         try { return JSON.parse(localStorage.getItem('user') || 'null'); }
         catch { return null; }
     })();
-
-
     // Physical services & facilities booking state
     const [serviceAvailability, setServiceAvailability] = useState({
         accommodationEnabled: false,
@@ -150,12 +141,10 @@ function TeamInfo() {
     const [serviceSaving, setServiceSaving] = useState(false);
     const [serviceError, setServiceError] = useState("");
     const [serviceMessage, setServiceMessage] = useState("");
-
     // Published Results state
     const [resultsData, setResultsData] = useState(null);
     const [loadingResults, setLoadingResults] = useState(false);
     const [expandedRoundId, setExpandedRoundId] = useState(null);
-
     // Problem Statement / Theme state
     const [teamProblemStatement, setTeamProblemStatement] = useState(null);
     const [loadingPs, setLoadingPs] = useState(false);
@@ -163,7 +152,6 @@ function TeamInfo() {
     const [organizerStatements, setOrganizerStatements] = useState([]);
     const [participantStatement, setParticipantStatement] = useState(null);
     const [selectedStatement, setSelectedStatement] = useState(null);
-
     // Workshop Learning Hub state
     const [workshopSessions, setWorkshopSessions] = useState([]);
     const [workshopResources, setWorkshopResources] = useState([]);
@@ -171,16 +159,13 @@ function TeamInfo() {
     const [loadingWorkshopHub, setLoadingWorkshopHub] = useState(false);
     const [activeWorkshopTab, setActiveWorkshopTab] = useState('curriculum');
     const [participantAttendanceStatus, setParticipantAttendanceStatus] = useState('not_marked');
-
     // Public QR Pass state
     const [qrModalOpen, setQrModalOpen] = useState(false);
     const [copiedLink, setCopiedLink] = useState(false);
     const qrSvgRef = useRef(null);
-
     const publicTeamUrl = typeof window !== 'undefined'
         ? `${window.location.origin}/teams/public/${teamId}`
         : '';
-
     const handleCopyPublicUrl = () => {
         if (navigator.clipboard && publicTeamUrl) {
             navigator.clipboard.writeText(publicTeamUrl);
@@ -188,9 +173,7 @@ function TeamInfo() {
             setTimeout(() => setCopiedLink(false), 2500);
         }
     };
-
     const [calendarDropdownOpen, setCalendarDropdownOpen] = useState(false);
-
     const handleAddToGoogleCalendar = () => {
         const url = buildGoogleCalendarUrl({
             title: team?.EventName || 'Webinar Keynote Session',
@@ -202,7 +185,6 @@ function TeamInfo() {
         window.open(url, '_blank');
         setCalendarDropdownOpen(false);
     };
-
     const handleDownloadIcs = () => {
         downloadIcsFile({
             title: team?.EventName || 'Webinar Keynote Session',
@@ -213,13 +195,11 @@ function TeamInfo() {
         });
         setCalendarDropdownOpen(false);
     };
-
     const fadeUp = (delay = 0) => ({
         initial: { opacity: 0, y: 15 },
         animate: { opacity: 1, y: 0 },
         transition: { duration: 0.35, ease: 'easeOut', delay },
     });
-
     const handleDownloadQr = () => {
         try {
             const svg = document.getElementById(`team-qr-code-${teamId}`) || qrSvgRef.current?.querySelector('svg');
@@ -247,34 +227,27 @@ function TeamInfo() {
             console.error("Failed to download QR code:", err);
         }
     };
-
     const fetchTeamInfo = useCallback(async () => {
         try {
             if (!teamId) throw new Error("Team ID is missing");
-
             const storedUser = localStorage.getItem("user");
             if (!storedUser) throw new Error("User information not found");
-
             const user = JSON.parse(storedUser);
             const userId = user?.Id || user?.id;
             if (!userId) throw new Error("User ID is missing");
-
             const response = await fetch(
                 `${API_BASE_URL}/api/teams/info/${teamId}/${userId}`
             );
             const data = await response.json();
-
             if (!response.ok) {
                 throw new Error(data.message || "Failed to fetch team information");
             }
             if (!data.team) {
                 throw new Error("Team information not found");
             }
-
             setTeamData(data);
             setCurrentUserId(userId);
             setError("");
-
             const targetTeam = data.team;
             const isApprovedPhysical =
                 String(targetTeam.ParticipationMode || "").toLowerCase() === "physical" &&
@@ -286,7 +259,6 @@ function TeamInfo() {
             );
             const isViewerLead = Number(targetTeam.TeamLeadUserId) === Number(userId);
             const canViewServices = isViewerLead || (isIndividualEvent && (isViewerLead || (data.members || []).some(m => Number(m.UserId) === Number(userId))));
-
             // Fetch physical choices if applicable
             if (isApprovedPhysical && canViewServices && targetTeam.EventId) {
                 setServiceLoading(true);
@@ -338,7 +310,6 @@ function TeamInfo() {
                     setServiceLoading(false);
                 }
             }
-
             // Fetch Published Evaluation Results & Scorecard for this team
             try {
                 setLoadingResults(true);
@@ -357,7 +328,6 @@ function TeamInfo() {
             } finally {
                 setLoadingResults(false);
             }
-
             // Fetch Problem Statement / Theme Details for Hackathons
             if (targetTeam.EventId && String(targetTeam.EventType || '').toLowerCase() === 'hackathon') {
                 try {
@@ -368,17 +338,14 @@ function TeamInfo() {
                         fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/team/${teamId}/participant-statement`),
                         fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/team/${teamId}`)
                     ]);
-
                     if (themesRes.ok) {
                         const themesData = await themesRes.json();
                         setEventThemes(themesData.themes || []);
                     }
-
                     if (statementsRes.ok) {
                         const stData = await statementsRes.json();
                         setOrganizerStatements(stData.problemStatements || []);
                     }
-
                     const partData = partRes.ok ? await partRes.json() : null;
                     if (partData?.statement) {
                         setParticipantStatement(partData.statement);
@@ -394,7 +361,6 @@ function TeamInfo() {
                     } else {
                         setParticipantStatement(null);
                     }
-
                     const selData = selRes.ok ? await selRes.json() : null;
                     if (selData?.selection) {
                         setSelectedStatement(selData.selection);
@@ -420,7 +386,6 @@ function TeamInfo() {
                     setLoadingPs(false);
                 }
             }
-
             // Fetch Agenda, Resources & Instructors/Speakers for Workshops and Webinars
             const targetTypeInfo = getEventTypeInfo(targetTeam.EventType || '');
             if (targetTeam.EventId && (targetTypeInfo.isWorkshop || targetTypeInfo.isWebinar)) {
@@ -436,7 +401,6 @@ function TeamInfo() {
                             ? fetch(`${API_BASE_URL}/api/${apiPrefix}/${targetTeam.EventId}/attendance/user/${effectiveUserId}`)
                             : Promise.resolve(null)
                     ]);
-
                     if (sessRes.ok) {
                         const sData = await sessRes.json();
                         setWorkshopSessions(sData.sessions || []);
@@ -468,7 +432,6 @@ function TeamInfo() {
                     setLoadingWorkshopHub(false);
                 }
             }
-
         } catch (err) {
             console.error("Error fetching team info:", err);
             setError(err.message || "Failed to load team information");
@@ -476,29 +439,23 @@ function TeamInfo() {
             setLoading(false);
         }
     }, [teamId]);
-
     useEffect(() => {
         fetchTeamInfo();
     }, [fetchTeamInfo]);
-
     // Real-time updates via WebSocket for virtual status changes
     useEffect(() => {
         const eventId = teamData?.team?.EventId;
         if (!eventId) return;
-
         let socket = null;
         let reconnectTimer = null;
         let isMounted = true;
-
         const connectWS = () => {
             try {
                 const wsBase = (API_BASE_URL || 'http://localhost:3000').replace(/^http/, 'ws');
                 socket = new WebSocket(wsBase);
-
                 socket.onopen = () => {
                     socket.send(JSON.stringify({ type: 'JOIN_EVENT', eventId }));
                 };
-
                 socket.onmessage = (msgEvent) => {
                     try {
                         const data = JSON.parse(msgEvent.data);
@@ -509,13 +466,11 @@ function TeamInfo() {
                         // Ignore parse error
                     }
                 };
-
                 socket.onclose = () => {
                     if (isMounted) {
                         reconnectTimer = setTimeout(connectWS, 3000);
                     }
                 };
-
                 socket.onerror = () => {
                     socket.close();
                 };
@@ -523,9 +478,7 @@ function TeamInfo() {
                 console.warn('WebSocket connection failed:', e);
             }
         };
-
         connectWS();
-
         return () => {
             isMounted = false;
             if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -535,7 +488,6 @@ function TeamInfo() {
             }
         };
     }, [teamData?.team?.EventId, fetchTeamInfo]);
-
     const handleReceiptUpload = async (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -558,7 +510,6 @@ function TeamInfo() {
             setUploadingReceipt(false);
         }
     };
-
     const handleCopyUpi = () => {
         if (serviceAvailability.adminUpiId && navigator.clipboard) {
             navigator.clipboard.writeText(serviceAvailability.adminUpiId);
@@ -566,7 +517,6 @@ function TeamInfo() {
             setTimeout(() => setCopiedUpi(false), 2000);
         }
     };
-
     const handleFacilityBookingSubmit = async (e, customTotal) => {
         if (e && e.preventDefault) e.preventDefault();
         if (!bookingForm.paymentRefId.trim()) {
@@ -619,16 +569,13 @@ function TeamInfo() {
             setServiceSaving(false);
         }
     };
-
     const team = teamData?.team;
     const members = teamData?.members || [];
     const eventId = team?.EventId;
-
     // Theme branding calculation adapting to current mode
     const theme = useMemo(() => {
         return getEventTheme(team || {}, isDark);
     }, [team, isDark]);
-
     const eventObj = useMemo(() => {
         if (!team?.EventId) return null;
         return {
@@ -641,14 +588,12 @@ function TeamInfo() {
             PSSelectionDeadline: team.PSSelectionDeadline
         };
     }, [team]);
-
     const isIndividual = Boolean(
         isSoloTeamSize(team?.TeamSize) ||
         isSoloTeamSize(team?.EventTeamSize) ||
         String(team?.TeamName || "").toLowerCase().includes("(individual)") ||
         (Number(team?.TeamSize) === 1 && members.length <= 1)
     );
-
     const typeInfo = getEventTypeInfo(team?.EventType || eventObj?.EventType || '');
     const isWorkshop = typeInfo.isWorkshop;
     const isWebinar = typeInfo.isWebinar;
@@ -656,31 +601,24 @@ function TeamInfo() {
     const isAlumni = typeInfo.isAlumni;
     const isProjectExpo = typeInfo.isProjectExpo;
     const isSessionBased = isWorkshop || isWebinar;
-
     const qrPassValue = isSessionBased
         ? `${publicTeamUrl}?attendee=${team?.TeamId || teamId}&user=${currentUserId || team?.TeamLeadUserId || ''}&type=${isWebinar ? 'webinar' : 'workshop'}`
         : publicTeamUrl;
-
     const isApprovedPhysical =
         String(team?.ParticipationMode || "").toLowerCase() === "physical" &&
         String(team?.RegistrationStatus || "").toLowerCase() === "approved";
-
     const isLeadViewer = Number(team?.TeamLeadUserId) === Number(currentUserId);
     const canAccessServices = isLeadViewer || (isIndividual && (isLeadViewer || members.some(m => Number(m.UserId) === Number(currentUserId))));
-
     // Clean display name
     const primaryMember = members[0] || {};
     const displayName = isIndividual
         ? (primaryMember.UserName || team?.TeamName?.replace(/\s*\(individual\)/gi, ''))
         : team?.TeamName;
-
     const displayEmail = isIndividual
         ? primaryMember.Email
         : (members.find(m => isTeamLead(m.Role))?.Email || primaryMember.Email);
-
     const displayCollege = team?.College || primaryMember.College || "Institution";
     const displayState = team?.State || primaryMember.State;
-
     if (loading) {
         return (
             <div className="min-h-screen w-full bg-slate-50 dark:bg-black text-slate-900 dark:text-white flex flex-col items-center justify-center gap-3 transition-colors duration-300">
@@ -692,7 +630,6 @@ function TeamInfo() {
             </div>
         );
     }
-
     if (error || !team) {
         return (
             <div className="min-h-screen w-full bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-6 flex flex-col items-center justify-center gap-4 transition-colors duration-300">
@@ -710,14 +647,11 @@ function TeamInfo() {
             </div>
         );
     }
-
     const publishedRounds = resultsData?.publishedRounds || [];
     const hasPublishedRounds = publishedRounds.length > 0;
     const isOverallPublished = resultsData?.isOverallPublished && resultsData?.overallRank;
-
     const isVirtualEventLive = String(team?.VirtualStatus || '').toUpperCase() === 'LIVE';
     const isVirtualTrack = String(team?.ParticipationMode || '').toLowerCase() === 'virtual' || String(team?.HackathonMode || '').toLowerCase() === 'virtual';
-
     return (
         <div className="min-h-screen w-full bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6 font-sans transition-colors duration-300">
             {/* ── TOP NAV BAR ── */}
@@ -743,7 +677,6 @@ function TeamInfo() {
                         </div>
                     </div>
                 </div>
-
                 {/* Event Action Buttons */}
                 <div className="flex flex-wrap items-center gap-2.5">
                     {/* Go to Virtual Event Page Button */}
@@ -768,7 +701,6 @@ function TeamInfo() {
                             <ExternalLink className="w-3.5 h-3.5" />
                         </button>
                     )}
-
                     {/* View Event Details Button */}
                     {team.EventId && (
                         <button
@@ -788,7 +720,6 @@ function TeamInfo() {
                     )}
                 </div>
             </div>
-
             {/* Live Virtual Event Alert Banner */}
             {isVirtualEventLive && team.EventId && (
                 <div className="rounded-3xl border border-emerald-500/40 bg-zinc-950 p-5 sm:p-6 shadow-xl shadow-emerald-950/30 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -819,7 +750,6 @@ function TeamInfo() {
                             </p>
                         </div>
                     </div>
-
                     <div className="flex items-center gap-2 shrink-0">
                         <button
                             type="button"
@@ -830,7 +760,6 @@ function TeamInfo() {
                             <CalendarPlus className="w-4 h-4 text-emerald-400" />
                             <span className="hidden sm:inline">Add to Calendar</span>
                         </button>
-
                         <button
                             type="button"
                             onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
@@ -841,7 +770,6 @@ function TeamInfo() {
                             <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
-
                     {isWebinar && (
                         <div className="w-full mt-3 pt-3 border-t border-emerald-500/20 flex items-center gap-2 text-xs text-emerald-300/90 font-medium overflow-hidden">
                             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px] tracking-wider uppercase shrink-0">
@@ -855,7 +783,6 @@ function TeamInfo() {
                     )}
                 </div>
             )}
-
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 1: TOP TEAM OR INDIVIDUAL DETAILS (HERO CARD) ── */}
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -899,7 +826,6 @@ function TeamInfo() {
                                 </div>
                             );
                         })()}
-
                         {/* Text info */}
                         <div className="min-w-0 space-y-1.5">
                             <div className="flex flex-wrap items-center gap-2">
@@ -913,11 +839,9 @@ function TeamInfo() {
                                 >
                                     {isWebinar ? "Webinar Delegate" : isWorkshop ? "Solo Attendee" : (isIndividual ? "Individual Participant" : `Team (${team.TeamSize} Members)`)}
                                 </span>
-
                                 <span className="text-[10px] uppercase font-extrabold tracking-widest px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-gray-300 border border-slate-200 dark:border-zinc-800">
                                     {isWebinar ? "Virtual Live Stream" : `${team.ParticipationMode || "Physical"} ${isWorkshop ? "Mode" : "Track"}`}
                                 </span>
-
                                 <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
                                     isWebinar
                                         ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
@@ -926,7 +850,6 @@ function TeamInfo() {
                                     <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isWebinar ? "bg-emerald-500" : "bg-emerald-500"}`} />
                                     {isWebinar ? "Confirmed Delegate Seat" : isWorkshop ? "Confirmed Seat" : (team.RegistrationStatus || "Approved")}
                                 </span>
-
                                 {isSessionBased && (
                                     <button
                                         type="button"
@@ -957,11 +880,9 @@ function TeamInfo() {
                                     </button>
                                 )}
                             </div>
-
                             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight break-words">
                                 {displayName}
                             </h1>
-
                             <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 dark:text-gray-400 pt-0.5">
                                 {displayEmail && (
                                     <span className="flex items-center gap-1.5">
@@ -969,12 +890,10 @@ function TeamInfo() {
                                         <span className="truncate">{displayEmail}</span>
                                     </span>
                                 )}
-
                                 <span className="flex items-center gap-1.5">
                                     <Building2 className="w-3.5 h-3.5 text-slate-400 dark:text-gray-500 shrink-0" />
                                     <span className="truncate">{displayCollege}</span>
                                 </span>
-
                                 {displayState && (
                                     <span className="flex items-center gap-1.5">
                                         <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-gray-500 shrink-0" />
@@ -984,7 +903,6 @@ function TeamInfo() {
                             </div>
                         </div>
                     </div>
-
                     {/* Right: Key Stats Columns */}
                     <div className="flex items-center gap-4 sm:gap-6 pt-4 lg:pt-0 border-t lg:border-t-0 lg:border-l border-slate-200 dark:border-zinc-800/80 lg:pl-6 shrink-0">
                         {/* Total Registrations in Event */}
@@ -999,9 +917,7 @@ function TeamInfo() {
                                 </span>
                             </p>
                         </div>
-
                         <div className="h-10 w-px bg-slate-200 dark:bg-zinc-800" />
-
                         {/* Registration ID */}
                         <div className="space-y-1">
                             <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-gray-400">
@@ -1014,7 +930,6 @@ function TeamInfo() {
                     </div>
                 </div>
             </section>
-
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 1.5: TEAM PASS & PUBLIC SCANNER QR CODE ── */}
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -1045,11 +960,9 @@ function TeamInfo() {
                                     {isWebinar ? "Show or Scan to Verify Virtual Join" : isWorkshop ? "Present at Registration Desk" : "No Login Required to View"}
                                 </span>
                             </div>
-
                             <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                                 {isWebinar ? "Scannable Webinar Delegate Entry Pass" : isWorkshop ? "Scannable Workshop Attendee Entry Pass" : "Scannable Team Verification QR Code"}
                             </h2>
-
                             <p className="text-xs sm:text-sm text-slate-600 dark:text-gray-400 max-w-xl leading-relaxed">
                                 {isWebinar
                                     ? "Present or scan this digital delegate pass to verify your attendance for keynote sessions and generate your webinar completion certificate."
@@ -1057,7 +970,6 @@ function TeamInfo() {
                                     ? "Present this verified QR pass at the workshop check-in desk or lab entrance for instant automated check-in and attendance recording."
                                     : "Judges, organizers, and booth visitors can scan this QR code with their smartphone camera to view your verified team credentials, problem statement, roster, and live scorecard."}
                             </p>
-
                             {/* Action buttons */}
                             <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-2.5">
                                 <a
@@ -1073,7 +985,6 @@ function TeamInfo() {
                                     <ExternalLink className="w-3.5 h-3.5" />
                                     <span>{isWebinar ? "Open Delegate Pass" : isWorkshop ? "Open Public Pass" : "Open Public Page"}</span>
                                 </a>
-
                                 <button
                                     type="button"
                                     onClick={handleCopyPublicUrl}
@@ -1082,7 +993,6 @@ function TeamInfo() {
                                     {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                                     <span>{copiedLink ? "Link Copied!" : "Copy Link"}</span>
                                 </button>
-
                                 <button
                                     type="button"
                                     onClick={() => setQrModalOpen(true)}
@@ -1091,7 +1001,6 @@ function TeamInfo() {
                                     <Maximize2 className="w-3.5 h-3.5" />
                                     <span>Enlarge QR Pass</span>
                                 </button>
-
                                 <button
                                     type="button"
                                     onClick={handleDownloadQr}
@@ -1102,7 +1011,6 @@ function TeamInfo() {
                                 </button>
                             </div>
                         </div>
-
                         {/* Right: QR Code Visual Box */}
                         <div
                             onClick={() => setQrModalOpen(true)}
@@ -1124,7 +1032,6 @@ function TeamInfo() {
                     </div>
                 </section>
             )}
-
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 1.8: HACKATHON THEME & PROBLEM STATEMENT ─────── */}
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -1153,7 +1060,6 @@ function TeamInfo() {
                         }}
                         themes={eventThemes}
                     />
-
                     {/* Innovation Themes Display (Photo/Icon, Title, Description) */}
                     <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-4">
                         <PhysicalHackathonThemesSection
@@ -1164,7 +1070,6 @@ function TeamInfo() {
                     </div>
                 </div>
             )}
-
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 2: SEMINAR / WORKSHOP / WEBINAR LEARNING HUB ─── */}
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -1223,7 +1128,6 @@ function TeamInfo() {
                                 </p>
                             </div>
                         </div>
-
                         {/* Calendar Integration Menu */}
                         <div className="relative self-start sm:self-auto">
                             <button
@@ -1235,7 +1139,6 @@ function TeamInfo() {
                                 <span>Add to Calendar</span>
                                 <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${calendarDropdownOpen ? 'rotate-180' : ''}`} />
                             </button>
-
                             {calendarDropdownOpen && (
                                 <div className="absolute right-0 mt-1.5 w-56 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-1.5 shadow-xl z-30 space-y-1">
                                     <button
@@ -1258,7 +1161,6 @@ function TeamInfo() {
                             )}
                         </div>
                     </div>
-
                     {/* ── WEBSITE SIGNATURE THEME TABS ── */}
                     <div className="relative pt-4">
                         <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto scrollbar-none">
@@ -1272,7 +1174,6 @@ function TeamInfo() {
                             ].map((tab) => {
                                 const isActive = activeWorkshopTab === tab.id;
                                 const TabIcon = tab.icon;
-
                                 return (
                                     <button
                                         key={tab.id}
@@ -1292,7 +1193,6 @@ function TeamInfo() {
                                         ) : (
                                             <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
                                         )}
-
                                         <span
                                             className={`relative z-20 flex items-center gap-2 transition-colors ${
                                                 isActive
@@ -1312,7 +1212,6 @@ function TeamInfo() {
                             })}
                         </div>
                     </div>
-
                     {/* Connected Content Container */}
                     <motion.section
                         initial={{ opacity: 0, y: 12 }}
@@ -1320,7 +1219,6 @@ function TeamInfo() {
                         transition={{ duration: 0.3 }}
                         className="rounded-3xl rounded-tl-none border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-6"
                     >
-
                     {/* Tab 1: Curriculum / Agenda */}
                     {activeWorkshopTab === 'curriculum' && (
                         <div className="space-y-4">
@@ -1359,7 +1257,6 @@ function TeamInfo() {
                                                     )}
                                                 </div>
                                             </div>
-
                                             <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
                                                 {(session.StartTime || session.EndTime) && (
                                                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">
@@ -1402,7 +1299,6 @@ function TeamInfo() {
                             )}
                         </div>
                     )}
-
                     {/* Tab 2: Study Materials & Downloads */}
                     {activeWorkshopTab === 'resources' && (
                         <div className="space-y-4">
@@ -1431,7 +1327,6 @@ function TeamInfo() {
                                                     )}
                                                 </div>
                                             </div>
-
                                             {res.ResourceUrl && (
                                                 <a
                                                     href={res.ResourceUrl}
@@ -1459,7 +1354,6 @@ function TeamInfo() {
                             )}
                         </div>
                     )}
-
                     {/* Tab 3: Instructors & Trainers */}
                     {activeWorkshopTab === 'instructors' && (
                         <div className="space-y-4">
@@ -1519,7 +1413,6 @@ function TeamInfo() {
                             )}
                         </div>
                     )}
-
                     {/* Tab: My Attendance (Webinars & Workshops) */}
                     {activeWorkshopTab === 'attendance' && (
                         <div className="space-y-4">
@@ -1533,7 +1426,6 @@ function TeamInfo() {
                             />
                         </div>
                     )}
-
                     {/* Tab 4: Live Q&A (Webinar only) */}
                     {activeWorkshopTab === 'qa' && isWebinar && (
                         <div className="space-y-4">
@@ -1544,7 +1436,6 @@ function TeamInfo() {
                             />
                         </div>
                     )}
-
                     {/* Tab 5: Delegate Feedback (Webinar only) */}
                     {activeWorkshopTab === 'feedback' && isWebinar && (
                         <div className="space-y-4">
@@ -1588,7 +1479,6 @@ function TeamInfo() {
                                         </p>
                                     </div>
                                 </div>
-
                                 <div className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs self-start sm:self-auto shadow-sm">
                                     <span className="text-slate-500 dark:text-gray-400">Total Score: </span>
                                     <strong className="text-slate-900 dark:text-white ml-1 text-sm font-black" style={{ color: theme.accent }}>
@@ -1597,7 +1487,6 @@ function TeamInfo() {
                                     <span className="text-slate-400 dark:text-gray-500"> / {resultsData?.totalPublishedMaxMarks} pts</span>
                                 </div>
                             </div>
-
                             {/* Overall Podium Standing if overall results are published */}
                             {isOverallPublished && (
                                 <div
@@ -1639,7 +1528,6 @@ function TeamInfo() {
                                             </p>
                                         </div>
                                     </div>
-
                                     <div className="text-left sm:text-right sm:border-l sm:border-slate-200 dark:sm:border-zinc-800 sm:pl-6">
                                         <span className="text-xs text-slate-500 dark:text-gray-400">Percentile</span>
                                         <p className="text-2xl font-black text-slate-900 dark:text-white" style={{ color: theme.accent }}>
@@ -1648,12 +1536,10 @@ function TeamInfo() {
                                     </div>
                                 </div>
                             )}
-
                             {/* Published Rounds Scorecards */}
                             <div className="space-y-4">
                                 {publishedRounds.map((round) => {
                                     const isExpanded = expandedRoundId === round.roundId;
-
                                     return (
                                         <div
                                             key={round.roundId}
@@ -1691,7 +1577,6 @@ function TeamInfo() {
                                                         )}
                                                     </div>
                                                 </div>
-
                                                 <div className="flex items-center gap-4 shrink-0">
                                                     <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1 shadow-sm">
                                                         <span style={{ color: theme.accent }} className="font-extrabold text-base">
@@ -1701,13 +1586,11 @@ function TeamInfo() {
                                                             /{round.maxMarks}
                                                         </span>
                                                     </div>
-
                                                     <div className="w-7 h-7 rounded-lg border border-slate-200 dark:border-zinc-800 flex items-center justify-center text-slate-500 dark:text-gray-400 bg-white dark:bg-transparent">
                                                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                                     </div>
                                                 </div>
                                             </div>
-
                                             {/* Expanded Questions Breakdown */}
                                             {isExpanded && (
                                                 <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-zinc-800/80 bg-white/70 dark:bg-black/40 space-y-4">
@@ -1715,12 +1598,10 @@ function TeamInfo() {
                                                         <Layers className="w-3.5 h-3.5" />
                                                         Evaluation Criteria Breakdown
                                                     </h4>
-
                                                     {round.questions && round.questions.length > 0 ? (
                                                         <div className="space-y-1.5">
                                                             {round.questions.map((q, qIdx) => {
                                                                 const hasScore = q.marksAwarded !== undefined && q.marksAwarded !== null;
-
                                                                 return (
                                                                     <div
                                                                         key={q.Id}
@@ -1741,7 +1622,6 @@ function TeamInfo() {
                                                                                 )}
                                                                             </div>
                                                                         </div>
-
                                                                         {/* Marks Scored for this question */}
                                                                         <div className="shrink-0">
                                                                             {hasScore ? (
@@ -1764,7 +1644,6 @@ function TeamInfo() {
                                                             })}
                                                         </div>
                                                     ) : null}
-
                                                     {/* Jury Feedback */}
                                                     {round.feedback && (
                                                         <div className="p-4 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/60 space-y-1">
@@ -1802,7 +1681,6 @@ function TeamInfo() {
                                     </p>
                                 </div>
                             </div>
-
                             <div className="text-xs text-slate-400 dark:text-gray-500 font-medium sm:text-right shrink-0">
                                 Stay tuned &bull; Results will update live
                             </div>
@@ -1810,7 +1688,6 @@ function TeamInfo() {
                     )}
                 </>
             )}
-
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 3: TEAM SQUAD / MEMBERS (IF TEAM EVENT) ── */}
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -1825,11 +1702,9 @@ function TeamInfo() {
                             Active Squad
                         </span>
                     </div>
-
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {members.map(member => {
                             const isLead = isTeamLead(member.Role);
-
                             return (
                                 <div
                                     key={member.UserId}
@@ -1858,7 +1733,6 @@ function TeamInfo() {
                                             {getInitial(member.UserName)}
                                         </span>
                                     </div>
-
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center justify-between gap-1.5">
                                             <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate" title={member.UserName}>
@@ -1874,14 +1748,12 @@ function TeamInfo() {
                                                 </span>
                                             )}
                                         </div>
-
                                         {member.Email && (
                                             <p className="text-xs text-slate-500 dark:text-gray-400 truncate mt-1 flex items-center gap-1.5">
                                                 <Mail className="w-3 h-3 text-slate-400 dark:text-gray-500 shrink-0" />
                                                 <span className="truncate">{member.Email}</span>
                                             </p>
                                         )}
-
                                         <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-gray-400 mt-2.5 pt-2 border-t border-slate-200 dark:border-zinc-800/60">
                                             <span className="inline-flex items-center gap-1 truncate" title={member.College || 'College'}>
                                                 <Building2 className="w-3 h-3 text-slate-400 dark:text-gray-500 shrink-0" />
@@ -1895,7 +1767,6 @@ function TeamInfo() {
                     </div>
                 </section>
             )}
-
             {/* ══════════════════════════════════════════════════════════════ */}
             {/* ── PRIORITY 4: EVENT OVERVIEW, VENUE & SCHEDULE ── */}
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -1919,7 +1790,6 @@ function TeamInfo() {
                                 </button>
                             )}
                         </div>
-
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/80">
                                 <span className="text-[11px] font-medium text-slate-500 dark:text-gray-400 uppercase">Dates</span>
@@ -1928,7 +1798,6 @@ function TeamInfo() {
                                 </p>
                                 <p className="text-xs text-slate-400 dark:text-gray-500">to {formatDate(team.EndDate)}</p>
                             </div>
-
                             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/80">
                                 <span className="text-[11px] font-medium text-slate-500 dark:text-gray-400 uppercase">Venue &amp; Mode</span>
                                 <p className="text-sm font-bold text-slate-900 dark:text-white mt-1 truncate" title={team.Location}>
@@ -1936,7 +1805,6 @@ function TeamInfo() {
                                 </p>
                                 <p className="text-xs text-slate-400 dark:text-gray-500">{team.ParticipationMode || "Physical"} Track</p>
                             </div>
-
                             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/80">
                                 <span className="text-[11px] font-medium text-slate-500 dark:text-gray-400 uppercase">Event Type</span>
                                 <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">
@@ -1945,7 +1813,6 @@ function TeamInfo() {
                                 <p className="text-xs text-slate-400 dark:text-gray-500 capitalize">{team.EventStatus || "Upcoming"}</p>
                             </div>
                         </div>
-
                         <div className="pt-2">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 mb-2">Description</h4>
                             <p className="text-xs text-slate-700 dark:text-gray-300 leading-relaxed bg-slate-50 dark:bg-zinc-900/40 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800/80">
@@ -1953,7 +1820,6 @@ function TeamInfo() {
                             </p>
                         </div>
                     </div>
-
                     {/* Physical Event Choices (Accommodation & Food Booking) */}
                     {canAccessServices && isApprovedPhysical && !isAlumni &&
                         (serviceAvailability.accommodationEnabled || serviceAvailability.foodEnabled) && (() => {
@@ -1963,7 +1829,6 @@ function TeamInfo() {
                             const fdFee = Number(serviceAvailability.foodFee || 0);
                             const perPerson = pkgFee > 0 ? pkgFee : (accFee + fdFee);
                             const dynamicTotal = perPerson * memberCount;
-
                             return (
                                 <>
                                     {/* On-Page Facilities Card */}
@@ -1983,7 +1848,6 @@ function TeamInfo() {
                                                         : `Hostel room accommodation and dining tokens for all ${memberCount} team members.`}
                                                 </p>
                                             </div>
-
                                             {bookingDetails.submitted && (
                                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-extrabold uppercase tracking-wider self-start sm:self-auto border ${bookingDetails.bookingStatus === 'Approved'
                                                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
@@ -2001,7 +1865,6 @@ function TeamInfo() {
                                                 </span>
                                             )}
                                         </div>
-
                                         {serviceLoading ? (
                                             <div className="py-4 text-xs text-slate-400">Loading facility details...</div>
                                         ) : bookingDetails.submitted ? (
@@ -2031,7 +1894,6 @@ function TeamInfo() {
                                                         </p>
                                                     </div>
                                                 </div>
-
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                                                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
                                                         <span className="text-[10px] uppercase font-bold text-slate-400">Total Transferred</span>
@@ -2039,14 +1901,12 @@ function TeamInfo() {
                                                             ₹{bookingDetails.totalAmount}
                                                         </p>
                                                     </div>
-
                                                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
                                                         <span className="text-[10px] uppercase font-bold text-slate-400">Payment Ref / UTR</span>
                                                         <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5 font-mono truncate" title={bookingDetails.paymentRefId}>
                                                             {bookingDetails.paymentRefId || 'N/A'}
                                                         </p>
                                                     </div>
-
                                                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex items-center justify-between">
                                                         <div>
                                                             <span className="text-[10px] uppercase font-bold text-slate-400">Receipt Proof</span>
@@ -2064,7 +1924,6 @@ function TeamInfo() {
                                                         )}
                                                     </div>
                                                 </div>
-
                                                 {bookingDetails.bookingStatus !== 'Approved' && (
                                                     <div className="pt-1">
                                                         <button
@@ -2105,7 +1964,6 @@ function TeamInfo() {
                                                         </p>
                                                     </div>
                                                 </div>
-
                                                 <div className="flex items-center justify-between pt-1 flex-wrap gap-3">
                                                     <p className="text-xs text-slate-500 dark:text-gray-400">
                                                         Click below to view payment channels, scan Admin QR, and submit reference.
@@ -2122,7 +1980,6 @@ function TeamInfo() {
                                             </div>
                                         )}
                                     </div>
-
                                     {/* MODAL: CAMPUS FACILITIES BOOKING */}
                                     {facilityModalOpen && (
                                         <div
@@ -2156,7 +2013,6 @@ function TeamInfo() {
                                                         <X className="w-5 h-5" />
                                                     </button>
                                                 </div>
-
                                                 {/* Pricing Summary */}
                                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                                                     {serviceAvailability.accommodationEnabled && (
@@ -2182,14 +2038,12 @@ function TeamInfo() {
                                                         </p>
                                                     </div>
                                                 </div>
-
                                                 {/* Admin Payment Details */}
                                                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 space-y-3">
                                                     <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
                                                         <CreditCard className="w-4 h-4 text-emerald-500" />
                                                         Admin Payment Details
                                                     </span>
-
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                                                         <div className="space-y-2">
                                                             {serviceAvailability.adminUpiId ? (
@@ -2210,7 +2064,6 @@ function TeamInfo() {
                                                                     </button>
                                                                 </div>
                                                             ) : null}
-
                                                             {serviceAvailability.adminPaymentInstructions && (
                                                                 <p className="text-xs text-slate-500 dark:text-zinc-400 leading-relaxed bg-white/60 dark:bg-zinc-900/60 p-2.5 rounded-xl border border-slate-200/60 dark:border-zinc-800/60">
                                                                     <span className="font-bold text-slate-800 dark:text-zinc-200">Note: </span>
@@ -2218,7 +2071,6 @@ function TeamInfo() {
                                                                 </p>
                                                             )}
                                                         </div>
-
                                                         {serviceAvailability.adminPaymentQr && (
                                                             <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
                                                                 <span className="text-[10px] font-bold text-slate-400 mb-1">Scan &amp; Pay</span>
@@ -2232,7 +2084,6 @@ function TeamInfo() {
                                                         )}
                                                     </div>
                                                 </div>
-
                                                 {/* Form (NO CHECKBOXES) */}
                                                 <form onSubmit={(e) => handleFacilityBookingSubmit(e, dynamicTotal)} className="space-y-4">
                                                     <div>
@@ -2248,7 +2099,6 @@ function TeamInfo() {
                                                             className="w-full h-10 px-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                                                         />
                                                     </div>
-
                                                     <div>
                                                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-1">
                                                             Payment Screenshot / Receipt *
@@ -2277,7 +2127,6 @@ function TeamInfo() {
                                                         </div>
                                                         {receiptUploadError && <p className="text-xs text-rose-500 mt-1">{receiptUploadError}</p>}
                                                     </div>
-
                                                     <div>
                                                         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 mb-1">
                                                             Special Notes (Optional)
@@ -2290,10 +2139,8 @@ function TeamInfo() {
                                                             className="w-full h-10 px-3.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                                                         />
                                                     </div>
-
                                                     {serviceError && <p className="text-xs text-rose-500">{serviceError}</p>}
                                                     {serviceMessage && <p className="text-xs text-emerald-600 dark:text-emerald-400">{serviceMessage}</p>}
-
                                                     <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-zinc-800">
                                                         <button
                                                             type="button"
@@ -2319,7 +2166,6 @@ function TeamInfo() {
                             );
                         })()}
                 </div>
-
                 {/* Right: Event Poster Card */}
                 <div className="space-y-6">
                     <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5 space-y-4 shadow-sm dark:shadow-xl">
@@ -2342,7 +2188,6 @@ function TeamInfo() {
                                 </div>
                             )}
                         </div>
-
                         <div className="space-y-2">
                             <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
                                 {team.EventName || "Hackathon Event"}
@@ -2350,7 +2195,6 @@ function TeamInfo() {
                             <p className="text-xs text-slate-500 dark:text-gray-400">
                                 {team.Location || "On-Campus Venue"}
                             </p>
-
                             {team.EventId && (
                                 <button
                                     type="button"
@@ -2365,7 +2209,6 @@ function TeamInfo() {
                     </div>
                 </div>
             </div>
-
             {/* QR Enlarge Modal */}
             {qrModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
@@ -2377,7 +2220,6 @@ function TeamInfo() {
                         >
                             <X className="w-5 h-5" />
                         </button>
-
                         <div className="space-y-1 pt-2">
                             <span
                                 className="inline-block px-3 py-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider border"
@@ -2396,7 +2238,6 @@ function TeamInfo() {
                                 {isWebinar ? `Delegate #${team.TeamId} • ${team.EventName}` : isWorkshop ? `Attendee #${team.TeamId} • ${team.EventName}` : `Team #${team.TeamId} • ${team.EventName}`}
                             </p>
                         </div>
-
                         <div
                             ref={qrSvgRef}
                             className="p-5 bg-white rounded-2xl border-2 border-slate-200 shadow-inner flex flex-col items-center"
@@ -2408,11 +2249,9 @@ function TeamInfo() {
                                 includeMargin={true}
                             />
                         </div>
-
                         <p className="text-xs text-slate-500 dark:text-gray-400">
                             Scan with camera to view public verification and scorecard.
                         </p>
-
                         <div className="w-full flex items-center gap-2 pt-2">
                             <button
                                 type="button"
@@ -2422,7 +2261,6 @@ function TeamInfo() {
                                 <Download className="w-4 h-4" />
                                 <span>Save Image</span>
                             </button>
-
                             <button
                                 type="button"
                                 onClick={handleCopyPublicUrl}
@@ -2436,7 +2274,6 @@ function TeamInfo() {
                     </div>
                 </div>
             )}
-
             {/* Receipt / QR Preview Modal */}
             {receiptModalUrl && (
                 <div
@@ -2486,17 +2323,15 @@ function TeamInfo() {
                     </div>
                 </div>
             )}
-
             {!isSeminar && !isWebinar && !isAlumni && !isProjectExpo && (
                 <motion.section {...fadeUp(0.16)}>
-                    <UnifiedEventFeedbackCard 
+                    <UnifiedEventFeedbackCard
                         eventId={eventId}
-                        user={user} 
+                        user={user}
                     />
                 </motion.section>
             )}
         </div>
     );
 }
-
 export default TeamInfo;

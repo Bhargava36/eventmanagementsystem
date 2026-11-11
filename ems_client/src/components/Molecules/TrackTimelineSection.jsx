@@ -9,17 +9,14 @@ import {
   Award
 } from 'lucide-react';
 import { getEventTypeInfo } from '../../lib/utils';
-
 export default function TrackTimelineSection({ trackType = 'virtual', timelines = [], eventTheme = null, eventType = '' }) {
   const isVirtual = trackType.toLowerCase() === 'virtual';
   const typeInfo = getEventTypeInfo(eventType);
-
   // Filter timelines for this track, or general ones
   const filteredTimelines = (timelines || []).filter((item) => {
     const t = (item.Track || '').toLowerCase();
     return t === trackType.toLowerCase() || t === 'general';
   });
-
   // Sort by OrderIndex ascending, then Id
   const sortedTimelines = [...filteredTimelines].sort((a, b) => {
     const orderA = a.OrderIndex !== undefined && a.OrderIndex !== null ? Number(a.OrderIndex) : 0;
@@ -27,7 +24,6 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
     if (orderA !== orderB) return orderA - orderB;
     return (a.Id || 0) - (b.Id || 0);
   });
-
   const getHeaderTitle = () => {
     if (typeInfo.isWorkshop) {
       return isVirtual ? 'Virtual Workshop Agenda & Labs' : 'Campus Workshop Sessions & Hands-on Agenda';
@@ -40,7 +36,6 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
     }
     return isVirtual ? 'Virtual Track Milestones & Roadmap' : 'On-Campus Track Milestones & Schedule';
   };
-
   const getHeaderDesc = () => {
     if (typeInfo.isWorkshop || typeInfo.isSeminar) {
       return isVirtual
@@ -56,7 +51,6 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
       ? 'Step-by-step roadmap for cloud sprints, code freezes, mentor check-ins & virtual jury evaluations'
       : 'Complete schedule for reporting, in-person mentorship, build sprint & final demos';
   };
-
   return (
     <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 space-y-6">
       {/* Section Header matching Event details typography */}
@@ -83,7 +77,6 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
             </p>
           </div>
         </div>
-
         <div
           className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-xs font-bold self-start sm:self-auto"
           style={eventTheme ? { backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder } : undefined}
@@ -94,7 +87,6 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
           </span>
         </div>
       </div>
-
       {/* Timeline items list */}
       {sortedTimelines.length === 0 ? (
         <div className="p-8 rounded-2xl bg-slate-50/50 dark:bg-black border border-slate-200 dark:border-zinc-800 text-center">
@@ -111,7 +103,6 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
           {sortedTimelines.map((item, index) => {
             const stepNum = index + 1;
             const padNum = stepNum < 10 ? `0${stepNum}` : `${stepNum}`;
-
             return (
               <div
                 key={item.Id || index}
@@ -124,7 +115,6 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
                 >
                   {padNum}
                 </div>
-
                 {/* Milestone card content matching facilities & requirements styling */}
                 <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 dark:bg-black border border-slate-200 dark:border-zinc-800 transition-all shadow-xs space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
@@ -132,7 +122,6 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
                       <Calendar className="h-3.5 w-3.5" style={eventTheme ? { color: eventTheme.iconColor } : undefined} />
                       <span>{item.TimelineDate}</span>
                     </div>
-
                     <span
                       className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20"
                       style={eventTheme ? { backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder } : undefined}
@@ -140,11 +129,9 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
                       Phase {stepNum}
                     </span>
                   </div>
-
                   <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white pt-0.5">
                     {item.Heading}
                   </h4>
-
                   {item.Description && (
                     <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed">
                       {item.Description}

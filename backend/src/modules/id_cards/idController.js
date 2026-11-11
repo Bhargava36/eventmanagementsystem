@@ -1,15 +1,12 @@
 const idCardService = require("../id_cards/idService");
-
-/**
- * Get all ID templates for an event
- */
+const { recordMutation } = require("../security/auditService");
+// Get all ID templates for an event
 const getTemplates = (req, res) => {
     const EventId = Number(req.params.eventId);
     if (!Number.isInteger(EventId) || EventId <= 0) {
         return res.status(400).json({ success: false, message: "Valid Event ID is required." });
     }
     const cardType = req.query.cardType || req.query.type || 'id_card';
-
     idCardService.getTemplatesByEvent(EventId, cardType, (err, templates) => {
         if (err) {
             console.error("Get templates controller error:", err);
@@ -18,17 +15,13 @@ const getTemplates = (req, res) => {
         return res.status(200).json({ success: true, templates });
     });
 };
-
-/**
- * Get single template by ID
- */
+// Get single template by ID
 const getTemplate = (req, res) => {
     const EventId = Number(req.params.eventId);
     const TemplateId = Number(req.params.templateId);
     if (!Number.isInteger(EventId) || !Number.isInteger(TemplateId)) {
         return res.status(400).json({ success: false, message: "Valid Event ID and Template ID are required." });
     }
-
     idCardService.getTemplateById(EventId, TemplateId, (err, template) => {
         if (err) {
             return res.status(500).json({ success: false, message: "Failed to fetch template." });
@@ -39,21 +32,16 @@ const getTemplate = (req, res) => {
         return res.status(200).json({ success: true, template });
     });
 };
-
-/**
- * Save template (create or update)
- */
+// Save template (create or update)
 const saveTemplate = (req, res) => {
     const EventId = Number(req.params.eventId);
     if (!Number.isInteger(EventId) || EventId <= 0) {
         return res.status(400).json({ success: false, message: "Valid Event ID is required." });
     }
-
     const { TemplateName, FrontConfig } = req.body;
     if (!TemplateName || !FrontConfig) {
         return res.status(400).json({ success: false, message: "Template name and front configuration are required." });
     }
-
     const cardType = req.body.CardType || req.query.cardType || 'id_card';
     idCardService.saveTemplate(EventId, { ...req.body, CardType: cardType }, (err, template) => {
         if (err) {
@@ -63,17 +51,13 @@ const saveTemplate = (req, res) => {
         return res.status(200).json({ success: true, template, message: "Template saved successfully." });
     });
 };
-
-/**
- * Duplicate a template
- */
+// Duplicate a template
 const duplicateTemplate = (req, res) => {
     const EventId = Number(req.params.eventId);
     const TemplateId = Number(req.params.templateId);
     if (!Number.isInteger(EventId) || !Number.isInteger(TemplateId)) {
         return res.status(400).json({ success: false, message: "Valid Event ID and Template ID are required." });
     }
-
     idCardService.duplicateTemplate(EventId, TemplateId, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: "Failed to duplicate template." });
@@ -81,17 +65,13 @@ const duplicateTemplate = (req, res) => {
         return res.status(200).json({ success: true, ...result, message: "Template duplicated successfully." });
     });
 };
-
-/**
- * Delete a template
- */
+// Delete a template
 const deleteTemplate = (req, res) => {
     const EventId = Number(req.params.eventId);
     const TemplateId = Number(req.params.templateId);
     if (!Number.isInteger(EventId) || !Number.isInteger(TemplateId)) {
         return res.status(400).json({ success: false, message: "Valid Event ID and Template ID are required." });
     }
-
     idCardService.deleteTemplate(EventId, TemplateId, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: "Failed to delete template." });
@@ -99,17 +79,13 @@ const deleteTemplate = (req, res) => {
         return res.status(200).json({ success: true, message: "Template deleted successfully." });
     });
 };
-
-/**
- * Set template as default
- */
+// Set template as default
 const setDefaultTemplate = (req, res) => {
     const EventId = Number(req.params.eventId);
     const TemplateId = Number(req.params.templateId);
     if (!Number.isInteger(EventId) || !Number.isInteger(TemplateId)) {
         return res.status(400).json({ success: false, message: "Valid Event ID and Template ID are required." });
     }
-
     idCardService.setDefaultTemplate(EventId, TemplateId, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: "Failed to set default template." });
@@ -117,10 +93,7 @@ const setDefaultTemplate = (req, res) => {
         return res.status(200).json({ success: true, message: "Default template updated." });
     });
 };
-
-/**
- * Upload an asset (logo, background, icon) for ID card designer
- */
+// Upload an asset (logo, background, icon) for ID card designer
 const uploadAsset = (req, res) => {
     if (!req.file) {
         return res.status(400).json({ success: false, message: "No asset file uploaded." });
@@ -133,10 +106,7 @@ const uploadAsset = (req, res) => {
         message: "Asset uploaded successfully."
     });
 };
-
-/**
- * Get participants
- */
+// Get participants
 const getParticipants = (req, res) => {
     const EventId = Number(req.params.eventId);
     if (!Number.isInteger(EventId) || EventId <= 0) {
@@ -145,7 +115,6 @@ const getParticipants = (req, res) => {
             message: "Valid Event ID is required."
         });
     }
-
     idCardService.getParticipantsByEvent(EventId, (err, participants) => {
         if (err) {
             console.error("Get participants error:", err);
@@ -160,10 +129,7 @@ const getParticipants = (req, res) => {
         });
     });
 };
-
-/**
- * Get all registered teams with their members for team card designer
- */
+// Get all registered teams with their members for team card designer
 const getTeams = (req, res) => {
     const EventId = Number(req.params.eventId);
     if (!Number.isInteger(EventId) || EventId <= 0) {
@@ -172,7 +138,6 @@ const getTeams = (req, res) => {
             message: "Valid Event ID is required."
         });
     }
-
     idCardService.getTeamsByEvent(EventId, (err, teams) => {
         if (err) {
             console.error("Get teams error:", err);
@@ -187,18 +152,13 @@ const getTeams = (req, res) => {
         });
     });
 };
-
-/**
- * Start Batch Generation of ID cards
- */
+// Start Batch Generation of ID cards
 const startBatchGeneration = (req, res) => {
     const EventId = Number(req.params.eventId);
     if (!Number.isInteger(EventId) || EventId <= 0) {
         return res.status(400).json({ success: false, message: "Valid Event ID is required." });
     }
-
     const { templateId, participantIds } = req.body || {};
-
     idCardService.startBatchGeneration(EventId, { templateId, participantIds }, (err, result) => {
         if (err) {
             console.error("Batch generation error:", err);
@@ -210,10 +170,7 @@ const startBatchGeneration = (req, res) => {
         });
     });
 };
-
-/**
- * Legacy generateIdCards
- */
+// Legacy generateIdCards
 const generateIdCards = (req, res) => {
     const EventId = Number(req.params.eventId);
     if (!Number.isInteger(EventId) || EventId <= 0) {
@@ -233,39 +190,30 @@ const generateIdCards = (req, res) => {
         });
     });
 };
-
-/**
- * Get Batch Status
- */
+// Get Batch Status
 const getBatchStatus = (req, res) => {
     const EventId = Number(req.params.eventId);
     const BatchId = Number(req.params.batchId);
     if (!Number.isInteger(EventId) || !Number.isInteger(BatchId)) {
         return res.status(400).json({ success: false, message: "Valid Event ID and Batch ID are required." });
     }
-
     idCardService.getBatchStatus(EventId, BatchId, (err, batch) => {
         if (err) return res.status(500).json({ success: false, message: "Failed to retrieve batch status." });
         return res.status(200).json({ success: true, batch });
     });
 };
-
-/**
- * Verify Participant by Token OR IdCardNumber
- */
+// Verify Participant by Token OR IdCardNumber
 const verifyParticipantId = (req, res) => {
     const token = String(req.query.token || "").trim();
     const EventId = Number(req.query.eventId);
     const UserId = Number(req.query.userId);
     const IdCardNumber = String(req.query.idCardNumber || "").trim();
-
     if (!token && (!Number.isInteger(EventId) || !IdCardNumber)) {
         return res.status(400).json({
             success: false,
             message: "Valid verification token or Event ID and ID card number are required."
         });
     }
-
     idCardService.verifyParticipantId(EventId, UserId, IdCardNumber, token, (err, participant) => {
         if (err) {
             return res.status(500).json({
@@ -279,60 +227,70 @@ const verifyParticipantId = (req, res) => {
                 message: "No valid participant ID card matched these verification details."
             });
         }
-
         return res.status(200).json({
             success: true,
             participant
         });
     });
 };
-
 // Check-in
 const checkInParticipant = (req, res) => {
     const EventId = Number(req.params.eventId);
     const { userId, checkedInBy, remarks } = req.body;
     const UserId = Number(userId);
-
     if (!Number.isInteger(EventId) || EventId <= 0 || !Number.isInteger(UserId) || UserId <= 0) {
         return res.status(400).json({ success: false, message: "Valid Event ID and User ID are required." });
     }
-
     idCardService.recordCheckIn(EventId, UserId, checkedInBy, remarks, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: "Failed to record check-in." });
         }
+        recordMutation({
+            actor: req.user,
+            module: 'attendance',
+            action: 'CHECK_IN_ATTENDANCE',
+            entityType: 'participant_attendance',
+            entityId: UserId,
+            eventId: EventId,
+            newState: { EventId, UserId, checkedInBy, remarks },
+            req
+        });
         return res.status(200).json(result);
     });
 };
-
 // Check-out
 const checkOutParticipant = (req, res) => {
     const EventId = Number(req.params.eventId);
     const { userId, checkedOutBy, remarks } = req.body;
     const UserId = Number(userId);
-
     if (!Number.isInteger(EventId) || EventId <= 0 || !Number.isInteger(UserId) || UserId <= 0) {
         return res.status(400).json({ success: false, message: "Valid Event ID and User ID are required." });
     }
-
     idCardService.recordCheckOut(EventId, UserId, checkedOutBy, remarks, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: "Failed to record check-out." });
         }
+        recordMutation({
+            actor: req.user,
+            module: 'attendance',
+            action: 'CHECK_OUT_ATTENDANCE',
+            entityType: 'participant_attendance',
+            entityId: UserId,
+            eventId: EventId,
+            newState: { EventId, UserId, checkedOutBy, remarks },
+            req
+        });
         return res.status(200).json(result);
     });
 };
-
 // Reset Attendance
 const resetParticipantAttendance = (req, res) => {
     const EventId = Number(req.params.eventId);
     const { userId } = req.body;
     const UserId = Number(userId);
-
     if (!Number.isInteger(EventId) || EventId <= 0 || !Number.isInteger(UserId) || UserId <= 0) {
         return res.status(400).json({ success: false, message: "Valid Event ID and User ID are required." });
     }
-
     idCardService.resetAttendance(EventId, UserId, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: "Failed to reset attendance." });
@@ -340,17 +298,14 @@ const resetParticipantAttendance = (req, res) => {
         return res.status(200).json(result);
     });
 };
-
 // Scan Attendance
 const scanParticipantAttendance = (req, res) => {
     const EventId = Number(req.params.eventId);
     const { idCardNumber, scanKey, operatorName } = req.body;
     const key = scanKey || idCardNumber;
-
     if (!Number.isInteger(EventId) || EventId <= 0 || !key) {
         return res.status(400).json({ success: false, message: "Valid Event ID and ID Card Number or Token are required." });
     }
-
     idCardService.scanAttendance(EventId, key, operatorName, (err, result) => {
         if (err) {
             return res.status(500).json({ success: false, message: "Error scanning attendance." });
@@ -358,10 +313,19 @@ const scanParticipantAttendance = (req, res) => {
         if (result.notFound) {
             return res.status(404).json({ success: false, message: result.message });
         }
+        recordMutation({
+            actor: req.user,
+            module: 'attendance',
+            action: 'SCAN_ATTENDANCE_BADGE',
+            entityType: 'participant_attendance',
+            entityId: result?.participant?.UserId || result?.participant?.Id,
+            eventId: EventId,
+            newState: { EventId, key, operatorName, status: result?.action || 'SCANNED' },
+            req
+        });
         return res.status(200).json({ success: true, ...result });
     });
 };
-
 module.exports = {
     getTemplates,
     getTemplate,

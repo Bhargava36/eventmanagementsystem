@@ -1,17 +1,14 @@
 "use client";
-
 import React, { useState, useEffect, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
-
 // Animated counter that runs smoothly when entering viewport
 const Counter = ({ end = 0, prefix = "", suffix = "", duration = 1500 }) => {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-50px" });
-
   useEffect(() => {
     if (!isInView) return;
     const numericEnd = typeof end === "number" ? end : parseFloat(end) || 0;
@@ -19,27 +16,22 @@ const Counter = ({ end = 0, prefix = "", suffix = "", duration = 1500 }) => {
       setCount(0);
       return;
     }
-
     const totalSteps = 50;
     const stepDuration = duration / totalSteps;
     let step = 0;
-
     const timer = setInterval(() => {
       step++;
       const progress = step / totalSteps;
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = Math.min(Math.round(numericEnd * eased), numericEnd);
       setCount(current);
-
       if (step >= totalSteps) {
         setCount(numericEnd);
         clearInterval(timer);
       }
     }, stepDuration);
-
     return () => clearInterval(timer);
   }, [isInView, end, duration]);
-
   return (
     <span ref={ref}>
       {prefix}
@@ -48,11 +40,9 @@ const Counter = ({ end = 0, prefix = "", suffix = "", duration = 1500 }) => {
     </span>
   );
 };
-
 export default function PlatformStatsSection() {
   const sectionRef = useRef(null);
   const isSectionInView = useInView(sectionRef, { once: true, margin: "-80px" });
-
   // Live database metrics with realistic platform baseline
   const [liveStats, setLiveStats] = useState({
     eventsCount: 6,
@@ -64,7 +54,6 @@ export default function PlatformStatsSection() {
     satisfactionRate: 98,
     loading: true,
   });
-
   // Fetch real-time metrics directly from database endpoint
   useEffect(() => {
     let isMounted = true;
@@ -73,7 +62,6 @@ export default function PlatformStatsSection() {
         `${API_BASE_URL}/api/events/public-stats`,
         "/api/events/public-stats",
       ];
-
       for (const url of endpoints) {
         try {
           const res = await fetch(url);
@@ -94,7 +82,6 @@ export default function PlatformStatsSection() {
                   prizeStr = "₹7.0L+";
                 }
               }
-
               setLiveStats({
                 eventsCount: Math.max(1, Number(s.eventsCount || 6)),
                 buildersCount: Math.max(1, Number(s.buildersCount || 44)),
@@ -112,18 +99,15 @@ export default function PlatformStatsSection() {
           // Try next endpoint fallback
         }
       }
-
       if (isMounted) {
         setLiveStats((prev) => ({ ...prev, loading: false }));
       }
     };
-
     fetchStats();
     return () => {
       isMounted = false;
     };
   }, []);
-
   return (
     <section
       ref={sectionRef}
@@ -131,7 +115,6 @@ export default function PlatformStatsSection() {
     >
       <div className=" w-full md:max-w-[80%] mx-auto px-6 sm:px-10 lg:px-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-          
           {/* ========================================================= */}
           {/* LEFT COLUMN: Heading, Subtitle, CTA Pill, Sparkline Graph */}
           {/* ========================================================= */}
@@ -148,7 +131,6 @@ export default function PlatformStatsSection() {
                 Record of <br className="hidden sm:inline" />
                 Excellence
               </motion.h2>
-
               {/* Subtitle Description tailored to AYOJAN platform */}
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -159,7 +141,6 @@ export default function PlatformStatsSection() {
                 Live production metrics: over {liveStats.eventsCount}+ collegiate events hosted,{" "}
                 {liveStats.totalPrizeFormatted} awarded in prize pools, and {liveStats.buildersCount}+ student participants empowered.
               </motion.p>
-
               {/* Pill Button */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -176,7 +157,6 @@ export default function PlatformStatsSection() {
                 </Link>
               </motion.div>
             </div>
-
             {/* Sparkline Trend Graph (Styled in website's official Emerald brand color) */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -197,49 +177,45 @@ export default function PlatformStatsSection() {
                     <stop offset="60%" stopColor="#10b981" stopOpacity="0.10" />
                     <stop offset="100%" stopColor="#10b981" stopOpacity="0.00" />
                   </linearGradient>
-
                   <linearGradient id="trendStroke" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor="#059669" />
                     <stop offset="70%" stopColor="#10b981" />
                     <stop offset="100%" stopColor="#34d399" />
                   </linearGradient>
                 </defs>
-
                 {/* Shaded Area underneath the trend curve */}
                 <path
-                  d="M0 88 
-                     C 15 88, 25 80, 40 82 
-                     C 55 84, 65 72, 80 75 
-                     C 95 78, 105 68, 120 70 
-                     C 135 72, 145 62, 160 65 
-                     C 175 68, 185 58, 200 61 
-                     C 215 64, 225 54, 240 56 
-                     C 255 58, 270 48, 290 42 
-                     C 310 36, 325 22, 340 10 
-                     L 340 120 L 0 120 Z"
+                  d="M0 88
+                      C 15 88, 25 80, 40 82
+                      C 55 84, 65 72, 80 75
+                      C 95 78, 105 68, 120 70
+                      C 135 72, 145 62, 160 65
+                      C 175 68, 185 58, 200 61
+                      C 215 64, 225 54, 240 56
+                      C 255 58, 270 48, 290 42
+                      C 310 36, 325 22, 340 10
+                      L 340 120 L 0 120 Z"
                   fill="url(#trendGradient)"
                 />
-
                 {/* Animated Rising Stroke Line in Emerald */}
                 <motion.path
                   initial={{ pathLength: 0 }}
                   animate={isSectionInView ? { pathLength: 1 } : {}}
                   transition={{ duration: 1.4, delay: 0.4, ease: "easeInOut" }}
-                  d="M0 88 
-                     C 15 88, 25 80, 40 82 
-                     C 55 84, 65 72, 80 75 
-                     C 95 78, 105 68, 120 70 
-                     C 135 72, 145 62, 160 65 
-                     C 175 68, 185 58, 200 61 
-                     C 215 64, 225 54, 240 56 
-                     C 255 58, 270 48, 290 42 
-                     C 310 36, 325 22, 340 10"
+                  d="M0 88
+                      C 15 88, 25 80, 40 82
+                      C 55 84, 65 72, 80 75
+                      C 95 78, 105 68, 120 70
+                      C 135 72, 145 62, 160 65
+                      C 175 68, 185 58, 200 61
+                      C 215 64, 225 54, 240 56
+                      C 255 58, 270 48, 290 42
+                      C 310 36, 325 22, 340 10"
                   stroke="url(#trendStroke)"
                   strokeWidth="2.4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-
                 {/* Summit Emerald Glowing Dot */}
                 <motion.circle
                   initial={{ scale: 0, opacity: 0 }}
@@ -254,12 +230,10 @@ export default function PlatformStatsSection() {
               </svg>
             </motion.div>
           </div>
-
           {/* ========================================================= */}
           {/* RIGHT COLUMN: Huge Primary Stat + 2x2 Grid of Key Metrics */}
           {/* ========================================================= */}
           <div className="lg:col-span-7 flex flex-col justify-start lg:pl-10">
-            
             {/* 1. Huge Top Metric (Platform Hackathon Prize Pool from DB) */}
             <motion.div
               initial={{ opacity: 0, y: 30, filter: 'blur(8px)' }}
@@ -273,10 +247,8 @@ export default function PlatformStatsSection() {
                 Cumulative Event Prize Pools
               </div>
             </motion.div>
-
             {/* 2. 2x2 Secondary Metrics Grid (100% Platform-relevant) */}
             <div className="mt-12 sm:mt-16 grid grid-cols-2 gap-x-10 sm:gap-x-16 gap-y-8 sm:gap-y-12">
-              
               {/* Stat 1: Live Competitions Hosted */}
               <motion.div
                 initial={{ opacity: 0, y: 25, scale: 0.95, filter: 'blur(6px)' }}
@@ -290,7 +262,6 @@ export default function PlatformStatsSection() {
                   Events Hosted
                 </div>
               </motion.div>
-
               {/* Stat 2: Registered Teams */}
               <motion.div
                 initial={{ opacity: 0, y: 25, scale: 0.95, filter: 'blur(6px)' }}
@@ -304,7 +275,6 @@ export default function PlatformStatsSection() {
                   Registered Teams
                 </div>
               </motion.div>
-
               {/* Stat 3: Builders & Student Innovators */}
               <motion.div
                 initial={{ opacity: 0, y: 25, scale: 0.95, filter: 'blur(6px)' }}
@@ -318,7 +288,6 @@ export default function PlatformStatsSection() {
                   Builders & Innovators
                 </div>
               </motion.div>
-
               {/* Stat 4: Participating Universities & Colleges */}
               <motion.div
                 initial={{ opacity: 0, y: 25, scale: 0.95, filter: 'blur(6px)' }}
@@ -332,11 +301,8 @@ export default function PlatformStatsSection() {
                   Participating Universities
                 </div>
               </motion.div>
-
             </div>
-
           </div>
-
         </div>
       </div>
     </section>

@@ -29,15 +29,12 @@ import {
 import useAuth from '../../../Hooks/useAuth';
 import useTheme from '../../../Hooks/useTheme';
 import useToast from '../../../Hooks/useToast';
-
 export default function TestCredentialsPage() {
   const { login } = useAuth();
   const { theme } = useTheme();
   const toast = useToast();
   const navigate = useNavigate();
-
   const isDark = theme === 'dark';
-
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -46,7 +43,6 @@ export default function TestCredentialsPage() {
   const [copiedField, setCopiedField] = useState(null);
   const [resettingId, setResettingId] = useState(null);
   const [loggingInId, setLoggingInId] = useState(null);
-
   // Fetch Accounts from Backend API
   const fetchAccounts = async () => {
     try {
@@ -66,11 +62,9 @@ export default function TestCredentialsPage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchAccounts();
   }, []);
-
   // Copy to clipboard helper
   const copyToClipboard = (text, fieldKey) => {
     navigator.clipboard.writeText(text);
@@ -78,12 +72,10 @@ export default function TestCredentialsPage() {
     toast.success(`Copied: ${text}`);
     setTimeout(() => setCopiedField(null), 2000);
   };
-
   // Toggle Password visibility for an account
   const toggleShowPassword = (id) => {
     setShowPasswords((prev) => ({ ...prev, [id]: !prev[id] }));
   };
-
   // 1-Click Direct Login
   const handleQuickLogin = async (acc) => {
     try {
@@ -94,11 +86,9 @@ export default function TestCredentialsPage() {
         body: JSON.stringify({ userId: acc.Id, email: acc.Email, role: acc.RoleName, evaluatorId: acc.evaluatorId }),
       });
       const data = await res.json();
-
       if (!res.ok) {
         throw new Error(data.message || 'Direct login failed');
       }
-
       // Store in localStorage matching app's UnifiedLogin pattern
       localStorage.setItem('token', data.token);
       if (acc.RoleName === 'admin') {
@@ -110,10 +100,8 @@ export default function TestCredentialsPage() {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
       localStorage.setItem('role', data.role);
-
       login(data.token, data.user, data.role);
       toast.success(`Logged in as ${acc.UserName} (${acc.RoleDisplay || acc.RoleName})!`);
-
       setTimeout(() => {
         navigate(data.redirectPath || acc.dashboardPath, { replace: true });
       }, 400);
@@ -123,7 +111,6 @@ export default function TestCredentialsPage() {
       setLoggingInId(null);
     }
   };
-
   // Quick Password Reset to standard password123
   const handleResetPassword = async (acc) => {
     try {
@@ -135,7 +122,6 @@ export default function TestCredentialsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Reset failed');
-
       toast.success(`Password for ${acc.UserName} reset to "password123"`);
       // Update local state
       setAccounts((prev) =>
@@ -147,7 +133,6 @@ export default function TestCredentialsPage() {
       setResettingId(null);
     }
   };
-
   // Filtering
   const filteredAccounts = useMemo(() => {
     return accounts.filter((acc) => {
@@ -163,11 +148,9 @@ export default function TestCredentialsPage() {
         (acc.RoleName && acc.RoleName.toLowerCase().includes(q)) ||
         (acc.RoleDisplay && acc.RoleDisplay.toLowerCase().includes(q)) ||
         (acc.Track && acc.Track.toLowerCase().includes(q));
-
       return matchesRole && matchesSearch;
     });
   }, [accounts, selectedRole, search]);
-
   const counts = useMemo(() => {
     return {
       all: accounts.length,
@@ -177,7 +160,6 @@ export default function TestCredentialsPage() {
       evaluator: accounts.filter((a) => a.RoleName === 'evaluator').length,
     };
   }, [accounts]);
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-300 pt-28 pb-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -197,7 +179,6 @@ export default function TestCredentialsPage() {
                 Use this testing hub to inspect credentials for all system roles. Test portals with <strong>1-Click Direct Login</strong> or copy verified credentials for Super Admin, Event Organizers, and Participants.
               </p>
             </div>
-
             <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={fetchAccounts}
@@ -209,7 +190,6 @@ export default function TestCredentialsPage() {
               </button>
             </div>
           </div>
-
           {/* Quick Metrics Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mt-8 pt-6 border-t border-slate-200/80 dark:border-white/10">
             <div className="p-3.5 rounded-2xl bg-slate-100/80 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5">
@@ -234,7 +214,6 @@ export default function TestCredentialsPage() {
             </div>
           </div>
         </div>
-
         {/* Portal Shortcuts Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
@@ -254,7 +233,6 @@ export default function TestCredentialsPage() {
             </div>
             <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
           </Link>
-
           <Link
             to="/admin/login"
             className="group flex items-center justify-between p-4 rounded-2xl border border-emerald-200 dark:border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 to-teal-500/10 hover:border-emerald-500 transition-all shadow-sm"
@@ -272,7 +250,6 @@ export default function TestCredentialsPage() {
             </div>
             <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
           </Link>
-
           <Link
             to="/user/login"
             className="group flex items-center justify-between p-4 rounded-2xl border border-sky-200 dark:border-sky-500/20 bg-gradient-to-r from-sky-500/5 to-blue-500/10 hover:border-sky-500 transition-all shadow-sm"
@@ -290,7 +267,6 @@ export default function TestCredentialsPage() {
             </div>
             <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
           </Link>
-
           <Link
             to="/evaluator/login"
             className="group flex items-center justify-between p-4 rounded-2xl border border-amber-200 dark:border-amber-500/20 bg-gradient-to-r from-amber-500/5 to-orange-500/10 hover:border-amber-500 transition-all shadow-sm"
@@ -309,7 +285,6 @@ export default function TestCredentialsPage() {
             <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
-
         {/* Filter Controls & Search */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 shadow-sm">
           {/* Role Filter Tabs */}
@@ -365,7 +340,6 @@ export default function TestCredentialsPage() {
               ⚖️ Evaluators ({counts.evaluator})
             </button>
           </div>
-
           {/* Search Box */}
           <div className="relative min-w-[260px]">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -378,7 +352,6 @@ export default function TestCredentialsPage() {
             />
           </div>
         </div>
-
         {/* Organizer Login Helper Alert */}
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs sm:text-sm">
           <Info className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
@@ -386,7 +359,6 @@ export default function TestCredentialsPage() {
             <strong>Note for Organizer Login:</strong> The organizer login portal at <code>/admin/login</code> requires <strong>Email</strong>, <strong>Password</strong>, and the <strong>Assigned Event Name</strong> (shown on the cards below). Alternatively, click <strong>"⚡ 1-Click Auto Login"</strong> to bypass manual form entry instantly!
           </p>
         </div>
-
         {/* Accounts Grid */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 space-y-4">
@@ -406,7 +378,6 @@ export default function TestCredentialsPage() {
               const isParticipant = acc.RoleName === 'user';
               const isEvaluator = acc.RoleName === 'evaluator';
               const isPwdVisible = Boolean(showPasswords[acc.Id]);
-
               return (
                 <div
                   key={acc.Id}
@@ -439,10 +410,8 @@ export default function TestCredentialsPage() {
                           EVALUATOR / JURY
                         </span>
                       )}
-
                       <span className="text-[11px] font-mono text-slate-400">ID #{acc.Id}</span>
                     </div>
-
                     {/* Name & Contact */}
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
@@ -466,7 +435,6 @@ export default function TestCredentialsPage() {
                         </span>
                       )}
                     </div>
-
                     {/* Username Box (For Evaluators) */}
                     {isEvaluator && acc.Username && (
                       <div className="p-3 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 space-y-1">
@@ -491,7 +459,6 @@ export default function TestCredentialsPage() {
                         </p>
                       </div>
                     )}
-
                     {/* Email Box */}
                     <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/70 border border-slate-200/80 dark:border-white/5 space-y-1">
                       <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
@@ -514,7 +481,6 @@ export default function TestCredentialsPage() {
                         {acc.Email}
                       </p>
                     </div>
-
                     {/* Password Box */}
                     <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/70 border border-slate-200/80 dark:border-white/5 space-y-1">
                       <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
@@ -559,7 +525,6 @@ export default function TestCredentialsPage() {
                         </button>
                       </div>
                     </div>
-
                     {/* Event Details (For Admins & Evaluators) */}
                     {(isAdmin || isEvaluator) && (acc.EventName || acc.College) && (
                       <div className={`p-3.5 rounded-2xl border space-y-1.5 ${isEvaluator ? 'bg-amber-500/10 border-amber-500/20' : 'bg-emerald-500/10 border-emerald-500/20'}`}>
@@ -592,7 +557,6 @@ export default function TestCredentialsPage() {
                         )}
                       </div>
                     )}
-
                     {/* Additional User Info (For Participants) */}
                     {isParticipant && acc.College && (
                       <div className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
@@ -601,7 +565,6 @@ export default function TestCredentialsPage() {
                       </div>
                     )}
                   </div>
-
                   {/* Action Buttons */}
                   <div className="pt-5 mt-5 border-t border-slate-100 dark:border-white/10 space-y-2">
                     {/* 1-Click Auto Login Button */}
@@ -619,7 +582,6 @@ export default function TestCredentialsPage() {
                       <Zap className={`w-4 h-4 ${loggingInId === acc.Id ? 'animate-bounce' : ''}`} />
                       <span>{loggingInId === acc.Id ? 'Authenticating...' : '⚡ 1-Click Auto Login'}</span>
                     </button>
-
                     {/* Open Login Portal Link */}
                     <Link
                       to={acc.portalPath}
@@ -639,5 +601,4 @@ export default function TestCredentialsPage() {
     </div>
   );
 }
-
 // Fallback accounts in case database is briefly unreachable

@@ -13,7 +13,6 @@ import {
   Globe,
 } from 'lucide-react';
 import useToast from '../../Hooks/useToast';
-
 const TIERS = [
   'Title Sponsor',
   'Presenting Sponsor',
@@ -24,7 +23,6 @@ const TIERS = [
   'Ecosystem Partner',
   'Media Partner',
 ];
-
 export default function EventSponsorsManager({ eventId }) {
   const toast = useToast();
   const [sponsors, setSponsors] = useState([]);
@@ -32,7 +30,6 @@ export default function EventSponsorsManager({ eventId }) {
   const [showModal, setShowModal] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [editingSponsor, setEditingSponsor] = useState(null);
-
   const [form, setForm] = useState({
     Name: '',
     Tier: 'Technology Partner',
@@ -40,7 +37,6 @@ export default function EventSponsorsManager({ eventId }) {
     WebsiteUrl: '',
     DisplayOrder: 0,
   });
-
   const fetchSponsors = async () => {
     if (!eventId) return;
     try {
@@ -56,11 +52,9 @@ export default function EventSponsorsManager({ eventId }) {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchSponsors();
   }, [eventId]);
-
   const handleOpenAdd = () => {
     setEditingSponsor(null);
     setForm({
@@ -72,7 +66,6 @@ export default function EventSponsorsManager({ eventId }) {
     });
     setShowModal(true);
   };
-
   const handleOpenEdit = (sp) => {
     setEditingSponsor(sp);
     setForm({
@@ -84,21 +77,17 @@ export default function EventSponsorsManager({ eventId }) {
     });
     setShowModal(true);
   };
-
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     try {
       setUploadingLogo(true);
       const fd = new FormData();
       fd.append('file', file);
-
       const res = await fetch(`${API_BASE_URL}/api/upload/single`, {
         method: 'POST',
         body: fd,
       });
-
       const data = await res.json();
       if (res.ok && data.fileUrl) {
         setForm((prev) => ({ ...prev, LogoUrl: data.fileUrl }));
@@ -112,21 +101,17 @@ export default function EventSponsorsManager({ eventId }) {
       setUploadingLogo(false);
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.Name.trim()) {
       toast.error('Sponsor name is required');
       return;
     }
-
     try {
       const url = editingSponsor
         ? `${API_BASE_URL}/api/sponsors/${editingSponsor.Id}`
         : `${API_BASE_URL}/api/sponsors`;
-
       const method = editingSponsor ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -135,7 +120,6 @@ export default function EventSponsorsManager({ eventId }) {
           ...form,
         }),
       });
-
       const data = await res.json();
       if (res.ok) {
         toast.success(editingSponsor ? 'Sponsor updated' : 'Sponsor added');
@@ -148,7 +132,6 @@ export default function EventSponsorsManager({ eventId }) {
       toast.error(err.message || 'Failed to save sponsor');
     }
   };
-
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this sponsor?')) return;
     try {
@@ -165,7 +148,6 @@ export default function EventSponsorsManager({ eventId }) {
       toast.error('Error deleting sponsor');
     }
   };
-
   const modalContent = showModal ? (
     <AnimatePresence>
       <motion.div
@@ -199,7 +181,6 @@ export default function EventSponsorsManager({ eventId }) {
               <X className="w-4 h-4" />
             </button>
           </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
@@ -214,7 +195,6 @@ export default function EventSponsorsManager({ eventId }) {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-slate-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
-
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                 Sponsorship Tier
@@ -231,7 +211,6 @@ export default function EventSponsorsManager({ eventId }) {
                 ))}
               </select>
             </div>
-
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                 Sponsor Logo
@@ -257,7 +236,6 @@ export default function EventSponsorsManager({ eventId }) {
                     </button>
                   </div>
                 ) : null}
-
                 <label className="flex-1 border border-dashed border-slate-300 dark:border-zinc-700 hover:border-emerald-500 rounded-xl p-3 flex items-center justify-center gap-2 cursor-pointer bg-slate-50/50 dark:bg-zinc-950 transition-colors">
                   <UploadCloud className="w-4 h-4 text-emerald-500" />
                   <span className="text-xs font-medium text-slate-600 dark:text-zinc-400">
@@ -271,7 +249,6 @@ export default function EventSponsorsManager({ eventId }) {
                   />
                 </label>
               </div>
-
               <input
                 type="text"
                 value={form.LogoUrl}
@@ -280,7 +257,6 @@ export default function EventSponsorsManager({ eventId }) {
                 className="w-full mt-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-white text-[11px] outline-none focus:ring-1 focus:ring-emerald-500"
               />
             </div>
-
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
                 Website / Career Portal URL (Optional)
@@ -293,7 +269,6 @@ export default function EventSponsorsManager({ eventId }) {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-950 text-slate-900 dark:text-white text-xs outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
-
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-zinc-800">
               <button
                 type="button"
@@ -314,7 +289,6 @@ export default function EventSponsorsManager({ eventId }) {
       </motion.div>
     </AnimatePresence>
   ) : null;
-
   return (
     <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-5">
       {/* Header */}
@@ -337,7 +311,6 @@ export default function EventSponsorsManager({ eventId }) {
             </p>
           </div>
         </div>
-
         <button
           type="button"
           onClick={handleOpenAdd}
@@ -347,7 +320,6 @@ export default function EventSponsorsManager({ eventId }) {
           <span>Add Sponsor</span>
         </button>
       </div>
-
       {/* Sponsors List */}
       {loading ? (
         <div className="py-8 text-center text-xs text-slate-400">Loading sponsors...</div>
@@ -380,7 +352,6 @@ export default function EventSponsorsManager({ eventId }) {
                       </span>
                     )}
                   </div>
-
                   <div className="min-w-0">
                     <span className="inline-block text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mb-0.5">
                       {sp.Tier}
@@ -390,7 +361,6 @@ export default function EventSponsorsManager({ eventId }) {
                     </h4>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-1 shrink-0">
                   {sp.WebsiteUrl && (
                     <a
@@ -422,7 +392,6 @@ export default function EventSponsorsManager({ eventId }) {
           })}
         </div>
       )}
-
       {/* Render modal directly into document.body to fix tabs overlap bug */}
       {typeof document !== 'undefined' && modalContent && createPortal(modalContent, document.body)}
     </div>

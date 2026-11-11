@@ -3,23 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Home } from 'lucide-react';
 import useTheme from '../../../Hooks/useTheme';
-
 function NotFound() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const [isPetted, setIsPetted] = useState(false);
-
   const handleMascotClick = () => {
     setIsPetted(true);
     setTimeout(() => {
       setIsPetted(false);
     }, 2400);
   };
-
   return (
     <div className="min-h-[85vh] flex flex-col items-center justify-center pt-24 sm:pt-28 pb-20 px-4 sm:px-6 select-none">
       <div className="max-w-xl w-full text-center space-y-7">
-
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -35,9 +31,7 @@ function NotFound() {
             {isPetted ? 'Byte is so happy!' : 'Lost in the venue!'}
           </span>
         </motion.div>
-
         <div className="relative w-64 h-56 mx-auto flex items-center justify-center cursor-pointer" onClick={handleMascotClick}>
-          
           <AnimatePresence>
             {isPetted && (
               <motion.div
@@ -50,7 +44,6 @@ function NotFound() {
               </motion.div>
             )}
           </AnimatePresence>
-
           <svg
             viewBox="0 0 240 200"
             className="w-full h-full overflow-visible"
@@ -65,18 +58,15 @@ function NotFound() {
                 <stop offset="0%" stopColor="#ffffff" />
                 <stop offset="100%" stopColor="#e2e8f0" />
               </linearGradient>
-
               <linearGradient id="screenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#09090b" />
                 <stop offset="100%" stopColor="#040405" />
               </linearGradient>
-
               <radialGradient id="beaconGlow" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#10b981" />
                 <stop offset="100%" stopColor="#059669" />
               </radialGradient>
             </defs>
-
             <motion.ellipse
               cx="120"
               cy="182"
@@ -93,7 +83,6 @@ function NotFound() {
                 ease: "easeInOut"
               }}
             />
-
             <motion.g
               animate={
                 isPetted
@@ -125,7 +114,6 @@ function NotFound() {
                 }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
               />
-
               <rect
                 x="64"
                 y="65"
@@ -142,7 +130,6 @@ function NotFound() {
                 rx="3"
                 className="fill-slate-400 dark:fill-zinc-700"
               />
-
               <rect
                 x="70"
                 y="40"
@@ -153,7 +140,6 @@ function NotFound() {
                 stroke={theme === 'dark' ? '#3f3f46' : '#cbd5e1'}
                 strokeWidth="2.5"
               />
-
               <rect
                 x="79"
                 y="49"
@@ -165,7 +151,6 @@ function NotFound() {
                 strokeWidth="1.5"
                 strokeOpacity="0.4"
               />
-
               {isPetted ? (
                 <g>
                   <path
@@ -209,10 +194,8 @@ function NotFound() {
                     <circle cx="142" cy="72" r="6" fill="#10b981" />
                     <circle cx="140" cy="70" r="2" fill="#ffffff" />
                   </motion.g>
-
                   <ellipse cx="87" cy="80" rx="3.5" ry="2" fill="#fb7185" opacity="0.6" />
                   <ellipse cx="153" cy="80" rx="3.5" ry="2" fill="#fb7185" opacity="0.6" />
-
                   <motion.path
                     d="M 116 84 Q 120 80 124 84"
                     stroke="#10b981"
@@ -230,7 +213,6 @@ function NotFound() {
                   />
                 </g>
               )}
-
               <rect
                 x="82"
                 y="120"
@@ -241,7 +223,6 @@ function NotFound() {
                 stroke={theme === 'dark' ? '#3f3f46' : '#cbd5e1'}
                 strokeWidth="2.5"
               />
-
               <g transform="translate(104, 134)">
                 <rect x="0" y="0" width="32" height="12" rx="4" className="fill-slate-200 dark:fill-zinc-800" />
                 <motion.rect
@@ -255,7 +236,6 @@ function NotFound() {
                   transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 />
               </g>
-
               <g transform="translate(54, 126)">
                 <motion.g
                   animate={{ rotate: [-8, 8, -8] }}
@@ -267,7 +247,6 @@ function NotFound() {
                   <text x="7" y="22" fill="#ef4444" fontSize="11" fontWeight="bold">?</text>
                 </motion.g>
               </g>
-
               <g transform="translate(162, 130)">
                 <motion.path
                   d="M 2 4 C 12 4 18 14 16 22"
@@ -279,7 +258,6 @@ function NotFound() {
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 />
               </g>
-
               <motion.g
                 animate={{
                   y: [0, -6, 0],
@@ -294,7 +272,6 @@ function NotFound() {
             </motion.g>
           </svg>
         </div>
-
         <div className="space-y-2.5">
           <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
             Oops! Page Not Found
@@ -303,7 +280,6 @@ function NotFound() {
             Byte searched everywhere, but this page doesn't exist or was moved.
           </p>
         </div>
-
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <button
             onClick={() => navigate(-1)}
@@ -312,7 +288,6 @@ function NotFound() {
             <ArrowLeft className="h-4 w-4" />
             <span>Go Back</span>
           </button>
-
           <button
             onClick={() => navigate('/')}
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/25 hover:shadow-emerald-600/40 transition-all active:scale-95"
@@ -321,10 +296,8 @@ function NotFound() {
             <span>Back to Home</span>
           </button>
         </div>
-
       </div>
     </div>
   );
 }
-
 export default NotFound;

@@ -27,21 +27,17 @@ import {
 } from 'lucide-react';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../../../../../lib/calendarUtils';
 import UnifiedEventFeedbackCard from './UnifiedEventFeedbackCard';
-
 export default function AlumniDigitalPassCard({ eventId, user, team }) {
   const toast = useToast();
   const passPrintRef = useRef(null);
-
   const [activeTab, setActiveTab] = useState('pass'); // 'pass' | 'agenda' | 'speakers' | 'memories' | 'feedback'
   const [config, setConfig] = useState(null);
   const [agenda, setAgenda] = useState([]);
   const [speakers, setSpeakers] = useState([]);
   const [memories, setMemories] = useState([]);
   const [loading, setLoading] = useState(true);
-
   // Active pass sub-tab: Gate Pass or Banquet Food Token
   const [passType, setPassType] = useState('gate'); // 'gate' | 'food'
-
   const loadAlumniData = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -52,7 +48,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
         fetch(`${API_BASE_URL}/api/alumni/${eventId}/speakers`),
         fetch(`${API_BASE_URL}/api/alumni/${eventId}/memories`)
       ]);
-
       if (cfgRes.ok) {
         const c = await cfgRes.json();
         setConfig(c.config || c);
@@ -75,11 +70,9 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
       setLoading(false);
     }
   }, [eventId]);
-
   useEffect(() => {
     loadAlumniData();
   }, [loadAlumniData]);
-
   // Alumnus profile details from team / user
   const alumnusName = user?.UserName || team?.UserName || user?.name || 'Alumnus Member';
   const graduationYear = team?.GraduationYear || user?.GraduationYear || 'Alumni';
@@ -90,7 +83,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
   const guestNames = team?.GuestNames || '';
   const gateCheckedIn = team?.GateCheckInStatus === 'CheckedIn';
   const foodScanned = Boolean(team?.FoodTokenScanned);
-
   // QR Payload for Gate and Banquet
   const gateQrPayload = useMemo(() => {
     return JSON.stringify({
@@ -100,7 +92,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
       userId: user?.Id || team?.TeamLeadUserId
     });
   }, [team, eventId, user]);
-
   const foodQrPayload = useMemo(() => {
     return JSON.stringify({
       type: 'alumni_food',
@@ -109,7 +100,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
       userId: user?.Id || team?.TeamLeadUserId
     });
   }, [team, eventId, user]);
-
   // Calendar Helpers
   const calendarEvent = useMemo(() => {
     return {
@@ -120,11 +110,9 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
       endDate: team?.EndDate || team?.StartDate || new Date()
     };
   }, [team, config]);
-
   const handlePrintPass = () => {
     window.print();
   };
-
   const tabs = [
     { id: 'pass', label: 'VIP Reunion Pass', icon: QrCode },
     { id: 'agenda', label: 'Reunion Agenda', count: agenda.length, icon: CalendarDays },
@@ -132,7 +120,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
     { id: 'memories', label: 'Nostalgia Wall', count: memories.length, icon: Camera },
     { id: 'feedback', label: 'Feedback & Rating', icon: Heart },
   ];
-
   return (
     <div className="space-y-6">
       {/* Application Signature Folder Tabs */}
@@ -141,7 +128,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const TabIcon = tab.icon;
-
             return (
               <button
                 key={tab.id}
@@ -160,7 +146,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                 ) : (
                   <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 z-0" />
                 )}
-
                 <span className={`relative z-20 flex items-center gap-2 transition-colors ${
                   isActive
                     ? 'text-slate-900 dark:text-white font-bold'
@@ -184,7 +169,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
             );
           })}
         </div>
-
         {/* Tab Content Container */}
         <div className="rounded-3xl rounded-tl-none border border-slate-200 dark:border-white/10 bg-white dark:bg-black p-6 sm:p-7 shadow-sm">
           {/* TAB 1: VIP DIGITAL PASS & TOKENS */}
@@ -202,7 +186,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                   </div>
                 </div>
               )}
-
               {/* The VIP Pass Container */}
               <div
                 ref={passPrintRef}
@@ -222,7 +205,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                       {config?.VenueHall || team?.Location || 'Campus Auditorium & Lawns'}
                     </p>
                   </div>
-
                   {/* Pass Status */}
                   <div className="text-left sm:text-right">
                     <span className="text-[11px] font-mono font-bold text-slate-400 block">
@@ -241,7 +223,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                     )}
                   </div>
                 </div>
-
                 {/* Pass Body: Alumnus Details & QR Scanner */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
                   {/* Alumnus Identity */}
@@ -258,7 +239,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                           {alumnusName.charAt(0)}
                         </div>
                       )}
-
                       <div>
                         <h4 className="text-lg font-extrabold text-slate-900 dark:text-white leading-tight">
                           {alumnusName}
@@ -272,7 +252,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                         </p>
                       </div>
                     </div>
-
                     {/* Professional Info */}
                     <div className="space-y-1.5 text-xs">
                       {(designation || company) && (
@@ -283,14 +262,12 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                           </span>
                         </div>
                       )}
-
                       {city && (
                         <div className="flex items-center gap-2 text-slate-700 dark:text-gray-300">
                           <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                           <span>{city}</span>
                         </div>
                       )}
-
                       {config?.DressCode && (
                         <div className="flex items-center gap-2 text-slate-700 dark:text-gray-300">
                           <Shirt className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
@@ -298,7 +275,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                         </div>
                       )}
                     </div>
-
                     {/* Accompanying Guest Badge */}
                     {guestCount > 0 ? (
                       <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs flex items-center gap-2 font-semibold">
@@ -311,7 +287,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                       <div className="text-[11px] text-slate-400">Solo Attendee Registration</div>
                     )}
                   </div>
-
                   {/* QR Code Card with Toggle for Gate vs Food */}
                   <div className="flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-3">
                     {/* QR Toggle Switch */}
@@ -337,7 +312,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                         Banquet Token
                       </button>
                     </div>
-
                     {/* QR Display */}
                     <div className="p-3 bg-white rounded-xl shadow-inner border border-slate-200">
                       <QRCodeSVG
@@ -346,7 +320,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                         level="H"
                       />
                     </div>
-
                     <div className="text-center space-y-0.5">
                       <p className="text-xs font-bold text-slate-900 dark:text-white">
                         {passType === 'gate' ? 'Entrance Gate Pass' : 'Gala Dinner Food Voucher'}
@@ -359,7 +332,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                     </div>
                   </div>
                 </div>
-
                 {/* Pass Footer Actions */}
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-dashed border-slate-200 dark:border-white/10 pt-4 text-xs">
                   <div className="flex items-center gap-2">
@@ -372,7 +344,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                       <Calendar className="w-3.5 h-3.5 text-emerald-500" />
                       Google Calendar
                     </a>
-
                     <button
                       onClick={() => downloadIcsFile(calendarEvent)}
                       className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-white/10 font-bold hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-slate-700 dark:text-gray-300 flex items-center gap-1.5"
@@ -381,7 +352,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                       Download .ics
                     </button>
                   </div>
-
                   <button
                     onClick={handlePrintPass}
                     className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all flex items-center gap-1.5 shadow"
@@ -393,7 +363,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
               </div>
             </div>
           )}
-
           {/* TAB 2: REUNION AGENDA & ACTIVITIES */}
           {activeTab === 'agenda' && (
             <div className="space-y-6">
@@ -406,7 +375,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                   Join us for a full day of memories, nostalgia tours, keynote addresses, and the gala reunion dinner.
                 </p>
               </div>
-
               {agenda.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 text-xs">
                   Agenda schedule will be published shortly by the reunion committee.
@@ -423,7 +391,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                           <Clock className="w-4 h-4" />
                           <span className="text-[10px] font-bold mt-0.5">{s.StartTime || '--:--'}</span>
                         </div>
-
                         <div className="space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <h4 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
@@ -435,7 +402,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                               </span>
                             )}
                           </div>
-
                           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-gray-400">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5 text-emerald-500" />
@@ -446,7 +412,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                               {s.VenueHall || 'Main Auditorium'}
                             </span>
                           </div>
-
                           {s.Description && (
                             <p className="text-xs text-slate-600 dark:text-gray-400 pt-1 leading-relaxed">
                               {s.Description}
@@ -460,7 +425,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
               )}
             </div>
           )}
-
           {/* TAB 3: DISTINGUISHED KEYNOTE SPEAKERS */}
           {activeTab === 'speakers' && (
             <div className="space-y-6">
@@ -473,7 +437,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                   Inspiring alumni leaders, entrepreneurs, and innovators sharing their journeys.
                 </p>
               </div>
-
               {speakers.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 text-xs">
                   Distinguished speakers list will be announced soon.
@@ -498,7 +461,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                               {spk.Name?.charAt(0) || 'A'}
                             </div>
                           )}
-
                           <div>
                             <h4 className="font-bold text-sm text-slate-900 dark:text-white">
                               {spk.Name}
@@ -511,21 +473,18 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                             </p>
                           </div>
                         </div>
-
                         {spk.Topic && (
                           <div className="p-2.5 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 text-xs">
                             <strong className="text-[10px] uppercase font-bold text-slate-400 block">Keynote Address:</strong>
                             <span className="font-semibold text-slate-800 dark:text-gray-200">"{spk.Topic}"</span>
                           </div>
                         )}
-
                         {spk.Bio && (
                           <p className="text-xs text-slate-600 dark:text-gray-400 leading-relaxed line-clamp-3">
                             {spk.Bio}
                           </p>
                         )}
                       </div>
-
                       {spk.LinkedinUrl && (
                         <div className="pt-2 border-t border-slate-200 dark:border-white/10">
                           <a
@@ -545,7 +504,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
               )}
             </div>
           )}
-
           {/* TAB 4: NOSTALGIA WALL & MEMORIES */}
           {activeTab === 'memories' && (
             <div className="space-y-6">
@@ -558,7 +516,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
                   Vintage campus snapshots, graduation memories, and moments of friendship.
                 </p>
               </div>
-
               {memories.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 text-xs">
                   Photos and memories will be added during and after the reunion meet.
@@ -594,7 +551,6 @@ export default function AlumniDigitalPassCard({ eventId, user, team }) {
               )}
             </div>
           )}
-
           {/* TAB 5: FEEDBACK & RATING (REUSES UNIFIED EVENT FEEDBACK) */}
           {activeTab === 'feedback' && (
             <div className="space-y-4">

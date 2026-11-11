@@ -1,7 +1,7 @@
 const eventsService = require('./eventsService');
 const { saveBase64File } = require('../../middleware/multer');
 const { broadcastEvent } = require('../../config/websocket');
-
+const { recordMutation } = require('../security/auditService');
 const processPosters = (posters) => {
     if (!posters) return [];
     let list = [];
@@ -25,7 +25,6 @@ const processPosters = (posters) => {
         return item;
     });
 };
-
 const createEvent = (req, res) => {
     const {
         EventName, Description, Facilities, Requirements, TeamSize,
@@ -38,42 +37,34 @@ const createEvent = (req, res) => {
         PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters,
         PrizeMoney, VirtualPrizeMoney, PhysicalPrizeMoney
     } = req.body;
-
     let effectiveStartDate = StartDate;
     let effectiveEndDate = EndDate;
     let effectiveRegistrationStart = RegistrationStart;
     let effectiveRegistrationEnd = RegistrationEnd;
-
     let effVirtualStartDate = VirtualStartDate;
     let effVirtualEndDate = VirtualEndDate;
     let effVirtualRegStart = VirtualRegistrationStart;
     let effVirtualRegEnd = VirtualRegistrationEnd;
-
     let effPhysicalStartDate = PhysicalStartDate;
     let effPhysicalEndDate = PhysicalEndDate;
     let effPhysicalRegStart = PhysicalRegistrationStart;
     let effPhysicalRegEnd = PhysicalRegistrationEnd;
-
     let effectivePrizeMoney = PrizeMoney;
     let effectiveVirtualPrizeMoney = VirtualPrizeMoney;
     let effectivePhysicalPrizeMoney = PhysicalPrizeMoney;
-
     if (HackathonMode === 'Both' || HackathonMode === 'Virtual and Physical') {
         effectiveStartDate = VirtualStartDate || PhysicalStartDate || StartDate;
         effectiveEndDate = PhysicalEndDate || VirtualEndDate || EndDate;
         effectiveRegistrationStart = VirtualRegistrationStart || PhysicalRegistrationStart || RegistrationStart;
         effectiveRegistrationEnd = PhysicalRegistrationEnd || VirtualRegistrationEnd || RegistrationEnd;
-
         effVirtualStartDate = VirtualStartDate || effectiveStartDate;
         effVirtualEndDate = VirtualEndDate || effectiveStartDate;
         effVirtualRegStart = VirtualRegistrationStart || effectiveRegistrationStart;
         effVirtualRegEnd = VirtualRegistrationEnd || effectiveRegistrationEnd;
-
         effPhysicalStartDate = PhysicalStartDate || effectiveEndDate;
         effPhysicalEndDate = PhysicalEndDate || effectiveEndDate;
         effPhysicalRegStart = PhysicalRegistrationStart || effectiveRegistrationStart;
         effPhysicalRegEnd = PhysicalRegistrationEnd || effectiveRegistrationEnd;
-
         if (!effectivePrizeMoney) {
             if (effectiveVirtualPrizeMoney && effectivePhysicalPrizeMoney) {
                 const vNum = parseFloat(String(effectiveVirtualPrizeMoney).replace(/[^0-9.]/g, ''));
@@ -123,16 +114,13 @@ const createEvent = (req, res) => {
         effectiveRegistrationStart = RegistrationStart || PhysicalRegistrationStart || VirtualRegistrationStart;
         effectiveRegistrationEnd = RegistrationEnd || PhysicalRegistrationEnd || VirtualRegistrationEnd;
     }
-
     const effectiveFacilities = Facilities || [VirtualFacilities, PhysicalFacilities].filter(Boolean).join('\n\n') || '';
     const effectiveRequirements = Requirements || [VirtualRequirements, PhysicalRequirements].filter(Boolean).join('\n\n') || '';
-
     if (!EventName || !TeamSize || !effectiveStartDate || !effectiveEndDate || !effectiveRegistrationStart || !effectiveRegistrationEnd || !Location || !EventType || !PrimaryColor || !SecondaryColor || !TertiaryColor || !PrimaryTextColor || !SecondaryTextColor || !TertiaryTextColor ) {
         return res.status(400).json({
             message: 'All required fields must be filled'
         });
     }
-
     // Chronological date order validation:
     // 1. Registration Start Date <= Registration End Date
     if (new Date(effectiveRegistrationStart).getTime() > new Date(effectiveRegistrationEnd).getTime()) {
@@ -152,15 +140,12 @@ const createEvent = (req, res) => {
             message: 'Event Start Date must be before or on Event End Date'
         });
     }
-
     if (EventType === 'Hackathon' && !HackathonMode) {
         return res.status(400).json({
             message: 'Hackathon mode is required for Hackathon events'
         });
     }
-
     const processedPosters = processPosters(Posters);
-
     eventsService.createEvent(EventName, Description, effectiveFacilities, effectiveRequirements, TeamSize, effectiveStartDate, effectiveEndDate, effectiveRegistrationStart, effectiveRegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, processedPosters, effVirtualStartDate, effVirtualEndDate, effPhysicalStartDate, effPhysicalEndDate, effVirtualRegStart, effVirtualRegEnd, effPhysicalRegStart, effPhysicalRegEnd, VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements, effectivePrizeMoney, effectiveVirtualPrizeMoney, effectivePhysicalPrizeMoney, (err, result) => {
             if (err) {
                 return res.status(500).json({
@@ -168,7 +153,6 @@ const createEvent = (req, res) => {
                     error: err.message
                 });
             }
-
             const newEventId = result.insertId;
             if (req.body.AuditoriumVenue || req.body.MaxCapacity || req.body.MaxAdmins !== undefined) {
                 const db = require('../../config/db');
@@ -180,7 +164,19 @@ const createEvent = (req, res) => {
                 const db = require('../../config/db');
                 db.query("INSERT INTO event_admins (AdminId, EventId, Role) VALUES (?, ?, 'Lead Organizer') ON DUPLICATE KEY UPDATE Role = VALUES(Role)", [creatorAdminId, newEventId], () => {});
             }
-
+            recordMutation({
+                actorUserId: req.user?.Id || req.user?.id || creatorAdminId || null,
+                actorEmail: req.user?.Email || req.user?.email || req.user?.UserName || 'admin@ayojan.in',
+                actorRole: req.user?.role || 'super_admin',
+                eventId: newEventId,
+                action: 'CREATE_EVENT',
+                module: 'EVENTS',
+                entityType: 'EVENT',
+                entityId: newEventId,
+                previousValue: null,
+                newValue: { EventName, EventType, Location, HackathonMode, StartDate: effectiveStartDate, EndDate: effectiveEndDate },
+                req
+            });
             return res.status(201).json({
                 message: 'Event created successfully',
                 eventId: newEventId
@@ -188,9 +184,7 @@ const createEvent = (req, res) => {
         }
     );
 };
-
 let cachedEvents = [];
-
 const getAllEvents = (req, res) => {
     eventsService.getAllEvents((err, result) => {
         if (err) {
@@ -206,21 +200,17 @@ const getAllEvents = (req, res) => {
                 error: err.message
             });
         }
-
         if (Array.isArray(result) && result.length > 0) {
             cachedEvents = result;
         }
-
         return res.status(200).json({
             message: 'Events fetched successfully',
             events: result
         });
     });
 };
-
 const getEventById = (req, res) => {
     const { id } = req.params;
-
     eventsService.getEventById(id, (err, result) => {
         if (err) {
             console.warn(`getEventById temporary DB issue for event ${id}:`, err.message);
@@ -238,13 +228,11 @@ const getEventById = (req, res) => {
                 error: err.message
             });
         }
-
         if (!result || result.length === 0) {
             return res.status(404).json({
                 message: 'Event not found'
             });
         }
-
         const ev = result[0];
         // Keep cachedEvents in sync
         if (cachedEvents && cachedEvents.length > 0) {
@@ -253,14 +241,12 @@ const getEventById = (req, res) => {
                 cachedEvents[idx] = { ...cachedEvents[idx], ...ev };
             }
         }
-
         return res.status(200).json({
             message: 'Event fetched successfully',
             event: ev
         });
     });
 };
-
 const getEventCount = (req, res) => {
     eventsService.getEventCount((err, result) => {
         if (err) {
@@ -269,17 +255,14 @@ const getEventCount = (req, res) => {
                 error: err.message
             });
         }
-
         return res.status(200).json({
             message: 'Event count fetched successfully',
             count: result.eventCount
         });
     });
 };
-
 const updateEvent = (req, res) => {
     const id = req.params.id;
-
     const {
         EventName, Description, Facilities, Requirements, TeamSize,
         StartDate, EndDate, RegistrationStart, RegistrationEnd, Location,
@@ -291,42 +274,34 @@ const updateEvent = (req, res) => {
         PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, Posters,
         PrizeMoney, VirtualPrizeMoney, PhysicalPrizeMoney
     } = req.body;
-
     let effectiveStartDate = StartDate;
     let effectiveEndDate = EndDate;
     let effectiveRegistrationStart = RegistrationStart;
     let effectiveRegistrationEnd = RegistrationEnd;
-
     let effVirtualStartDate = VirtualStartDate;
     let effVirtualEndDate = VirtualEndDate;
     let effVirtualRegStart = VirtualRegistrationStart;
     let effVirtualRegEnd = VirtualRegistrationEnd;
-
     let effPhysicalStartDate = PhysicalStartDate;
     let effPhysicalEndDate = PhysicalEndDate;
     let effPhysicalRegStart = PhysicalRegistrationStart;
     let effPhysicalRegEnd = PhysicalRegistrationEnd;
-
     let effectivePrizeMoney = PrizeMoney;
     let effectiveVirtualPrizeMoney = VirtualPrizeMoney;
     let effectivePhysicalPrizeMoney = PhysicalPrizeMoney;
-
     if (HackathonMode === 'Both' || HackathonMode === 'Virtual and Physical') {
         effectiveStartDate = VirtualStartDate || PhysicalStartDate || StartDate;
         effectiveEndDate = PhysicalEndDate || VirtualEndDate || EndDate;
         effectiveRegistrationStart = VirtualRegistrationStart || PhysicalRegistrationStart || RegistrationStart;
         effectiveRegistrationEnd = PhysicalRegistrationEnd || VirtualRegistrationEnd || RegistrationEnd;
-
         effVirtualStartDate = VirtualStartDate || effectiveStartDate;
         effVirtualEndDate = VirtualEndDate || effectiveStartDate;
         effVirtualRegStart = VirtualRegistrationStart || effectiveRegistrationStart;
         effVirtualRegEnd = VirtualRegistrationEnd || effectiveRegistrationEnd;
-
         effPhysicalStartDate = PhysicalStartDate || effectiveEndDate;
         effPhysicalEndDate = PhysicalEndDate || effectiveEndDate;
         effPhysicalRegStart = PhysicalRegistrationStart || effectiveRegistrationStart;
         effPhysicalRegEnd = PhysicalRegistrationEnd || effectiveRegistrationEnd;
-
         if (!effectivePrizeMoney) {
             if (effectiveVirtualPrizeMoney && effectivePhysicalPrizeMoney) {
                 const vNum = parseFloat(String(effectiveVirtualPrizeMoney).replace(/[^0-9.]/g, ''));
@@ -376,16 +351,13 @@ const updateEvent = (req, res) => {
         effectiveRegistrationStart = RegistrationStart || PhysicalRegistrationStart || VirtualRegistrationStart;
         effectiveRegistrationEnd = RegistrationEnd || PhysicalRegistrationEnd || VirtualRegistrationEnd;
     }
-
     const effectiveFacilities = Facilities || [VirtualFacilities, PhysicalFacilities].filter(Boolean).join('\n\n') || '-';
     const effectiveRequirements = Requirements || [VirtualRequirements, PhysicalRequirements].filter(Boolean).join('\n\n') || '-';
-
     if (!EventName || !effectiveStartDate || !effectiveEndDate) {
         return res.status(400).json({
             message: 'EventName, StartDate and EndDate are required'
         });
     }
-
     // Chronological date order validation:
     // 1. Registration Start Date <= Registration End Date
     if (effectiveRegistrationStart && effectiveRegistrationEnd) {
@@ -411,15 +383,12 @@ const updateEvent = (req, res) => {
             });
         }
     }
-
     if (EventType === 'Hackathon' && !HackathonMode) {
         return res.status(400).json({
             message: 'Hackathon mode is required for Hackathon events'
         });
     }
-
     const processedPosters = processPosters(Posters);
-
     eventsService.updateEventById(id, EventName, Description, effectiveFacilities, effectiveRequirements, TeamSize, effectiveStartDate, effectiveEndDate, effectiveRegistrationStart, effectiveRegistrationEnd, Location, EventType, EventStatus, HackathonMode, PrimaryColor, SecondaryColor, TertiaryColor, PrimaryTextColor, SecondaryTextColor, TertiaryTextColor, processedPosters, effVirtualStartDate, effVirtualEndDate, effPhysicalStartDate, effPhysicalEndDate, effVirtualRegStart, effVirtualRegEnd, effPhysicalRegStart, effPhysicalRegEnd, VirtualFacilities, VirtualRequirements, PhysicalFacilities, PhysicalRequirements, effectivePrizeMoney, effectiveVirtualPrizeMoney, effectivePhysicalPrizeMoney, (err, result) => {
             if (err) {
                 return res.status(500).json({
@@ -427,29 +396,24 @@ const updateEvent = (req, res) => {
                     error: err.message
                 });
             }
-
             if (result.affectedRows === 0) {
                 return res.status(404).json({
                     message: 'Event not found'
                 });
             }
-
             if (req.body.AuditoriumVenue !== undefined || req.body.MaxCapacity !== undefined || req.body.MaxAdmins !== undefined) {
                 const db = require('../../config/db');
                 const maxAdminsVal = req.body.MaxAdmins !== undefined && req.body.MaxAdmins !== '' ? parseInt(req.body.MaxAdmins, 10) : null;
                 db.query("UPDATE events SET AuditoriumVenue = COALESCE(?, AuditoriumVenue), MaxCapacity = COALESCE(?, MaxCapacity), MaxAdmins = COALESCE(?, MaxAdmins) WHERE Id = ?", [req.body.AuditoriumVenue || null, req.body.MaxCapacity || null, maxAdminsVal, id], () => {});
             }
-
             return res.status(200).json({
                 message: 'Event updated successfully'
             });
         }
     );
 };
-
 const deleteEvent = (req, res) => {
     const id = req.params.id;
-
     eventsService.deleteEvent(id, (err, result) => {
         if (err) {
             return res.status(500).json({
@@ -457,19 +421,29 @@ const deleteEvent = (req, res) => {
                 error: err.message
             });
         }
-
         if (result.affectedRows === 0) {
             return res.status(404).json({
                 message: 'Event not found'
             });
         }
-
+        recordMutation({
+            actorUserId: req.user?.Id || req.user?.id || null,
+            actorEmail: req.user?.Email || req.user?.email || req.user?.UserName || 'admin@ayojan.in',
+            actorRole: req.user?.role || 'super_admin',
+            eventId: id,
+            action: 'DELETE_EVENT',
+            module: 'EVENTS',
+            entityType: 'EVENT',
+            entityId: id,
+            previousValue: { eventId: id },
+            newValue: null,
+            req
+        });
         return res.status(200).json({
             message: 'Event deleted successfully'
         });
     });
 };
-
 const updateEventGuidelines = (req, res) => {
     const { id } = req.params;
     const {
@@ -481,7 +455,6 @@ const updateEventGuidelines = (req, res) => {
         Facilities,
         Requirements
     } = req.body;
-
     eventsService.saveEventGuidelines(id, {
         Description,
         VirtualFacilities,
@@ -497,22 +470,18 @@ const updateEventGuidelines = (req, res) => {
                 error: err.message
             });
         }
-
         return res.status(200).json({
             message: 'Event guidelines updated successfully'
         });
     });
 };
-
 const updateVirtualStatus = (req, res) => {
     const { id } = req.params;
     const { VirtualStatus } = req.body;
-
     const validStatuses = ['NOT_STARTED', 'LIVE', 'COMPLETED'];
     if (!validStatuses.includes(VirtualStatus)) {
         return res.status(400).json({ message: 'Invalid VirtualStatus' });
     }
-
     eventsService.updateVirtualEventStatus(id, VirtualStatus, (err, updated) => {
         if (err) {
             return res.status(500).json({
@@ -537,11 +506,9 @@ const updateVirtualStatus = (req, res) => {
         });
     });
 };
-
 const updateVirtualMeetUrl = (req, res) => {
     const { id } = req.params;
     const { VirtualMeetUrl } = req.body;
-
     eventsService.updateVirtualMeetUrl(id, VirtualMeetUrl || '', (err, updated) => {
         if (err) {
             return res.status(500).json({
@@ -566,7 +533,6 @@ const updateVirtualMeetUrl = (req, res) => {
         });
     });
 };
-
 const updateEventSettings = (req, res) => {
     const { id } = req.params;
     const settings = { ...req.body };
@@ -575,7 +541,6 @@ const updateEventSettings = (req, res) => {
         'FoodEnabled',
         'IDCardEnabled'
     ];
-
     for (const key of featureFlags) {
         if (settings[key] !== undefined) {
             const value = settings[key];
@@ -587,7 +552,6 @@ const updateEventSettings = (req, res) => {
             settings[key] = value === true || value === 1 || value === '1' ? 1 : 0;
         }
     }
-
     eventsService.updateEventSettings(id, settings, (err, updated) => {
         if (err) {
             return res.status(500).json({
@@ -605,19 +569,30 @@ const updateEventSettings = (req, res) => {
                 };
             }
         }
+        recordMutation({
+            actorUserId: req.user?.Id || req.user?.id || null,
+            actorEmail: req.user?.Email || req.user?.email || req.user?.UserName || 'admin@ayojan.in',
+            actorRole: req.user?.role || 'admin',
+            eventId: id,
+            action: 'UPDATE_SETTINGS',
+            module: 'EVENTS',
+            entityType: 'EVENT_SETTINGS',
+            entityId: id,
+            previousValue: null,
+            newValue: settings,
+            req
+        });
         return res.status(200).json({
             message: 'Event settings updated successfully',
             event: updated
         });
     });
 };
-
 const getAdminDashboardSummary = (req, res) => {
     const eventId = req.params.id;
     if (!eventId) {
         return res.status(400).json({ message: 'Event ID is required' });
     }
-
     eventsService.getAdminDashboardSummary(eventId, (err, summary) => {
         if (err) {
             return res.status(500).json({
@@ -634,16 +609,13 @@ const getAdminDashboardSummary = (req, res) => {
         });
     });
 };
-
 let cachedStats = null;
-
 // Warm up cache on module load with actual database metrics
 eventsService.getPublicPlatformStats((err, stats) => {
     if (!err && stats) {
         cachedStats = stats;
     }
 });
-
 const getPublicStats = (req, res) => {
     eventsService.getPublicPlatformStats((err, stats) => {
         if (err) {
@@ -665,11 +637,9 @@ const getPublicStats = (req, res) => {
         });
     });
 };
-
 const sendBroadcast = (req, res) => {
     const EventId = Number(req.params.id);
     const { subject, message, category, recipientFilter, senderAdminId, organizerName } = req.body;
-
     if (!Number.isInteger(EventId) || EventId <= 0) {
         return res.status(400).json({ success: false, message: "Valid Event ID is required." });
     }
@@ -679,7 +649,6 @@ const sendBroadcast = (req, res) => {
     if (!message || !message.trim()) {
         return res.status(400).json({ success: false, message: "Broadcast message is required." });
     }
-
     eventsService.sendEventBroadcast(EventId, {
         subject: subject.trim(),
         message: message.trim(),
@@ -695,13 +664,11 @@ const sendBroadcast = (req, res) => {
         return res.status(200).json(result);
     });
 };
-
 const getBroadcasts = (req, res) => {
     const EventId = Number(req.params.id);
     if (!Number.isInteger(EventId) || EventId <= 0) {
         return res.status(400).json({ success: false, message: "Valid Event ID is required." });
     }
-
     eventsService.getEventBroadcasts(EventId, (err, broadcasts) => {
         if (err) {
             console.error('getBroadcasts error:', err);
@@ -710,7 +677,6 @@ const getBroadcasts = (req, res) => {
         return res.status(200).json({ success: true, broadcasts });
     });
 };
-
 module.exports = {
     createEvent,
     getAllEvents,

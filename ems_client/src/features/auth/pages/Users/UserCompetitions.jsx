@@ -28,7 +28,7 @@ import {
   Camera,
   Image as ImageIcon,
   BookOpen,
-  Presentation
+  Presentation,
 } from 'lucide-react';
 import { resolveEventMode } from '../../../public/pages/ExploreEvents';
 import { getEventTypeInfo } from '../../../../lib/utils';
@@ -37,24 +37,25 @@ export default function UserCompetitions() {
   const navigate = useNavigate();
   const { theme } = useTheme();
 
-  const [events,     setEvents]     = useState([]);
-  const [loading,    setLoading]    = useState(true);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
   const [brokenImages, setBrokenImages] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMode, setSelectedMode] = useState('ALL');
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [selectedType, setSelectedType] = useState('ALL');
+  const [sortBy, setSortBy] = useState('date-asc');
 
-  const [searchTerm,      setSearchTerm]      = useState('');
-  const [selectedMode,    setSelectedMode]    = useState('ALL');
-  const [selectedStatus,  setSelectedStatus]  = useState('ALL');
-  const [selectedType,    setSelectedType]    = useState('ALL');
-  const [sortBy,          setSortBy]          = useState('date-asc');
-
-  useEffect(() => { fetchEvents(); }, []);
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
       setFetchError(null);
-      const res  = await fetch(`${API_BASE_URL}/api/events`);
+      const res = await fetch(`${API_BASE_URL}/api/events`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to fetch events');
       setEvents(data.events || []);
@@ -72,7 +73,9 @@ export default function UserCompetitions() {
 
   const eventTypes = useMemo(() => {
     const types = new Set();
-    events.forEach((ev) => { if (ev.EventType) types.add(ev.EventType); });
+    events.forEach((ev) => {
+      if (ev.EventType) types.add(ev.EventType);
+    });
     return Array.from(types);
   }, [events]);
 
@@ -82,25 +85,25 @@ export default function UserCompetitions() {
         const query = searchTerm.toLowerCase().trim();
         const matchesSearch =
           !query ||
-          (ev.EventName   && ev.EventName.toLowerCase().includes(query))   ||
+          (ev.EventName && ev.EventName.toLowerCase().includes(query)) ||
           (ev.Description && ev.Description.toLowerCase().includes(query)) ||
-          (ev.Location    && ev.Location.toLowerCase().includes(query))    ||
-          (ev.EventType   && ev.EventType.toLowerCase().includes(query));
+          (ev.Location && ev.Location.toLowerCase().includes(query)) ||
+          (ev.EventType && ev.EventType.toLowerCase().includes(query));
 
         const mode = resolveEventMode(ev);
         const matchesMode =
           selectedMode === 'ALL' ||
-          (selectedMode === 'VIRTUAL'              && (mode === 'virtual' || mode === 'both')) ||
-          (selectedMode === 'PHYSICAL'             && (mode === 'physical' || mode === 'both')) ||
+          (selectedMode === 'VIRTUAL' && (mode === 'virtual' || mode === 'both')) ||
+          (selectedMode === 'PHYSICAL' && (mode === 'physical' || mode === 'both')) ||
           (selectedMode === 'VIRTUAL_AND_PHYSICAL' && mode === 'both') ||
-          (selectedMode === 'HYBRID'               && mode === 'hybrid');
+          (selectedMode === 'HYBRID' && mode === 'hybrid');
 
         const statusN = (ev.EventStatus || '').toLowerCase();
         const matchesStatus =
           selectedStatus === 'ALL' ||
           (selectedStatus === 'UPCOMING' && statusN === 'upcoming') ||
-          (selectedStatus === 'ONGOING'  && statusN === 'ongoing')  ||
-          (selectedStatus === 'COMPLETED'&& statusN === 'completed');
+          (selectedStatus === 'ONGOING' && statusN === 'ongoing') ||
+          (selectedStatus === 'COMPLETED' && statusN === 'completed');
 
         const eventTypeLower = (ev.EventType || '').toLowerCase();
         const matchesType =
@@ -114,27 +117,27 @@ export default function UserCompetitions() {
         return matchesSearch && matchesMode && matchesStatus && matchesType;
       })
       .sort((a, b) => {
-        if (sortBy === 'date-asc')  return new Date(a.StartDate || 0) - new Date(b.StartDate || 0);
+        if (sortBy === 'date-asc') return new Date(a.StartDate || 0) - new Date(b.StartDate || 0);
         if (sortBy === 'date-desc') return new Date(b.StartDate || 0) - new Date(a.StartDate || 0);
-        if (sortBy === 'name-asc')  return (a.EventName || '').localeCompare(b.EventName || '');
-        if (sortBy === 'team-asc')  return (parseInt(a.TeamSize, 10) || 0) - (parseInt(b.TeamSize, 10) || 0);
+        if (sortBy === 'name-asc') return (a.EventName || '').localeCompare(b.EventName || '');
+        if (sortBy === 'team-asc') return (parseInt(a.TeamSize, 10) || 0) - (parseInt(b.TeamSize, 10) || 0);
         return 0;
       });
   }, [events, searchTerm, selectedMode, selectedStatus, selectedType, sortBy]);
 
   const stats = useMemo(() => {
-    const total            = events.length;
-    const virtual          = events.filter(e => {
+    const total = events.length;
+    const virtual = events.filter((e) => {
       const m = resolveEventMode(e);
       return m === 'virtual' || m === 'both';
     }).length;
-    const physical         = events.filter(e => {
+    const physical = events.filter((e) => {
       const m = resolveEventMode(e);
       return m === 'physical' || m === 'both';
     }).length;
-    const virtualAndPhysical = events.filter(e => resolveEventMode(e) === 'both').length;
-    const hybrid  = events.filter(e => resolveEventMode(e) === 'hybrid').length;
-    const ongoing = events.filter(e => (e.EventStatus  || '').toLowerCase() === 'ongoing').length;
+    const virtualAndPhysical = events.filter((e) => resolveEventMode(e) === 'both').length;
+    const hybrid = events.filter((e) => resolveEventMode(e) === 'hybrid').length;
+    const ongoing = events.filter((e) => (e.EventStatus || '').toLowerCase() === 'ongoing').length;
     return { total, virtual, physical, virtualAndPhysical, hybrid, ongoing };
   }, [events]);
 
@@ -144,7 +147,9 @@ export default function UserCompetitions() {
       const d = new Date(ds);
       if (isNaN(d.getTime())) return ds;
       return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch { return ds; }
+    } catch {
+      return ds;
+    }
   };
 
   const getEventPosterUrl = (posters) => {
@@ -157,11 +162,16 @@ export default function UserCompetitions() {
         const parsed = JSON.parse(posters);
         if (Array.isArray(parsed) && parsed.length > 0) {
           url = typeof parsed[0] === 'string' ? parsed[0] : parsed[0]?.url || null;
-        } else { url = parsed; }
-      } catch { url = posters; }
+        } else {
+          url = parsed;
+        }
+      } catch {
+        url = posters;
+      }
     }
-    if (url && typeof url === 'string' && url.startsWith('/uploads'))
+    if (url && typeof url === 'string' && url.startsWith('/uploads')) {
       return `${API_BASE_URL}${url}`;
+    }
     return url;
   };
 
@@ -179,8 +189,7 @@ export default function UserCompetitions() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-6">
-
-        {/* ── HEADER ── */}
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -200,26 +209,44 @@ export default function UserCompetitions() {
               Browse all open tracks, check prize pools and register your team.
             </p>
             <div className="pt-2 flex flex-wrap items-center gap-4 sm:gap-5 text-xs text-slate-500 dark:text-zinc-400 font-mono">
-              <div><span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.total}</span><span>Events</span></div>
+              <div>
+                <span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.total}</span>
+                <span>Events</span>
+              </div>
               <div className="h-3 w-px bg-slate-200 dark:border-zinc-800" />
-              <div><span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.virtual}</span><span>Virtual</span></div>
+              <div>
+                <span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.virtual}</span>
+                <span>Virtual</span>
+              </div>
               <div className="h-3 w-px bg-slate-200 dark:border-zinc-800" />
-              <div><span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.physical}</span><span>Physical</span></div>
+              <div>
+                <span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.physical}</span>
+                <span>Physical</span>
+              </div>
               <div className="h-3 w-px bg-slate-200 dark:border-zinc-800" />
-              <div><span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.virtualAndPhysical}</span><span>Virtual &amp; Physical</span></div>
+              <div>
+                <span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.virtualAndPhysical}</span>
+                <span>Virtual &amp; Physical</span>
+              </div>
               <div className="h-3 w-px bg-slate-200 dark:border-zinc-800" />
-              <div><span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.hybrid}</span><span>Hybrid</span></div>
+              <div>
+                <span className="text-slate-900 dark:text-white font-bold text-base mr-1.5">{stats.hybrid}</span>
+                <span>Hybrid</span>
+              </div>
               {stats.ongoing > 0 && (
                 <>
                   <div className="h-3 w-px bg-slate-200 dark:border-zinc-800" />
-                  <div><span className="text-emerald-600 dark:text-emerald-400 font-bold text-base mr-1.5">{stats.ongoing}</span><span>Live</span></div>
+                  <div>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold text-base mr-1.5">{stats.ongoing}</span>
+                    <span>Live</span>
+                  </div>
                 </>
               )}
             </div>
           </div>
         </motion.div>
 
-        {/* ── WEBSITE SIGNATURE THEME TABS FOR EVENT TYPES ── */}
+        {/* Website Signature Theme Tabs For Event Types */}
         <div className="relative pt-2">
           <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto scrollbar-none">
             {[
@@ -231,7 +258,6 @@ export default function UserCompetitions() {
             ].map((tab) => {
               const isActive = selectedType === tab.id;
               const TabIcon = tab.icon;
-
               return (
                 <button
                   key={tab.id}
@@ -245,13 +271,11 @@ export default function UserCompetitions() {
                       className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
                       transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                     >
-                      {/* Seamless bottom mask */}
                       <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-20" />
                     </motion.div>
                   ) : (
                     <div className="absolute inset-0 rounded-t-2xl bg-slate-100/90 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 z-0 hover:bg-slate-200 dark:hover:bg-zinc-900 transition-colors" />
                   )}
-
                   <span
                     className={`relative z-20 flex items-center gap-2 transition-colors ${
                       isActive
@@ -272,7 +296,7 @@ export default function UserCompetitions() {
           </div>
         </div>
 
-        {/* ── SEARCH + FILTER BAR ── */}
+        {/* Search & Filter Bar */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -290,7 +314,11 @@ export default function UserCompetitions() {
                 className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all"
               />
               {searchTerm && (
-                <button onClick={() => setSearchTerm('')} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+                >
                   <X className="h-4 w-4" />
                 </button>
               )}
@@ -300,40 +328,63 @@ export default function UserCompetitions() {
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs font-medium text-slate-700 dark:text-zinc-300">
                 <SlidersHorizontal className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span className="text-slate-500 dark:text-zinc-500">Sort:</span>
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="bg-transparent font-semibold text-slate-900 dark:text-white focus:outline-none cursor-pointer">
-                  <option value="date-asc"  className="bg-white dark:bg-black text-slate-900 dark:text-white">Soonest</option>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-transparent font-semibold text-slate-900 dark:text-white focus:outline-none cursor-pointer"
+                >
+                  <option value="date-asc" className="bg-white dark:bg-black text-slate-900 dark:text-white">Soonest</option>
                   <option value="date-desc" className="bg-white dark:bg-black text-slate-900 dark:text-white">Latest</option>
-                  <option value="name-asc"  className="bg-white dark:bg-black text-slate-900 dark:text-white">Name</option>
-                  <option value="team-asc"  className="bg-white dark:bg-black text-slate-900 dark:text-white">Team Size</option>
+                  <option value="name-asc" className="bg-white dark:bg-black text-slate-900 dark:text-white">Name</option>
+                  <option value="team-asc" className="bg-white dark:bg-black text-slate-900 dark:text-white">Team Size</option>
                 </select>
               </div>
 
               {hasActiveFilters && (
-                <button onClick={clearAllFilters} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-black hover:bg-rose-100 dark:hover:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 transition-all">
-                  <X className="h-3.5 w-3.5" />Clear
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-black hover:bg-rose-100 dark:hover:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 transition-all cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  <span>Clear</span>
                 </button>
               )}
 
-              <button onClick={fetchEvents} disabled={loading} className="p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all disabled:opacity-50" title="Refresh">
+              <button
+                type="button"
+                onClick={fetchEvents}
+                disabled={loading}
+                className="p-1.5 rounded-lg bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all disabled:opacity-50 cursor-pointer"
+                title="Refresh"
+              >
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin text-emerald-500' : ''}`} />
               </button>
             </div>
           </div>
 
-          {/* filter chips */}
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             <span className="text-slate-500 dark:text-zinc-500 mr-1 flex items-center gap-1 font-medium">
-              <Filter className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />Mode:
+              <Filter className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+              <span>Mode:</span>
             </span>
             {[
-              { id: 'ALL',                  label: 'All' },
-              { id: 'VIRTUAL',              label: 'Virtual' },
-              { id: 'PHYSICAL',             label: 'Physical' },
+              { id: 'ALL', label: 'All' },
+              { id: 'VIRTUAL', label: 'Virtual' },
+              { id: 'PHYSICAL', label: 'Physical' },
               { id: 'VIRTUAL_AND_PHYSICAL', label: 'Virtual & Physical' },
-              { id: 'HYBRID',               label: 'Hybrid' },
+              { id: 'HYBRID', label: 'Hybrid' },
             ].map((m) => (
-              <button key={m.id} onClick={() => setSelectedMode(m.id)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedMode === m.id ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:text-slate-900 dark:hover:text-white'}`}>
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setSelectedMode(m.id)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                  selectedMode === m.id
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
                 {m.label}
               </button>
             ))}
@@ -342,24 +393,35 @@ export default function UserCompetitions() {
 
             <span className="text-slate-500 dark:text-zinc-500 mr-1 flex items-center gap-1 font-medium">Status:</span>
             {[
-              { id: 'ALL',       label: 'All' },
-              { id: 'UPCOMING',  label: 'Upcoming' },
-              { id: 'ONGOING',   label: 'Live' },
+              { id: 'ALL', label: 'All' },
+              { id: 'UPCOMING', label: 'Upcoming' },
+              { id: 'ONGOING', label: 'Live' },
               { id: 'COMPLETED', label: 'Concluded' },
             ].map((s) => (
-              <button key={s.id} onClick={() => setSelectedStatus(s.id)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${selectedStatus === s.id ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:text-slate-900 dark:hover:text-white'}`}>
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setSelectedStatus(s.id)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                  selectedStatus === s.id
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/40 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
                 {s.label}
               </button>
             ))}
           </div>
         </motion.div>
 
-        {/* ── CONTENT ── */}
+        {/* Content */}
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-[450px] rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-6 flex flex-col justify-end space-y-3 animate-pulse shadow-sm">
+              <div
+                key={i}
+                className="h-[450px] rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-6 flex flex-col justify-end space-y-3 animate-pulse shadow-sm"
+              >
                 <div className="h-4 w-20 rounded bg-slate-200 dark:bg-zinc-800" />
                 <div className="h-7 w-3/4 rounded bg-slate-200 dark:bg-zinc-800" />
                 <div className="h-4 w-1/2 rounded bg-slate-200 dark:bg-zinc-800" />
@@ -373,8 +435,13 @@ export default function UserCompetitions() {
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">Events Feed Temporarily Unavailable</h3>
             <p className="text-xs text-slate-600 dark:text-zinc-400">{fetchError}. Please ensure the backend server and database are active.</p>
-            <button onClick={fetchEvents} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all">
-              <RefreshCw className="h-3 w-3" />Try Again
+            <button
+              type="button"
+              onClick={fetchEvents}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all cursor-pointer"
+            >
+              <RefreshCw className="h-3 w-3" />
+              <span>Try Again</span>
             </button>
           </div>
         ) : filteredEvents.length === 0 ? (
@@ -387,12 +454,12 @@ export default function UserCompetitions() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredEvents.map((event, idx) => {
-              const posterUrl  = getEventPosterUrl(event.Posters);
-              const customBg   = event.PrimaryColor || '#059669';
-              const isOngoing  = (event.EventStatus || '').toLowerCase() === 'ongoing';
-              const isCompleted= (event.EventStatus || '').toLowerCase() === 'completed';
-              const mode       = resolveEventMode(event);
-              const typeInfo   = getEventTypeInfo(event.EventType);
+              const posterUrl = getEventPosterUrl(event.Posters);
+              const customBg = event.PrimaryColor || '#059669';
+              const isOngoing = (event.EventStatus || '').toLowerCase() === 'ongoing';
+              const isCompleted = (event.EventStatus || '').toLowerCase() === 'completed';
+              const mode = resolveEventMode(event);
+              const typeInfo = getEventTypeInfo(event.EventType);
 
               return (
                 <motion.div
@@ -403,7 +470,6 @@ export default function UserCompetitions() {
                   onClick={() => navigate(`/user/events/${event.Id}`)}
                   className="group relative h-[450px] sm:h-[460px] rounded-2xl overflow-hidden cursor-pointer bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/50 shadow-sm hover:shadow-xl transition-all duration-400 ease-out select-none"
                 >
-                  {/* background */}
                   <div className="absolute inset-0 w-full h-full">
                     {posterUrl && !brokenImages[event.Id] ? (
                       <img
@@ -432,7 +498,6 @@ export default function UserCompetitions() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent transition-opacity duration-400 group-hover:opacity-0" />
                   </div>
 
-                  {/* default (non-hover) label */}
                   <div className="absolute inset-x-0 bottom-0 p-5 z-10 transition-all duration-300 ease-out group-hover:opacity-0 group-hover:translate-y-4">
                     <div className="h-0.5 w-8 bg-emerald-400 mb-2" />
                     <h3 className="text-xl sm:text-2xl font-black text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] line-clamp-2">
@@ -440,46 +505,57 @@ export default function UserCompetitions() {
                     </h3>
                   </div>
 
-                  {/* hover overlay */}
                   <div className="absolute inset-0 z-20 p-5 flex flex-col justify-between opacity-0 group-hover:opacity-100 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] bg-white/95 dark:bg-black/90 backdrop-blur-md">
-
-                    {/* top badges */}
                     <div className="flex items-center justify-between gap-2 transform -translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ease-out">
                       {(() => {
-                        if (mode === 'both') return (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-zinc-800 text-emerald-700 dark:text-emerald-300">
-                            <Layers className="h-3 w-3 text-emerald-600 dark:text-emerald-400" /><span>Virtual &amp; Physical</span>
-                          </div>
-                        );
-                        if (mode === 'hybrid') return (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-teal-50 dark:bg-zinc-900 border border-teal-200 dark:border-zinc-800 text-teal-700 dark:text-teal-300">
-                            <Radio className="h-3 w-3 text-teal-600 dark:text-teal-400" /><span>Hybrid</span>
-                          </div>
-                        );
-                        if (mode === 'physical') return (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-zinc-800 text-emerald-700 dark:text-emerald-300">
-                            <Building2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" /><span>Physical</span>
-                          </div>
-                        );
+                        if (mode === 'both') {
+                          return (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-zinc-800 text-emerald-700 dark:text-emerald-300">
+                              <Layers className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                              <span>Virtual &amp; Physical</span>
+                            </div>
+                          );
+                        }
+                        if (mode === 'hybrid') {
+                          return (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-teal-50 dark:bg-zinc-900 border border-teal-200 dark:border-zinc-800 text-teal-700 dark:text-teal-300">
+                              <Radio className="h-3 w-3 text-teal-600 dark:text-teal-400" />
+                              <span>Hybrid</span>
+                            </div>
+                          );
+                        }
+                        if (mode === 'physical') {
+                          return (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-zinc-800 text-emerald-700 dark:text-emerald-300">
+                              <Building2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                              <span>Physical</span>
+                            </div>
+                          );
+                        }
                         return (
                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-zinc-900 border border-emerald-200 dark:border-zinc-800 text-emerald-700 dark:text-emerald-300">
-                            <Monitor className="h-3 w-3 text-emerald-600 dark:text-emerald-400" /><span>Virtual</span>
+                            <Monitor className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                            <span>Virtual</span>
                           </div>
                         );
                       })()}
-
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300">
                         {isOngoing ? (
                           <span className="text-emerald-600 dark:text-emerald-400 font-bold">Live</span>
                         ) : isCompleted ? (
-                          <><CheckCircle2 className="h-3 w-3 text-slate-500 dark:text-zinc-400" /><span>Concluded</span></>
+                          <>
+                            <CheckCircle2 className="h-3 w-3 text-slate-500 dark:text-zinc-400" />
+                            <span>Concluded</span>
+                          </>
                         ) : (
-                          <><Clock className="h-3 w-3 text-amber-500 dark:text-amber-400" /><span className="text-amber-600 dark:text-amber-300">Upcoming</span></>
+                          <>
+                            <Clock className="h-3 w-3 text-amber-500 dark:text-amber-400" />
+                            <span className="text-amber-600 dark:text-amber-300">Upcoming</span>
+                          </>
                         )}
                       </div>
                     </div>
 
-                    {/* middle info */}
                     <div className="space-y-3 my-auto transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ease-out">
                       <div className="space-y-0.5">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
@@ -489,21 +565,19 @@ export default function UserCompetitions() {
                           {event.EventName}
                         </h3>
                       </div>
-
                       {event.Description && (
                         <p className="text-xs text-slate-600 dark:text-zinc-300 line-clamp-2 leading-relaxed">
                           {event.Description}
                         </p>
                       )}
-
                       <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-zinc-800">
                         <div className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-zinc-800/60">
                           <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 text-[11px]">
-                            <Calendar className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /><span>Schedule</span>
+                            <Calendar className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Schedule</span>
                           </span>
                           <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[160px]">{formatDate(event.StartDate)}</span>
                         </div>
-
                         <div className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-zinc-800/60">
                           <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 text-[11px]">
                             <Users className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -513,20 +587,20 @@ export default function UserCompetitions() {
                             {typeInfo.isSeminar || typeInfo.isWebinar ? 'Solo Delegate Pass' : typeInfo.isWorkshop ? 'Solo Attendee' : (event.TeamSize ? `${event.TeamSize} Members` : 'Flexible')}
                           </span>
                         </div>
-
                         {event.Location && (
                           <div className="flex items-center justify-between text-xs py-1 border-b border-slate-100 dark:border-zinc-800/60">
                             <span className="text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 text-[11px]">
-                              <MapPin className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /><span>Venue</span>
+                              <MapPin className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                              <span>Venue</span>
                             </span>
                             <span className="font-semibold text-slate-900 dark:text-white truncate max-w-[160px]">{event.Location}</span>
                           </div>
                         )}
-
                         {(event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney) && (
                           <div className="flex items-center justify-between text-xs py-1">
                             <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1.5 text-[11px] font-bold">
-                              <Trophy className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" /><span>Prize Pool</span>
+                              <Trophy className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />
+                              <span>Prize Pool</span>
                             </span>
                             <span className="font-black text-amber-600 dark:text-amber-300 text-sm">
                               {event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney}
@@ -536,31 +610,33 @@ export default function UserCompetitions() {
                       </div>
                     </div>
 
-                    {/* bottom actions */}
                     <div className="pt-1 flex items-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300 ease-out">
                       <button
-                        onClick={(e) => { e.stopPropagation(); navigate(`/user/events/${event.Id}`); }}
-                        className="flex-1 py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-white font-semibold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/user/events/${event.Id}`);
+                        }}
+                        className="flex-1 py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-white font-semibold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                       >
                         <Eye className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                         <span>Quick View</span>
                       </button>
                       <button
+                        type="button"
                         onClick={(e) => handleActionClick(e, event)}
-                        className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                        className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
                       >
                         <span>{typeInfo.isSeminar ? 'Register as Delegate' : typeInfo.isWebinar ? 'Join Webinar' : typeInfo.isWorkshop ? 'Enroll' : 'Register'}</span>
                         <ArrowRight className="h-3.5 w-3.5 text-white" />
                       </button>
                     </div>
-
                   </div>
                 </motion.div>
               );
             })}
           </div>
         )}
-
       </div>
     </div>
   );

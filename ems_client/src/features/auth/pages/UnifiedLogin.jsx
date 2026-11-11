@@ -19,13 +19,15 @@ import {
   AlertCircle,
   Check,
   ChevronDown,
+  RefreshCw,
+  ArrowLeft,
+  KeyRound,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import WaveBackground from "../../../components/Molecules/WaveBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../../Hooks/useAuth";
 import useToast from "../../../Hooks/useToast";
-
 const logoElement = (
   <div className="relative w-5 h-5 flex items-center justify-center">
     <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -34,7 +36,6 @@ const logoElement = (
     <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
   </div>
 );
-
 const ROLE_CONFIGS = {
   super_admin: {
     role: "super_admin",
@@ -79,16 +80,17 @@ const ROLE_CONFIGS = {
       text: "Organizer portal? Admin Login →",
       path: "/admin/login",
     },
-    buildPayload: ({ email, password }) => ({
+    buildPayload: ({ email, password, captchaId, captchaAnswer }) => ({
       email,
       password,
+      captchaId,
+      captchaAnswer,
     }),
     onSuccess: (data, { login }) => {
       const adminUser = data.admin || data.user || {};
       login(data.token, adminUser, "super_admin");
     },
   },
-
   admin: {
     role: "admin",
     roleName: "Organizer",
@@ -132,10 +134,12 @@ const ROLE_CONFIGS = {
       text: "Looking for participant login? Student Portal →",
       path: "/user/login",
     },
-    buildPayload: ({ email, password, eventName }) => ({
+    buildPayload: ({ email, password, eventName, captchaId, captchaAnswer }) => ({
       Email: email,
       Password: password,
       EventName: eventName || undefined,
+      captchaId,
+      captchaAnswer,
     }),
     onSuccess: (data, { login }) => {
       const adminUser = data.admin || data.user || {};
@@ -144,7 +148,6 @@ const ROLE_CONFIGS = {
       login(data.token, adminUser, "admin");
     },
   },
-
   user: {
     role: "user",
     roleName: "Participant",
@@ -189,9 +192,11 @@ const ROLE_CONFIGS = {
       text: "Are you an event organizer? Organizer Portal →",
       path: "/admin/login",
     },
-    buildPayload: ({ email, password }) => ({
+    buildPayload: ({ email, password, captchaId, captchaAnswer }) => ({
       Email: email,
       Password: password,
+      captchaId,
+      captchaAnswer,
     }),
     onSuccess: (data, { login }) => {
       const userObj = data.user || data.users || {};
@@ -204,7 +209,6 @@ const ROLE_CONFIGS = {
       login(token, userObj, "user");
     },
   },
-
   evaluator: {
     role: "evaluator",
     roleName: "Evaluator",
@@ -248,9 +252,11 @@ const ROLE_CONFIGS = {
       text: "Organizer portal? Admin Login →",
       path: "/admin/login",
     },
-    buildPayload: ({ email, password }) => ({
+    buildPayload: ({ email, password, captchaId, captchaAnswer }) => ({
       username: email,
       password: password,
+      captchaId,
+      captchaAnswer,
     }),
     onSuccess: (data, { login }) => {
       const evalObj = data.evaluator || data.user || {};
@@ -265,7 +271,6 @@ const ROLE_CONFIGS = {
     },
   },
 };
-
 function getActiveRole(pathname, propRole) {
   if (propRole && ROLE_CONFIGS[propRole]) {
     return propRole;
@@ -284,16 +289,13 @@ function getActiveRole(pathname, propRole) {
   }
   return "super_admin";
 }
-
 function UnifiedLogin({ role: propRole }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
   const toast = useToast();
-
   const activeRole = getActiveRole(location.pathname, propRole);
   const config = ROLE_CONFIGS[activeRole];
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [eventName, setEventName] = useState("");
@@ -302,30 +304,57 @@ function UnifiedLogin({ role: propRole }) {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [shakeForm, setShakeForm] = useState(false);
-
   const [touched, setTouched] = useState({
     email: false,
     password: false,
     eventName: false,
   });
-
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [isEventFocused, setIsEventFocused] = useState(false);
-
   const isEmailFloating = Boolean(email) || isEmailFocused;
   const isPasswordFloating = Boolean(password) || isPasswordFocused;
   const isEventFloating = Boolean(eventName) || isEventFocused;
-
+  // CAPTCHA Challenge State
+  const [captchaId, setCaptchaId] = useState("");
+  const [captchaSvg, setCaptchaSvg] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [captchaLoading, setCaptchaLoading] = useState(false);
+  const [isCaptchaFocused, setIsCaptchaFocused] = useState(false);
+  const isCaptchaFloating = Boolean(captchaAnswer) || isCaptchaFocused;
+  const isCaptchaValid = captchaAnswer.length === 6;
+  // Two-Factor Authentication (2FA) Flow State
+  const [loginStep, setLoginStep] = useState("credentials"); // "credentials" | "2fa"
+  const [temp2faToken, setTemp2faToken] = useState("");
+  const [maskedEmail, setMaskedEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [verifying2fa, setVerifying2fa] = useState(false);
+  const fetchCaptcha = async () => {
+    try {
+      setCaptchaLoading(true);
+      const res = await fetch(`${API_BASE_URL}/api/security/captcha`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCaptchaId(data.captchaId);
+        setCaptchaSvg(data.svg);
+        setCaptchaAnswer("");
+      }
+    } catch (e) {
+      console.warn("Failed to load CAPTCHA:", e);
+    } finally {
+      setCaptchaLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchCaptcha();
+  }, [activeRole]);
   const [eventsList, setEventsList] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
-
   useEffect(() => {
     if (config.showEventName) {
       loadEvents();
     }
   }, [config.showEventName]);
-
   const loadEvents = async () => {
     try {
       setLoadingEvents(true);
@@ -341,9 +370,7 @@ function UnifiedLogin({ role: propRole }) {
       setLoadingEvents(false);
     }
   };
-
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
   const getEmailError = () => {
     const val = email.trim();
     if (!val) {
@@ -356,56 +383,45 @@ function UnifiedLogin({ role: propRole }) {
     }
     return "";
   };
-
   const getPasswordError = () => {
     if (!password) return "Password is required";
     if (password.length < 6) return "Password must be at least 6 characters";
     return "";
   };
-
   const getEventNameError = () => {
     if (config.showEventName && !eventName.trim()) {
       return "Please select your assigned event";
     }
     return "";
   };
-
   const emailError = getEmailError();
   const passwordError = getPasswordError();
   const eventNameError = getEventNameError();
-
   const showEmailError = (submitted || touched.email || email.length > 0) && emailError;
   const showPasswordError = (submitted || touched.password || password.length > 0) && passwordError;
   const showEventNameError = (submitted || touched.eventName || eventName.length > 0) && eventNameError;
-
   const isEmailValid = (touched.email || email.length > 0) && !emailError;
   const isPasswordValid = (touched.password || password.length > 0) && !passwordError;
   const isEventValid = config.showEventName && (touched.eventName || eventName.length > 0) && !eventNameError;
-
   const triggerShake = () => {
     setShakeForm(true);
     setTimeout(() => setShakeForm(false), 500);
   };
-
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
   };
-
   const handleGoogleSignIn = () => {
     toast.info("Google sign-in is coming soon.");
   };
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitted(true);
-
     setTouched({
       email: true,
       password: true,
       eventName: true,
     });
-
     if (emailError || passwordError || eventNameError) {
       triggerShake();
       const firstError = emailError || passwordError || eventNameError;
@@ -413,30 +429,34 @@ function UnifiedLogin({ role: propRole }) {
       toast.error(firstError);
       return;
     }
-
     try {
       setLoading(true);
-
       const payload = config.buildPayload({
         email: email.trim(),
         password,
         eventName: eventName.trim(),
+        captchaId,
+        captchaAnswer: captchaAnswer.trim(),
       });
-
       const res = await fetch(config.apiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
+        fetchCaptcha();
         throw new Error(data.message || data.error || "Login failed");
       }
-
+      // If user has 2FA enabled, transition to OTP verification screen
+      if (data.requires2FA) {
+        setTemp2faToken(data.tempToken);
+        setMaskedEmail(data.maskedEmail || "your email");
+        setLoginStep("2fa");
+        toast.info(data.message || `Please enter the 6-digit code sent to ${data.maskedEmail || 'your email'}`);
+        return;
+      }
       config.onSuccess(data, { login });
-
       toast.success("Logged in successfully!");
       let from = location.state?.from?.pathname;
       if (!from || from.includes("/login") || from.includes("/register") || from === "/") {
@@ -452,7 +472,42 @@ function UnifiedLogin({ role: propRole }) {
       setLoading(false);
     }
   };
-
+  const handleVerify2FA = async (e) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.trim().length !== 6) {
+      toast.error("Please enter the 6-digit verification code.");
+      return;
+    }
+    try {
+      setVerifying2fa(true);
+      const res = await fetch(`${API_BASE_URL}/api/security/2fa/verify-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tempToken: temp2faToken,
+          otpCode: otpCode.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Invalid or expired verification code.");
+      }
+      config.onSuccess(data, { login });
+      toast.success("Signed in successfully!");
+      let from = location.state?.from?.pathname;
+      if (!from || from.includes("/login") || from.includes("/register") || from === "/") {
+        from = config.defaultRedirect;
+      }
+      navigate(from, { replace: true });
+    } catch (err) {
+      triggerShake();
+      const errMsg = err.message || "Two-Factor verification failed.";
+      setError(errMsg);
+      toast.error(errMsg);
+    } finally {
+      setVerifying2fa(false);
+    }
+  };
   return (
     <motion.div
       className="relative w-full min-h-screen overflow-hidden bg-white dark:bg-black text-gray-900 dark:text-white transition-colors duration-300 pt-28 sm:pt-32 lg:pt-36 pb-16"
@@ -460,7 +515,6 @@ function UnifiedLogin({ role: propRole }) {
       transition={{ duration: 0.35, ease: "easeOut" }}
     >
       <WaveBackground />
-
       <div className="relative z-10 flex flex-col lg:flex-row mx-4 sm:mx-8 lg:mx-12 xl:mx-20 gap-8 lg:gap-14 items-center lg:items-start justify-center">
         <div className="hidden lg:flex flex-col w-full lg:w-6/12 p-0 lg:p-6 xl:p-8">
           <AnimatePresence mode="wait">
@@ -474,7 +528,6 @@ function UnifiedLogin({ role: propRole }) {
               <p className="text-sm font-semibold tracking-widest text-emerald-700 dark:text-emerald-400 mb-4">
                 {config.badge}
               </p>
-
               <h1 className="text-3xl lg:text-5xl font-bold tracking-tight">
                 {config.titleFirst}
               </h1>
@@ -483,11 +536,9 @@ function UnifiedLogin({ role: propRole }) {
                   {config.titleHighlight}
                 </span>
               </h1>
-
               <p className="text-gray-700 dark:text-gray-300 mt-4 lg:mt-6 text-base lg:text-lg leading-relaxed max-w-xl">
                 {config.description}
               </p>
-
               <div className="flex flex-col gap-4 lg:gap-5 mt-6 lg:mt-8">
                 {config.features.map((feature, idx) => {
                   const Icon = feature.icon;
@@ -517,7 +568,6 @@ function UnifiedLogin({ role: propRole }) {
             </motion.div>
           </AnimatePresence>
         </div>
-
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -552,9 +602,6 @@ function UnifiedLogin({ role: propRole }) {
               autoComplete="new-password"
               aria-hidden="true"
             />
-
-            
-
             <div className="mb-6 sm:mb-8 text-center">
               <div className="border-2 border-emerald-500 w-12 h-12 p-2 mb-3 rounded-full mx-auto flex items-center justify-center bg-white dark:bg-zinc-900 shadow-sm">
                 {logoElement}
@@ -569,7 +616,6 @@ function UnifiedLogin({ role: propRole }) {
                 {config.formSubtitle}
               </p>
             </div>
-
             <AnimatePresence>
               {error && (
                 <motion.div
@@ -585,7 +631,61 @@ function UnifiedLogin({ role: propRole }) {
                 </motion.div>
               )}
             </AnimatePresence>
-
+            {loginStep === "2fa" ? (
+              <div className="space-y-5">
+                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-gray-900 dark:text-white">
+                      Two-Factor Verification
+                    </p>
+                    <p className="mt-1 text-gray-600 dark:text-gray-300">
+                      We sent a 6-digit verification code to <strong className="text-gray-900 dark:text-white">{maskedEmail}</strong>. Enter it below to complete your login.
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 text-center">
+                    6-Digit Security Code
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    autoFocus
+                    required
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    className="w-full text-center text-3xl tracking-[0.5em] font-mono py-3.5 px-4 rounded-2xl border border-gray-300 dark:border-zinc-700 bg-white dark:bg-black text-gray-900 dark:text-white focus:outline-none focus:border-emerald-500 font-bold"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleVerify2FA}
+                  disabled={verifying2fa || otpCode.length !== 6}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold py-3.5 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer text-sm flex items-center justify-center gap-2"
+                >
+                  {verifying2fa ? "Verifying Code..." : "Verify & Sign In"}
+                </button>
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginStep("credentials");
+                      setOtpCode("");
+                      fetchCaptcha();
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 flex items-center justify-center gap-1.5 mx-auto cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to password login</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
             {config.showEventName && (
               <div className="relative w-full mb-6">
                 <CalendarDays
@@ -643,12 +743,10 @@ function UnifiedLogin({ role: propRole }) {
                 >
                   Assigned Event
                 </label>
-
                 {/* Dropdown Chevron Icon */}
                 <div className="absolute right-1 top-3.5 pointer-events-none text-slate-400 dark:text-zinc-500">
                   <ChevronDown className="w-4 h-4" />
                 </div>
-
                 <AnimatePresence>
                   {showEventNameError && (
                     <motion.div
@@ -665,7 +763,6 @@ function UnifiedLogin({ role: propRole }) {
                 </AnimatePresence>
               </div>
             )}
-
             <div className="relative w-full mb-6">
               <Mail
                 className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
@@ -713,7 +810,6 @@ function UnifiedLogin({ role: propRole }) {
               >
                 {activeRole === "evaluator" ? "Username or Email" : "Email Address"}
               </label>
-
               {isEmailValid && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.5 }}
@@ -723,7 +819,6 @@ function UnifiedLogin({ role: propRole }) {
                   <Check className="w-4 h-4" />
                 </motion.div>
               )}
-
               <AnimatePresence>
                 {showEmailError && (
                   <motion.div
@@ -739,7 +834,6 @@ function UnifiedLogin({ role: propRole }) {
                 )}
               </AnimatePresence>
             </div>
-
             <div className="relative w-full mb-4">
               <Lock
                 className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
@@ -787,7 +881,6 @@ function UnifiedLogin({ role: propRole }) {
               >
                 Password
               </label>
-
               <div className="absolute right-2 top-2.5 flex items-center gap-1.5">
                 {isPasswordValid && (
                   <motion.div
@@ -829,7 +922,6 @@ function UnifiedLogin({ role: propRole }) {
                   </AnimatePresence>
                 </button>
               </div>
-
               <AnimatePresence>
                 {showPasswordError && (
                   <motion.div
@@ -845,7 +937,73 @@ function UnifiedLogin({ role: propRole }) {
                 )}
               </AnimatePresence>
             </div>
-
+            {/* Visual Security CAPTCHA Challenge - Top/Bottom Seamless Design */}
+            <div className="w-full mb-4">
+              <div className="flex items-center justify-between mb-1.5 px-0.5">
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                  Security Check
+                </span>
+                <button
+                  type="button"
+                  onClick={fetchCaptcha}
+                  disabled={captchaLoading}
+                  className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 font-medium cursor-pointer transition-colors"
+                  title="Generate a new challenge"
+                >
+                  <RefreshCw className={`w-3 h-3 ${captchaLoading ? "animate-spin" : ""}`} />
+                  <span>Refresh Challenge</span>
+                </button>
+              </div>
+              {/* The Distorted Anti-Bot CAPTCHA Canvas */}
+              <div
+                className="w-full rounded-xl overflow-hidden border border-emerald-500/30 dark:border-emerald-500/40 bg-black/60 shadow-md cursor-pointer hover:border-emerald-500 transition-all select-none group relative"
+                onClick={fetchCaptcha}
+                title="Click image to reload new challenge"
+                dangerouslySetInnerHTML={{ __html: captchaSvg || '<div class="w-full h-[60px] bg-zinc-900 rounded-xl animate-pulse"/>' }}
+              />
+            </div>
+            {/* Seamless Underline Input matching Email & Password Fields */}
+            <div className="relative w-full mb-5">
+              <ShieldCheck
+                className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
+                  isCaptchaValid
+                    ? "text-emerald-500"
+                    : "text-emerald-700 dark:text-emerald-400"
+                }`}
+              />
+              <input
+                type="text"
+                id="login_captcha_code"
+                name="login_captcha_code"
+                autoComplete="off"
+                maxLength={6}
+                required
+                value={captchaAnswer}
+                onFocus={() => setIsCaptchaFocused(true)}
+                onBlur={() => setIsCaptchaFocused(false)}
+                onChange={(e) => setCaptchaAnswer(e.target.value.toUpperCase().trim())}
+                className="w-full border-0 border-b-2 bg-transparent pl-8 pr-8 py-2 text-black dark:text-white focus:outline-none transition duration-200 text-sm font-mono font-bold tracking-[0.3em] uppercase border-gray-300 dark:border-gray-600 focus:border-emerald-500"
+              />
+              <label
+                htmlFor="login_captcha_code"
+                className={`absolute left-8 transition-all duration-200 pointer-events-none select-none ${
+                  isCaptchaFloating
+                    ? "-top-4 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                    : "top-2 text-sm text-gray-500 dark:text-gray-400"
+                }`}
+              >
+                Enter CAPTCHA Code
+              </label>
+              {isCaptchaValid && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="absolute right-1 top-3 text-emerald-500"
+                >
+                  <Check className="w-4 h-4" />
+                </motion.div>
+              )}
+            </div>
             <div className="flex items-center justify-between mb-6 text-xs sm:text-sm">
               <span className="text-gray-500 dark:text-gray-400">
                 {activeRole === "user" ? "Participant access" : "Secured login"}
@@ -857,7 +1015,6 @@ function UnifiedLogin({ role: propRole }) {
                 Forgot Password?
               </Link>
             </div>
-
             <button
               type="submit"
               disabled={loading}
@@ -865,7 +1022,8 @@ function UnifiedLogin({ role: propRole }) {
             >
               {loading ? "Signing in..." : "Sign in"}
             </button>
-
+            </>
+            )}
             {config.showRegisterLink && (
               <p className="text-center mt-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 New participant?{" "}
@@ -877,7 +1035,6 @@ function UnifiedLogin({ role: propRole }) {
                 </Link>
               </p>
             )}
-
             <div className="flex items-center my-6">
               <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
               <span className="mx-4 text-gray-400 text-xs uppercase tracking-wider">
@@ -885,7 +1042,6 @@ function UnifiedLogin({ role: propRole }) {
               </span>
               <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
             </div>
-
             <button
               type="button"
               onClick={handleGoogleSignIn}
@@ -894,7 +1050,6 @@ function UnifiedLogin({ role: propRole }) {
               <FcGoogle className="w-5 h-5" />
               Sign in with Google
             </button>
-
             {config.alternateLink && (
               <div className="text-center mt-4">
                 <Link
@@ -905,7 +1060,6 @@ function UnifiedLogin({ role: propRole }) {
                 </Link>
               </div>
             )}
-
             <div className="border-t border-gray-200 dark:border-white/10 mt-5 pt-4">
               <div className="flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 text-xs">
                 <Lock className="w-3.5 h-3.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
@@ -918,5 +1072,4 @@ function UnifiedLogin({ role: propRole }) {
     </motion.div>
   );
 }
-
 export default UnifiedLogin;

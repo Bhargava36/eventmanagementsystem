@@ -21,11 +21,9 @@ import {
   CheckCircle2,
   ChevronRight
 } from 'lucide-react';
-
 export default function AlumniAgendaPage() {
   const navigate = useNavigate();
   const toast = useToast();
-
   const admin = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -33,14 +31,11 @@ export default function AlumniAgendaPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [activeTab, setActiveTab] = useState('sessions'); // 'sessions' | 'speakers'
   const [sessions, setSessions] = useState([]);
   const [speakers, setSpeakers] = useState([]);
   const [loading, setLoading] = useState(true);
-
   // Session Modal State
   const [sessionModalOpen, setSessionModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
@@ -54,7 +49,6 @@ export default function AlumniAgendaPage() {
     Description: '',
     OrderIndex: 0
   });
-
   // Speaker Modal State
   const [speakerModalOpen, setSpeakerModalOpen] = useState(false);
   const [editingSpeaker, setEditingSpeaker] = useState(null);
@@ -70,9 +64,7 @@ export default function AlumniAgendaPage() {
     LinkedinUrl: '',
     OrderIndex: 0
   });
-
   const [submitting, setSubmitting] = useState(false);
-
   const loadData = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -81,7 +73,6 @@ export default function AlumniAgendaPage() {
         fetch(`${API_BASE_URL}/api/alumni/${eventId}/agenda`),
         fetch(`${API_BASE_URL}/api/alumni/${eventId}/speakers`)
       ]);
-
       if (sesRes.ok) {
         const sData = await sesRes.json();
         setSessions(sData.sessions || sData.agenda || (Array.isArray(sData) ? sData : []));
@@ -97,11 +88,9 @@ export default function AlumniAgendaPage() {
       setLoading(false);
     }
   }, [eventId, toast]);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
-
   // Session CRUD Handlers
   const handleOpenAddSession = () => {
     setEditingSession(null);
@@ -117,7 +106,6 @@ export default function AlumniAgendaPage() {
     });
     setSessionModalOpen(true);
   };
-
   const handleOpenEditSession = (s) => {
     setEditingSession(s);
     setSessionForm({
@@ -132,7 +120,6 @@ export default function AlumniAgendaPage() {
     });
     setSessionModalOpen(true);
   };
-
   const handleSaveSession = async (e) => {
     e.preventDefault();
     if (!sessionForm.SessionTitle.trim()) {
@@ -145,14 +132,12 @@ export default function AlumniAgendaPage() {
         ? `${API_BASE_URL}/api/alumni/agenda/${editingSession.Id}`
         : `${API_BASE_URL}/api/alumni/${eventId}/agenda`;
       const method = editingSession ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sessionForm)
       });
       if (!res.ok) throw new Error('Failed to save session');
-
       toast.success(editingSession ? 'Session updated' : 'Session added');
       setSessionModalOpen(false);
       loadData();
@@ -162,7 +147,6 @@ export default function AlumniAgendaPage() {
       setSubmitting(false);
     }
   };
-
   const handleDeleteSession = async (id) => {
     if (!window.confirm('Are you sure you want to delete this activity?')) return;
     try {
@@ -176,7 +160,6 @@ export default function AlumniAgendaPage() {
       toast.error(err.message || 'Error deleting session');
     }
   };
-
   // Speaker CRUD Handlers
   const handleOpenAddSpeaker = () => {
     setEditingSpeaker(null);
@@ -194,7 +177,6 @@ export default function AlumniAgendaPage() {
     });
     setSpeakerModalOpen(true);
   };
-
   const handleOpenEditSpeaker = (spk) => {
     setEditingSpeaker(spk);
     setSpeakerForm({
@@ -211,7 +193,6 @@ export default function AlumniAgendaPage() {
     });
     setSpeakerModalOpen(true);
   };
-
   const handleSaveSpeaker = async (e) => {
     e.preventDefault();
     if (!speakerForm.Name.trim()) {
@@ -224,14 +205,12 @@ export default function AlumniAgendaPage() {
         ? `${API_BASE_URL}/api/alumni/speakers/${editingSpeaker.Id}`
         : `${API_BASE_URL}/api/alumni/${eventId}/speakers`;
       const method = editingSpeaker ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(speakerForm)
       });
       if (!res.ok) throw new Error('Failed to save speaker');
-
       toast.success(editingSpeaker ? 'Speaker updated' : 'Speaker added');
       setSpeakerModalOpen(false);
       loadData();
@@ -241,7 +220,6 @@ export default function AlumniAgendaPage() {
       setSubmitting(false);
     }
   };
-
   const handleDeleteSpeaker = async (id) => {
     if (!window.confirm('Are you sure you want to remove this distinguished speaker?')) return;
     try {
@@ -255,16 +233,14 @@ export default function AlumniAgendaPage() {
       toast.error(err.message || 'Error deleting speaker');
     }
   };
-
   const tabs = [
     { id: 'sessions', label: 'Activities & Agenda', count: sessions.length, icon: CalendarDays },
     { id: 'speakers', label: 'Keynote Alumni', count: speakers.length, icon: Mic },
   ];
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header Banner */}
-      <div className="p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="p-6 rounded-3xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
             <CalendarDays className="w-4 h-4" />
@@ -277,7 +253,6 @@ export default function AlumniAgendaPage() {
             Build the day-long schedule of events, nostalgia tours, keynote addresses, and networking dinners.
           </p>
         </div>
-
         <button
           onClick={activeTab === 'sessions' ? handleOpenAddSession : handleOpenAddSpeaker}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all active:scale-95 self-start sm:self-auto"
@@ -286,14 +261,12 @@ export default function AlumniAgendaPage() {
           {activeTab === 'sessions' ? 'Add Activity' : 'Add Keynote Alumni'}
         </button>
       </div>
-
       {/* Application Signature Folder Tabs */}
       <div className="relative pt-2">
         <div className="flex items-end gap-2 px-2 sm:px-4 relative z-10 -mb-px overflow-x-auto">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const TabIcon = tab.icon;
-
             return (
               <button
                 key={tab.id}
@@ -304,15 +277,14 @@ export default function AlumniAgendaPage() {
                 {isActive ? (
                   <motion.div
                     layoutId="alumniAgendaTabActiveFolder"
-                    className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-slate-200 dark:border-white/10 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
+                    className="absolute inset-0 rounded-t-2xl bg-white dark:bg-black border-t border-x border-b-0 border-gray-200 dark:border-zinc-800 z-10 shadow-[0_-2px_12px_rgba(0,0,0,0.03)]"
                     transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                   >
                     <div className="absolute -bottom-[2px] left-0 right-0 h-[4px] bg-white dark:bg-black pointer-events-none z-20" />
                   </motion.div>
                 ) : (
-                  <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 z-0" />
+                  <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 z-0" />
                 )}
-
                 <span className={`relative z-20 flex items-center gap-2 transition-colors ${
                   isActive
                     ? 'text-slate-900 dark:text-white font-bold'
@@ -328,9 +300,8 @@ export default function AlumniAgendaPage() {
             );
           })}
         </div>
-
         {/* Tab Content Box with matching border */}
-        <div className="rounded-3xl rounded-tl-none border border-slate-200 dark:border-white/10 bg-white dark:bg-black p-6 shadow-sm">
+        <div className="rounded-3xl rounded-tl-none border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black p-6 shadow-sm">
           {/* SESSIONS VIEW */}
           {activeTab === 'sessions' && (
             <div className="space-y-4">
@@ -339,9 +310,8 @@ export default function AlumniAgendaPage() {
                   Reunion Day Schedule ({sessions.length} Activities)
                 </h2>
               </div>
-
               {sessions.length === 0 ? (
-                <div className="p-12 text-center rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-300 dark:border-white/10 space-y-3">
+                <div className="p-12 text-center rounded-2xl bg-slate-50 dark:bg-zinc-900/30 border border-dashed border-slate-300 dark:border-zinc-800 space-y-3">
                   <CalendarDays className="w-12 h-12 text-slate-400 mx-auto" />
                   <h3 className="font-bold text-base">No Activities Scheduled Yet</h3>
                   <p className="text-xs text-slate-500 dark:text-gray-400 max-w-sm mx-auto">
@@ -360,14 +330,13 @@ export default function AlumniAgendaPage() {
                   {sessions.map((s, idx) => (
                     <div
                       key={s.Id || idx}
-                      className="p-5 rounded-2xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 hover:border-emerald-500/40 shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                      className="p-5 rounded-2xl bg-slate-50/50 dark:bg-zinc-900/30 border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/40 shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
                     >
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex flex-col items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 border border-emerald-500/20 font-mono">
                           <Clock className="w-4 h-4" />
                           <span className="text-[10px] font-bold mt-0.5">{s.StartTime || '--:--'}</span>
                         </div>
-
                         <div className="space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <h4 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
@@ -379,7 +348,6 @@ export default function AlumniAgendaPage() {
                               </span>
                             )}
                           </div>
-
                           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-gray-400">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5 text-emerald-500" />
@@ -390,7 +358,6 @@ export default function AlumniAgendaPage() {
                               {s.VenueHall || 'Main Auditorium'}
                             </span>
                           </div>
-
                           {s.Description && (
                             <p className="text-xs text-slate-600 dark:text-gray-400 pt-1 leading-relaxed">
                               {s.Description}
@@ -398,7 +365,6 @@ export default function AlumniAgendaPage() {
                           )}
                         </div>
                       </div>
-
                       <div className="flex items-center gap-2 self-end md:self-center">
                         <button
                           onClick={() => handleOpenEditSession(s)}
@@ -419,7 +385,6 @@ export default function AlumniAgendaPage() {
               )}
             </div>
           )}
-
           {/* SPEAKERS VIEW */}
           {activeTab === 'speakers' && (
             <div className="space-y-4">
@@ -428,9 +393,8 @@ export default function AlumniAgendaPage() {
                   Distinguished Keynote Alumni ({speakers.length})
                 </h2>
               </div>
-
               {speakers.length === 0 ? (
-                <div className="p-12 text-center rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-300 dark:border-white/10 space-y-3">
+                <div className="p-12 text-center rounded-2xl bg-slate-50 dark:bg-zinc-900/30 border border-dashed border-slate-300 dark:border-zinc-800 space-y-3">
                   <Mic className="w-12 h-12 text-slate-400 mx-auto" />
                   <h3 className="font-bold text-base">No Keynote Speakers Listed</h3>
                   <p className="text-xs text-slate-500 dark:text-gray-400 max-w-sm mx-auto">
@@ -449,7 +413,7 @@ export default function AlumniAgendaPage() {
                   {speakers.map((spk, idx) => (
                     <div
                       key={spk.Id || idx}
-                      className="p-5 rounded-2xl bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 hover:border-emerald-500/40 shadow-xs transition-all space-y-4 flex flex-col justify-between"
+                      className="p-5 rounded-2xl bg-slate-50/50 dark:bg-zinc-900/30 border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/40 shadow-xs transition-all space-y-4 flex flex-col justify-between"
                     >
                       <div className="space-y-3">
                         <div className="flex items-start gap-3">
@@ -464,7 +428,6 @@ export default function AlumniAgendaPage() {
                               {spk.Name?.charAt(0) || 'A'}
                             </div>
                           )}
-
                           <div className="space-y-0.5">
                             <h4 className="font-bold text-sm text-slate-900 dark:text-white">
                               {spk.Name}
@@ -478,24 +441,21 @@ export default function AlumniAgendaPage() {
                             </p>
                           </div>
                         </div>
-
                         {spk.Topic && (
-                          <div className="p-3 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 space-y-1">
+                          <div className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 space-y-1">
                             <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-gray-500">Keynote Topic</span>
                             <p className="text-xs font-semibold text-slate-800 dark:text-gray-200">
                               "{spk.Topic}"
                             </p>
                           </div>
                         )}
-
                         {spk.Bio && (
                           <p className="text-xs text-slate-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
                             {spk.Bio}
                           </p>
                         )}
                       </div>
-
-                      <div className="flex items-center justify-between border-t border-slate-200 dark:border-white/10 pt-3">
+                      <div className="flex items-center justify-between border-t border-gray-200 dark:border-zinc-800 pt-3">
                         {spk.LinkedinUrl ? (
                           <a
                             href={spk.LinkedinUrl}
@@ -509,7 +469,6 @@ export default function AlumniAgendaPage() {
                         ) : (
                           <span className="text-[11px] text-slate-400">No profile link</span>
                         )}
-
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleOpenEditSpeaker(spk)}
@@ -533,7 +492,6 @@ export default function AlumniAgendaPage() {
           )}
         </div>
       </div>
-
       {/* SESSION MODAL */}
       <AnimatePresence>
         {sessionModalOpen && (
@@ -542,9 +500,9 @@ export default function AlumniAgendaPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 p-6 space-y-5 shadow-2xl"
+              className="w-full max-w-lg rounded-3xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 p-6 space-y-5 shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-4">
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-4">
                 <h3 className="font-bold text-base">
                   {editingSession ? 'Edit Reunion Activity' : 'Add New Activity'}
                 </h3>
@@ -555,7 +513,6 @@ export default function AlumniAgendaPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <form onSubmit={handleSaveSession} className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-600 dark:text-gray-300">Activity Title</label>
@@ -565,10 +522,9 @@ export default function AlumniAgendaPage() {
                     value={sessionForm.SessionTitle}
                     onChange={(e) => setSessionForm({ ...sessionForm, SessionTitle: e.target.value })}
                     placeholder="e.g. Welcome Coffee &amp; Campus Tour"
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-600 dark:text-gray-300">Start Time</label>
@@ -576,7 +532,7 @@ export default function AlumniAgendaPage() {
                       type="time"
                       value={sessionForm.StartTime}
                       onChange={(e) => setSessionForm({ ...sessionForm, StartTime: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div className="space-y-1">
@@ -585,11 +541,10 @@ export default function AlumniAgendaPage() {
                       type="time"
                       value={sessionForm.EndTime}
                       onChange={(e) => setSessionForm({ ...sessionForm, EndTime: e.target.value })}
-                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-600 dark:text-gray-300">Host / Speaker (Optional)</label>
@@ -598,7 +553,7 @@ export default function AlumniAgendaPage() {
                       value={sessionForm.SpeakerName}
                       onChange={(e) => setSessionForm({ ...sessionForm, SpeakerName: e.target.value })}
                       placeholder="e.g. Dean / Alumni President"
-                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div className="space-y-1">
@@ -608,11 +563,10 @@ export default function AlumniAgendaPage() {
                       value={sessionForm.VenueHall}
                       onChange={(e) => setSessionForm({ ...sessionForm, VenueHall: e.target.value })}
                       placeholder="e.g. North Lawns"
-                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
-
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-600 dark:text-gray-300">Description / Details</label>
                   <textarea
@@ -620,10 +574,9 @@ export default function AlumniAgendaPage() {
                     value={sessionForm.Description}
                     onChange={(e) => setSessionForm({ ...sessionForm, Description: e.target.value })}
                     placeholder="Brief description of activity..."
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-2 pt-3">
                   <button
                     type="button"
@@ -645,7 +598,6 @@ export default function AlumniAgendaPage() {
           </div>
         )}
       </AnimatePresence>
-
       {/* SPEAKER MODAL */}
       <AnimatePresence>
         {speakerModalOpen && (
@@ -654,9 +606,9 @@ export default function AlumniAgendaPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-lg rounded-3xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 p-6 space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-4">
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-4">
                 <h3 className="font-bold text-base">
                   {editingSpeaker ? 'Edit Keynote Alumni' : 'Add Distinguished Keynote Alumni'}
                 </h3>
@@ -667,7 +619,6 @@ export default function AlumniAgendaPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <form onSubmit={handleSaveSpeaker} className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-600 dark:text-gray-300">Full Name</label>
@@ -677,10 +628,9 @@ export default function AlumniAgendaPage() {
                     value={speakerForm.Name}
                     onChange={(e) => setSpeakerForm({ ...speakerForm, Name: e.target.value })}
                     placeholder="e.g. Sundararajan V"
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-600 dark:text-gray-300">Graduation Year</label>
@@ -689,7 +639,7 @@ export default function AlumniAgendaPage() {
                       value={speakerForm.GraduationYear}
                       onChange={(e) => setSpeakerForm({ ...speakerForm, GraduationYear: e.target.value })}
                       placeholder="e.g. 2015"
-                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div className="space-y-1">
@@ -699,11 +649,10 @@ export default function AlumniAgendaPage() {
                       value={speakerForm.Branch}
                       onChange={(e) => setSpeakerForm({ ...speakerForm, Branch: e.target.value })}
                       placeholder="e.g. CSE / ECE"
-                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-slate-600 dark:text-gray-300">Current Designation</label>
@@ -712,7 +661,7 @@ export default function AlumniAgendaPage() {
                       value={speakerForm.Designation}
                       onChange={(e) => setSpeakerForm({ ...speakerForm, Designation: e.target.value })}
                       placeholder="e.g. Principal Architect"
-                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div className="space-y-1">
@@ -722,11 +671,10 @@ export default function AlumniAgendaPage() {
                       value={speakerForm.Company}
                       onChange={(e) => setSpeakerForm({ ...speakerForm, Company: e.target.value })}
                       placeholder="e.g. Microsoft / Startup Founder"
-                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
-
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-600 dark:text-gray-300">Keynote Topic / Address Title</label>
                   <input
@@ -734,10 +682,9 @@ export default function AlumniAgendaPage() {
                     value={speakerForm.Topic}
                     onChange={(e) => setSpeakerForm({ ...speakerForm, Topic: e.target.value })}
                     placeholder="e.g. From Dorm Room to Series B"
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-600 dark:text-gray-300">LinkedIn Profile URL</label>
                   <input
@@ -745,10 +692,9 @@ export default function AlumniAgendaPage() {
                     value={speakerForm.LinkedinUrl}
                     onChange={(e) => setSpeakerForm({ ...speakerForm, LinkedinUrl: e.target.value })}
                     placeholder="https://linkedin.com/in/username"
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-600 dark:text-gray-300">Photo URL (Optional)</label>
                   <input
@@ -756,10 +702,9 @@ export default function AlumniAgendaPage() {
                     value={speakerForm.PhotoUrl}
                     onChange={(e) => setSpeakerForm({ ...speakerForm, PhotoUrl: e.target.value })}
                     placeholder="https://..."
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-600 dark:text-gray-300">Bio / Accomplishments</label>
                   <textarea
@@ -767,10 +712,9 @@ export default function AlumniAgendaPage() {
                     value={speakerForm.Bio}
                     onChange={(e) => setSpeakerForm({ ...speakerForm, Bio: e.target.value })}
                     placeholder="Brief career highlights..."
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-2 pt-3">
                   <button
                     type="button"

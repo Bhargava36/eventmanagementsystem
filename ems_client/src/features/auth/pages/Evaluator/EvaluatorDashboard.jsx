@@ -29,15 +29,12 @@ import useTheme from '../../../../Hooks/useTheme';
 import useToast from '../../../../Hooks/useToast';
 import { getEventTheme, getEventTypeInfo } from '../../../../lib/utils';
 import ThemeToggle from '../../../../components/Organisms/ThemeToggler';
-
 function EvaluatorDashboard() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { theme: appTheme } = useTheme();
   const toast = useToast();
-
   const isDark = appTheme === 'dark';
-
   const evaluator = useMemo(() => {
     try {
       const stored = localStorage.getItem('evaluator') || localStorage.getItem('user');
@@ -46,10 +43,8 @@ function EvaluatorDashboard() {
       return null;
     }
   }, []);
-
   const eventId = evaluator?.EventId || evaluator?.eventId;
   const track = evaluator?.Track || evaluator?.track || 'Physical';
-
   const [eventData, setEventData] = useState(null);
   const [rounds, setRounds] = useState([]);
   const [selectedRoundId, setSelectedRoundId] = useState(null);
@@ -59,16 +54,13 @@ function EvaluatorDashboard() {
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'evaluated', 'pending'
-
   // Dynamic Event Color Theme adapting to light & dark mode
   const theme = useMemo(() => {
     return getEventTheme(eventData || {}, isDark);
   }, [eventData, isDark]);
-
   const isProjectExpo = useMemo(() => {
     return getEventTypeInfo(eventData?.EventType || '').isProjectExpo;
   }, [eventData?.EventType]);
-
   // Fetch Event Data for Branding & Theme
   useEffect(() => {
     if (!eventId) return;
@@ -79,14 +71,24 @@ function EvaluatorDashboard() {
       })
       .catch((err) => console.error('Failed to load event:', err));
   }, [eventId]);
-
   // Fetch Rounds for this Event & Track
   const fetchRounds = useCallback(async () => {
     if (!eventId) return;
     try {
       setLoadingRounds(true);
+      // First attempt to load real rounds configured for this event & track
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/rounds?track=${track}`);
+      if (res.ok) {
+        const json = await res.json();
+        const roundList = Array.isArray(json) ? json : (json.data || json.rounds || []);
+        if (roundList.length > 0) {
+          setRounds(roundList);
+          setSelectedRoundId((prev) => (prev && roundList.some((r) => r.Id === prev) ? prev : roundList[0].Id));
+          return;
+        }
+      }
+      // Fallback for legacy project expo without rounds configured yet
       if (isProjectExpo) {
-        // Load expo criteria as round questions
         const critRes = await fetch(`${API_BASE_URL}/api/project-expo/${eventId}/criteria`);
         const critData = await critRes.json();
         const questions = (critData?.criteria || []).map((c) => ({
@@ -109,15 +111,7 @@ function EvaluatorDashboard() {
         setSelectedRoundId('expo');
         return;
       }
-      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/rounds?track=${track}`);
-      if (res.ok) {
-        const json = await res.json();
-        const roundList = Array.isArray(json) ? json : (json.data || json.rounds || []);
-        setRounds(roundList);
-        if (roundList.length > 0) {
-          setSelectedRoundId((prev) => (prev ? prev : roundList[0].Id));
-        }
-      }
+      setRounds([]);
     } catch (err) {
       console.error('Failed to fetch rounds:', err);
       toast.error('Failed to load evaluation rounds');
@@ -125,16 +119,31 @@ function EvaluatorDashboard() {
       setLoadingRounds(false);
     }
   }, [eventId, track, toast, isProjectExpo]);
-
   // Fetch Teams for this Event & Track
   const fetchTeams = useCallback(async () => {
     if (!eventId) return;
     try {
       setLoadingTeams(true);
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/teams?track=${track}`);
+      if (res.ok) {
+        const json = await res.json();
+        const teamList = Array.isArray(json) ? json : (json.data || json.teams || []);
+        if (teamList.length > 0) {
+          setTeams(teamList.map((t) => ({
+            ...t,
+            ProjectTitle: t.ExpoProjectTitle || t.ProblemStatementTitle || t.TeamName,
+            DomainName: t.ExpoDomainName || t.DomainName,
+            BoothNumber: t.BoothNumber,
+            BoothZone: t.BoothZone,
+            ProblemStatement: t.ExpoAbstract || t.ProjectDescription || t.ProblemStatement
+          })));
+          return;
+        }
+      }
       if (isProjectExpo) {
-        const res = await fetch(`${API_BASE_URL}/api/project-expo/${eventId}/submissions`);
-        if (res.ok) {
-          const json = await res.json();
+        const subRes = await fetch(`${API_BASE_URL}/api/project-expo/${eventId}/submissions`);
+        if (subRes.ok) {
+          const json = await subRes.json();
           const subList = json.submissions || [];
           setTeams(subList.map((s) => ({
             Id: s.TeamId,
@@ -150,13 +159,6 @@ function EvaluatorDashboard() {
             ProblemStatement: s.Abstract
           })));
         }
-        return;
-      }
-      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/teams?track=${track}`);
-      if (res.ok) {
-        const json = await res.json();
-        const teamList = Array.isArray(json) ? json : (json.data || json.teams || []);
-        setTeams(teamList);
       }
     } catch (err) {
       console.error('Failed to fetch teams:', err);
@@ -165,12 +167,11 @@ function EvaluatorDashboard() {
       setLoadingTeams(false);
     }
   }, [eventId, track, toast, isProjectExpo]);
-
   // Fetch Existing Scores for Selected Round
   const fetchRoundScores = useCallback(async (roundId) => {
     if (!roundId || !evaluator?.Id) return;
     try {
-      if (roundId === 'expo' || isProjectExpo) {
+      if (roundId === 'expo') {
         const res = await fetch(`${API_BASE_URL}/api/project-expo/${eventId}/scores?judgeId=${evaluator.Id}`);
         if (res.ok) {
           const json = await res.json();
@@ -203,40 +204,33 @@ function EvaluatorDashboard() {
     } catch (err) {
       console.error('Failed to fetch existing scores:', err);
     }
-  }, [evaluator, eventId, isProjectExpo]);
-
+  }, [evaluator, eventId]);
   useEffect(() => {
     fetchRounds();
     fetchTeams();
   }, [fetchRounds, fetchTeams]);
-
   useEffect(() => {
     if (selectedRoundId) {
       fetchRoundScores(selectedRoundId);
     }
   }, [selectedRoundId, fetchRoundScores]);
-
   // Active Selected Round
   const currentRound = useMemo(() => {
     return rounds.find((r) => Number(r.Id) === Number(selectedRoundId)) || rounds[0] || null;
   }, [rounds, selectedRoundId]);
-
   // Calculated Metrics
   const totalTeamsCount = teams.length;
   const evaluatedCount = useMemo(() => {
     return teams.filter((t) => Boolean(scores[t.Id])).length;
   }, [teams, scores]);
-
   const pendingCount = Math.max(0, totalTeamsCount - evaluatedCount);
   const progressPercent = totalTeamsCount > 0 ? Math.round((evaluatedCount / totalTeamsCount) * 100) : 0;
-
   // Filtered Teams based on Search & Status
   const filteredTeams = useMemo(() => {
     return teams.filter((team) => {
       const isEvaluated = Boolean(scores[team.Id]);
       if (statusFilter === 'evaluated' && !isEvaluated) return false;
       if (statusFilter === 'pending' && isEvaluated) return false;
-
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       const name = (team.TeamName || '').toLowerCase();
@@ -246,18 +240,15 @@ function EvaluatorDashboard() {
       const ps = (team.ProblemStatementTitle || team.ProblemStatement || '').toLowerCase();
       const booth = (team.BoothNumber || '').toLowerCase();
       const domain = (team.DomainName || '').toLowerCase();
-
       return name.includes(q) || proj.includes(q) || lead.includes(q) || college.includes(q) || ps.includes(q) || booth.includes(q) || domain.includes(q);
     });
   }, [teams, scores, statusFilter, searchQuery]);
-
   // Current Round Total Max Marks
   const roundMaxMarks = useMemo(() => {
     if (isProjectExpo) return 100;
     if (!currentRound || !Array.isArray(currentRound.questions)) return 0;
     return currentRound.questions.reduce((sum, q) => sum + (Number(q.MaxMarks) || 0), 0);
   }, [currentRound, isProjectExpo]);
-
   const handleNavigateToEvaluation = (team) => {
     const targetRoundId = isProjectExpo ? 'expo' : (currentRound ? currentRound.Id : null);
     if (!targetRoundId) {
@@ -271,12 +262,10 @@ function EvaluatorDashboard() {
     }
     navigate(`/evaluator/evaluate/${targetRoundId}/${team.Id}`);
   };
-
   const handleLogout = () => {
     logout();
     navigate('/evaluator/login');
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white flex flex-col font-sans transition-colors duration-300 selection:bg-emerald-500 selection:text-black">
       {/* Top Navigation Bar with Event Theme & Theme Toggle */}
@@ -311,7 +300,6 @@ function EvaluatorDashboard() {
             </p>
           </div>
         </div>
-
         {/* Evaluator Profile, Theme Toggle & Logout */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Track Indicator */}
@@ -330,12 +318,10 @@ function EvaluatorDashboard() {
             )}
             <span>{track} Track</span>
           </div>
-
           {/* Theme Toggle Button */}
           <div className="flex items-center">
             <ThemeToggle />
           </div>
-
           <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-zinc-800">
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold uppercase border shrink-0"
@@ -351,7 +337,6 @@ function EvaluatorDashboard() {
               <p className="text-xs font-semibold text-slate-900 dark:text-white leading-tight">{evaluator?.Name || 'Evaluator'}</p>
               <p className="text-[10px] text-slate-500 dark:text-gray-400">{evaluator?.Role || 'Technical Jury'}</p>
             </div>
-
             <button
               onClick={handleLogout}
               title="Sign Out"
@@ -362,7 +347,6 @@ function EvaluatorDashboard() {
           </div>
         </div>
       </header>
-
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Top Summary Banner */}
@@ -385,7 +369,6 @@ function EvaluatorDashboard() {
               <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{totalTeamsCount}</h3>
             </div>
           </div>
-
           <div
             className="p-5 rounded-2xl border bg-white dark:bg-zinc-900/60 border-slate-200/80 dark:border-white/10 shadow-sm flex items-center gap-4 transition-all"
           >
@@ -406,7 +389,6 @@ function EvaluatorDashboard() {
               </h3>
             </div>
           </div>
-
           <div
             className="p-5 rounded-2xl border bg-white dark:bg-zinc-900/60 border-slate-200/80 dark:border-white/10 shadow-sm flex items-center gap-4 transition-all"
           >
@@ -425,7 +407,6 @@ function EvaluatorDashboard() {
               <h3 className="text-2xl font-bold text-slate-900 dark:text-white mt-0.5">{rounds.length}</h3>
             </div>
           </div>
-
           <div
             className="p-5 rounded-2xl border bg-white dark:bg-zinc-900/60 border-slate-200/80 dark:border-white/10 shadow-sm flex flex-col justify-center"
           >
@@ -444,7 +425,6 @@ function EvaluatorDashboard() {
             </div>
           </div>
         </div>
-
         {/* Round Navigation Bar */}
         <div
           className="rounded-3xl p-5 sm:p-6 space-y-5 border bg-white dark:bg-zinc-950/70 border-slate-200/80 dark:border-white/10 shadow-sm"
@@ -471,7 +451,6 @@ function EvaluatorDashboard() {
               Refresh
             </button>
           </div>
-
           {/* Rounds Pills */}
           {loadingRounds ? (
             <div className="flex items-center gap-3 py-4 text-xs text-slate-500 dark:text-gray-400">
@@ -494,7 +473,6 @@ function EvaluatorDashboard() {
               {rounds.map((round) => {
                 const isSelected = Number(selectedRoundId) === round.Id;
                 const totalQMarks = (round.questions || []).reduce((s, q) => s + (Number(q.MaxMarks) || 0), 0);
-
                 return (
                   <button
                     key={round.Id}
@@ -544,7 +522,6 @@ function EvaluatorDashboard() {
               })}
             </div>
           )}
-
           {/* Current Round Rubric Details Accordion */}
           {currentRound && (
             <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 dark:bg-zinc-950/70 border border-slate-200 dark:border-zinc-800/80 space-y-3">
@@ -569,7 +546,6 @@ function EvaluatorDashboard() {
                   Round Total: {roundMaxMarks} Marks
                 </div>
               </div>
-
               {/* Rubric Criteria Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {(currentRound.questions || []).map((q, idx) => (
@@ -601,7 +577,6 @@ function EvaluatorDashboard() {
             </div>
           )}
         </div>
-
         {/* Round Status Notice Banner */}
         {currentRound?.IsOpen === 0 ? (
           <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-3">
@@ -625,7 +600,6 @@ function EvaluatorDashboard() {
             </span>
           </div>
         )}
-
         {/* Teams Section */}
         <div
           className="rounded-3xl p-5 sm:p-6 space-y-5 border bg-white dark:bg-zinc-950/70 border-slate-200/80 dark:border-white/10 shadow-sm"
@@ -643,7 +617,6 @@ function EvaluatorDashboard() {
                 style={{ focusBorderColor: theme.border }}
               />
             </div>
-
             {/* Filter Tabs */}
             <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 text-xs">
               {[
@@ -668,7 +641,6 @@ function EvaluatorDashboard() {
               })}
             </div>
           </div>
-
           {/* Teams Grid */}
           {loadingTeams ? (
             <div className="py-12 flex flex-col items-center justify-center text-slate-500 dark:text-gray-400 gap-3">
@@ -691,7 +663,6 @@ function EvaluatorDashboard() {
               {filteredTeams.map((team) => {
                 const scoreObj = scores[team.Id];
                 const isEvaluated = Boolean(scoreObj);
-
                 return (
                   <motion.div
                     key={team.Id}
@@ -735,7 +706,6 @@ function EvaluatorDashboard() {
                             </span>
                           </div>
                         </div>
-
                         {/* Status Badge */}
                         {isEvaluated ? (
                           <div
@@ -756,7 +726,6 @@ function EvaluatorDashboard() {
                           </div>
                         )}
                       </div>
-
                       {/* Problem Statement if available */}
                       {(team.ProblemStatementTitle || team.ProblemStatement) && (
                         <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800 text-xs space-y-0.5">
@@ -771,14 +740,12 @@ function EvaluatorDashboard() {
                           </p>
                         </div>
                       )}
-
                       {/* Team Lead Info */}
                       <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-gray-400">
                         <User className="w-3.5 h-3.5 text-slate-400 dark:text-gray-500" />
                         <span>Lead: <strong className="text-slate-800 dark:text-gray-200">{team.TeamLeadName || 'Unknown'}</strong></span>
                       </div>
                     </div>
-
                     {/* Bottom Action Button - Navigates to Dedicated Evaluation Page */}
                     <div className="pt-4 mt-4 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between">
                       <span className="text-[11px] text-slate-500 dark:text-gray-500 font-medium">
@@ -835,5 +802,4 @@ function EvaluatorDashboard() {
     </div>
   );
 }
-
 export default EvaluatorDashboard;

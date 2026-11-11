@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, Info, X, Loader2 } from 'lucide-react';
-
 export default function AppConfirmModal({
   isOpen,
   title = 'Confirm Action',
@@ -16,7 +15,6 @@ export default function AppConfirmModal({
 }) {
   const isDanger = variant === 'danger';
   const isWarning = variant === 'warning';
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -29,7 +27,6 @@ export default function AppConfirmModal({
             onClick={() => !loading && onCancel && onCancel()}
             className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
           />
-
           <motion.div
             key="confirm-modal-dialog"
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -60,7 +57,6 @@ export default function AppConfirmModal({
               <X className="w-4 h-4" />
             </button>
           </div>
-
           <div className="space-y-3 mb-6">
             {message && (
               <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -69,7 +65,6 @@ export default function AppConfirmModal({
             )}
             {children}
           </div>
-
           <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100 dark:border-gray-800">
             <button
               type="button"
@@ -107,4 +102,3 @@ export default function AppConfirmModal({
     </AnimatePresence>
   );
 }
-

@@ -28,7 +28,7 @@ import {
   Radio,
 } from 'lucide-react';
 import { apiUrl } from '../../../../lib/api';
-
+import Pagination from '../../../../components/Molecules/Pagination';
 const getRatingColor = (rating) => {
   const r = Number(rating);
   if (r >= 4) {
@@ -57,11 +57,9 @@ const getRatingColor = (rating) => {
     label: 'Critical'
   };
 };
-
 const renderStars = (rating, size = 'md') => {
   const color = getRatingColor(rating);
   const sizeClasses = size === 'lg' ? 'w-5 h-5' : size === 'md' ? 'w-4 h-4' : 'w-3.5 h-3.5';
-
   return (
     <div className="flex items-center gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -77,12 +75,10 @@ const renderStars = (rating, size = 'md') => {
     </div>
   );
 };
-
 export default function SuperAdminFeedback() {
   const [feedbackList, setFeedbackList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   // Filters & View state
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
   const [selectedSource, setSelectedSource] = useState('ALL'); // 'ALL' | 'EVENT' | 'PLATFORM'
@@ -91,15 +87,12 @@ export default function SuperAdminFeedback() {
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedEvent, setSelectedEvent] = useState('ALL');
   const [sortBy, setSortBy] = useState('NEWEST');
-
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(8);
-
   // Modal & Copy
   const [activeItem, setActiveItem] = useState(null);
   const [copiedId, setCopiedId] = useState(false);
-
   // Fetch both event feedback and platform feedback from backend
   const getFeedback = async () => {
     setLoading(true);
@@ -110,9 +103,7 @@ export default function SuperAdminFeedback() {
         fetch(apiUrl('/api/feedback')),
         fetch(apiUrl('/api/webinars/feedback/all'))
       ]);
-
       const combined = [];
-
       if (platformRes.status === 'fulfilled' && platformRes.value.ok) {
         const pData = await platformRes.value.json();
         const pList = Array.isArray(pData.feedback) ? pData.feedback : [];
@@ -126,7 +117,6 @@ export default function SuperAdminFeedback() {
           });
         });
       }
-
       if (webinarRes.status === 'fulfilled' && webinarRes.value.ok) {
         const wData = await webinarRes.value.json();
         const wList = Array.isArray(wData.feedbacks) ? wData.feedbacks : [];
@@ -142,7 +132,6 @@ export default function SuperAdminFeedback() {
           });
         });
       }
-
       if (eventRes.status === 'fulfilled' && eventRes.value.ok) {
         const eData = await eventRes.value.json();
         const eList = Array.isArray(eData.feedback) ? eData.feedback : [];
@@ -157,7 +146,6 @@ export default function SuperAdminFeedback() {
           });
         });
       }
-
       combined.sort((a, b) => new Date(b.CreatedAt || 0) - new Date(a.CreatedAt || 0));
       setFeedbackList(combined);
     } catch (err) {
@@ -166,12 +154,10 @@ export default function SuperAdminFeedback() {
       setLoading(false);
     }
   };
-
   const handleDeleteFeedback = async (item, e) => {
     if (e) e.stopPropagation();
     const confirmed = window.confirm(`Are you sure you want to delete this ${item.sourceLabel || 'feedback'} entry?`);
     if (!confirmed) return;
-
     try {
       const endpoint = item.deleteEndpoint || '/api/feedback';
       const res = await fetch(apiUrl(`${endpoint}/${item.Id || item.id}`), {
@@ -189,17 +175,13 @@ export default function SuperAdminFeedback() {
       alert(err.message || 'Error deleting feedback.');
     }
   };
-
   useEffect(() => {
     getFeedback();
   }, []);
-
   useEffect(() => {
     setCurrentPage(1);
   }, [search, selectedRating, selectedCategory, selectedEvent, selectedSource, sortBy, itemsPerPage]);
-
   const getRating = (item) => Number(item.Rating ?? item.rating ?? 0);
-
   // Unique categories and events
   const categories = useMemo(() => {
     const set = new Set();
@@ -209,7 +191,6 @@ export default function SuperAdminFeedback() {
     });
     return Array.from(set).sort();
   }, [feedbackList]);
-
   const eventNames = useMemo(() => {
     const set = new Set();
     feedbackList.forEach((item) => {
@@ -218,7 +199,6 @@ export default function SuperAdminFeedback() {
     });
     return Array.from(set).sort();
   }, [feedbackList]);
-
   // Overall Statistics
   const stats = useMemo(() => {
     const total = feedbackList.length;
@@ -240,15 +220,12 @@ export default function SuperAdminFeedback() {
         ]
       };
     }
-
     const sum = feedbackList.reduce((acc, item) => acc + getRating(item), 0);
     const average = (sum / total).toFixed(1);
-
     const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     let positive = 0;
     let neutral = 0;
     let negative = 0;
-
     feedbackList.forEach((item) => {
       const r = Math.round(getRating(item));
       if (counts[r] !== undefined) counts[r] += 1;
@@ -256,13 +233,11 @@ export default function SuperAdminFeedback() {
       else if (r === 3) neutral += 1;
       else negative += 1;
     });
-
     const distribution = [5, 4, 3, 2, 1].map((s) => ({
       stars: s,
       count: counts[s] || 0,
       percent: Math.round(((counts[s] || 0) / total) * 100)
     }));
-
     return {
       total,
       average,
@@ -274,7 +249,6 @@ export default function SuperAdminFeedback() {
       distribution
     };
   }, [feedbackList]);
-
   // Counts by source
   const sourceCounts = useMemo(() => {
     let eventCount = 0;
@@ -292,39 +266,31 @@ export default function SuperAdminFeedback() {
       platform: platformCount
     };
   }, [feedbackList]);
-
   // Filtered feedback
   const filteredFeedback = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     return feedbackList
       .filter((item) => {
         const rating = getRating(item);
         const category = String(item.Category || item.category || 'General').trim();
         const eventName = String(item.EventName || item.eventName || 'Website').trim();
-
         if (selectedSource !== 'ALL' && item.feedbackType !== selectedSource) {
           return false;
         }
-
         if (selectedRating !== 'ALL' && Math.round(rating) !== Number(selectedRating)) {
           return false;
         }
-
         if (selectedCategory !== 'ALL' && category.toLowerCase() !== selectedCategory.toLowerCase()) {
           return false;
         }
-
         if (selectedEvent !== 'ALL' && eventName.toLowerCase() !== selectedEvent.toLowerCase()) {
           return false;
         }
-
         if (query) {
           const userName = String(item.UserName || item.name || '').toLowerCase();
           const email = String(item.Email || item.email || '').toLowerCase();
           const comments = String(item.Comments || item.comments || '').toLowerCase();
           const id = String(item.Id || item.id || '');
-
           return (
             userName.includes(query) ||
             email.includes(query) ||
@@ -334,7 +300,6 @@ export default function SuperAdminFeedback() {
             id.includes(query)
           );
         }
-
         return true;
       })
       .sort((a, b) => {
@@ -353,14 +318,12 @@ export default function SuperAdminFeedback() {
         return 0;
       });
   }, [feedbackList, search, selectedRating, selectedCategory, selectedEvent, selectedSource, sortBy]);
-
   // Pagination slice
   const totalPages = Math.ceil(filteredFeedback.length / itemsPerPage) || 1;
   const paginatedFeedback = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredFeedback.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredFeedback, currentPage, itemsPerPage]);
-
   const hasActiveFilters =
     search.trim() !== '' ||
     selectedSource !== 'ALL' ||
@@ -368,7 +331,6 @@ export default function SuperAdminFeedback() {
     selectedCategory !== 'ALL' ||
     selectedEvent !== 'ALL' ||
     sortBy !== 'NEWEST';
-
   const resetFilters = () => {
     setSearch('');
     setSelectedSource('ALL');
@@ -377,7 +339,6 @@ export default function SuperAdminFeedback() {
     setSelectedEvent('ALL');
     setSortBy('NEWEST');
   };
-
   const formatDate = (date) => {
     if (!date) return 'Recently';
     const parsed = new Date(date);
@@ -388,7 +349,6 @@ export default function SuperAdminFeedback() {
       year: 'numeric'
     });
   };
-
   const formatDateTime = (date) => {
     if (!date) return 'N/A';
     const parsed = new Date(date);
@@ -401,7 +361,6 @@ export default function SuperAdminFeedback() {
       minute: '2-digit'
     });
   };
-
   const getInitials = (name) => {
     return String(name || 'User')
       .trim()
@@ -410,13 +369,10 @@ export default function SuperAdminFeedback() {
       .map((part) => part.charAt(0).toUpperCase())
       .join('');
   };
-
   // CSV Export
   const exportToCSV = () => {
     if (filteredFeedback.length === 0) return;
-
     const headers = ['ID', 'User Name', 'Email', 'Event Name', 'Category', 'Rating', 'Comments', 'Submitted At'];
-
     const escapeCSV = (value) => {
       const stringValue = String(value ?? '');
       if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
@@ -424,7 +380,6 @@ export default function SuperAdminFeedback() {
       }
       return stringValue;
     };
-
     const rows = filteredFeedback.map((item) => [
       escapeCSV(item.Id || item.id || ''),
       escapeCSV(item.UserName || item.name || 'Anonymous'),
@@ -435,7 +390,6 @@ export default function SuperAdminFeedback() {
       escapeCSV(item.Comments || item.comments || ''),
       escapeCSV(formatDateTime(item.CreatedAt || item.createdAt))
     ]);
-
     const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -448,17 +402,14 @@ export default function SuperAdminFeedback() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-
   const copyFeedbackText = (text) => {
     navigator.clipboard.writeText(text);
     setCopiedId(true);
     setTimeout(() => setCopiedId(false), 2000);
   };
-
   return (
     <div className="bg-gray-50 dark:bg-black min-h-screen text-gray-900 dark:text-gray-100 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        
         {/* Page Top Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2 border-b border-gray-200/60 dark:border-zinc-800/80">
           <div>
@@ -474,7 +425,6 @@ export default function SuperAdminFeedback() {
               Live platform reviews collected from user dashboards. High-rated reviews are featured as live testimonials on the website hero section.
             </p>
           </div>
-
           <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={exportToCSV}
@@ -489,7 +439,6 @@ export default function SuperAdminFeedback() {
                 </span>
               )}
             </button>
-
             <button
               onClick={getFeedback}
               disabled={loading}
@@ -500,7 +449,6 @@ export default function SuperAdminFeedback() {
             </button>
           </div>
         </div>
-
         {/* 4 Spacious Summary KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {/* Total Responses */}
@@ -527,7 +475,6 @@ export default function SuperAdminFeedback() {
               </p>
             </div>
           </motion.div>
-
           {/* Average Rating Score */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -555,7 +502,6 @@ export default function SuperAdminFeedback() {
               </div>
             </div>
           </motion.div>
-
           {/* Positive Sentiment */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -585,7 +531,6 @@ export default function SuperAdminFeedback() {
               </p>
             </div>
           </motion.div>
-
           {/* Critical Ratings */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -616,7 +561,6 @@ export default function SuperAdminFeedback() {
             </div>
           </motion.div>
         </div>
-
         {/* Rating Breakdown Banner - Wide & Spacious */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -639,7 +583,6 @@ export default function SuperAdminFeedback() {
                 </p>
               </div>
             </div>
-
             {/* Right Distribution Progress Bars */}
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-5 gap-3">
               {stats.distribution.map((item) => {
@@ -663,7 +606,6 @@ export default function SuperAdminFeedback() {
                         {item.count} ({item.percent}%)
                       </span>
                     </div>
-
                     <div className="w-full bg-gray-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
@@ -682,13 +624,10 @@ export default function SuperAdminFeedback() {
             </div>
           </div>
         </motion.div>
-
         {/* Main Feedback Explorer */}
         <div className="space-y-6">
-          
           {/* Spacious Filter & Search Controls */}
           <div className="bg-white dark:bg-black rounded-2xl p-6 border border-gray-200 dark:border-zinc-800 shadow-sm space-y-5">
-            
             {/* Feedback Source Switcher */}
             <div className="flex items-center gap-2 border-b border-gray-100 dark:border-zinc-800/80 pb-4 flex-wrap">
               <span className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mr-1">
@@ -706,7 +645,6 @@ export default function SuperAdminFeedback() {
                 <Layers className="w-3.5 h-3.5" />
                 <span>All Feedbacks ({sourceCounts.all})</span>
               </button>
-
               <button
                 type="button"
                 onClick={() => setSelectedSource('EVENT')}
@@ -719,7 +657,6 @@ export default function SuperAdminFeedback() {
                 <Radio className="w-3.5 h-3.5" />
                 <span>Event Feedbacks ({sourceCounts.event})</span>
               </button>
-
               <button
                 type="button"
                 onClick={() => setSelectedSource('WEBINAR')}
@@ -732,7 +669,6 @@ export default function SuperAdminFeedback() {
                 <Radio className="w-3.5 h-3.5" />
                 <span>Webinar Feedbacks ({sourceCounts.webinar})</span>
               </button>
-
               <button
                 type="button"
                 onClick={() => setSelectedSource('PLATFORM')}
@@ -746,7 +682,6 @@ export default function SuperAdminFeedback() {
                 <span>Platform Feedbacks ({sourceCounts.platform})</span>
               </button>
             </div>
-
             {/* Search Input */}
             <div className="relative">
               <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -766,10 +701,8 @@ export default function SuperAdminFeedback() {
                 </button>
               )}
             </div>
-
             {/* Filter Pills, Selects & View Toggle */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-1">
-              
               {/* Star Rating Pills */}
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wider mr-1">
@@ -793,7 +726,6 @@ export default function SuperAdminFeedback() {
                   );
                 })}
               </div>
-
               {/* Dropdowns & View Toggles */}
               <div className="flex items-center gap-2.5 flex-wrap">
                 {/* Event Select */}
@@ -811,7 +743,6 @@ export default function SuperAdminFeedback() {
                     ))}
                   </select>
                 )}
-
                 {/* Category Select */}
                 {categories.length > 0 && (
                   <select
@@ -827,7 +758,6 @@ export default function SuperAdminFeedback() {
                     ))}
                   </select>
                 )}
-
                 {/* Sort */}
                 <select
                   value={sortBy}
@@ -839,7 +769,6 @@ export default function SuperAdminFeedback() {
                   <option value="HIGHEST_RATING">Highest Rating</option>
                   <option value="LOWEST_RATING">Lowest Rating</option>
                 </select>
-
                 {/* Reset Button */}
                 {hasActiveFilters && (
                   <button
@@ -849,7 +778,6 @@ export default function SuperAdminFeedback() {
                     Reset
                   </button>
                 )}
-
                 {/* View Mode Toggle: Cards vs Table */}
                 <div className="flex items-center p-1 bg-gray-100 dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800">
                   <button
@@ -878,7 +806,6 @@ export default function SuperAdminFeedback() {
               </div>
             </div>
           </div>
-
           {/* Feedback Content Section */}
           {loading ? (
             /* Loading Skeleton */
@@ -947,7 +874,6 @@ export default function SuperAdminFeedback() {
                 const category = item.Category || item.category || 'General';
                 const eventName = item.EventName || item.eventName || 'Website';
                 const ratingColor = getRatingColor(rating);
-
                 return (
                   <motion.div
                     key={item.Id ? `${item.feedbackType}-${item.Id}` : `item-${index}`}
@@ -972,7 +898,6 @@ export default function SuperAdminFeedback() {
                           </p>
                         </div>
                       </div>
-
                       {/* Rating Stars & Badge */}
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         {renderStars(rating, 'md')}
@@ -981,7 +906,6 @@ export default function SuperAdminFeedback() {
                         </span>
                       </div>
                     </div>
-
                     {/* Card Middle: Comment Text */}
                     <div className="relative pl-4 border-l-2 border-emerald-500/30">
                       <p className="text-sm sm:text-base text-gray-800 dark:text-zinc-200 leading-relaxed font-normal">
@@ -990,7 +914,6 @@ export default function SuperAdminFeedback() {
                         )}
                       </p>
                     </div>
-
                     {/* Card Bottom: Metadata Badges & Timestamp */}
                     <div className="flex items-center justify-between gap-2 pt-3 border-t border-gray-100 dark:border-zinc-800/80 text-xs">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -1015,7 +938,6 @@ export default function SuperAdminFeedback() {
                           {category}
                         </span>
                       </div>
-
                       <div className="flex items-center gap-2">
                         <span className="text-gray-400 dark:text-zinc-500 whitespace-nowrap">
                           {formatDate(item.CreatedAt || item.createdAt)}
@@ -1059,7 +981,6 @@ export default function SuperAdminFeedback() {
                       const category = item.Category || item.category || 'General';
                       const eventName = item.EventName || item.eventName || 'Website';
                       const ratingColor = getRatingColor(rating);
-
                       return (
                         <tr
                           key={item.Id ? `${item.feedbackType}-${item.Id}` : `item-row-${index}`}
@@ -1077,7 +998,6 @@ export default function SuperAdminFeedback() {
                               </div>
                             </div>
                           </td>
-
                           <td className="py-4 px-6 text-gray-700 dark:text-zinc-300 font-medium">
                             <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
                               item.feedbackType === 'EVENT' || item.feedbackType === 'WEBINAR'
@@ -1087,11 +1007,9 @@ export default function SuperAdminFeedback() {
                               {item.feedbackType === 'EVENT' ? `Event: ${eventName}` : item.feedbackType === 'WEBINAR' ? `Webinar: ${eventName}` : 'Platform'}
                             </span>
                           </td>
-
                           <td className="py-4 px-6 text-gray-600 dark:text-zinc-400 text-xs">
                             {category}
                           </td>
-
                           <td className="py-4 px-6">
                             <div className="flex items-center gap-2">
                               {renderStars(rating, 'sm')}
@@ -1100,15 +1018,12 @@ export default function SuperAdminFeedback() {
                               </span>
                             </div>
                           </td>
-
                           <td className="py-4 px-6 max-w-xs truncate text-gray-700 dark:text-zinc-300">
                             {comments || <span className="italic text-gray-400">No comment</span>}
                           </td>
-
                           <td className="py-4 px-6 text-gray-400 text-xs whitespace-nowrap">
                             {formatDate(item.CreatedAt || item.createdAt)}
                           </td>
-
                           <td className="py-4 px-6 text-right">
                             <div className="flex items-center justify-end gap-1">
                               <button
@@ -1138,61 +1053,23 @@ export default function SuperAdminFeedback() {
               </div>
             </div>
           )}
-
-          {/* Pagination Bar */}
+          {/* Pagination Bar with Direct Page Numbers */}
           {!loading && filteredFeedback.length > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-zinc-800 text-xs text-gray-500 dark:text-gray-400 shadow-sm">
-              <div className="flex items-center gap-3">
-                <span>
-                  Showing{' '}
-                  <strong className="text-gray-900 dark:text-white">
-                    {Math.min((currentPage - 1) * itemsPerPage + 1, filteredFeedback.length)}
-                  </strong>{' '}
-                  to{' '}
-                  <strong className="text-gray-900 dark:text-white">
-                    {Math.min(currentPage * itemsPerPage, filteredFeedback.length)}
-                  </strong>{' '}
-                  of <strong className="text-gray-900 dark:text-white">{filteredFeedback.length}</strong> reviews
-                </span>
-
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
-                  className="px-2.5 py-1 rounded-lg border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-gray-700 dark:text-gray-300"
-                >
-                  <option value={6}>6 per page</option>
-                  <option value={8}>8 per page</option>
-                  <option value={12}>12 per page</option>
-                  <option value={20}>20 per page</option>
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2 self-end sm:self-auto">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-xl border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-
-                <span className="px-3 py-1 font-semibold text-gray-800 dark:text-zinc-200">
-                  Page {currentPage} of {totalPages}
-                </span>
-
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-xl border border-gray-200 dark:border-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+            <div className="rounded-2xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-xs overflow-hidden">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredFeedback.length}
+                pageSize={itemsPerPage}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setItemsPerPage}
+                pageSizeOptions={[6, 8, 12, 20]}
+                itemName="reviews"
+              />
             </div>
           )}
         </div>
       </div>
-
       {/* Full Review Modal */}
       <AnimatePresence>
         {activeItem && (
@@ -1204,7 +1081,6 @@ export default function SuperAdminFeedback() {
               onClick={() => setActiveItem(null)}
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             />
-
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1227,7 +1103,6 @@ export default function SuperAdminFeedback() {
                     </p>
                   </div>
                 </div>
-
                 <button
                   onClick={() => setActiveItem(null)}
                   className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
@@ -1235,7 +1110,6 @@ export default function SuperAdminFeedback() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               {/* Metadata Badges */}
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800/80 space-y-1">
@@ -1249,7 +1123,6 @@ export default function SuperAdminFeedback() {
                     {activeItem.Category || activeItem.category || 'General'}
                   </p>
                 </div>
-
                 <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800/80 space-y-1">
                   <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
                     Rating & Sentiment
@@ -1265,7 +1138,6 @@ export default function SuperAdminFeedback() {
                   </span>
                 </div>
               </div>
-
               {activeItem.feedbackType === 'WEBINAR' && (
                 <div className="p-3.5 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-800/50 space-y-2.5 text-xs">
                   <span className="font-bold uppercase tracking-wider text-[10px] text-emerald-700 dark:text-emerald-400">
@@ -1297,7 +1169,6 @@ export default function SuperAdminFeedback() {
                   )}
                 </div>
               )}
-
               {/* Comment Content */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -1314,14 +1185,12 @@ export default function SuperAdminFeedback() {
                     </button>
                   ) : null}
                 </div>
-
                 <div className="p-5 rounded-2xl bg-gray-50 dark:bg-zinc-900 border border-gray-100 dark:border-zinc-800 text-sm leading-relaxed text-gray-800 dark:text-zinc-200 max-h-60 overflow-y-auto whitespace-pre-wrap">
                   {activeItem.Comments || activeItem.comments || (
                     <span className="italic text-gray-400">No written comment provided.</span>
                   )}
                 </div>
               </div>
-
               {/* Footer */}
               <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-zinc-800 text-xs text-gray-400">
                 <button
@@ -1332,13 +1201,11 @@ export default function SuperAdminFeedback() {
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Delete Feedback</span>
                 </button>
-
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1.5">
                     <Calendar className="w-4 h-4 text-gray-400" />
                     {formatDateTime(activeItem.CreatedAt || activeItem.createdAt)}
                   </span>
-
                   <button
                     onClick={() => setActiveItem(null)}
                     className="px-5 py-2 rounded-xl bg-gray-900 text-white dark:bg-white dark:text-black font-semibold text-xs hover:opacity-90 transition-opacity cursor-pointer"

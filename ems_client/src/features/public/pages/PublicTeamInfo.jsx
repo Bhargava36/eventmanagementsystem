@@ -30,7 +30,6 @@ import {
   Phone,
   Crown
 } from 'lucide-react';
-
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -41,7 +40,6 @@ const containerVariants = {
     }
   }
 };
-
 const itemVariants = {
   hidden: { opacity: 0, y: 16 },
   visible: {
@@ -53,12 +51,10 @@ const itemVariants = {
     }
   }
 };
-
 export default function PublicTeamInfo() {
   const { teamId } = useParams();
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
-
   const [teamData, setTeamData] = useState(null);
   const [members, setMembers] = useState([]);
   const [evaluationResults, setEvaluationResults] = useState(null);
@@ -66,25 +62,20 @@ export default function PublicTeamInfo() {
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
   const [expandedRoundId, setExpandedRoundId] = useState(null);
-
   // Fetch Public Team Information
   useEffect(() => {
     const fetchPublicData = async () => {
       try {
         setLoading(true);
         setError(null);
-
         // 1. Fetch public team info
         const res = await fetch(`${API_BASE_URL}/api/teams/public/${teamId}`);
         const data = await res.json();
-
         if (!res.ok || !data.team) {
           throw new Error(data.message || 'Team pass not found');
         }
-
         setTeamData(data.team);
         setMembers(data.members || []);
-
         // 2. Fetch published evaluation results (if published by organizer)
         try {
           const evalRes = await fetch(`${API_BASE_URL}/api/evaluators/teams/${teamId}/published-results`);
@@ -100,7 +91,6 @@ export default function PublicTeamInfo() {
         } catch (evalErr) {
           console.warn('Could not fetch evaluation results:', evalErr);
         }
-
       } catch (err) {
         console.error('Error fetching public team info:', err);
         setError(err.message || 'Failed to load team credentials');
@@ -108,28 +98,22 @@ export default function PublicTeamInfo() {
         setLoading(false);
       }
     };
-
     if (teamId) {
       fetchPublicData();
     }
   }, [teamId]);
-
   // Derived event theme and flags
   const theme = useMemo(() => getEventTheme(teamData, isDark), [teamData, isDark]);
-
   const isWebinar = useMemo(() => {
     return String(teamData?.EventType || '').toLowerCase().includes('webinar');
   }, [teamData]);
-
   const isWorkshop = useMemo(() => {
     return String(teamData?.EventType || '').toLowerCase().includes('workshop');
   }, [teamData]);
-
   const isIndividual = useMemo(() => {
     if (!teamData) return false;
     return isWebinar || isWorkshop || isSoloTeamSize(teamData.TeamSize) || isSoloTeamSize(teamData.EventTeamSize);
   }, [teamData, isWebinar, isWorkshop]);
-
   const displayName = useMemo(() => {
     if (!teamData) return '';
     if (isIndividual) {
@@ -138,9 +122,7 @@ export default function PublicTeamInfo() {
     }
     return teamData.TeamName || 'Team';
   }, [teamData, isIndividual, members, isWebinar, isWorkshop]);
-
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-
   const handleCopyLink = () => {
     if (navigator.clipboard && shareUrl) {
       navigator.clipboard.writeText(shareUrl);
@@ -148,11 +130,9 @@ export default function PublicTeamInfo() {
       setTimeout(() => setCopied(false), 2500);
     }
   };
-
   const handlePrint = () => {
     window.print();
   };
-
   // Helper to extract clean 2-letter initials
   const getInitials = (name = '') => {
     if (!name) return 'M';
@@ -162,7 +142,6 @@ export default function PublicTeamInfo() {
     }
     return name.slice(0, 2).toUpperCase();
   };
-
   // Skeleton Loader that matches the theme of PublicEventDetails
   if (loading) {
     return (
@@ -173,7 +152,6 @@ export default function PublicTeamInfo() {
             <div className="h-5 w-48 rounded-lg bg-slate-200 dark:bg-zinc-900" />
             <div className="h-9 w-32 rounded-xl bg-slate-200 dark:bg-zinc-900" />
           </div>
-
           {/* Pass Card Skeleton */}
           <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-8 space-y-6 shadow-sm">
             <div className="flex flex-col sm:flex-row justify-between gap-6">
@@ -183,7 +161,6 @@ export default function PublicTeamInfo() {
               </div>
               <div className="w-32 h-32 rounded-2xl bg-slate-200 dark:bg-zinc-900 shrink-0" />
             </div>
-
             <div className="pt-6 border-t border-slate-100 dark:border-zinc-800/80 grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="h-12 rounded-xl bg-slate-100 dark:bg-zinc-900/60" />
               <div className="h-12 rounded-xl bg-slate-100 dark:bg-zinc-900/60" />
@@ -191,7 +168,6 @@ export default function PublicTeamInfo() {
               <div className="h-12 rounded-xl bg-slate-100 dark:bg-zinc-900/60" />
             </div>
           </div>
-
           {/* Member Profiles Skeleton */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="h-56 rounded-3xl bg-slate-200 dark:bg-zinc-900" />
@@ -202,7 +178,6 @@ export default function PublicTeamInfo() {
       </div>
     );
   }
-
   // Error State matching website theme
   if (error || !teamData) {
     return (
@@ -219,7 +194,6 @@ export default function PublicTeamInfo() {
               {error || 'This team registration credentials could not be found or has expired.'}
             </p>
           </div>
-
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               to="/events"
@@ -240,7 +214,6 @@ export default function PublicTeamInfo() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white pt-28 sm:pt-32 pb-24 transition-colors duration-300">
       {/* Print-specific style override */}
@@ -252,7 +225,6 @@ export default function PublicTeamInfo() {
           .print-card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; background: white !important; color: black !important; }
         }
       `}} />
-
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -288,7 +260,6 @@ export default function PublicTeamInfo() {
               {displayName}
             </span>
           </div>
-
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
@@ -307,11 +278,8 @@ export default function PublicTeamInfo() {
                 </>
               )}
             </button>
-
-          
           </div>
         </motion.div>
-
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* OFFICIAL EVENT HERO PASS (WITH EVENT THEME COLORS) */}
         {/* ══════════════════════════════════════════════════════════════ */}
@@ -327,7 +295,6 @@ export default function PublicTeamInfo() {
               background: `linear-gradient(90deg, ${theme.primary}, ${theme.secondary || theme.accent}, ${theme.primary})`
             }}
           />
-
           {/* Ambient Theme Gradient Highlights */}
           <div
             className="absolute top-0 right-0 w-80 h-80 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16 opacity-20"
@@ -341,7 +308,6 @@ export default function PublicTeamInfo() {
               background: `radial-gradient(circle, ${theme.secondary || theme.accent} 0%, transparent 70%)`
             }}
           />
-
           {/* Top Pass Header Banner */}
           <div className="relative z-10 p-6 sm:p-8 lg:p-10 border-b border-slate-100 dark:border-zinc-800/80 bg-gradient-to-b from-slate-50/60 dark:from-zinc-900/40 to-transparent">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8">
@@ -360,27 +326,23 @@ export default function PublicTeamInfo() {
                     )}
                   </p>
                 </div>
-
                 {/* Event & Location Meta Strip */}
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-slate-600 dark:text-zinc-300 pt-1">
                   <span className="flex items-center gap-1.5 font-bold" style={{ color: theme.accent }}>
                     <span>{teamData.EventName || (isWebinar ? 'Live Webinar Event' : 'Hackathon Event')}</span>
                   </span>
-
                   {teamData.ParticipationMode && (
                     <span className="flex items-center gap-1 text-slate-500 dark:text-zinc-400">
                       <span>•</span>
                       <span>{isWebinar ? 'Live Stream Broadcast' : `${teamData.ParticipationMode} Track`}</span>
                     </span>
                   )}
-
                   {teamData.College && (
                     <span className="flex items-center gap-1.5 text-slate-500 dark:text-zinc-400">
                       <Building2 className="w-3.5 h-3.5" />
                       <span>{teamData.College}</span>
                     </span>
                   )}
-
                   {teamData.State && (
                     <span className="flex items-center gap-1.5 text-slate-500 dark:text-zinc-400">
                       <MapPin className="w-3.5 h-3.5" />
@@ -389,7 +351,6 @@ export default function PublicTeamInfo() {
                   )}
                 </div>
               </div>
-
               {/* QR Code Presentation Box (Download and save buttons removed, scan-only) */}
               <div className="shrink-0 flex flex-col items-center sm:items-end">
                 <div
@@ -418,7 +379,6 @@ export default function PublicTeamInfo() {
               </div>
             </div>
           </div>
-
           {/* Key Event Metrics Strip */}
           <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/30">
             <div className="p-4 sm:p-5 flex items-center gap-3.5">
@@ -437,7 +397,6 @@ export default function PublicTeamInfo() {
                 </p>
               </div>
             </div>
-
             <div className="p-4 sm:p-5 flex items-center gap-3.5">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -454,7 +413,6 @@ export default function PublicTeamInfo() {
                 </p>
               </div>
             </div>
-
             <div className="p-4 sm:p-5 flex items-center gap-3.5">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -471,7 +429,6 @@ export default function PublicTeamInfo() {
                 </p>
               </div>
             </div>
-
             <div className="p-4 sm:p-5 flex items-center gap-3.5">
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -499,7 +456,6 @@ export default function PublicTeamInfo() {
             </div>
           </div>
         </motion.div>
-
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* DETAILED TEAM MEMBERS PROFILES (WITH PHOTOS & RICH DETAILS) */}
         {/* ══════════════════════════════════════════════════════════════ */}
@@ -523,7 +479,6 @@ export default function PublicTeamInfo() {
                 </p>
               </div>
             </div>
-
             <span
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold self-start sm:self-auto border"
               style={{
@@ -536,12 +491,10 @@ export default function PublicTeamInfo() {
               <span>{isIndividual ? 'Solo Competitor' : `${members.length} Squad Members Confirmed`}</span>
             </span>
           </div>
-
           {/* Members Profiles Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {members.map((member, idx) => {
               const isLead = String(member.Role).toLowerCase() === 'teamlead' || (idx === 0 && isIndividual);
-
               return (
                 <motion.div
                   key={member.Id || member.UserId || idx}
@@ -563,13 +516,11 @@ export default function PublicTeamInfo() {
                       className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-2xl opacity-40 pointer-events-none"
                       style={{ backgroundColor: theme.primary }}
                     />
-
                     {/* Verified Tag on Top-Left */}
                     <span className="relative z-10 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs">
                       <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                       <span>Verified</span>
                     </span>
-
                     {/* Role Pill on Top-Right */}
                     <span
                       className="relative z-10 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold shadow-2xs"
@@ -590,7 +541,6 @@ export default function PublicTeamInfo() {
                       )}
                     </span>
                   </div>
-
                   {/* Card Body */}
                   <div className="px-5 pb-5 pt-0 flex-1 flex flex-col justify-between space-y-4">
                     <div>
@@ -613,7 +563,6 @@ export default function PublicTeamInfo() {
                           </div>
                         )}
                       </div>
-
                       {/* Member Name */}
                       <h4
                         className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white text-center tracking-tight truncate px-2"
@@ -621,7 +570,6 @@ export default function PublicTeamInfo() {
                       >
                         {member.UserName}
                       </h4>
-
                       {/* College & State Subtitle */}
                       <p
                         className="text-xs font-medium text-slate-500 dark:text-zinc-400 text-center mt-1 truncate px-2"
@@ -634,7 +582,6 @@ export default function PublicTeamInfo() {
                           </span>
                         )}
                       </p>
-
                       {/* Micro Tags Strip */}
                       <div className="flex flex-wrap items-center justify-center gap-1.5 mt-3">
                         {member.Gender && (
@@ -650,7 +597,6 @@ export default function PublicTeamInfo() {
                         </span>
                       </div>
                     </div>
-
                     {/* Quick Action Contact Strip */}
                     <div className="pt-2 flex items-center gap-2">
                       {member.Email && (
@@ -668,7 +614,6 @@ export default function PublicTeamInfo() {
                           <span className="truncate">{member.Email}</span>
                         </a>
                       )}
-
                       {member.Mobile && (
                         <a
                           href={`tel:${member.Mobile}`}
@@ -681,7 +626,6 @@ export default function PublicTeamInfo() {
                       )}
                     </div>
                   </div>
-
                   {/* Card Bottom Meta Bar */}
                   <div className="px-5 py-2.5 bg-slate-50/70 dark:bg-zinc-900/40 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between text-[11px] text-slate-400 dark:text-zinc-500 font-medium">
                     <span className="flex items-center gap-1">
@@ -697,7 +641,6 @@ export default function PublicTeamInfo() {
             })}
           </div>
         </motion.div>
-
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* DETAILS SECTION: PROBLEM STATEMENT & SCORES */}
         {/* ══════════════════════════════════════════════════════════════ */}
@@ -714,7 +657,6 @@ export default function PublicTeamInfo() {
                   Selected Problem Statement
                 </h3>
               </div>
-
               {teamData.ProblemCode && (
                 <span
                   className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold border"
@@ -728,7 +670,6 @@ export default function PublicTeamInfo() {
                 </span>
               )}
             </div>
-
             {teamData.ProblemStatement ? (
               <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed font-normal">
                 {teamData.ProblemStatement}
@@ -740,7 +681,6 @@ export default function PublicTeamInfo() {
                 </p>
               </div>
             )}
-
             {teamData.Tech_Stack && (
               <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 space-y-2">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-zinc-400">
@@ -760,7 +700,6 @@ export default function PublicTeamInfo() {
               </div>
             )}
           </motion.div>
-
           {/* Official Scores & Results */}
           <motion.div variants={itemVariants}>
             {evaluationResults && evaluationResults.publishedRounds && evaluationResults.publishedRounds.length > 0 ? (
@@ -783,7 +722,6 @@ export default function PublicTeamInfo() {
                     Published Results
                   </span>
                 </div>
-
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 text-center">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
@@ -799,7 +737,6 @@ export default function PublicTeamInfo() {
                       </span>
                     </p>
                   </div>
-
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 text-center">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                       Current Rank
@@ -816,7 +753,6 @@ export default function PublicTeamInfo() {
                       )}
                     </p>
                   </div>
-
                   <div className="col-span-2 sm:col-span-1 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/50 border border-slate-200 dark:border-zinc-800 text-center">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                       Rounds Graded
@@ -829,15 +765,13 @@ export default function PublicTeamInfo() {
                     </p>
                   </div>
                 </div>
-
                 <div className="space-y-3">
                   {evaluationResults.publishedRounds.map((rnd) => {
                     const isExpanded = expandedRoundId === rnd.roundId;
-                    const roundScore = rnd.score !== undefined && rnd.score !== null 
-                      ? rnd.score 
+                    const roundScore = rnd.score !== undefined && rnd.score !== null
+                      ? rnd.score
                       : (rnd.averageScore !== undefined && rnd.averageScore !== null ? rnd.averageScore : '-');
                     const reviewerList = rnd.submissions || rnd.evaluations || [];
-
                     return (
                       <div
                         key={rnd.roundId}
@@ -867,7 +801,6 @@ export default function PublicTeamInfo() {
                               </p>
                             </div>
                           </div>
-
                           <div className="flex items-center gap-2.5">
                             <span className="text-sm font-bold" style={{ color: theme.accent }}>
                               {roundScore} / {rnd.maxMarks}
@@ -879,7 +812,6 @@ export default function PublicTeamInfo() {
                             )}
                           </div>
                         </div>
-
                         {isExpanded && (
                           <div className="p-4 sm:p-5 bg-white dark:bg-zinc-950 border-t border-slate-200 dark:border-zinc-800 space-y-4">
                             {/* Question Rubric Breakdown */}
@@ -905,7 +837,6 @@ export default function PublicTeamInfo() {
                                 </div>
                               </div>
                             )}
-
                             {/* Reviewer Details */}
                             {reviewerList.length > 0 && (
                               <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
@@ -936,7 +867,6 @@ export default function PublicTeamInfo() {
                                           {ev.totalScore} / {rnd.maxMarks} pts
                                         </span>
                                       </div>
-
                                       {ev.scoresData && ev.scoresData.length > 0 && (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                                           {ev.scoresData.map((q, qIdx) => (
@@ -954,7 +884,6 @@ export default function PublicTeamInfo() {
                                           ))}
                                         </div>
                                       )}
-
                                       {ev.feedback && (
                                         <p className="text-xs italic text-slate-600 dark:text-zinc-300 bg-white dark:bg-zinc-900 p-2.5 rounded-lg border border-slate-200 dark:border-zinc-800">
                                           "{ev.feedback}"
@@ -995,7 +924,6 @@ export default function PublicTeamInfo() {
             )}
           </motion.div>
         </div>
-
         {/* Official Footer Note & Event Link */}
         <motion.div
           variants={itemVariants}
@@ -1005,7 +933,6 @@ export default function PublicTeamInfo() {
             <ShieldCheck className="w-4 h-4" style={{ color: theme.accent }} />
             <span>Official Event Registration Pass • Verified Entry Credentials</span>
           </div>
-
           <div className="flex items-center gap-3 font-medium">
             {teamData.EventId && (
               <>

@@ -1,10 +1,7 @@
 import { jsPDF } from 'jspdf';
 import JSZip from 'jszip';
 import { renderCardSide } from './idCardRenderer';
-
-/**
- * Helper to parse template configs safely
- */
+// Helper to parse template configs safely
 const parseConfig = (cfg) => {
   if (!cfg) return null;
   if (typeof cfg === 'object') return cfg;
@@ -14,10 +11,7 @@ const parseConfig = (cfg) => {
     return null;
   }
 };
-
-/**
- * Trigger browser file download from Blob
- */
+// Trigger browser file download from Blob
 const triggerBlobDownload = (blob, filename) => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -28,7 +22,6 @@ const triggerBlobDownload = (blob, filename) => {
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 };
-
 export const CARD_SIZES = [
   {
     id: 'cr80',
@@ -81,27 +74,21 @@ export const CARD_SIZES = [
     landscape: { width: 610, height: 390 }
   }
 ];
-
 export const resolveCardDimensions = (template = {}, orientation = 'portrait') => {
   const frontConfig = parseConfig(template.FrontConfig) || {};
   const sizeId = template.cardSizeId || frontConfig.cardSizeId || (
     Number(template.CardWidth) > 90 || Number(template.CardHeight) > 130 ? 'a6' : 'cr80'
   );
-
   const matchedSize = CARD_SIZES.find(s => s.id === sizeId) || CARD_SIZES[0];
-
   let widthMm = Number(template.CardWidth);
   let heightMm = Number(template.CardHeight);
-
   // If width/height are not set or were left at default CR80 despite sizeId being a6/a7/square/hanging
   if (!widthMm || !heightMm || (sizeId !== 'cr80' && widthMm === 53.98)) {
     widthMm = orientation === 'portrait' ? matchedSize.widthMm : matchedSize.heightMm;
     heightMm = orientation === 'portrait' ? matchedSize.heightMm : matchedSize.widthMm;
   }
-
   const canvasWidth = orientation === 'portrait' ? matchedSize.portrait.width : matchedSize.landscape.width;
   const canvasHeight = orientation === 'portrait' ? matchedSize.portrait.height : matchedSize.landscape.height;
-
   return {
     sizeId,
     matchedSize,
@@ -111,10 +98,7 @@ export const resolveCardDimensions = (template = {}, orientation = 'portrait') =
     canvasHeight
   };
 };
-
-/**
- * 1. Generate Combined Print-Ready PDF (Each card on its own page)
- */
+// Generate Combined Print-Ready PDF (Each card on its own page)
 export const generateCombinedPdf = async (
   participants = [],
   template = {},
@@ -125,28 +109,21 @@ export const generateCombinedPdf = async (
   if (!participants || participants.length === 0) {
     throw new Error('No eligible participants found to generate cards.');
   }
-
   const { includeBack = false, scale = 2.5 } = options;
-
   const orientation = template.Orientation || 'portrait';
   const { widthMm, heightMm, canvasWidth, canvasHeight } = resolveCardDimensions(template, orientation);
-
   const frontConfig = parseConfig(template.FrontConfig);
   const backConfig = parseConfig(template.BackConfig);
-
   if (!frontConfig) {
     throw new Error('Template front configuration is invalid or missing.');
   }
-
   const pdf = new jsPDF({
     orientation,
     unit: 'mm',
     format: [widthMm, heightMm]
   });
-
   const offscreenCanvas = document.createElement('canvas');
   const total = participants.length;
-
   for (let i = 0; i < total; i++) {
     const participant = participants[i];
     onProgress({
@@ -155,11 +132,9 @@ export const generateCombinedPdf = async (
       percentage: Math.round(((i + 1) / total) * 100),
       currentName: participant.ParticipantName || `Participant ${i + 1}`
     });
-
     if (i > 0) {
       pdf.addPage([widthMm, heightMm], orientation);
     }
-
     // Render Front Side
     await renderCardSide(offscreenCanvas, frontConfig, participant, event, {
       scale,
@@ -168,7 +143,6 @@ export const generateCombinedPdf = async (
     });
     const frontImg = offscreenCanvas.toDataURL('image/jpeg', 0.95);
     pdf.addImage(frontImg, 'JPEG', 0, 0, widthMm, heightMm);
-
     // Render Back Side if requested
     if (includeBack && backConfig && Array.isArray(backConfig.elements) && backConfig.elements.length > 0) {
       pdf.addPage([widthMm, heightMm], orientation);
@@ -181,15 +155,11 @@ export const generateCombinedPdf = async (
       pdf.addImage(backImg, 'JPEG', 0, 0, widthMm, heightMm);
     }
   }
-
   const cleanEventName = (event.EventName || 'Event').replace(/[^a-zA-Z0-9_-]/g, '_');
   pdf.save(`${cleanEventName}_ID_Cards_Combined.pdf`);
   return true;
 };
-
-/**
- * 2. Generate Print-Sheet PDF (A4 Sheet layout with multiple cards per page & cutting guides)
- */
+// Generate Print-Sheet PDF (A4 Sheet layout with multiple cards per page & cutting guides)
 export const generateSheetPrintPdf = async (
   participants = [],
   template = {},
@@ -200,21 +170,16 @@ export const generateSheetPrintPdf = async (
   if (!participants || participants.length === 0) {
     throw new Error('No eligible participants found to generate print sheets.');
   }
-
   const orientation = template.Orientation || 'portrait';
   const { sizeId, widthMm: cardWidthMm, heightMm: cardHeightMm, canvasWidth, canvasHeight } = resolveCardDimensions(template, orientation);
-
   const frontConfig = parseConfig(template.FrontConfig);
   if (!frontConfig) throw new Error('Template configuration missing.');
-
   // A4 Dimensions: 210mm × 297mm
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const a4Width = 210;
   const a4Height = 297;
-
   // Grid calculation based on actual card size
   let cols, rows, gapX, gapY;
-
   if (sizeId === 'a6') {
     cols = orientation === 'portrait' ? 2 : 1;
     rows = orientation === 'portrait' ? 2 : 2;
@@ -248,24 +213,19 @@ export const generateSheetPrintPdf = async (
       gapY = 6;
     }
   }
-
   const totalGridW = cols * cardWidthMm + (cols - 1) * gapX;
   const totalGridH = rows * cardHeightMm + (rows - 1) * gapY;
   const marginX = Math.max(1, (a4Width - totalGridW) / 2);
   const marginY = Math.max(5, (a4Height - totalGridH) / 2);
-
   const cardsPerPage = cols * rows;
   const total = participants.length;
   const offscreenCanvas = document.createElement('canvas');
-
   for (let i = 0; i < total; i++) {
     const pageIndex = Math.floor(i / cardsPerPage);
     const slotIndex = i % cardsPerPage;
-
     if (i > 0 && slotIndex === 0) {
       pdf.addPage('a4', 'portrait');
     }
-
     // Draw header on new sheet
     if (slotIndex === 0) {
       pdf.setFont('helvetica', 'bold');
@@ -278,12 +238,10 @@ export const generateSheetPrintPdf = async (
         { align: 'center' }
       );
     }
-
     const col = slotIndex % cols;
     const row = Math.floor(slotIndex / cols);
     const x = marginX + col * (cardWidthMm + gapX);
     const y = marginY + row * (cardHeightMm + gapY);
-
     const participant = participants[i];
     onProgress({
       current: i + 1,
@@ -291,7 +249,6 @@ export const generateSheetPrintPdf = async (
       percentage: Math.round(((i + 1) / total) * 100),
       currentName: participant.ParticipantName || `Participant ${i + 1}`
     });
-
     // Render card
     await renderCardSide(offscreenCanvas, frontConfig, participant, event, {
       scale: 2.2,
@@ -300,7 +257,6 @@ export const generateSheetPrintPdf = async (
     });
     const cardImg = offscreenCanvas.toDataURL('image/jpeg', 0.95);
     pdf.addImage(cardImg, 'JPEG', x, y, cardWidthMm, cardHeightMm);
-
     // Draw crop marks / cutting lines around the card slot
     pdf.setDrawColor(180, 180, 180);
     pdf.setLineWidth(0.2);
@@ -318,15 +274,11 @@ export const generateSheetPrintPdf = async (
     pdf.line(x + cardWidthMm, y + cardHeightMm, x + cardWidthMm + markLen, y + cardHeightMm);
     pdf.line(x + cardWidthMm, y + cardHeightMm, x + cardWidthMm, y + cardHeightMm + markLen);
   }
-
   const cleanEventName = (event.EventName || 'Event').replace(/[^a-zA-Z0-9_-]/g, '_');
   pdf.save(`${cleanEventName}_ID_Cards_Print_Sheets.pdf`);
   return true;
 };
-
-/**
- * 3. Generate ZIP Archive of all participant cards (High-Res PNGs)
- */
+// Generate ZIP Archive of all participant cards (High-Res PNGs)
 export const generateZipArchive = async (
   participants = [],
   template = {},
@@ -337,42 +289,34 @@ export const generateZipArchive = async (
   if (!participants || participants.length === 0) {
     throw new Error('No eligible participants found for ZIP export.');
   }
-
   const { includeBack = false, scale = 2.5 } = options;
   const orientation = template.Orientation || 'portrait';
   const { canvasWidth, canvasHeight } = resolveCardDimensions(template, orientation);
   const frontConfig = parseConfig(template.FrontConfig);
   const backConfig = parseConfig(template.BackConfig);
-
   const zip = new JSZip();
   const folder = zip.folder('ID_Cards');
-
   const offscreenCanvas = document.createElement('canvas');
   const total = participants.length;
-
   for (let i = 0; i < total; i++) {
     const participant = participants[i];
     const safeName = `${participant.IdCardNumber || `U${participant.UserId}`}_${(participant.ParticipantName || 'Member').replace(/[^a-zA-Z0-9]/g, '_')}`;
-
     onProgress({
       current: i + 1,
       total,
       percentage: Math.round(((i + 1) / total) * 100),
       currentName: participant.ParticipantName || `Participant ${i + 1}`
     });
-
     // Render Front Side
     await renderCardSide(offscreenCanvas, frontConfig, participant, event, {
       scale,
       cardWidth: canvasWidth,
       cardHeight: canvasHeight
     });
-
     const frontBlob = await new Promise((resolve) => offscreenCanvas.toBlob(resolve, 'image/png'));
     if (frontBlob) {
       folder.file(`${safeName}_Front.png`, frontBlob);
     }
-
     // Render Back Side
     if (includeBack && backConfig && Array.isArray(backConfig.elements) && backConfig.elements.length > 0) {
       await renderCardSide(offscreenCanvas, backConfig, participant, event, {
@@ -386,7 +330,6 @@ export const generateZipArchive = async (
       }
     }
   }
-
   const content = await zip.generateAsync({ type: 'blob' }, (metadata) => {
     onProgress({
       current: total,
@@ -395,15 +338,11 @@ export const generateZipArchive = async (
       currentName: 'Compressing archive...'
     });
   });
-
   const cleanEventName = (event.EventName || 'Event').replace(/[^a-zA-Z0-9_-]/g, '_');
   triggerBlobDownload(content, `${cleanEventName}_ID_Cards_Archive.zip`);
   return true;
 };
-
-/**
- * 4. Download single participant card as PNG
- */
+// Download single participant card as PNG
 export const downloadSingleCardImage = async (
   participant,
   template,
@@ -414,14 +353,12 @@ export const downloadSingleCardImage = async (
   const { canvasWidth, canvasHeight } = resolveCardDimensions(template, orientation);
   const config = side === 'back' ? parseConfig(template.BackConfig) : parseConfig(template.FrontConfig);
   if (!config) return;
-
   const canvas = document.createElement('canvas');
   await renderCardSide(canvas, config, participant, event, {
     scale: 3,
     cardWidth: canvasWidth,
     cardHeight: canvasHeight
   });
-
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (blob) {
     const safeName = `${participant.IdCardNumber || `U${participant.UserId}`}_${side.toUpperCase()}`;

@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-
 const WaveDots = ({
   className = '',
   dotColor = 'rgba(16, 185, 129, 0.7)',
@@ -10,7 +9,6 @@ const WaveDots = ({
   glowColor = 'bg-emerald-500/25 dark:bg-emerald-400/20'
 }) => {
   const step = gap * 2;
-
   return (
     <div className={`pointer-events-none select-none overflow-hidden rounded-r-3xl z-0 ${className}`}>
       <motion.div
@@ -30,7 +28,6 @@ const WaveDots = ({
           WebkitMaskImage: 'radial-gradient(ellipse at 100% 50%, black 20%, transparent 80%)'
         }}
       />
-
       {glow && (
         <motion.div
           animate={{
@@ -50,5 +47,4 @@ const WaveDots = ({
     </div>
   );
 };
-
 export default WaveDots;

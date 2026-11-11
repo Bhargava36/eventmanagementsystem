@@ -1,10 +1,8 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
-
 const db = require('../config/db');
 const { sendEventBroadcastEmail } = require('../config/mailer');
 const { getEmailLogs } = require('../modules/email_dispatch/emailDispatchService');
-
 async function runTest() {
     console.log('--- Step 1: Connecting to DB and fetching users ---');
     db.query('SELECT Id, UserName, Email, RoleId FROM users ORDER BY Id ASC LIMIT 5', async (err, users) => {
@@ -12,18 +10,14 @@ async function runTest() {
             console.error('Error fetching users from DB:', err.message);
             process.exit(1);
         }
-
         console.log(`Found ${users.length} users in DB:`);
         users.forEach((u, i) => console.log(`  [${i + 1}] ID: ${u.Id} | Name: ${u.UserName} | Email: ${u.Email} | RoleId: ${u.RoleId}`));
-
         if (users.length === 0) {
             console.log('No users in DB to send to.');
             process.exit(0);
         }
-
         const targetUser = users[0];
         console.log(`\n--- Step 2: Sending broadcast test email to user: ${targetUser.UserName} (${targetUser.Email}) ---`);
-
         try {
             const sendResult = await sendEventBroadcastEmail({
                 toEmail: targetUser.Email,
@@ -34,9 +28,7 @@ async function runTest() {
                 category: 'Important Alert',
                 organizerName: 'AYOJAN Platform Directorate'
             });
-
             console.log('Send result:', sendResult);
-
             console.log('\n--- Step 3: Fetching recent email dispatch logs from DB ---');
             setTimeout(async () => {
                 const logsData = await getEmailLogs({ page: 1, limit: 5 });
@@ -46,11 +38,9 @@ async function runTest() {
                     console.log(`  -> Log #${l.Id} | Recipient: ${l.RecipientName} (${l.RecipientEmail}) | Status: [${l.Status}] | Type: ${l.EmailType} | Time: ${l.SentAt}`);
                     if (l.ErrorMessage) console.log(`     Error details: ${l.ErrorMessage}`);
                 });
-
                 db.end();
                 process.exit(0);
             }, 1500);
-
         } catch (dispatchErr) {
             console.error('Error sending email:', dispatchErr);
             db.end();
@@ -58,6 +48,4 @@ async function runTest() {
         }
     });
 }
-
 runTest();
-

@@ -1,6 +1,6 @@
 const db = require('../../config/db');
 const { createNotification } = require('../notifications/notificationService');
-
+const { recordMutation } = require('../security/auditService');
 const DEFAULT_DOMAINS = [
     'Artificial Intelligence & Machine Learning',
     'Internet of Things (IoT) & Embedded Systems',
@@ -12,7 +12,6 @@ const DEFAULT_DOMAINS = [
     'Renewable Energy & Clean Tech',
     'Open Innovation & Hardware Prototypes'
 ];
-
 const DEFAULT_CRITERIA = [
     { CriteriaName: 'Innovation & Creativity', MaxMarks: 25, DisplayOrder: 1 },
     { CriteriaName: 'Technical Implementation & Prototype', MaxMarks: 25, DisplayOrder: 2 },
@@ -20,12 +19,7 @@ const DEFAULT_CRITERIA = [
     { CriteriaName: 'Real-world Impact & Commercial Potential', MaxMarks: 15, DisplayOrder: 4 },
     { CriteriaName: 'Presentation & Demonstration', MaxMarks: 15, DisplayOrder: 5 }
 ];
-
-/**
- * ─────────────────────────────────────────────
- * CONFIGURATION & LIFECYCLE
- * ─────────────────────────────────────────────
- */
+// CONFIGURATION & LIFECYCLE
 const getConfig = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `SELECT * FROM project_expo_configs WHERE EventId = ?`;
@@ -50,7 +44,6 @@ const getConfig = (eventId) => {
                 }
                 return resolve(config);
             }
-
             // Return defaults if not configured yet
             return resolve({
                 EventId: Number(eventId),
@@ -72,7 +65,6 @@ const getConfig = (eventId) => {
         });
     });
 };
-
 const saveConfig = (eventId, data) => {
     return new Promise((resolve, reject) => {
         const {
@@ -91,14 +83,12 @@ const saveConfig = (eventId, data) => {
             RequiredDocuments = '',
             Status = 'CONFIGURATION'
         } = data;
-
         const deptsJson = Array.isArray(AllowedDepartments) ? JSON.stringify(AllowedDepartments) : JSON.stringify([]);
         const branchesJson = Array.isArray(AllowedBranches) ? JSON.stringify(AllowedBranches) : JSON.stringify([]);
         const yearsJson = Array.isArray(AllowedYears) ? JSON.stringify(AllowedYears) : JSON.stringify([]);
-
         const query = `
             INSERT INTO project_expo_configs
-            (EventId, ParticipationType, MinTeamSize, MaxTeamSize, AllowedDepartments, AllowedBranches, AllowedYears, 
+            (EventId, ParticipationType, MinTeamSize, MaxTeamSize, AllowedDepartments, AllowedBranches, AllowedYears,
              SubmissionDeadline, MaxSubmissions, TotalBooths, BoothPrefix, PresentationDurationMinutes, Guidelines, RequiredDocuments, Status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
@@ -117,7 +107,6 @@ const saveConfig = (eventId, data) => {
             RequiredDocuments = VALUES(RequiredDocuments),
             Status = VALUES(Status)
         `;
-
         db.query(query, [
             eventId, ParticipationType, MinTeamSize, MaxTeamSize, deptsJson, branchesJson, yearsJson,
             SubmissionDeadline ? new Date(SubmissionDeadline) : null,
@@ -128,33 +117,42 @@ const saveConfig = (eventId, data) => {
         });
     });
 };
-
-const updateStatus = (eventId, status) => {
+const updateStatus = (eventId, status, req = null) => {
     return new Promise((resolve, reject) => {
-        const query = `
-            INSERT INTO project_expo_configs (EventId, Status)
-            VALUES (?, ?)
-            ON DUPLICATE KEY UPDATE Status = VALUES(Status)
-        `;
-        db.query(query, [eventId, status], (err, result) => {
-            if (err) return reject(err);
-            resolve({ success: true, status });
+        db.query(`SELECT Status FROM project_expo_configs WHERE EventId = ?`, [eventId], (prevErr, prevRows) => {
+            const previousStatus = prevRows?.[0]?.Status || 'Draft';
+            const query = `
+                INSERT INTO project_expo_configs (EventId, Status)
+                VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE Status = VALUES(Status)
+            `;
+            db.query(query, [eventId, status], (err, result) => {
+                if (err) return reject(err);
+                recordMutation({
+                    actorUserId: req?.user?.Id || req?.user?.id || null,
+                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ayojan.in',
+                    actorRole: req?.user?.role || 'admin',
+                    eventId,
+                    action: 'UPDATE_STATUS',
+                    module: 'PROJECT_EXPO',
+                    entityType: 'EXPO_CONFIG',
+                    entityId: eventId,
+                    previousValue: { status: previousStatus },
+                    newValue: { status },
+                    req
+                });
+                resolve({ success: true, status });
+            });
         });
     });
 };
-
-/**
- * ─────────────────────────────────────────────
- * DOMAINS
- * ─────────────────────────────────────────────
- */
+// DOMAINS
 const getDomains = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `SELECT * FROM project_expo_domains WHERE EventId = ? ORDER BY DisplayOrder ASC, Id ASC`;
         db.query(query, [eventId], (err, rows) => {
             if (err) return reject(err);
             if (rows.length > 0) return resolve(rows);
-
             // Seed default domains if none exist
             const values = DEFAULT_DOMAINS.map((name, idx) => [eventId, name, null, idx + 1]);
             const insertQuery = `INSERT INTO project_expo_domains (EventId, DomainName, Description, DisplayOrder) VALUES ?`;
@@ -168,31 +166,26 @@ const getDomains = (eventId) => {
         });
     });
 };
-
 const saveDomains = (eventId, domains) => {
     return new Promise((resolve, reject) => {
         if (!Array.isArray(domains) || domains.length === 0) {
             return reject(new Error('Domains list must be a non-empty array'));
         }
-
         db.getConnection(async (connErr, conn) => {
             if (connErr) return reject(connErr);
             try {
                 await conn.promise().beginTransaction();
                 await conn.promise().query(`DELETE FROM project_expo_domains WHERE EventId = ?`, [eventId]);
-
                 const values = domains.map((d, idx) => [
                     eventId,
                     typeof d === 'string' ? d.trim() : d.DomainName.trim(),
                     typeof d === 'object' ? (d.Description || null) : null,
                     idx + 1
                 ]);
-
                 await conn.promise().query(
                     `INSERT INTO project_expo_domains (EventId, DomainName, Description, DisplayOrder) VALUES ?`,
                     [values]
                 );
-
                 await conn.promise().commit();
                 conn.release();
                 getDomains(eventId).then(resolve).catch(reject);
@@ -204,16 +197,11 @@ const saveDomains = (eventId, domains) => {
         });
     });
 };
-
-/**
- * ─────────────────────────────────────────────
- * SUBMISSIONS
- * ─────────────────────────────────────────────
- */
+// SUBMISSIONS
 const getSubmissions = (eventId, filters = {}) => {
     return new Promise((resolve, reject) => {
         let query = `
-            SELECT 
+            SELECT
                 s.*,
                 t.TeamName,
                 t.TeamLeadUserId AS LeaderId,
@@ -237,7 +225,6 @@ const getSubmissions = (eventId, filters = {}) => {
             WHERE s.EventId = ?
         `;
         const params = [eventId];
-
         if (filters.domainId) {
             query += ` AND s.DomainId = ?`;
             params.push(filters.domainId);
@@ -251,20 +238,17 @@ const getSubmissions = (eventId, filters = {}) => {
             const term = `%${filters.search}%`;
             params.push(term, term, term, term);
         }
-
         query += ` ORDER BY s.SubmittedAt DESC`;
-
         db.query(query, params, (err, rows) => {
             if (err) return reject(err);
             resolve(rows);
         });
     });
 };
-
 const getSubmissionByTeam = (eventId, teamId) => {
     return new Promise((resolve, reject) => {
         const query = `
-            SELECT 
+            SELECT
                 s.*,
                 t.TeamName,
                 t.TeamLeadUserId AS LeaderId,
@@ -288,7 +272,6 @@ const getSubmissionByTeam = (eventId, teamId) => {
         });
     });
 };
-
 const upsertSubmission = (data) => {
     return new Promise((resolve, reject) => {
         const {
@@ -310,13 +293,10 @@ const upsertSubmission = (data) => {
             Status = 'SUBMITTED',
             SubmittedByUserId = null
         } = data;
-
         if (!EventId || !TeamId || !ProjectTitle) {
             return reject(new Error('EventId, TeamId, and ProjectTitle are required.'));
         }
-
         const mediaJson = MediaUrls ? (typeof MediaUrls === 'string' ? MediaUrls : JSON.stringify(MediaUrls)) : null;
-
         const query = `
             INSERT INTO project_expo_submissions
             (EventId, TeamId, DomainId, ProjectTitle, ProblemStatement, Abstract, ProposedSolution,
@@ -340,7 +320,6 @@ const upsertSubmission = (data) => {
             Status = VALUES(Status),
             SubmittedByUserId = VALUES(SubmittedByUserId)
         `;
-
         db.query(query, [
             EventId, TeamId, DomainId, ProjectTitle, ProblemStatement, Abstract, ProposedSolution,
             TechnologiesUsed, InnovationUniqueness, RealWorldApplications, GithubRepoUrl, LiveDemoUrl,
@@ -351,54 +330,60 @@ const upsertSubmission = (data) => {
         });
     });
 };
-
-const reviewSubmission = (submissionId, { status, adminFeedback }) => {
+const reviewSubmission = (submissionId, { status, adminFeedback }, req = null) => {
     return new Promise((resolve, reject) => {
-        const query = `
-            UPDATE project_expo_submissions 
-            SET Status = ?, AdminFeedback = ? 
-            WHERE Id = ?
-        `;
-        db.query(query, [status, adminFeedback || null, submissionId], (err, res) => {
-            if (err) return reject(err);
-
-            // Fetch submission to notify team leader
-            db.query(
-                `SELECT s.*, t.TeamLeadUserId AS LeaderId, e.EventName 
-                 FROM project_expo_submissions s 
-                 JOIN registered_teams t ON s.TeamId = t.Id 
-                 JOIN events e ON s.EventId = e.Id 
-                 WHERE s.Id = ?`,
-                [submissionId],
-                (err2, rows) => {
-                    if (!err2 && rows && rows.length > 0) {
-                        const sub = rows[0];
-                        if (sub.LeaderId) {
-                            createNotification({
-                                UserId: sub.LeaderId,
-                                Title: `Project ${status === 'APPROVED' ? 'Approved' : status === 'CHANGES_REQUESTED' ? 'Correction Requested' : 'Review Updated'}`,
-                                Message: `Your project "${sub.ProjectTitle}" for ${sub.EventName} has been marked as ${status}.${adminFeedback ? ` Feedback: ${adminFeedback}` : ''}`,
-                                Type: status === 'APPROVED' ? 'SUCCESS' : status === 'REJECTED' ? 'ERROR' : 'WARNING',
-                                LinkUrl: `/user/teamInfo/${sub.TeamId}`
-                            }).catch(() => {});
-                        }
+        // Fetch submission for diff & notification
+        db.query(
+            `SELECT s.*, t.TeamLeadUserId AS LeaderId, e.EventName
+             FROM project_expo_submissions s
+             JOIN registered_teams t ON s.TeamId = t.Id
+             JOIN events e ON s.EventId = e.Id
+             WHERE s.Id = ?`,
+            [submissionId],
+            (err1, rows) => {
+                if (err1) return reject(err1);
+                const sub = rows && rows.length > 0 ? rows[0] : null;
+                const prevStatus = sub?.Status;
+                const query = `
+                    UPDATE project_expo_submissions
+                    SET Status = ?, AdminFeedback = ?
+                    WHERE Id = ?
+                `;
+                db.query(query, [status, adminFeedback || null, submissionId], (err, res) => {
+                    if (err) return reject(err);
+                    if (sub && sub.LeaderId) {
+                        createNotification({
+                            UserId: sub.LeaderId,
+                            Title: `Project ${status === 'APPROVED' ? 'Approved' : status === 'CHANGES_REQUESTED' ? 'Correction Requested' : 'Review Updated'}`,
+                            Message: `Your project "${sub.ProjectTitle}" for ${sub.EventName} has been marked as ${status}.${adminFeedback ? ` Feedback: ${adminFeedback}` : ''}`,
+                            Type: status === 'APPROVED' ? 'SUCCESS' : status === 'REJECTED' ? 'ERROR' : 'WARNING',
+                            LinkUrl: `/user/teamInfo/${sub.TeamId}`
+                        }).catch(() => {});
                     }
+                    // Audit state mutation
+                    recordMutation({
+                        actor: req?.user,
+                        module: 'project_expo',
+                        action: 'REVIEW_SUBMISSION',
+                        entityType: 'project_expo_submission',
+                        entityId: submissionId,
+                        eventId: sub?.EventId,
+                        previousState: { status: prevStatus },
+                        newState: { status, adminFeedback },
+                        diff: { status: { from: prevStatus, to: status }, adminFeedback },
+                        req
+                    });
                     resolve({ success: true, submissionId, status });
-                }
-            );
-        });
+                });
+            }
+        );
     });
 };
-
-/**
- * ─────────────────────────────────────────────
- * BOOTHS / STALLS
- * ─────────────────────────────────────────────
- */
+// BOOTHS / STALLS
 const getBooths = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `
-            SELECT 
+            SELECT
                 b.*,
                 t.TeamName,
                 t.TeamLeadUserId AS LeaderId,
@@ -421,23 +406,20 @@ const getBooths = (eventId) => {
         });
     });
 };
-
 const batchGenerateBooths = (eventId, { count = 50, prefix = 'STALL-', locationZone = 'Exhibition Hall A' }) => {
     return new Promise((resolve, reject) => {
         const numCount = parseInt(count, 10) || 50;
         if (numCount < 1 || numCount > 300) {
             return reject(new Error('Booth count must be between 1 and 300'));
         }
-
         const values = [];
         for (let i = 1; i <= numCount; i++) {
             const numStr = i < 10 ? `0${i}` : `${i}`;
             const boothNo = `${prefix || 'STALL-'}${numStr}`;
             values.push([eventId, boothNo, locationZone || 'Main Hall', 'AVAILABLE', null, null]);
         }
-
         const query = `
-            INSERT IGNORE INTO project_expo_booths 
+            INSERT IGNORE INTO project_expo_booths
             (EventId, BoothNumber, LocationZone, Status, AllocatedTeamId, Notes)
             VALUES ?
         `;
@@ -447,45 +429,52 @@ const batchGenerateBooths = (eventId, { count = 50, prefix = 'STALL-', locationZ
         });
     });
 };
-
-const allocateBooth = (boothId, teamId) => {
+const allocateBooth = (boothId, teamId, req = null) => {
     return new Promise((resolve, reject) => {
         db.getConnection(async (connErr, conn) => {
             if (connErr) return reject(connErr);
             try {
                 await conn.promise().beginTransaction();
-
                 // 1. Get booth info
                 const [bRows] = await conn.promise().query(`SELECT * FROM project_expo_booths WHERE Id = ?`, [boothId]);
                 if (bRows.length === 0) {
                     throw new Error('Booth not found.');
                 }
                 const booth = bRows[0];
-
                 // 2. Clear any prior booth allocation for this team in this event
                 await conn.promise().query(
-                    `UPDATE project_expo_booths 
-                     SET AllocatedTeamId = NULL, Status = 'AVAILABLE', AllocatedAt = NULL 
+                    `UPDATE project_expo_booths
+                     SET AllocatedTeamId = NULL, Status = 'AVAILABLE', AllocatedAt = NULL
                      WHERE EventId = ? AND AllocatedTeamId = ?`,
                     [booth.EventId, teamId]
                 );
-
                 // 3. Allocate this booth
                 await conn.promise().query(
-                    `UPDATE project_expo_booths 
-                     SET AllocatedTeamId = ?, Status = 'ALLOCATED', AllocatedAt = NOW() 
+                    `UPDATE project_expo_booths
+                     SET AllocatedTeamId = ?, Status = 'ALLOCATED', AllocatedAt = NOW()
                      WHERE Id = ?`,
                     [teamId, boothId]
                 );
-
                 await conn.promise().commit();
                 conn.release();
-
+                recordMutation({
+                    actorUserId: req?.user?.Id || req?.user?.id || null,
+                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ayojan.in',
+                    actorRole: req?.user?.role || 'admin',
+                    eventId: booth.EventId,
+                    action: 'ALLOCATE_BOOTH',
+                    module: 'PROJECT_EXPO',
+                    entityType: 'BOOTH',
+                    entityId: boothId,
+                    previousValue: { status: booth.Status, allocatedTeamId: booth.AllocatedTeamId },
+                    newValue: { status: 'ALLOCATED', allocatedTeamId: teamId, boothNumber: booth.BoothNumber },
+                    req
+                });
                 // Notify team
                 db.query(
-                    `SELECT t.TeamLeadUserId AS LeaderId, e.EventName 
-                     FROM registered_teams t 
-                     JOIN events e ON t.EventId = e.Id 
+                    `SELECT t.TeamLeadUserId AS LeaderId, e.EventName
+                     FROM registered_teams t
+                     JOIN events e ON t.EventId = e.Id
                      WHERE t.Id = ?`,
                     [teamId],
                     (err, rows) => {
@@ -503,7 +492,6 @@ const allocateBooth = (boothId, teamId) => {
                         }
                     }
                 );
-
                 resolve({ success: true, boothId, teamId, boothNumber: booth.BoothNumber });
             } catch (err) {
                 await conn.promise().rollback();
@@ -513,30 +501,72 @@ const allocateBooth = (boothId, teamId) => {
         });
     });
 };
-
-const deallocateBooth = (boothId) => {
+const deallocateBooth = (boothId, req = null) => {
     return new Promise((resolve, reject) => {
-        const query = `
-            UPDATE project_expo_booths 
-            SET AllocatedTeamId = NULL, Status = 'AVAILABLE', AllocatedAt = NULL 
-            WHERE Id = ?
-        `;
-        db.query(query, [boothId], (err) => {
-            if (err) return reject(err);
-            resolve({ success: true, boothId });
+        db.query(`SELECT * FROM project_expo_booths WHERE Id = ?`, [boothId], (bErr, bRows) => {
+            const booth = bRows?.[0] || {};
+            const query = `
+                UPDATE project_expo_booths
+                SET AllocatedTeamId = NULL, Status = 'AVAILABLE', AllocatedAt = NULL
+                WHERE Id = ?
+            `;
+            db.query(query, [boothId], (err) => {
+                if (err) return reject(err);
+                recordMutation({
+                    actorUserId: req?.user?.Id || req?.user?.id || null,
+                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ayojan.in',
+                    actorRole: req?.user?.role || 'admin',
+                    eventId: booth.EventId || null,
+                    action: 'DEALLOCATE_BOOTH',
+                    module: 'PROJECT_EXPO',
+                    entityType: 'BOOTH',
+                    entityId: boothId,
+                    previousValue: { status: booth.Status, allocatedTeamId: booth.AllocatedTeamId },
+                    newValue: { status: 'AVAILABLE', allocatedTeamId: null },
+                    req
+                });
+                resolve({ success: true, boothId });
+            });
         });
     });
 };
-
-/**
- * ─────────────────────────────────────────────
- * PRESENTATION SCHEDULES
- * ─────────────────────────────────────────────
- */
+const deleteBooth = (boothId, req = null) => {
+    return new Promise((resolve, reject) => {
+        db.query(`SELECT * FROM project_expo_booths WHERE Id = ?`, [boothId], (bErr, bRows) => {
+            if (bErr) return reject(bErr);
+            if (!bRows || bRows.length === 0) {
+                return reject(new Error('Stall not found.'));
+            }
+            const booth = bRows[0];
+            // Disallow removal if a team is currently assigned to this stall
+            if (booth.AllocatedTeamId || booth.Status === 'ALLOCATED') {
+                return reject(new Error(`Cannot delete ${booth.BoothNumber} because it is currently assigned to a team. Please free the stall before removing it.`));
+            }
+            db.query(`DELETE FROM project_expo_booths WHERE Id = ?`, [boothId], (err) => {
+                if (err) return reject(err);
+                recordMutation({
+                    actorUserId: req?.user?.Id || req?.user?.id || null,
+                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ayojan.in',
+                    actorRole: req?.user?.role || 'admin',
+                    eventId: booth.EventId || null,
+                    action: 'DELETE_BOOTH',
+                    module: 'PROJECT_EXPO',
+                    entityType: 'BOOTH',
+                    entityId: boothId,
+                    previousValue: booth,
+                    newValue: null,
+                    req
+                });
+                resolve({ success: true, boothId, boothNumber: booth.BoothNumber });
+            });
+        });
+    });
+};
+// PRESENTATION SCHEDULES
 const getSchedules = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `
-            SELECT 
+            SELECT
                 sch.*,
                 t.TeamName,
                 s.ProjectTitle,
@@ -559,7 +589,6 @@ const getSchedules = (eventId) => {
         });
     });
 };
-
 const upsertSchedule = (data) => {
     return new Promise((resolve, reject) => {
         const {
@@ -573,14 +602,12 @@ const upsertSchedule = (data) => {
             JudgeId = null,
             Status = 'SCHEDULED'
         } = data;
-
         if (!EventId || !TeamId || !SlotDate || !StartTime || !EndTime) {
             return reject(new Error('EventId, TeamId, SlotDate, StartTime, and EndTime are required.'));
         }
-
         if (Id) {
             const query = `
-                UPDATE project_expo_schedules 
+                UPDATE project_expo_schedules
                 SET TeamId = ?, SlotDate = ?, StartTime = ?, EndTime = ?, RoomOrBooth = ?, JudgeId = ?, Status = ?
                 WHERE Id = ? AND EventId = ?
             `;
@@ -590,7 +617,7 @@ const upsertSchedule = (data) => {
             });
         } else {
             const query = `
-                INSERT INTO project_expo_schedules 
+                INSERT INTO project_expo_schedules
                 (EventId, TeamId, SlotDate, StartTime, EndTime, RoomOrBooth, JudgeId, Status)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
@@ -601,7 +628,6 @@ const upsertSchedule = (data) => {
         }
     });
 };
-
 const deleteSchedule = (scheduleId) => {
     return new Promise((resolve, reject) => {
         const query = `DELETE FROM project_expo_schedules WHERE Id = ?`;
@@ -611,19 +637,13 @@ const deleteSchedule = (scheduleId) => {
         });
     });
 };
-
-/**
- * ─────────────────────────────────────────────
- * EVALUATION CRITERIA & SCORES
- * ─────────────────────────────────────────────
- */
+// EVALUATION CRITERIA & SCORES
 const getCriteria = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `SELECT * FROM project_expo_criteria WHERE EventId = ? ORDER BY DisplayOrder ASC, Id ASC`;
         db.query(query, [eventId], (err, rows) => {
             if (err) return reject(err);
             if (rows.length > 0) return resolve(rows);
-
             // Seed default rubrics
             const values = DEFAULT_CRITERIA.map(c => [eventId, c.CriteriaName, c.MaxMarks, c.DisplayOrder]);
             const insertQuery = `INSERT INTO project_expo_criteria (EventId, CriteriaName, MaxMarks, DisplayOrder) VALUES ?`;
@@ -637,31 +657,26 @@ const getCriteria = (eventId) => {
         });
     });
 };
-
 const saveCriteria = (eventId, criteriaList) => {
     return new Promise((resolve, reject) => {
         if (!Array.isArray(criteriaList) || criteriaList.length === 0) {
             return reject(new Error('Criteria list must be a non-empty array'));
         }
-
         db.getConnection(async (connErr, conn) => {
             if (connErr) return reject(connErr);
             try {
                 await conn.promise().beginTransaction();
                 await conn.promise().query(`DELETE FROM project_expo_criteria WHERE EventId = ?`, [eventId]);
-
                 const values = criteriaList.map((c, idx) => [
                     eventId,
                     c.CriteriaName.trim(),
                     parseInt(c.MaxMarks, 10) || 20,
                     idx + 1
                 ]);
-
                 await conn.promise().query(
                     `INSERT INTO project_expo_criteria (EventId, CriteriaName, MaxMarks, DisplayOrder) VALUES ?`,
                     [values]
                 );
-
                 await conn.promise().commit();
                 conn.release();
                 getCriteria(eventId).then(resolve).catch(reject);
@@ -673,21 +688,20 @@ const saveCriteria = (eventId, criteriaList) => {
         });
     });
 };
-
 const getScores = (eventId, teamId = null, judgeId = null) => {
     return new Promise((resolve, reject) => {
         let query = `
-            SELECT 
+            SELECT
                 sc.*,
-                c.CriteriaName,
-                c.MaxMarks,
-                t.TeamName,
+                COALESCE(c.CriteriaName, 'Evaluation Criterion') AS CriteriaName,
+                COALESCE(c.MaxMarks, 20) AS MaxMarks,
+                COALESCE(t.TeamName, CONCAT('Team #', sc.TeamId)) AS TeamName,
                 s.ProjectTitle,
-                ev.Name AS JudgeName,
+                COALESCE(ev.Name, CONCAT('Judge #', sc.JudgeId)) AS JudgeName,
                 COALESCE(ev.EventRole, ev.Role, 'Technical Jury') AS JudgeDesignation
             FROM project_expo_scores sc
-            JOIN project_expo_criteria c ON sc.CriteriaId = c.Id
-            JOIN registered_teams t ON sc.TeamId = t.Id
+            LEFT JOIN project_expo_criteria c ON sc.CriteriaId = c.Id
+            LEFT JOIN registered_teams t ON sc.TeamId = t.Id
             LEFT JOIN project_expo_submissions s ON s.TeamId = t.Id
             LEFT JOIN evaluators ev ON sc.JudgeId = ev.Id
             WHERE sc.EventId = ?
@@ -702,14 +716,12 @@ const getScores = (eventId, teamId = null, judgeId = null) => {
             params.push(judgeId);
         }
         query += ` ORDER BY sc.CreatedAt DESC`;
-
         db.query(query, params, (err, rows) => {
             if (err) return reject(err);
             resolve(rows);
         });
     });
 };
-
 const submitScore = (data) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -722,11 +734,9 @@ const submitScore = (data) => {
                 Score,
                 Feedback = ''
             } = data;
-
             if (!EventId || !TeamId || !JudgeId) {
                 return reject(new Error('EventId, TeamId, and JudgeId are required.'));
             }
-
             // Batch mode if scores array is provided
             if (Array.isArray(scores) && scores.length > 0) {
                 const query = `
@@ -753,12 +763,10 @@ const submitScore = (data) => {
                 }
                 return resolve({ success: true, count: scores.length });
             }
-
             // Single item mode
             if (!CriteriaId || Score === undefined) {
                 return reject(new Error('CriteriaId and Score are required.'));
             }
-
             const query = `
                 INSERT INTO project_expo_scores (EventId, TeamId, JudgeId, CriteriaId, Score, Feedback)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -766,7 +774,6 @@ const submitScore = (data) => {
                 Score = VALUES(Score),
                 Feedback = VALUES(Feedback)
             `;
-
             db.query(query, [EventId, TeamId, JudgeId, CriteriaId, Score, Feedback], (err, res) => {
                 if (err) return reject(err);
                 resolve({ success: true });
@@ -776,11 +783,10 @@ const submitScore = (data) => {
         }
     });
 };
-
 const getJudges = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `
-            SELECT 
+            SELECT
                 e.Id,
                 e.EventId,
                 e.Name,
@@ -793,13 +799,11 @@ const getJudges = (eventId) => {
                 e.Status,
                 e.PlainTextPassword,
                 e.CreatedAt,
-                COUNT(DISTINCT sc.TeamId) AS TeamsEvaluatedCount,
-                COUNT(sc.Id) AS TotalScoresSubmitted,
-                COALESCE(ROUND(AVG(sc.Score), 1), 0) AS AvgScoreGiven
+                (SELECT COUNT(DISTINCT sc.TeamId) FROM project_expo_scores sc WHERE sc.JudgeId = e.Id AND sc.EventId = e.EventId) AS TeamsEvaluatedCount,
+                (SELECT COUNT(sc.Id) FROM project_expo_scores sc WHERE sc.JudgeId = e.Id AND sc.EventId = e.EventId) AS TotalScoresSubmitted,
+                (SELECT COALESCE(ROUND(AVG(sc.Score), 1), 0) FROM project_expo_scores sc WHERE sc.JudgeId = e.Id AND sc.EventId = e.EventId) AS AvgScoreGiven
             FROM evaluators e
-            LEFT JOIN project_expo_scores sc ON sc.JudgeId = e.Id AND sc.EventId = e.EventId
             WHERE e.EventId = ?
-            GROUP BY e.Id, e.EventId, e.Name, e.Email, e.Username, e.Track, e.College, e.Role, e.EventRole, e.Status, e.PlainTextPassword, e.CreatedAt
             ORDER BY e.Id ASC
         `;
         db.query(query, [eventId], (err, rows) => {
@@ -808,16 +812,11 @@ const getJudges = (eventId) => {
         });
     });
 };
-
-/**
- * ─────────────────────────────────────────────
- * RESULTS & RANKINGS
- * ─────────────────────────────────────────────
- */
+// RESULTS & RANKINGS
 const getRankings = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `
-            SELECT 
+            SELECT
                 t.Id AS TeamId,
                 t.TeamName,
                 u.UserName AS LeaderName,
@@ -833,7 +832,7 @@ const getRankings = (eventId) => {
             LEFT JOIN project_expo_submissions s ON s.TeamId = t.Id
             LEFT JOIN project_expo_domains d ON s.DomainId = d.Id
             LEFT JOIN project_expo_booths b ON b.AllocatedTeamId = t.Id
-            LEFT JOIN project_expo_scores sc ON sc.TeamId = t.Id
+            LEFT JOIN project_expo_scores sc ON sc.TeamId = t.Id AND sc.EventId = t.EventId
             WHERE t.EventId = ?
             GROUP BY t.Id, t.TeamName, u.UserName, u.Email, s.ProjectTitle, d.DomainName, b.BoothNumber
             ORDER BY TotalScore DESC, AvgScore DESC
@@ -844,11 +843,14 @@ const getRankings = (eventId) => {
         });
     });
 };
-
-const getResults = (eventId) => {
+const getResults = (eventId, onlyPublished = false) => {
     return new Promise((resolve, reject) => {
+        let whereClause = `WHERE r.EventId = ?`;
+        if (onlyPublished) {
+            whereClause += ` AND (r.IsPublished = 1 OR e.PhysicalResultsPublished = 1)`;
+        }
         const query = `
-            SELECT 
+            SELECT
                 r.*,
                 t.TeamName,
                 u.UserName AS LeaderName,
@@ -857,12 +859,14 @@ const getResults = (eventId) => {
                 b.BoothNumber
             FROM project_expo_results r
             JOIN registered_teams t ON r.TeamId = t.Id
+            JOIN events e ON r.EventId = e.Id
             LEFT JOIN users u ON t.TeamLeadUserId = u.Id
             LEFT JOIN project_expo_submissions s ON s.TeamId = t.Id
             LEFT JOIN project_expo_domains d ON s.DomainId = d.Id
             LEFT JOIN project_expo_booths b ON b.AllocatedTeamId = t.Id
-            WHERE r.EventId = ?
+            ${whereClause}
             ORDER BY r.RankPosition ASC, r.TotalScore DESC
+            LIMIT 3
         `;
         db.query(query, [eventId], (err, rows) => {
             if (err) return reject(err);
@@ -870,83 +874,100 @@ const getResults = (eventId) => {
         });
     });
 };
-
-const publishResults = (eventId, winnersList) => {
+const publishResults = (eventId, winnersList, req = null) => {
     return new Promise((resolve, reject) => {
         if (!Array.isArray(winnersList) || winnersList.length === 0) {
             return reject(new Error('Winners list must be a non-empty array'));
         }
+        // Ensure all evaluators have completed scoring for all rounds before declaring winners
+        const evaluatorService = require('../evaluators/evaluatorService');
+        evaluatorService.getEventResults(eventId, 'Physical', (checkErr, checkData) => {
+            if (checkErr) return reject(checkErr);
+            if (!checkData || !checkData.isOverallPublishReady) {
+                const pendingNames = (checkData?.overallPendingRounds || []).map(r => r.roundName).join(', ');
+                return reject(new Error(`Cannot declare official winners: All evaluators must finish scoring all teams in every round first. Incomplete rounds: ${pendingNames || 'all'}.`));
+            }
 
-        db.getConnection(async (connErr, conn) => {
-            if (connErr) return reject(connErr);
-            try {
-                await conn.promise().beginTransaction();
-
-                // Clear previous results
-                await conn.promise().query(`DELETE FROM project_expo_results WHERE EventId = ?`, [eventId]);
-
-                const values = winnersList.map((w, idx) => [
-                    eventId,
-                    w.TeamId,
-                    w.Category || 'Excellence Award',
-                    w.RankPosition || (idx + 1),
-                    parseFloat(w.TotalScore) || 0.00,
-                    w.PrizeAmount || null,
-                    1,
-                    new Date()
-                ]);
-
-                await conn.promise().query(
-                    `INSERT INTO project_expo_results 
-                     (EventId, TeamId, Category, RankPosition, TotalScore, PrizeAmount, IsPublished, PublishedAt)
-                     VALUES ?`,
-                    [values]
-                );
-
-                // Update Expo Config lifecycle status to RESULTS_PUBLISHED
-                await conn.promise().query(
-                    `UPDATE project_expo_configs SET Status = 'RESULTS_PUBLISHED' WHERE EventId = ?`,
-                    [eventId]
-                );
-
-                await conn.promise().commit();
-                conn.release();
-
-                // Trigger notifications to winners
-                winnersList.forEach((w) => {
-                    db.query(
-                        `SELECT t.TeamLeadUserId AS LeaderId, e.EventName 
-                         FROM registered_teams t 
-                         JOIN events e ON t.EventId = e.Id 
-                         WHERE t.Id = ?`,
-                        [w.TeamId],
-                        (err, rows) => {
-                            if (!err && rows && rows.length > 0) {
-                                const { LeaderId, EventName } = rows[0];
-                                if (LeaderId) {
-                                    createNotification({
-                                        UserId: LeaderId,
-                                        Title: `Congratulations! ${w.Category}`,
-                                        Message: `Your team won ${w.Category} in ${EventName}! Check out the published results.`,
-                                        Type: 'SUCCESS',
-                                        LinkUrl: `/user/teamInfo/${w.TeamId}`
-                                    }).catch(() => {});
+            db.getConnection(async (connErr, conn) => {
+                if (connErr) return reject(connErr);
+                try {
+                    await conn.promise().beginTransaction();
+                    // Clear previous results
+                    await conn.promise().query(`DELETE FROM project_expo_results WHERE EventId = ?`, [eventId]);
+                    const values = winnersList.map((w, idx) => [
+                        eventId,
+                        w.TeamId,
+                        w.Category || 'Excellence Award',
+                        w.RankPosition || (idx + 1),
+                        parseFloat(w.TotalScore) || 0.00,
+                        w.PrizeAmount || null,
+                        1,
+                        new Date()
+                    ]);
+                    await conn.promise().query(
+                        `INSERT INTO project_expo_results
+                         (EventId, TeamId, Category, RankPosition, TotalScore, PrizeAmount, IsPublished, PublishedAt)
+                         VALUES ?`,
+                        [values]
+                    );
+                    // Update Expo Config lifecycle status to RESULTS_PUBLISHED and sync event PhysicalResultsPublished
+                    await conn.promise().query(
+                        `UPDATE project_expo_configs SET Status = 'RESULTS_PUBLISHED' WHERE EventId = ?`,
+                        [eventId]
+                    );
+                    await conn.promise().query(
+                        `UPDATE events SET PhysicalResultsPublished = 1 WHERE Id = ?`,
+                        [eventId]
+                    );
+                    await conn.promise().commit();
+                    conn.release();
+                    recordMutation({
+                        actorUserId: req?.user?.Id || req?.user?.id || null,
+                        actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ayojan.in',
+                        actorRole: req?.user?.role || 'admin',
+                        eventId,
+                        action: 'PUBLISH_RESULTS',
+                        module: 'PROJECT_EXPO',
+                        entityType: 'RESULTS',
+                        entityId: eventId,
+                        previousValue: { status: 'EVALUATION_COMPLETED', isPublished: false },
+                        newValue: { status: 'RESULTS_PUBLISHED', isPublished: true, winnersCount: winnersList.length },
+                        req
+                    });
+                    // Trigger notifications to winners
+                    winnersList.forEach((w) => {
+                        db.query(
+                            `SELECT t.TeamLeadUserId AS LeaderId, e.EventName
+                             FROM registered_teams t
+                             JOIN events e ON t.EventId = e.Id
+                             WHERE t.Id = ?`,
+                            [w.TeamId],
+                            (err, rows) => {
+                                if (!err && rows && rows.length > 0) {
+                                    const { LeaderId, EventName } = rows[0];
+                                    if (LeaderId) {
+                                        createNotification({
+                                            UserId: LeaderId,
+                                            Title: `Congratulations! ${w.Category}`,
+                                            Message: `Your team won ${w.Category} in ${EventName}! Check out the published results.`,
+                                            Type: 'SUCCESS',
+                                            LinkUrl: `/user/teamInfo/${w.TeamId}`
+                                        }).catch(() => {});
+                                    }
                                 }
                             }
-                        }
-                    );
-                });
-
-                getResults(eventId).then(resolve).catch(reject);
-            } catch (err) {
-                await conn.promise().rollback();
-                conn.release();
-                reject(err);
-            }
+                        );
+                    });
+                    getResults(eventId).then(resolve).catch(reject);
+                } catch (err) {
+                    await conn.promise().rollback();
+                    conn.release();
+                    reject(err);
+                }
+            });
         });
     });
 };
-
 module.exports = {
     getConfig,
     saveConfig,
@@ -961,6 +982,7 @@ module.exports = {
     batchGenerateBooths,
     allocateBooth,
     deallocateBooth,
+    deleteBooth,
     getSchedules,
     upsertSchedule,
     deleteSchedule,

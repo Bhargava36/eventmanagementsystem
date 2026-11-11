@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import IdCardDesigner from "@/features/id_card/components/IdCardDesigner";
 import BulkGenerationModal from "@/features/id_card/components/BulkGenerationModal";
-
 const getAssignedEventId = () => {
   try {
     return String(JSON.parse(localStorage.getItem("admin") || "null")?.EventId || "");
@@ -33,7 +32,6 @@ const getAssignedEventId = () => {
     return "";
   }
 };
-
 const getArray = (data) => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.participants)) return data.participants;
@@ -43,7 +41,6 @@ const getArray = (data) => {
   if (Array.isArray(data?.teams)) return data.teams;
   return [];
 };
-
 const getValue = (object, ...keys) => {
   for (const key of keys) {
     const value = object?.[key];
@@ -53,7 +50,6 @@ const getValue = (object, ...keys) => {
   }
   return "";
 };
-
 const getName = (participant) =>
   getValue(
     participant,
@@ -64,10 +60,8 @@ const getName = (participant) =>
     "userName",
     "name"
   ) || "Participant";
-
 const getUserId = (participant) =>
   getValue(participant, "UserId", "userId", "Id", "id");
-
 const getCardId = (participant) =>
   getValue(
     participant,
@@ -76,13 +70,11 @@ const getCardId = (participant) =>
     "CardNumber",
     "cardNumber"
   );
-
 const isGenerated = (participant) => {
   const cardId = getCardId(participant);
   const status = participant?.IdCardGenerated ?? participant?.idCardGenerated;
   return Boolean(cardId) || status === true || status === 1 || status === "1";
 };
-
 const formatDate = (value) => {
   if (!value) return "Date not available";
   const date = new Date(value);
@@ -95,7 +87,6 @@ const formatDate = (value) => {
     year: "numeric",
   });
 };
-
 const formatTime = (value) => {
   if (!value) return "—";
   const date = new Date(value);
@@ -106,13 +97,10 @@ const formatTime = (value) => {
     hour12: true,
   });
 };
-
 export default function IdRedirectionPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
   const eventId = searchParams.get("eventId")?.trim() || getAssignedEventId();
-
   const [admin] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("admin") || "{}");
@@ -120,10 +108,8 @@ export default function IdRedirectionPage() {
       return {};
     }
   });
-
   // Main View Switcher: 'attendance' | 'id-cards' | 'designer'
   const [activeView, setActiveView] = useState(() => searchParams.get("view") || "attendance");
-
   const [event, setEvent] = useState(null);
   const [participants, setParticipants] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -137,51 +123,40 @@ export default function IdRedirectionPage() {
   const [filter, setFilter] = useState("all");
   const [attendanceFilter, setAttendanceFilter] = useState("all"); // 'all' | 'checked_in' | 'checked_out' | 'pending'
   const [selected, setSelected] = useState(null);
-
   // Live Barcode / QR Scanner Input State
   const [scanQuery, setScanQuery] = useState("");
   const [scanLoading, setScanLoading] = useState(false);
   const [scanFeedback, setScanFeedback] = useState(null);
-
   const idCardEnabled =
     event?.IDCardEnabled ?? event?.idCardEnabled ??
     event?.EnableIDCard ?? event?.enableIDCard ?? false;
-
   const isFeatureEnabled =
     idCardEnabled === true || idCardEnabled === 1 || idCardEnabled === "1";
-
   const loadData = useCallback(async () => {
     if (!/^[1-9]\d*$/.test(eventId)) {
       setLoading(false);
       setError("A valid event ID is required to manage ID cards.");
       return;
     }
-
     setLoading(true);
     setError("");
-
     try {
       const [eventRes, participantsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/events/${encodeURIComponent(eventId)}`),
         fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/participants`),
       ]);
-
       const [eventData, participantsData] = await Promise.all([
         eventRes.json().catch(() => ({})),
         participantsRes.json().catch(() => ({})),
       ]);
-
       if (!eventRes.ok) {
         throw new Error(eventData.message || "Failed to fetch event details.");
       }
-
       if (!participantsRes.ok) {
         throw new Error(participantsData.message || "Failed to fetch participants.");
       }
-
       setEvent(eventData?.event || eventData?.data || eventData || null);
       setParticipants(getArray(participantsData));
-
       // Fetch Templates for this event
       try {
         const tRes = await fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/templates`);
@@ -200,17 +175,14 @@ export default function IdRedirectionPage() {
       setLoading(false);
     }
   }, [eventId]);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
-
   useEffect(() => {
     if (activeView === "id-cards") {
       loadData();
     }
   }, [activeView, loadData]);
-
   // ID Cards stats
   const cardStats = useMemo(() => {
     const teams = new Set(
@@ -226,7 +198,6 @@ export default function IdRedirectionPage() {
       pending: participants.length - generated,
     };
   }, [participants]);
-
   // Attendance stats
   const attendanceStats = useMemo(() => {
     const checkedIn = participants.filter((p) => p.AttendanceStatus === "checked_in").length;
@@ -241,7 +212,6 @@ export default function IdRedirectionPage() {
       pending,
     };
   }, [participants]);
-
   // Filtered participants for ID cards tab
   const filteredParticipants = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -251,7 +221,6 @@ export default function IdRedirectionPage() {
         filter === "all" ||
         (filter === "generated" && generated) ||
         (filter === "pending" && !generated);
-
       const searchableText = [
         getName(participant),
         getValue(participant, "Email", "email"),
@@ -262,11 +231,9 @@ export default function IdRedirectionPage() {
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-
       return matchesFilter && searchableText.includes(query);
     });
   }, [participants, filter, search]);
-
   // Filtered participants for Attendance tab
   const filteredAttendanceParticipants = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -277,7 +244,6 @@ export default function IdRedirectionPage() {
         (attendanceFilter === "checked_in" && status === "checked_in") ||
         (attendanceFilter === "checked_out" && status === "checked_out") ||
         (attendanceFilter === "pending" && status === "not_checked_in");
-
       const searchableText = [
         getName(participant),
         getValue(participant, "Email", "email"),
@@ -288,11 +254,9 @@ export default function IdRedirectionPage() {
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-
       return matchesFilter && searchableText.includes(query);
     });
   }, [participants, attendanceFilter, search]);
-
   // Generate ID cards
   async function generateCards() {
     if (!/^[1-9]\d*$/.test(eventId)) {
@@ -307,11 +271,9 @@ export default function IdRedirectionPage() {
       setMessage("All participant ID cards have already been generated.");
       return;
     }
-
     setGenerating(true);
     setError("");
     setMessage("");
-
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/generate`,
@@ -321,12 +283,10 @@ export default function IdRedirectionPage() {
           body: JSON.stringify({}),
         }
       );
-
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(result.message || "ID card generation failed.");
       }
-
       setMessage(
         result.message ||
           `ID card generation completed. Generated: ${result.generated ?? "check updated list"}.`
@@ -338,7 +298,6 @@ export default function IdRedirectionPage() {
       setGenerating(false);
     }
   }
-
   // Handle Gate Check-in
   const handleCheckIn = async (userId) => {
     try {
@@ -358,7 +317,6 @@ export default function IdRedirectionPage() {
       setScanFeedback({ type: "error", message: err.message });
     }
   };
-
   // Handle Gate Check-out
   const handleCheckOut = async (userId) => {
     try {
@@ -378,7 +336,6 @@ export default function IdRedirectionPage() {
       setScanFeedback({ type: "error", message: err.message });
     }
   };
-
   // Handle Reset Attendance
   const handleReset = async (userId) => {
     try {
@@ -395,13 +352,11 @@ export default function IdRedirectionPage() {
       setScanFeedback({ type: "error", message: err.message });
     }
   };
-
   // Handle Barcode / QR / ID Scan Submit
   const handleScanSubmit = async (e) => {
     e?.preventDefault();
     const clean = scanQuery.trim();
     if (!clean) return;
-
     setScanLoading(true);
     setScanFeedback(null);
     try {
@@ -415,7 +370,6 @@ export default function IdRedirectionPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Scan failed");
-
       setScanFeedback({
         type: "success",
         message: data.message,
@@ -431,13 +385,11 @@ export default function IdRedirectionPage() {
       setScanLoading(false);
     }
   };
-
   const eventName = getValue(event, "EventName", "eventName", "Name", "name") || "AYOJAN Event";
   const startDate = getValue(event, "StartDate", "startDate", "EventDate");
   const endDate = getValue(event, "EndDate", "endDate") || startDate;
   const location = getValue(event, "Location", "location", "Venue", "venue") || "Venue not available";
   const themeColor = getValue(event, "PrimaryColor", "ThemeColor", "themeColor") || "#10B981";
-
   return (
     <div className="min-h-screen w-full bg-[#F4F6FA] dark:bg-black p-4 font-sans text-slate-900 dark:text-white sm:p-6 lg:p-8 transition-colors">
       <div className="mx-auto max-w-[1600px] space-y-6">
@@ -450,7 +402,6 @@ export default function IdRedirectionPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Physical Event
         </button>
-
         {/* Section Header Banner */}
         {activeView !== "designer" ? (
           <section className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm sm:p-8 lg:flex-row lg:items-center">
@@ -466,7 +417,6 @@ export default function IdRedirectionPage() {
                     <IdCard className="h-6 w-6" />
                   )}
                 </div>
-
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-zinc-500">
                     Event Ground Operations
@@ -476,7 +426,6 @@ export default function IdRedirectionPage() {
                   </h1>
                 </div>
               </div>
-
               <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-slate-500 dark:text-zinc-400">
                 <strong className="text-slate-900 dark:text-white">{eventName}</strong>
                 <span className="flex items-center gap-1.5">
@@ -489,7 +438,6 @@ export default function IdRedirectionPage() {
                 </span>
               </div>
             </div>
-
             {/* Primary View Switcher Tabs */}
             <div className="flex items-center bg-slate-100 dark:bg-zinc-800 p-1.5 rounded-2xl border border-slate-200/80 dark:border-zinc-700/80 self-start sm:self-auto">
               <button
@@ -553,7 +501,6 @@ export default function IdRedirectionPage() {
                 </p>
               </div>
             </div>
-
             {/* Compact Mode Switcher */}
             <div className="flex items-center bg-slate-100 dark:bg-zinc-800 p-1 rounded-xl border border-slate-200/80 dark:border-zinc-700/80">
               <button
@@ -583,7 +530,6 @@ export default function IdRedirectionPage() {
             </div>
           </section>
         )}
-
         {/* Alerts & Messages */}
         {error && (
           <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/20 p-4 text-sm text-red-700 dark:text-red-400">
@@ -595,7 +541,6 @@ export default function IdRedirectionPage() {
             {message}
           </div>
         )}
-
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* VIEW 1: GATE ATTENDANCE (CHECK-IN & CHECK-OUT)               */}
         {/* ══════════════════════════════════════════════════════════════ */}
@@ -614,7 +559,6 @@ export default function IdRedirectionPage() {
                   {loading ? "—" : attendanceStats.total}
                 </p>
               </div>
-
               <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                   <LogIn className="h-5 w-5" />
@@ -626,7 +570,6 @@ export default function IdRedirectionPage() {
                   {loading ? "—" : attendanceStats.checkedIn}
                 </p>
               </div>
-
               <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
                   <LogOut className="h-5 w-5" />
@@ -638,7 +581,6 @@ export default function IdRedirectionPage() {
                   {loading ? "—" : attendanceStats.checkedOut}
                 </p>
               </div>
-
               <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-sm">
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-500/10 text-slate-600 dark:text-zinc-400">
                   <Clock className="h-5 w-5" />
@@ -651,7 +593,6 @@ export default function IdRedirectionPage() {
                 </p>
               </div>
             </section>
-
             {/* Quick Barcode / QR / ID Scanner Card */}
             <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm">
               <form onSubmit={handleScanSubmit} className="space-y-4">
@@ -669,7 +610,6 @@ export default function IdRedirectionPage() {
                     Scanner Ready
                   </span>
                 </div>
-
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                   <div className="relative flex-1 w-full">
                     <Scan className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
@@ -681,7 +621,6 @@ export default function IdRedirectionPage() {
                       className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition-all"
                     />
                   </div>
-
                   <button
                     type="submit"
                     disabled={scanLoading || !scanQuery.trim()}
@@ -695,7 +634,6 @@ export default function IdRedirectionPage() {
                     Quick Check-in / Out
                   </button>
                 </div>
-
                 {scanFeedback && (
                   <div
                     className={`p-3.5 rounded-xl border text-xs sm:text-sm font-medium flex items-center justify-between ${
@@ -716,7 +654,6 @@ export default function IdRedirectionPage() {
                 )}
               </form>
             </div>
-
             {/* Attendance Table Section */}
             <section className="overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
               <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-zinc-800 p-6 lg:flex-row lg:items-center lg:justify-between">
@@ -742,7 +679,6 @@ export default function IdRedirectionPage() {
                     </button>
                   ))}
                 </div>
-
                 {/* Search Bar */}
                 <div className="relative w-full lg:w-80">
                   <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
@@ -754,7 +690,6 @@ export default function IdRedirectionPage() {
                   />
                 </div>
               </div>
-
               {/* Data Table */}
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1000px] text-left text-xs sm:text-sm">
@@ -778,7 +713,6 @@ export default function IdRedirectionPage() {
                       ))}
                     </tr>
                   </thead>
-
                   <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                     {loading && (
                       <tr>
@@ -787,13 +721,11 @@ export default function IdRedirectionPage() {
                         </td>
                       </tr>
                     )}
-
                     {!loading &&
                       filteredAttendanceParticipants.map((p, idx) => {
                         const status = p.AttendanceStatus || "not_checked_in";
                         const isUserCheckedIn = status === "checked_in";
                         const isUserCheckedOut = status === "checked_out";
-
                         return (
                           <tr
                             key={getUserId(p) || p.IdCardNumber || p.RegistrationId || `part-${idx}`}
@@ -808,7 +740,6 @@ export default function IdRedirectionPage() {
                                 {getValue(p, "Email", "email")}
                               </p>
                             </td>
-
                             {/* Team & College */}
                             <td className="px-6 py-4">
                               <p className="font-semibold text-slate-800 dark:text-zinc-200">
@@ -818,14 +749,12 @@ export default function IdRedirectionPage() {
                                 {getValue(p, "College", "college") || "—"}
                               </p>
                             </td>
-
                             {/* ID Number */}
                             <td className="px-6 py-4 font-mono text-xs text-slate-700 dark:text-zinc-300">
                               {getCardId(p) || (
                                 <span className="text-orange-500 font-sans">Pending</span>
                               )}
                             </td>
-
                             {/* Gate Status Badge */}
                             <td className="px-6 py-4">
                               <span
@@ -855,7 +784,6 @@ export default function IdRedirectionPage() {
                                 )}
                               </span>
                             </td>
-
                             {/* Check-in Timestamp */}
                             <td className="px-6 py-4 text-xs font-mono">
                               {p.CheckInTime ? (
@@ -876,7 +804,6 @@ export default function IdRedirectionPage() {
                                 <span className="text-slate-400 dark:text-zinc-500">—</span>
                               )}
                             </td>
-
                             {/* Check-out Timestamp */}
                             <td className="px-6 py-4 text-xs font-mono">
                               {p.CheckOutTime ? (
@@ -897,7 +824,6 @@ export default function IdRedirectionPage() {
                                 <span className="text-slate-400 dark:text-zinc-500">—</span>
                               )}
                             </td>
-
                             {/* Action Buttons */}
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-1.5">
@@ -920,7 +846,6 @@ export default function IdRedirectionPage() {
                                     Check Out
                                   </button>
                                 )}
-
                                 {(isUserCheckedIn || isUserCheckedOut) && (
                                   <button
                                     type="button"
@@ -936,7 +861,6 @@ export default function IdRedirectionPage() {
                           </tr>
                         );
                       })}
-
                     {!loading && filteredAttendanceParticipants.length === 0 && (
                       <tr>
                         <td colSpan={7} className="px-6 py-12 text-center text-slate-500 dark:text-zinc-400">
@@ -950,7 +874,6 @@ export default function IdRedirectionPage() {
             </section>
           </div>
         )}
-
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* VIEW 2: ID CARDS & PASSES (ORIGINAL GENERATOR & PREVIEW)     */}
         {/* ══════════════════════════════════════════════════════════════ */}
@@ -966,7 +889,6 @@ export default function IdRedirectionPage() {
                   Generate digital ID cards with verifiable QR codes for all approved physical hackathon participants.
                 </p>
               </div>
-
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
@@ -976,7 +898,6 @@ export default function IdRedirectionPage() {
                   <Palette className="h-4 w-4 text-emerald-500" />
                   <span>Design ID Template</span>
                 </button>
-
                 <button
                   type="button"
                   disabled={loading || !isFeatureEnabled || participants.length === 0}
@@ -989,7 +910,6 @@ export default function IdRedirectionPage() {
                 </button>
               </div>
             </div>
-
             {/* ID Cards 4 Metric Cards */}
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
@@ -1020,7 +940,6 @@ export default function IdRedirectionPage() {
                 </div>
               ))}
             </section>
-
             {/* ID Cards Table */}
             <section className="overflow-hidden rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
               <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-zinc-800 p-6 lg:flex-row lg:items-center lg:justify-between">
@@ -1045,7 +964,6 @@ export default function IdRedirectionPage() {
                     </button>
                   ))}
                 </div>
-
                 <div className="relative w-full lg:w-80">
                   <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
                   <input
@@ -1056,7 +974,6 @@ export default function IdRedirectionPage() {
                   />
                 </div>
               </div>
-
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1000px] text-left text-xs sm:text-sm">
                   <thead className="bg-slate-50 dark:bg-zinc-800/40">
@@ -1071,7 +988,6 @@ export default function IdRedirectionPage() {
                       ))}
                     </tr>
                   </thead>
-
                   <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
                     {loading && (
                       <tr>
@@ -1080,7 +996,6 @@ export default function IdRedirectionPage() {
                         </td>
                       </tr>
                     )}
-
                     {!loading &&
                       filteredParticipants.map((participant, index) => (
                         <tr
@@ -1095,19 +1010,15 @@ export default function IdRedirectionPage() {
                               {getValue(participant, "Email", "email")}
                             </p>
                           </td>
-
                           <td className="px-6 py-4 font-mono text-xs text-slate-800 dark:text-zinc-200">
                             {getCardId(participant) || "Pending"}
                           </td>
-
                           <td className="px-6 py-4 text-slate-800 dark:text-zinc-200">
                             {getValue(participant, "TeamName", "teamName") || "Individual"}
                           </td>
-
                           <td className="px-6 py-4 text-slate-600 dark:text-zinc-400">
                             {getValue(participant, "College", "college") || "—"}
                           </td>
-
                           <td className="px-6 py-4">
                             <span
                               className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-bold ${
@@ -1124,7 +1035,6 @@ export default function IdRedirectionPage() {
                               {isGenerated(participant) ? "Generated" : "Pending"}
                             </span>
                           </td>
-
                           <td className="px-6 py-4">
                             <button
                               type="button"
@@ -1139,7 +1049,6 @@ export default function IdRedirectionPage() {
                           </td>
                         </tr>
                       ))}
-
                     {!loading && filteredParticipants.length === 0 && (
                       <tr>
                         <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-zinc-400">
@@ -1153,7 +1062,6 @@ export default function IdRedirectionPage() {
             </section>
           </div>
         )}
-
         {/* Modal: ID Card Visual Preview with Saved Designer Template */}
         {selected && (
           <VisualParticipantCardPreview
@@ -1183,7 +1091,6 @@ export default function IdRedirectionPage() {
             />
           </div>
         )}
-
         {/* Modal: Bulk Generation */}
         <BulkGenerationModal
           isOpen={showBulkModal}

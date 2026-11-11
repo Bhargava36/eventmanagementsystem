@@ -56,9 +56,7 @@ import {
   FONT_CATEGORIES,
   loadGoogleFontDynamically
 } from '../constants/fontsCatalog';
-
 const FONT_OPTIONS = FONTS_CATALOG;
-
 export const CARD_SIZES = [
   {
     id: 'cr80',
@@ -111,7 +109,6 @@ export const CARD_SIZES = [
     landscape: { width: 610, height: 390 }
   }
 ];
-
 export const TEAM_CARD_SIZES = [
   {
     id: 'desk_tent',
@@ -154,7 +151,6 @@ export const TEAM_CARD_SIZES = [
     portrait: { width: 380, height: 600 }
   }
 ];
-
 export const DYNAMIC_FIELD_CHIPS = [
   { id: 'participant_name', label: 'Participant Name', placeholder: '{{participant_name}}', type: 'text', icon: Type },
   { id: 'registration_id', label: 'ID Card Number', placeholder: '{{registration_id}}', type: 'text', icon: Type },
@@ -167,7 +163,6 @@ export const DYNAMIC_FIELD_CHIPS = [
   { id: 'participant_category', label: 'Category / Role', placeholder: '{{participant_category}}', type: 'text', icon: Type },
   { id: 'qr_code', label: 'Verification QR', placeholder: '{{qr_code}}', type: 'qr', icon: QrCode }
 ];
-
 export const TEAM_DYNAMIC_FIELD_CHIPS = [
   { id: 'team_name', label: 'Team Name', placeholder: '{{team_name}}', type: 'text', icon: Users },
   { id: 'team_id', label: 'Team ID Badge', placeholder: 'TEAM-{{team_id}}', type: 'text', icon: Hash },
@@ -187,7 +182,6 @@ export const TEAM_DYNAMIC_FIELD_CHIPS = [
   { id: 'member_4_name', label: 'Member 4 Name', placeholder: '{{member_4_name}}', type: 'text', icon: Type },
   { id: 'member_4_photo', label: 'Member 4 Photo', placeholder: '{{member_4_photo}}', type: 'image', icon: ImageIcon }
 ];
-
 const SOLID_PRESETS = [
   { name: 'Obsidian Black', value: '#09090b' },
   { name: 'Deep Emerald', value: '#064e3b' },
@@ -198,7 +192,6 @@ const SOLID_PRESETS = [
   { name: 'Royal Indigo', value: '#1e1b4b' },
   { name: 'Dark Teal', value: '#042f2e' }
 ];
-
 const GRADIENT_PRESETS = [
   { name: 'Emerald Cyber', color1: '#064e3b', color2: '#022c22', angle: 135 },
   { name: 'Neon Midnight', color1: '#0f172a', color2: '#064e3b', angle: 135 },
@@ -207,7 +200,6 @@ const GRADIENT_PRESETS = [
   { name: 'Sunset Dusk', color1: '#18181b', color2: '#450a0a', angle: 135 },
   { name: 'Deep Abyss', color1: '#042f2e', color2: '#083344', angle: 135 }
 ];
-
 const RESIZE_HANDLES = [
   { id: 'nw', cursor: 'nwse-resize', className: '-top-1.5 -left-1.5' },
   { id: 'n',  cursor: 'ns-resize',   className: '-top-1.5 left-1/2 -translate-x-1/2' },
@@ -218,7 +210,6 @@ const RESIZE_HANDLES = [
   { id: 'sw', cursor: 'nesw-resize', className: '-bottom-1.5 -left-1.5' },
   { id: 'w',  cursor: 'ew-resize',   className: 'top-1/2 -translate-y-1/2 -left-1.5' }
 ];
-
 export default function IdCardDesigner({
   eventId,
   onBack,
@@ -244,7 +235,6 @@ export default function IdCardDesigner({
   const [sampleTeamIndex, setSampleTeamIndex] = useState(0);
   const [aspectRatioLocked, setAspectRatioLocked] = useState(false);
   const [logoUrlInput, setLogoUrlInput] = useState('');
-
   // Single Front-Side Card Config (No backside needed)
   const [cardConfig, setCardConfig] = useState({
     bgType: 'solid', // 'solid' | 'gradient' | 'image'
@@ -258,35 +248,28 @@ export default function IdCardDesigner({
     safeMargin: 15,
     elements: []
   });
-
   const [selectedElementId, setSelectedElementId] = useState(null);
   const [history, setHistory] = useState([]);
   const [historyStep, setHistoryStep] = useState(-1);
-
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showFontStudio, setShowFontStudio] = useState(false);
-
   const canvasRef = useRef(null);
   const assetFileInputRef = useRef(null);
   const bgFileInputRef = useRef(null);
-
   const activeSizes = cardType === 'team_card' ? TEAM_CARD_SIZES : CARD_SIZES;
   const activeSizePreset = activeSizes.find((s) => s.id === cardSizeId) || activeSizes[0];
   const activeDynamicChips = cardType === 'team_card' ? TEAM_DYNAMIC_FIELD_CHIPS : DYNAMIC_FIELD_CHIPS;
   const cardWidth = orientation === 'portrait' ? activeSizePreset.portrait.width : activeSizePreset.landscape.width;
   const cardHeight = orientation === 'portrait' ? activeSizePreset.portrait.height : activeSizePreset.landscape.height;
-
   // 1. Initial Load: Event details, Templates, Sample Participants
   useEffect(() => {
     if (!eventId) return;
-
     fetch(`${API_BASE_URL}/api/events/${encodeURIComponent(eventId)}`)
       .then((r) => r.json())
       .then((d) => setEvent(d.event || d.data || d))
       .catch((e) => console.error(e));
-
     fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/participants`)
       .then((r) => r.json())
       .then((d) => {
@@ -294,7 +277,6 @@ export default function IdCardDesigner({
         setSampleParticipants(list);
       })
       .catch((e) => console.error(e));
-
     fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/teams`)
       .then((r) => r.json())
       .then((d) => {
@@ -302,7 +284,6 @@ export default function IdCardDesigner({
         setSampleTeams(list);
       })
       .catch((e) => console.error('Error fetching sample teams:', e));
-
     fetch(`${API_BASE_URL}/api/id-cards/events/${encodeURIComponent(eventId)}/templates?cardType=${encodeURIComponent(cardType)}`)
       .then((r) => r.json())
       .then((d) => {
@@ -317,7 +298,6 @@ export default function IdCardDesigner({
       })
       .catch((e) => console.error(e));
   }, [eventId, cardType]);
-
   const handleSwitchCardType = (newType) => {
     if (newType === cardType) return;
     setCardType(newType);
@@ -331,7 +311,6 @@ export default function IdCardDesigner({
       setTemplateName('Official Event Badge');
     }
   };
-
   const DEFAULT_CARD_CONFIG = {
     bgType: 'solid',
     backgroundColor: '#09090b',
@@ -344,13 +323,11 @@ export default function IdCardDesigner({
     safeMargin: 15,
     elements: []
   };
-
   const loadTemplate = (tmpl) => {
     if (!tmpl) return;
     setCurrentTemplate(tmpl);
     setTemplateName(tmpl.TemplateName || (cardType === 'team_card' ? 'Official Cyber Desk Tent' : 'Official Event Badge'));
     setOrientation(tmpl.Orientation || (cardType === 'team_card' ? 'landscape' : 'portrait'));
-
     try {
       const f = typeof tmpl.FrontConfig === 'string' ? JSON.parse(tmpl.FrontConfig) : tmpl.FrontConfig;
       if (f && typeof f === 'object') {
@@ -364,10 +341,8 @@ export default function IdCardDesigner({
     } catch (e) {
       console.error(e);
     }
-
     setSelectedElementId(null);
   };
-
   // Push State to History
   const recordHistory = useCallback((nextConfig) => {
     if (!nextConfig) return;
@@ -377,7 +352,6 @@ export default function IdCardDesigner({
     });
     setHistoryStep((prev) => prev + 1);
   }, [historyStep]);
-
   const handleUndo = () => {
     if (historyStep > 0 && history[historyStep - 1]) {
       const target = history[historyStep - 1];
@@ -388,7 +362,6 @@ export default function IdCardDesigner({
       }
     }
   };
-
   const handleRedo = () => {
     if (historyStep < history.length - 1 && history[historyStep + 1]) {
       const target = history[historyStep + 1];
@@ -399,17 +372,14 @@ export default function IdCardDesigner({
       }
     }
   };
-
   // 2. Render Live Canvas preview
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const currentCfg = cardConfig || DEFAULT_CARD_CONFIG;
     const activeRealTeam = sampleTeams.length > 0
       ? sampleTeams[sampleTeamIndex % sampleTeams.length]
       : null;
-
     const sample = cardType === 'team_card' ? (activeRealTeam || {
       TeamId: '104',
       TeamName: 'CyberSentinels',
@@ -434,7 +404,6 @@ export default function IdCardDesigner({
       ParticipantCategory: 'Team Leader',
       VerificationToken: 'DEMO-VERIFY-TOKEN'
     });
-
     renderCardSide(canvas, currentCfg, sample, event || {}, {
       scale: 1.5,
       cardWidth,
@@ -443,11 +412,9 @@ export default function IdCardDesigner({
       previewMode
     });
   }, [cardConfig, orientation, cardSizeId, previewMode, sampleIndex, sampleParticipants, sampleTeams, sampleTeamIndex, event, showSafeMargin, cardWidth, cardHeight, cardType]);
-
   const safeConfig = cardConfig || DEFAULT_CARD_CONFIG;
   const elements = safeConfig.elements || [];
   const selectedElement = elements.find((el) => el.id === selectedElementId) || null;
-
   const addElement = (newElem) => {
     const currentList = Array.isArray(safeConfig.elements) ? safeConfig.elements : [];
     const nextElements = [...currentList, newElem];
@@ -456,7 +423,6 @@ export default function IdCardDesigner({
     setSelectedElementId(newElem.id);
     recordHistory(nextConfig);
   };
-
   const updateSelectedElement = (updates) => {
     if (!selectedElementId) return;
     const currentList = Array.isArray(safeConfig.elements) ? safeConfig.elements : [];
@@ -470,7 +436,6 @@ export default function IdCardDesigner({
     setCardConfig(nextConfig);
     recordHistory(nextConfig);
   };
-
   const deleteSelectedElement = () => {
     if (!selectedElementId) return;
     const currentList = Array.isArray(safeConfig.elements) ? safeConfig.elements : [];
@@ -480,7 +445,6 @@ export default function IdCardDesigner({
     setSelectedElementId(null);
     recordHistory(nextConfig);
   };
-
   const duplicateSelectedElement = () => {
     if (!selectedElement) return;
     const clone = {
@@ -491,7 +455,6 @@ export default function IdCardDesigner({
     };
     addElement(clone);
   };
-
   const alignElement = (type) => {
     if (!selectedElement) return;
     let updates = {};
@@ -501,19 +464,15 @@ export default function IdCardDesigner({
     else if (type === 'top') updates.y = 20;
     else if (type === 'middle') updates.y = Math.round((cardHeight - selectedElement.height) / 2);
     else if (type === 'bottom') updates.y = cardHeight - selectedElement.height - 20;
-
     updateSelectedElement(updates);
   };
-
   // Save Template (Single Front Side)
   const handleSaveTemplate = async () => {
     setSaving(true);
     setSaveSuccess(false);
-
     const activeSize = activeSizes.find((s) => s.id === cardSizeId) || activeSizes[0];
     const widthMm = orientation === 'portrait' ? activeSize.widthMm : activeSize.heightMm;
     const heightMm = orientation === 'portrait' ? activeSize.heightMm : activeSize.widthMm;
-
     const payload = {
       Id: currentTemplate?.Id || null,
       TemplateName: templateName,
@@ -533,7 +492,6 @@ export default function IdCardDesigner({
       BackConfig: null,
       IsDefault: currentTemplate?.IsDefault || 1
     };
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/id-cards/events/${eventId}/templates`, {
         method: 'POST',
@@ -548,7 +506,6 @@ export default function IdCardDesigner({
       }
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-
       const listRes = await fetch(`${API_BASE_URL}/api/id-cards/events/${eventId}/templates?cardType=${encodeURIComponent(cardType)}`);
       const listData = await listRes.json();
       if (Array.isArray(listData.templates)) setTemplates(listData.templates);
@@ -558,13 +515,11 @@ export default function IdCardDesigner({
       setSaving(false);
     }
   };
-
   // Interactive Canvas Resizing for all elements
   const handleResizeStart = (e, direction, elem) => {
     if (elem.locked) return;
     e.stopPropagation();
     e.preventDefault();
-
     const startX = e.clientX;
     const startY = e.clientY;
     const initialX = elem.x;
@@ -573,16 +528,13 @@ export default function IdCardDesigner({
     const initialH = elem.height;
     const minSize = 15;
     const initialAspect = initialW / (initialH || 1);
-
     const onMouseMove = (moveEvent) => {
       const dx = Math.round((moveEvent.clientX - startX) / zoom);
       const dy = Math.round((moveEvent.clientY - startY) / zoom);
-
       let nextX = initialX;
       let nextY = initialY;
       let nextW = initialW;
       let nextH = initialH;
-
       if (direction.includes('e')) {
         nextW = Math.max(minSize, initialW + dx);
       }
@@ -599,7 +551,6 @@ export default function IdCardDesigner({
         nextY = initialY + allowedDelta;
         nextH = initialH - allowedDelta;
       }
-
       // Proportional resizing if shift is held or ratio locked
       if (moveEvent.shiftKey || aspectRatioLocked) {
         if (direction === 'e' || direction === 'w') {
@@ -610,7 +561,6 @@ export default function IdCardDesigner({
           nextH = Math.max(minSize, Math.round(nextW / initialAspect));
         }
       }
-
       updateSelectedElement({
         x: nextX,
         y: nextY,
@@ -618,24 +568,19 @@ export default function IdCardDesigner({
         height: nextH
       });
     };
-
     const onMouseUp = () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
     };
-
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
   };
-
   // Upload Asset (Logo/Icon) with natural dimensions and objectFit contain
   const handleAssetUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const formData = new FormData();
     formData.append('asset', file);
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/id-cards/events/${eventId}/upload-asset`, {
         method: 'POST',
@@ -643,17 +588,14 @@ export default function IdCardDesigner({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Asset upload failed');
-
       // Detect natural image size so logos are not forced into a square
       const tempImg = new window.Image();
       tempImg.onload = () => {
         const nw = tempImg.naturalWidth || 140;
         const nh = tempImg.naturalHeight || 60;
         const aspect = nw / (nh || 1);
-
         let initialW = 140;
         let initialH = 60;
-
         if (aspect >= 1.2) {
           // Rectangular / Wide Logo
           initialW = 150;
@@ -667,7 +609,6 @@ export default function IdCardDesigner({
           initialW = 90;
           initialH = 90;
         }
-
         addElement({
           id: `img-${Date.now()}`,
           type: 'image',
@@ -686,7 +627,6 @@ export default function IdCardDesigner({
           hidden: false
         });
       };
-
       tempImg.onerror = () => {
         addElement({
           id: `img-${Date.now()}`,
@@ -706,21 +646,17 @@ export default function IdCardDesigner({
           hidden: false
         });
       };
-
       tempImg.src = data.url;
     } catch (err) {
       alert(err.message);
     }
   };
-
   // Upload Background Image directly
   const handleBgImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const formData = new FormData();
     formData.append('asset', file);
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/id-cards/events/${eventId}/upload-asset`, {
         method: 'POST',
@@ -728,7 +664,6 @@ export default function IdCardDesigner({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Background upload failed');
-
       const next = {
         ...cardConfig,
         bgType: 'image',
@@ -740,11 +675,9 @@ export default function IdCardDesigner({
       alert(`Background upload error: ${err.message}`);
     }
   };
-
   // Background Editor Component (Rendered in both Left tab and Right inspector)
   const renderBackgroundControls = () => {
     const currentType = cardConfig.bgType || (cardConfig.backgroundImage ? 'image' : 'solid');
-
     return (
       <div className="space-y-4">
         {/* Type Toggle: Solid vs Gradient vs Image */}
@@ -782,7 +715,6 @@ export default function IdCardDesigner({
             })}
           </div>
         </div>
-
         {/* 1. SOLID COLOR SECTION */}
         {currentType === 'solid' && (
           <div className="space-y-3 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800/80">
@@ -812,7 +744,6 @@ export default function IdCardDesigner({
                 />
               </div>
             </div>
-
             <div>
               <p className="text-[10px] font-bold uppercase text-zinc-500 mb-1.5">
                 Popular Swatches
@@ -840,7 +771,6 @@ export default function IdCardDesigner({
             </div>
           </div>
         )}
-
         {/* 2. GRADIENT SECTION */}
         {currentType === 'gradient' && (
           <div className="space-y-3.5 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800/80">
@@ -871,7 +801,6 @@ export default function IdCardDesigner({
                   />
                 </div>
               </div>
-
               <div>
                 <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1">
                   End Color
@@ -899,7 +828,6 @@ export default function IdCardDesigner({
                 </div>
               </div>
             </div>
-
             {/* Gradient Angle */}
             <div>
               <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1">
@@ -931,7 +859,6 @@ export default function IdCardDesigner({
                 ))}
               </div>
             </div>
-
             {/* Preset Gradients */}
             <div>
               <p className="text-[10px] font-bold uppercase text-zinc-500 mb-1.5">
@@ -970,7 +897,6 @@ export default function IdCardDesigner({
             </div>
           </div>
         )}
-
         {/* 3. BACKGROUND IMAGE SECTION */}
         {currentType === 'image' && (
           <div className="space-y-3.5 p-3 rounded-2xl bg-zinc-900/60 border border-zinc-800/80">
@@ -991,7 +917,6 @@ export default function IdCardDesigner({
                 <span>Upload Custom Background Image</span>
               </button>
             </div>
-
             <div>
               <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1">
                 Or Image URL
@@ -1008,7 +933,6 @@ export default function IdCardDesigner({
                 className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-white outline-none"
               />
             </div>
-
             {/* Dark Tint Overlay Slider */}
             <div>
               <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400 mb-1">
@@ -1029,7 +953,6 @@ export default function IdCardDesigner({
                 className="w-full accent-emerald-500 cursor-pointer"
               />
             </div>
-
             {/* Image Opacity Slider */}
             <div>
               <div className="flex items-center justify-between text-[10px] font-bold text-zinc-400 mb-1">
@@ -1050,7 +973,6 @@ export default function IdCardDesigner({
                 className="w-full accent-emerald-500 cursor-pointer"
               />
             </div>
-
             {cardConfig.backgroundImage && (
               <button
                 type="button"
@@ -1069,12 +991,10 @@ export default function IdCardDesigner({
       </div>
     );
   };
-
   // Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedElementId) {
           e.preventDefault();
@@ -1104,11 +1024,9 @@ export default function IdCardDesigner({
         });
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedElementId, selectedElement, cardConfig, historyStep]);
-
   return (
     <div className="flex flex-col h-full min-h-[680px] w-full bg-slate-100 dark:bg-[#0a0d0b] text-slate-900 dark:text-slate-100 select-none overflow-hidden font-sans">
       {/* ══════════════════════════════════════════════════════════════ */}
@@ -1126,7 +1044,6 @@ export default function IdCardDesigner({
               <ChevronLeft className="h-5 w-5" />
             </button>
           )}
-
           <div className="flex items-center gap-2">
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
               cardType === 'team_card'
@@ -1144,7 +1061,6 @@ export default function IdCardDesigner({
               />
             </div>
           </div>
-
           {/* Studio Badge or Segmented Card Type Switcher */}
           {lockCardType ? (
             <div className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black border shadow-inner ${
@@ -1183,7 +1099,6 @@ export default function IdCardDesigner({
               </button>
             </div>
           )}
-
           <div className="hidden sm:flex items-center gap-1 pl-3 border-l border-slate-200 dark:border-zinc-800">
             <button
               type="button"
@@ -1205,7 +1120,6 @@ export default function IdCardDesigner({
             </button>
           </div>
         </div>
-
         {/* Center: Card Size Selector & Orientation */}
         <div className="flex items-center gap-2">
           {/* Card Size Selector Dropdown */}
@@ -1231,7 +1145,6 @@ export default function IdCardDesigner({
               ))}
             </select>
           </div>
-
           <button
             type="button"
             onClick={() => setOrientation(prev => prev === 'portrait' ? 'landscape' : 'portrait')}
@@ -1242,11 +1155,9 @@ export default function IdCardDesigner({
             <span className="capitalize font-bold">{orientation}</span>
           </button>
         </div>
-
         {/* Right actions: ThemeToggle, Preview, Save, Generate / Export */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
-
           <button
             type="button"
             onClick={() => setPreviewMode(!previewMode)}
@@ -1259,7 +1170,6 @@ export default function IdCardDesigner({
             <Eye className="h-3.5 w-3.5" />
             <span>{previewMode ? 'Live Preview' : 'Template View'}</span>
           </button>
-
           <button
             type="button"
             onClick={handleSaveTemplate}
@@ -1269,7 +1179,6 @@ export default function IdCardDesigner({
             {saving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : saveSuccess ? <Check className="h-3.5 w-3.5 text-emerald-500 dark:text-emerald-400" /> : <Save className="h-3.5 w-3.5" />}
             <span>{saving ? 'Saving...' : saveSuccess ? 'Saved' : 'Save'}</span>
           </button>
-
           {cardType === 'team_card' ? (
             <button
               type="button"
@@ -1298,7 +1207,6 @@ export default function IdCardDesigner({
           )}
         </div>
       </header>
-
       {/* ══════════════════════════════════════════════════════════════ */}
       {/* 2. MAIN WORKSPACE                                             */}
       {/* ══════════════════════════════════════════════════════════════ */}
@@ -1335,7 +1243,6 @@ export default function IdCardDesigner({
               })}
             </div>
           </div>
-
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* TAB: SHAPES & TYPOGRAPHY */}
             {leftTab === 'elements' && (
@@ -1370,7 +1277,6 @@ export default function IdCardDesigner({
                       <p className="text-xs font-bold text-white">Heading</p>
                       <p className="text-[10px] text-zinc-500">22px Bold</p>
                     </button>
-
                     <button
                       type="button"
                       onClick={() =>
@@ -1398,7 +1304,6 @@ export default function IdCardDesigner({
                     </button>
                   </div>
                 </div>
-
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
                     Shapes & Badges
@@ -1428,7 +1333,6 @@ export default function IdCardDesigner({
                       <p className="text-xs font-bold text-white">Card Box</p>
                       <p className="text-[10px] text-zinc-500">Rounded rect</p>
                     </button>
-
                     <button
                       type="button"
                       onClick={() =>
@@ -1453,7 +1357,6 @@ export default function IdCardDesigner({
                       <p className="text-xs font-bold text-white">Circle / Ring</p>
                       <p className="text-[10px] text-zinc-500">Photo ring</p>
                     </button>
-
                     <button
                       type="button"
                       onClick={() =>
@@ -1477,7 +1380,6 @@ export default function IdCardDesigner({
                       <p className="text-xs font-bold text-white">Divider Line</p>
                       <p className="text-[10px] text-zinc-500">Separator</p>
                     </button>
-
                     <button
                       type="button"
                       onClick={() =>
@@ -1506,7 +1408,6 @@ export default function IdCardDesigner({
                 </div>
               </div>
             )}
-
             {/* TAB: DYNAMIC FIELDS */}
             {leftTab === 'fields' && (
               <div className="space-y-3">
@@ -1519,7 +1420,6 @@ export default function IdCardDesigner({
                     ? 'Click any team or member placeholder to add it to your Team Display Card design.'
                     : 'Click any field to add it as a dynamic placeholder to the card design.'}
                 </div>
-
                 <div className="space-y-1.5">
                   {activeDynamicChips.map((chip) => {
                     const ChipIcon = chip.icon;
@@ -1604,7 +1504,6 @@ export default function IdCardDesigner({
                 </div>
               </div>
             )}
-
             {/* TAB: BACKGROUND (SOLID, GRADIENT, IMAGE) */}
             {leftTab === 'background' && (
               <div className="space-y-4">
@@ -1614,7 +1513,6 @@ export default function IdCardDesigner({
                 {renderBackgroundControls()}
               </div>
             )}
-
             {/* TAB: LOGOS & GRAPHICS */}
             {leftTab === 'uploads' && (
               <div className="space-y-4">
@@ -1624,7 +1522,6 @@ export default function IdCardDesigner({
                     Add sponsor logos, crests, or icons. Move them anywhere on the card and resize them using the 8 interactive handles.
                   </p>
                 </div>
-
                 {/* Primary Upload Button */}
                 <div>
                   <input
@@ -1644,7 +1541,6 @@ export default function IdCardDesigner({
                     <span className="text-[10px] text-zinc-400">PNG, SVG, or JPG (aspect ratio preserved)</span>
                   </button>
                 </div>
-
                 {/* Add Logo via URL */}
                 <div className="space-y-2 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800">
                   <label className="text-[10px] font-bold uppercase text-zinc-400 block">
@@ -1687,7 +1583,6 @@ export default function IdCardDesigner({
                     </button>
                   </div>
                 </div>
-
                 {/* Quick Logo Starter Templates */}
                 <div>
                   <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1.5">
@@ -1732,7 +1627,6 @@ export default function IdCardDesigner({
                     ))}
                   </div>
                 </div>
-
                 {/* Difference Callout */}
                 <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80 text-[11px] text-zinc-400">
                   <span className="text-emerald-400 font-bold block mb-0.5">Looking for Card Background?</span>
@@ -1740,7 +1634,6 @@ export default function IdCardDesigner({
                 </div>
               </div>
             )}
-
             {/* TAB: LAYERS */}
             {leftTab === 'layers' && (
               <div className="space-y-2">
@@ -1763,7 +1656,6 @@ export default function IdCardDesigner({
                         <span className="truncate max-w-[150px]">
                           {elem.dynamicField ? `{{${elem.dynamicField}}}` : elem.text || elem.type}
                         </span>
-
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
@@ -1784,7 +1676,6 @@ export default function IdCardDesigner({
             )}
           </div>
         </aside>
-
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* CENTER: INTERACTIVE CANVAS ARTBOARD                           */}
@@ -1821,7 +1712,6 @@ export default function IdCardDesigner({
               <Shield className="h-4 w-4" />
             </button>
           </div>
-
           {/* Top-Right Sample Switcher (Teams or Participants) */}
           {cardType === 'team_card' ? (
             sampleTeams.length > 0 && (
@@ -1885,7 +1775,6 @@ export default function IdCardDesigner({
               </div>
             )
           )}
-
           {/* Central Artboard */}
           <div
             className="relative rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] ring-1 ring-white/10 transition-transform duration-100 ease-out"
@@ -1901,7 +1790,6 @@ export default function IdCardDesigner({
               className="absolute inset-0 rounded-2xl pointer-events-none z-10"
               style={{ width: cardWidth, height: cardHeight }}
             />
-
             <div
               className="absolute inset-0 z-20 overflow-hidden"
               onClick={() => setSelectedElementId(null)}
@@ -1909,7 +1797,6 @@ export default function IdCardDesigner({
               {!previewMode && elements.map((elem) => {
                 const isSelected = elem.id === selectedElementId;
                 if (elem.hidden) return null;
-
                 return (
                   <div
                     key={elem.id}
@@ -1921,12 +1808,10 @@ export default function IdCardDesigner({
                       if (elem.locked) return;
                       e.stopPropagation();
                       setSelectedElementId(elem.id);
-
                       const startX = e.clientX;
                       const startY = e.clientY;
                       const initialElemX = elem.x;
                       const initialElemY = elem.y;
-
                       const handleMouseMove = (moveEvent) => {
                         const dx = Math.round((moveEvent.clientX - startX) / zoom);
                         const dy = Math.round((moveEvent.clientY - startY) / zoom);
@@ -1935,12 +1820,10 @@ export default function IdCardDesigner({
                           y: initialElemY + dy
                         });
                       };
-
                       const handleMouseUp = () => {
                         window.removeEventListener('mousemove', handleMouseMove);
                         window.removeEventListener('mouseup', handleMouseUp);
                       };
-
                       window.addEventListener('mousemove', handleMouseMove);
                       window.addEventListener('mouseup', handleMouseUp);
                     }}
@@ -1971,7 +1854,6 @@ export default function IdCardDesigner({
                         </span>
                       </div>
                     )}
-
                     {/* 8 Interactive Resize Handles */}
                     {isSelected && !elem.locked && (
                       <>
@@ -1984,7 +1866,6 @@ export default function IdCardDesigner({
                             title={`Drag to resize (${h.id.toUpperCase()})`}
                           />
                         ))}
-
                         {/* Live dimensions pill at bottom */}
                         <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-zinc-950/95 border border-emerald-500/40 text-[9px] font-mono font-bold text-emerald-400 whitespace-nowrap shadow-lg pointer-events-none z-30 flex items-center gap-1">
                           <span>{elem.width} × {elem.height} px</span>
@@ -1997,7 +1878,6 @@ export default function IdCardDesigner({
             </div>
           </div>
         </main>
-
         {/* ══════════════════════════════════════════════════════════════ */}
         {/* RIGHT SIDEBAR: PROPERTIES INSPECTOR                           */}
         {/* ══════════════════════════════════════════════════════════════ */}
@@ -2034,7 +1914,6 @@ export default function IdCardDesigner({
                   </button>
                 </div>
               </div>
-
               <div>
                 <label className="text-[10px] font-bold uppercase text-slate-400 dark:text-zinc-500 block mb-1">
                   Bind Dynamic Field
@@ -2050,7 +1929,6 @@ export default function IdCardDesigner({
                   ))}
                 </select>
               </div>
-
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-[10px] font-bold uppercase text-zinc-500">
@@ -2125,7 +2003,6 @@ export default function IdCardDesigner({
                   </div>
                 </div>
               </div>
-
               <div>
                 <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1">
                   Align to Card
@@ -2154,7 +2031,6 @@ export default function IdCardDesigner({
                   </button>
                 </div>
               </div>
-
               {/* --- FIGMA-STYLE TYPOGRAPHY CONTROLS --- */}
               {selectedElement.type === 'text' && (
                 <div className="space-y-3.5 pt-2 border-t border-zinc-800">
@@ -2169,7 +2045,6 @@ export default function IdCardDesigner({
                       className="w-full px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-white outline-none focus:border-emerald-500"
                     />
                   </div>
-
                   {/* Figma-Style Font Picker (Displays every font in its real font style, contained dropdown) */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
@@ -2186,7 +2061,6 @@ export default function IdCardDesigner({
                         <span>Studio Grid</span>
                       </button>
                     </div>
-
                     <FigmaFontPicker
                       value={selectedElement.fontFamily || FONTS_CATALOG[0].value}
                       onChange={(newFont) => {
@@ -2195,7 +2069,6 @@ export default function IdCardDesigner({
                       onOpenStudio={() => setShowFontStudio(true)}
                     />
                   </div>
-
                   {/* Font Weight & Italic Style */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -2216,7 +2089,6 @@ export default function IdCardDesigner({
                         <option value="900">900 Black</option>
                       </select>
                     </div>
-
                     <div>
                       <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1">
                         Style
@@ -2238,7 +2110,6 @@ export default function IdCardDesigner({
                       </button>
                     </div>
                   </div>
-
                   {/* Size (px) & Letter Spacing (Tracking) */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -2268,7 +2139,6 @@ export default function IdCardDesigner({
                       />
                     </div>
                   </div>
-
                   {/* Text Transform (Case) */}
                   <div>
                     <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1">
@@ -2298,7 +2168,6 @@ export default function IdCardDesigner({
                       })}
                     </div>
                   </div>
-
                   {/* Text Alignment */}
                   <div>
                     <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1">
@@ -2323,7 +2192,6 @@ export default function IdCardDesigner({
                       })}
                     </div>
                   </div>
-
                   {/* Text Color */}
                   <div>
                     <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1">
@@ -2346,7 +2214,6 @@ export default function IdCardDesigner({
                   </div>
                 </div>
               )}
-
               {/* --- IMAGE SPECIFIC CONTROLS (FIT, SHAPE, QUICK SIZES) --- */}
               {selectedElement.type === 'image' && (
                 <div className="space-y-3.5 pt-2 border-t border-zinc-800">
@@ -2383,7 +2250,6 @@ export default function IdCardDesigner({
                       })}
                     </div>
                   </div>
-
                   {/* Quick Shape Presets */}
                   <div>
                     <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1">
@@ -2423,7 +2289,6 @@ export default function IdCardDesigner({
                       </span>
                     </div>
                   </div>
-
                   {/* Quick Size Presets for Logos & Images */}
                   <div>
                     <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1">
@@ -2455,7 +2320,6 @@ export default function IdCardDesigner({
                       ))}
                     </div>
                   </div>
-
                   {/* Border / Stroke */}
                   <div>
                     <label className="text-[10px] font-bold uppercase text-zinc-400 block mb-1">
@@ -2483,7 +2347,6 @@ export default function IdCardDesigner({
                       )}
                     </div>
                   </div>
-
                   {/* Image Source / Change URL */}
                   {!selectedElement.dynamicField && (
                     <div>
@@ -2501,7 +2364,6 @@ export default function IdCardDesigner({
                   )}
                 </div>
               )}
-
               {/* --- SHAPE SPECIFIC CONTROLS --- */}
               {selectedElement.type === 'shape' && (
                 <div className="space-y-3 pt-2 border-t border-zinc-800">
@@ -2516,7 +2378,6 @@ export default function IdCardDesigner({
                       className="w-full px-2 py-1 rounded bg-zinc-900 border border-zinc-800 text-xs text-white"
                     />
                   </div>
-
                   <div>
                     <label className="text-[10px] font-bold uppercase text-zinc-500 block mb-1">
                       Fill Color
@@ -2530,7 +2391,6 @@ export default function IdCardDesigner({
                   </div>
                 </div>
               )}
-
               {/* --- QR CODE SPECIFIC CONTROLS --- */}
               {selectedElement.type === 'qr' && (
                 <div className="space-y-3 pt-2 border-t border-zinc-800">
@@ -2554,7 +2414,6 @@ export default function IdCardDesigner({
               <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider pb-2 border-b border-slate-200 dark:border-zinc-800">
                 {cardType === 'team_card' ? 'Team Placard Artboard' : 'ID Card Artboard'}
               </h4>
-
               <div>
                 <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-semibold mb-1.5">
                   {cardType === 'team_card' ? 'Placard Size & Format' : 'Card Size & Format'}
@@ -2595,13 +2454,11 @@ export default function IdCardDesigner({
                   Active Dimensions: {cardWidth} × {cardHeight} px ({orientation})
                 </p>
               </div>
-
               {renderBackgroundControls()}
             </div>
           )}
         </aside>
       </div>
-
       <BulkGenerationModal
         isOpen={showBulkModal}
         onClose={() => setShowBulkModal(false)}
@@ -2626,7 +2483,6 @@ export default function IdCardDesigner({
           BackConfig: null
         }}
       />
-
       <FontPickerModal
         isOpen={showFontStudio}
         onClose={() => setShowFontStudio(false)}

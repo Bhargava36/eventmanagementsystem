@@ -1,9 +1,6 @@
 const db = require('../../config/db');
 const { sendMail } = require('../../config/mailer');
-
-/**
- * Get Alumni Config for an event
- */
+// Get Alumni Config for an event
 const getConfig = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `SELECT * FROM alumni_configs WHERE EventId = ?`;
@@ -26,10 +23,7 @@ const getConfig = (eventId) => {
         });
     });
 };
-
-/**
- * Save / Update Alumni Config
- */
+// Save / Update Alumni Config
 const saveConfig = (eventId, data) => {
     return new Promise((resolve, reject) => {
         const {
@@ -41,9 +35,8 @@ const saveConfig = (eventId, data) => {
             WelcomeNote,
             AlumniFundLink
         } = data;
-
         const query = `
-            INSERT INTO alumni_configs 
+            INSERT INTO alumni_configs
             (EventId, TargetBatches, AllowGuests, MaxGuests, VenueHall, DressCode, WelcomeNote, AlumniFundLink)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
@@ -55,7 +48,6 @@ const saveConfig = (eventId, data) => {
             WelcomeNote = VALUES(WelcomeNote),
             AlumniFundLink = VALUES(AlumniFundLink)
         `;
-
         db.query(
             query,
             [
@@ -75,10 +67,7 @@ const saveConfig = (eventId, data) => {
         );
     });
 };
-
-/**
- * Get Agenda / Activities for an Alumni Meet
- */
+// Get Agenda / Activities for an Alumni Meet
 const getAgenda = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `SELECT * FROM alumni_sessions WHERE EventId = ? ORDER BY OrderIndex ASC, StartTime ASC`;
@@ -88,10 +77,7 @@ const getAgenda = (eventId) => {
         });
     });
 };
-
-/**
- * Create Agenda Session
- */
+// Create Agenda Session
 const createAgenda = (eventId, data) => {
     return new Promise((resolve, reject) => {
         const {
@@ -104,13 +90,11 @@ const createAgenda = (eventId, data) => {
             Description,
             OrderIndex
         } = data;
-
         const query = `
-            INSERT INTO alumni_sessions 
+            INSERT INTO alumni_sessions
             (EventId, SessionTitle, SessionDate, StartTime, EndTime, SpeakerName, VenueHall, Description, OrderIndex)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-
         db.query(
             query,
             [
@@ -131,10 +115,7 @@ const createAgenda = (eventId, data) => {
         );
     });
 };
-
-/**
- * Update Agenda Session
- */
+// Update Agenda Session
 const updateAgenda = (sessionId, data) => {
     return new Promise((resolve, reject) => {
         const {
@@ -147,14 +128,12 @@ const updateAgenda = (sessionId, data) => {
             Description,
             OrderIndex
         } = data;
-
         const query = `
             UPDATE alumni_sessions SET
             SessionTitle = ?, SessionDate = ?, StartTime = ?, EndTime = ?,
             SpeakerName = ?, VenueHall = ?, Description = ?, OrderIndex = ?
             WHERE Id = ?
         `;
-
         db.query(
             query,
             [
@@ -175,10 +154,7 @@ const updateAgenda = (sessionId, data) => {
         );
     });
 };
-
-/**
- * Delete Agenda Session
- */
+// Delete Agenda Session
 const deleteAgenda = (sessionId) => {
     return new Promise((resolve, reject) => {
         db.query(`DELETE FROM alumni_sessions WHERE Id = ?`, [sessionId], (err, result) => {
@@ -187,10 +163,7 @@ const deleteAgenda = (sessionId) => {
         });
     });
 };
-
-/**
- * Get Distinguished Alumni Speakers
- */
+// Get Distinguished Alumni Speakers
 const getSpeakers = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `SELECT * FROM alumni_speakers WHERE EventId = ? ORDER BY OrderIndex ASC, Id ASC`;
@@ -200,10 +173,7 @@ const getSpeakers = (eventId) => {
         });
     });
 };
-
-/**
- * Create Alumni Speaker
- */
+// Create Alumni Speaker
 const createSpeaker = (eventId, data) => {
     return new Promise((resolve, reject) => {
         const {
@@ -218,13 +188,11 @@ const createSpeaker = (eventId, data) => {
             LinkedinUrl,
             OrderIndex
         } = data;
-
         const query = `
-            INSERT INTO alumni_speakers 
+            INSERT INTO alumni_speakers
             (EventId, Name, GraduationYear, Branch, Designation, Company, Topic, Bio, PhotoUrl, LinkedinUrl, OrderIndex)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-
         db.query(
             query,
             [
@@ -247,10 +215,7 @@ const createSpeaker = (eventId, data) => {
         );
     });
 };
-
-/**
- * Update Alumni Speaker
- */
+// Update Alumni Speaker
 const updateSpeaker = (speakerId, data) => {
     return new Promise((resolve, reject) => {
         const {
@@ -265,14 +230,12 @@ const updateSpeaker = (speakerId, data) => {
             LinkedinUrl,
             OrderIndex
         } = data;
-
         const query = `
             UPDATE alumni_speakers SET
             Name = ?, GraduationYear = ?, Branch = ?, Designation = ?, Company = ?,
             Topic = ?, Bio = ?, PhotoUrl = ?, LinkedinUrl = ?, OrderIndex = ?
             WHERE Id = ?
         `;
-
         db.query(
             query,
             [
@@ -295,10 +258,7 @@ const updateSpeaker = (speakerId, data) => {
         );
     });
 };
-
-/**
- * Delete Alumni Speaker
- */
+// Delete Alumni Speaker
 const deleteSpeaker = (speakerId) => {
     return new Promise((resolve, reject) => {
         db.query(`DELETE FROM alumni_speakers WHERE Id = ?`, [speakerId], (err, result) => {
@@ -307,15 +267,11 @@ const deleteSpeaker = (speakerId) => {
         });
     });
 };
-
-/**
- * Get All Registered Alumni for an Event
- * Directly utilizes existing registered_teams + users!
- */
+// Get All Registered Alumni for an Event Directly utilizes existing registered_teams + users!
 const getRegistrations = (eventId) => {
     return new Promise((resolve, reject) => {
         const query = `
-            SELECT 
+            SELECT
                 rt.Id AS TeamId,
                 rt.EventId,
                 rt.TeamName,
@@ -343,18 +299,13 @@ const getRegistrations = (eventId) => {
             WHERE rt.EventId = ?
             ORDER BY rt.CreatedAt DESC
         `;
-
         db.query(query, [eventId], (err, rows) => {
             if (err) return reject(err);
             resolve(rows);
         });
     });
 };
-
-/**
- * Register Alumnus RSVP
- * Directly writes to registered_teams, registered_team_members, and event_registrations!
- */
+// Register Alumnus RSVP Directly writes to registered_teams, registered_team_members, and event_registrations!
 const registerAlumnus = async (eventId, userId, data) => {
     return new Promise((resolve, reject) => {
         const {
@@ -368,18 +319,15 @@ const registerAlumnus = async (eventId, userId, data) => {
             GuestNames = '',
             RsvpStatus = 'ATTENDING'
         } = data;
-
         // Fetch user info for TeamName
         db.query(`SELECT * FROM users WHERE Id = ?`, [userId], (err, uRows) => {
             if (err) return reject(err);
             const userObj = uRows[0] || {};
             const teamName = `Alumnus - ${userObj.UserName || 'Alumni Member'}`;
-
             // Check if user already registered for this event in registered_teams
             const checkQuery = `SELECT Id FROM registered_teams WHERE EventId = ? AND TeamLeadUserId = ?`;
             db.query(checkQuery, [eventId, userId], (chkErr, chkRows) => {
                 if (chkErr) return reject(chkErr);
-
                 if (chkRows.length > 0) {
                     // Update existing
                     const existingTeamId = chkRows[0].Id;
@@ -416,12 +364,11 @@ const registerAlumnus = async (eventId, userId, data) => {
                 } else {
                     // Insert into registered_teams
                     const insertTeam = `
-                        INSERT INTO registered_teams 
-                        (TeamName, TeamLeadUserId, TeamSize, College, State, EventId, 
+                        INSERT INTO registered_teams
+                        (TeamName, TeamLeadUserId, TeamSize, College, State, EventId,
                          GraduationYear, CurrentCompany, Designation, City, LinkedinUrl, GuestCount, GuestNames, RsvpStatus)
                         VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     `;
-
                     db.query(
                         insertTeam,
                         [
@@ -442,10 +389,9 @@ const registerAlumnus = async (eventId, userId, data) => {
                         (insErr, insRes) => {
                             if (insErr) return reject(insErr);
                             const newTeamId = insRes.insertId;
-
                             // Insert into registered_team_members
                             const insertMember = `
-                                INSERT INTO registered_team_members 
+                                INSERT INTO registered_team_members
                                 (UserId, TeamId, Role, MemberName, MemberEmail, MemberCollege)
                                 VALUES (?, ?, 'TeamLead', ?, ?, ?)
                             `;
@@ -460,16 +406,14 @@ const registerAlumnus = async (eventId, userId, data) => {
                                 ],
                                 () => {}
                             );
-
                             // Insert into event_registrations
                             const insertReg = `
-                                INSERT INTO event_registrations 
+                                INSERT INTO event_registrations
                                 (EventId, TeamId, ParticipationMode, Status)
                                 VALUES (?, ?, 'Physical', 'approved')
                                 ON DUPLICATE KEY UPDATE Status = 'approved'
                             `;
                             db.query(insertReg, [eventId, newTeamId], () => {});
-
                             resolve({ success: true, teamId: newTeamId, created: true });
                         }
                     );
@@ -478,44 +422,37 @@ const registerAlumnus = async (eventId, userId, data) => {
         });
     });
 };
-
-/**
- * Gate Check-in for Alumnus (Live QR Scanner)
- */
+// Gate Check-in for Alumnus (Live QR Scanner)
 const checkInAlumnus = (eventId, payload) => {
     return new Promise((resolve, reject) => {
         const { teamId, userId, qrData } = payload;
-
         let query = '';
         let params = [];
-
         if (teamId) {
             query = `
-                UPDATE registered_teams 
-                SET GateCheckInStatus = 'CheckedIn', GateCheckInTime = NOW() 
+                UPDATE registered_teams
+                SET GateCheckInStatus = 'CheckedIn', GateCheckInTime = NOW()
                 WHERE Id = ? AND EventId = ?
             `;
             params = [teamId, eventId];
         } else if (userId) {
             query = `
-                UPDATE registered_teams 
-                SET GateCheckInStatus = 'CheckedIn', GateCheckInTime = NOW() 
+                UPDATE registered_teams
+                SET GateCheckInStatus = 'CheckedIn', GateCheckInTime = NOW()
                 WHERE TeamLeadUserId = ? AND EventId = ?
             `;
             params = [userId, eventId];
         } else {
             return reject(new Error('teamId or userId required for check-in'));
         }
-
         db.query(query, params, (err, result) => {
             if (err) return reject(err);
             if (result.affectedRows === 0) {
                 return reject(new Error('No matching registration found for check-in'));
             }
-
             // Fetch updated record
             const selectQuery = `
-                SELECT rt.*, u.UserName, u.Email 
+                SELECT rt.*, u.UserName, u.Email
                 FROM registered_teams rt
                 JOIN users u ON u.Id = rt.TeamLeadUserId
                 WHERE ${teamId ? 'rt.Id = ?' : 'rt.TeamLeadUserId = ?'} AND rt.EventId = ?
@@ -527,35 +464,29 @@ const checkInAlumnus = (eventId, payload) => {
         });
     });
 };
-
-/**
- * Banquet / Food Token Scanner
- */
+// Banquet / Food Token Scanner
 const scanFoodToken = (eventId, payload) => {
     return new Promise((resolve, reject) => {
         const { teamId, userId } = payload;
-
         let query = '';
         let params = [];
-
         if (teamId) {
             query = `
-                UPDATE registered_teams 
-                SET FoodTokenScanned = 1, FoodScannedTime = NOW() 
+                UPDATE registered_teams
+                SET FoodTokenScanned = 1, FoodScannedTime = NOW()
                 WHERE Id = ? AND EventId = ?
             `;
             params = [teamId, eventId];
         } else if (userId) {
             query = `
-                UPDATE registered_teams 
-                SET FoodTokenScanned = 1, FoodScannedTime = NOW() 
+                UPDATE registered_teams
+                SET FoodTokenScanned = 1, FoodScannedTime = NOW()
                 WHERE TeamLeadUserId = ? AND EventId = ?
             `;
             params = [userId, eventId];
         } else {
             return reject(new Error('teamId or userId required for food scan'));
         }
-
         db.query(query, params, (err, result) => {
             if (err) return reject(err);
             if (result.affectedRows === 0) {
@@ -565,10 +496,7 @@ const scanFoodToken = (eventId, payload) => {
         });
     });
 };
-
-/**
- * Send Batch Invitations (Email / Dispatch)
- */
+// Send Batch Invitations (Email / Dispatch)
 const sendBatchInvites = async (eventId, { subject, message, targetBatches }) => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -576,7 +504,6 @@ const sendBatchInvites = async (eventId, { subject, message, targetBatches }) =>
             const query = `SELECT Id, UserName, Email FROM users WHERE Email IS NOT NULL AND Email != '' LIMIT 50`;
             db.query(query, async (err, users) => {
                 if (err) return reject(err);
-
                 let sentCount = 0;
                 for (const u of users) {
                     try {
@@ -590,7 +517,6 @@ const sendBatchInvites = async (eventId, { subject, message, targetBatches }) =>
                         // continue
                     }
                 }
-
                 resolve({ success: true, sentCount, totalTargeted: users.length });
             });
         } catch (e) {
@@ -598,10 +524,7 @@ const sendBatchInvites = async (eventId, { subject, message, targetBatches }) =>
         }
     });
 };
-
-/**
- * Memories & Gallery
- */
+// Memories & Gallery
 const getMemories = (eventId) => {
     return new Promise((resolve, reject) => {
         db.query(`SELECT * FROM alumni_memories WHERE EventId = ? ORDER BY CreatedAt DESC`, [eventId], (err, rows) => {
@@ -610,7 +533,6 @@ const getMemories = (eventId) => {
         });
     });
 };
-
 const createMemory = (eventId, { Title, MediaUrl, BatchYear, UploadedBy }) => {
     return new Promise((resolve, reject) => {
         const query = `INSERT INTO alumni_memories (EventId, Title, MediaUrl, BatchYear, UploadedBy) VALUES (?, ?, ?, ?, ?)`;
@@ -620,7 +542,6 @@ const createMemory = (eventId, { Title, MediaUrl, BatchYear, UploadedBy }) => {
         });
     });
 };
-
 const deleteMemory = (memoryId) => {
     return new Promise((resolve, reject) => {
         db.query(`DELETE FROM alumni_memories WHERE Id = ?`, [memoryId], (err, result) => {
@@ -629,7 +550,6 @@ const deleteMemory = (memoryId) => {
         });
     });
 };
-
 module.exports = {
     getConfig,
     saveConfig,
@@ -650,4 +570,3 @@ module.exports = {
     createMemory,
     deleteMemory
 };
-

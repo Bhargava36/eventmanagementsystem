@@ -22,17 +22,14 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
-
 const API_ENDPOINTS = {
   registrations: `${API_BASE_URL}/api/event_reg/recent`,
   activities: `${API_BASE_URL}/api/event_reg/activities`,
   teams: `${API_BASE_URL}/api/teams/`,
   events: `${API_BASE_URL}/api/events/`,
 };
-
 const READ_NOTIFICATIONS_KEY = 'ems_read_notifications';
 const DELETED_NOTIFICATIONS_KEY = 'ems_deleted_notifications';
-
 const getStoredIds = (key) => {
   try {
     const storedData = localStorage.getItem(key);
@@ -42,7 +39,6 @@ const getStoredIds = (key) => {
     return [];
   }
 };
-
 const saveStoredIds = (key, ids) => {
   try {
     localStorage.setItem(key, JSON.stringify([...new Set(ids)]));
@@ -50,7 +46,6 @@ const saveStoredIds = (key, ids) => {
     console.error(`Unable to save ${key}:`, error);
   }
 };
-
 const getArray = (response, possibleKeys = []) => {
   if (Array.isArray(response)) {
     return response;
@@ -68,7 +63,6 @@ const getArray = (response, possibleKeys = []) => {
   }
   return [];
 };
-
 const getValue = (object, keys, fallback = '') => {
   for (const key of keys) {
     if (
@@ -81,13 +75,11 @@ const getValue = (object, keys, fallback = '') => {
   }
   return fallback;
 };
-
 const getTimestamp = (value) => {
   if (!value) return 0;
   const timestamp = new Date(value).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
 };
-
 const getTimeAgo = (dateValue) => {
   if (!dateValue) return 'Recently';
   const timestamp = getTimestamp(dateValue);
@@ -109,7 +101,6 @@ const getTimeAgo = (dateValue) => {
   }
   return new Date(timestamp).toLocaleDateString('en-IN');
 };
-
 const getFormattedDate = (dateValue) => {
   if (!dateValue) return 'Date unavailable';
   const timestamp = getTimestamp(dateValue);
@@ -120,24 +111,20 @@ const getFormattedDate = (dateValue) => {
     year: 'numeric',
   });
 };
-
 function NotificationPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
-
   // Filtration state
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('All'); // 'All' | 'System' | 'Users' | 'Events'
   const [readFilter, setReadFilter] = useState('all'); // 'all' | 'unread' | 'read'
   const [sortOrder, setSortOrder] = useState('newest'); // 'newest' | 'oldest'
-
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
   const fetchNotifications = useCallback(async (showLoader = false) => {
     if (showLoader) {
       setRefreshing(true);
@@ -157,7 +144,6 @@ function NotificationPage() {
           };
         })
       );
-
       const apiData = {};
       const failedApis = [];
       results.forEach((result, index) => {
@@ -169,15 +155,12 @@ function NotificationPage() {
           console.error(`Failed to fetch ${type}:`, result.reason);
         }
       });
-
       if (failedApis.length === endpointEntries.length) {
         throw new Error(
           'All notification APIs failed. Please check your backend server and API routes.'
         );
       }
-
       const notifications = [];
-
       const registrations = getArray(apiData.registrations, [
         'registrations',
         'registration',
@@ -218,7 +201,6 @@ function NotificationPage() {
           unread: true,
         });
       });
-
       const teams = getArray(apiData.teams, [
         'teams',
         'registeredTeams',
@@ -255,7 +237,6 @@ function NotificationPage() {
           unread: true,
         });
       });
-
       const events = getArray(apiData.events, ['events', 'event', 'results']);
       events.forEach((event, index) => {
         const eventId = getValue(
@@ -285,7 +266,6 @@ function NotificationPage() {
           unread: true,
         });
       });
-
       const activities = getArray(apiData.activities, [
         'activities',
         'activity',
@@ -326,24 +306,19 @@ function NotificationPage() {
           unread: true,
         });
       });
-
       notifications.sort(
         (first, second) => second.timestamp - first.timestamp
       );
-
       const readIds = new Set(getStoredIds(READ_NOTIFICATIONS_KEY));
       const deletedIds = new Set(getStoredIds(DELETED_NOTIFICATIONS_KEY));
-
       const visibleNotifications = notifications
         .filter((notification) => !deletedIds.has(notification.id))
         .map((notification) => ({
           ...notification,
           unread: !readIds.has(notification.id),
         }));
-
       setItems(visibleNotifications);
       setLastUpdated(new Date());
-
       if (failedApis.length > 0) {
         setError(
           `Some APIs could not be reached: ${failedApis.join(
@@ -361,7 +336,6 @@ function NotificationPage() {
       setRefreshing(false);
     }
   }, []);
-
   useEffect(() => {
     fetchNotifications();
     const intervalId = setInterval(() => {
@@ -371,7 +345,6 @@ function NotificationPage() {
       clearInterval(intervalId);
     };
   }, [fetchNotifications]);
-
   // Counts for KPIs and badges
   const unreadCount = useMemo(
     () => items.filter((n) => n.unread).length,
@@ -389,7 +362,6 @@ function NotificationPage() {
     () => items.filter((n) => n.category === 'System').length,
     [items]
   );
-
   // Filter and Sort memo
   const filteredAndSortedNotifications = useMemo(() => {
     return items
@@ -404,12 +376,10 @@ function NotificationPage() {
             return false;
           }
         }
-
         // Category filter
         if (filterType !== 'All' && notification.category !== filterType) {
           return false;
         }
-
         // Read/Unread status filter
         if (readFilter === 'unread' && !notification.unread) {
           return false;
@@ -417,7 +387,6 @@ function NotificationPage() {
         if (readFilter === 'read' && notification.unread) {
           return false;
         }
-
         return true;
       })
       .sort((a, b) => {
@@ -427,7 +396,6 @@ function NotificationPage() {
         return (b.timestamp || 0) - (a.timestamp || 0);
       });
   }, [items, searchQuery, filterType, readFilter, sortOrder]);
-
   // Pagination calculation
   const totalPages = Math.max(
     1,
@@ -439,13 +407,11 @@ function NotificationPage() {
     startIndex,
     startIndex + itemsPerPage
   );
-
   const isFilterActive =
     searchQuery.trim() !== '' ||
     filterType !== 'All' ||
     readFilter !== 'all' ||
     sortOrder !== 'newest';
-
   const resetFilters = () => {
     setSearchQuery('');
     setFilterType('All');
@@ -453,7 +419,6 @@ function NotificationPage() {
     setSortOrder('newest');
     setCurrentPage(1);
   };
-
   const markAllRead = () => {
     const existingReadIds = getStoredIds(READ_NOTIFICATIONS_KEY);
     const updatedReadIds = [
@@ -465,7 +430,6 @@ function NotificationPage() {
       previousItems.map((item) => ({ ...item, unread: false }))
     );
   };
-
   const deleteNotification = (id) => {
     const deletedIds = getStoredIds(DELETED_NOTIFICATIONS_KEY);
     saveStoredIds(DELETED_NOTIFICATIONS_KEY, [...deletedIds, id]);
@@ -473,7 +437,6 @@ function NotificationPage() {
       previousItems.filter((item) => item.id !== id)
     );
   };
-
   const toggleRead = (id) => {
     const readIds = new Set(getStoredIds(READ_NOTIFICATIONS_KEY));
     const notification = items.find((item) => item.id === id);
@@ -490,7 +453,6 @@ function NotificationPage() {
       )
     );
   };
-
   return (
     <div className="min-h-screen bg-gray-50 transition-colors dark:bg-black">
       {/* Page Header */}
@@ -513,7 +475,6 @@ function NotificationPage() {
             </p>
           )}
         </div>
-
         <div className="flex flex-wrap items-center gap-2">
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -527,7 +488,6 @@ function NotificationPage() {
             />
             Refresh
           </motion.button>
-
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -540,7 +500,6 @@ function NotificationPage() {
           </motion.button>
         </div>
       </motion.div>
-
       <div className="space-y-6 p-4 sm:p-6 md:p-10">
         {/* Quick Metric Cards */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
@@ -567,7 +526,6 @@ function NotificationPage() {
               {items.length}
             </p>
           </button>
-
           <button
             type="button"
             onClick={() => {
@@ -590,7 +548,6 @@ function NotificationPage() {
               {unreadCount}
             </p>
           </button>
-
           <button
             type="button"
             onClick={() => {
@@ -613,7 +570,6 @@ function NotificationPage() {
               {usersCount}
             </p>
           </button>
-
           <button
             type="button"
             onClick={() => {
@@ -637,7 +593,6 @@ function NotificationPage() {
             </p>
           </button>
         </div>
-
         {/* Main Notifications Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -675,7 +630,6 @@ function NotificationPage() {
                   </button>
                 )}
               </div>
-
               {/* Filters & Sorting Controls */}
               <div className="flex flex-wrap items-center gap-2.5">
                 {/* Status Dropdown */}
@@ -691,7 +645,6 @@ function NotificationPage() {
                   <option value="unread">Unread Only</option>
                   <option value="read">Read Only</option>
                 </select>
-
                 {/* Sort Order */}
                 <select
                   value={sortOrder}
@@ -704,7 +657,6 @@ function NotificationPage() {
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
                 </select>
-
                 {/* Reset Filters Button */}
                 {isFilterActive && (
                   <button
@@ -719,7 +671,6 @@ function NotificationPage() {
                 )}
               </div>
             </div>
-
             {/* Category Filter Pills */}
             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4 dark:border-zinc-800/80">
               <span className="text-xs font-medium text-gray-400 dark:text-zinc-500 mr-1 flex items-center gap-1">
@@ -759,7 +710,6 @@ function NotificationPage() {
               ))}
             </div>
           </div>
-
           {/* Error Banner */}
           {error && (
             <div className="m-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400 sm:m-6">
@@ -777,7 +727,6 @@ function NotificationPage() {
               </div>
             </div>
           )}
-
           {/* Notifications List Content */}
           {loading ? (
             <div className="flex flex-col items-center justify-center gap-3 p-12">
@@ -791,7 +740,6 @@ function NotificationPage() {
               <AnimatePresence mode="popLayout">
                 {paginatedNotifications.map((notification, index) => {
                   const Icon = notification.icon || Bell;
-
                   return (
                     <motion.div
                       key={notification.id}
@@ -819,26 +767,22 @@ function NotificationPage() {
                         >
                           <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
-
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex items-start justify-between gap-2">
                             <div className="flex min-w-0 flex-wrap items-center gap-2">
                               <h3 className="text-sm font-semibold text-gray-900 dark:text-white sm:text-base">
                                 {notification.title}
                               </h3>
-
                               {notification.unread && (
                                 <span
                                   title="Unread"
                                   className="h-2 w-2 shrink-0 rounded-full bg-emerald-600 dark:bg-emerald-400"
                                 />
                               )}
-
                               <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600 dark:bg-zinc-800 dark:text-gray-400">
                                 {notification.category}
                               </span>
                             </div>
-
                             <div className="flex shrink-0 items-center gap-1">
                               <button
                                 type="button"
@@ -856,7 +800,6 @@ function NotificationPage() {
                                   <MailOpen className="h-4 w-4" />
                                 )}
                               </button>
-
                               <button
                                 type="button"
                                 onClick={() =>
@@ -869,11 +812,9 @@ function NotificationPage() {
                               </button>
                             </div>
                           </div>
-
                           <p className="mb-2 text-xs text-gray-600 dark:text-gray-300 sm:text-sm">
                             {notification.message}
                           </p>
-
                           <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400 dark:text-zinc-500">
                             <span>{notification.time}</span>
                             <span>•</span>
@@ -885,7 +826,6 @@ function NotificationPage() {
                   );
                 })}
               </AnimatePresence>
-
               {/* Empty State */}
               {filteredAndSortedNotifications.length === 0 && (
                 <div className="p-12 text-center">
@@ -914,7 +854,6 @@ function NotificationPage() {
               )}
             </div>
           )}
-
           {/* Pagination Footer */}
           {filteredAndSortedNotifications.length > 0 && (
             <div className="flex flex-col items-center justify-between gap-4 border-t border-gray-200 bg-gray-50/50 px-4 py-3 dark:border-zinc-800 dark:bg-black sm:flex-row sm:px-6 sm:py-4">
@@ -937,7 +876,6 @@ function NotificationPage() {
                   </span>{' '}
                   notifications
                 </span>
-
                 <div className="hidden sm:flex items-center gap-1.5 ml-2 border-l border-gray-200 dark:border-zinc-800 pl-3">
                   <span className="text-xs text-gray-400">Per page:</span>
                   <select
@@ -955,7 +893,6 @@ function NotificationPage() {
                   </select>
                 </div>
               </div>
-
               {/* Page Navigation Buttons */}
               <div className="flex items-center gap-1.5">
                 <button
@@ -976,7 +913,6 @@ function NotificationPage() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-
                 <div className="flex items-center gap-1 px-1">
                   {Array.from({ length: totalPages }, (_, i) => i + 1)
                     .filter(
@@ -1016,7 +952,6 @@ function NotificationPage() {
                       )
                     )}
                 </div>
-
                 <button
                   type="button"
                   onClick={() =>
@@ -1040,7 +975,6 @@ function NotificationPage() {
               </div>
             </div>
           )}
-
           {/* Bottom auto-refresh indicator note */}
           {!loading && items.length > 0 && (
             <div className="border-t border-gray-100 px-4 py-2.5 dark:border-zinc-900 sm:px-6">
@@ -1054,5 +988,4 @@ function NotificationPage() {
     </div>
   );
 }
-
 export default NotificationPage;

@@ -1,25 +1,18 @@
 import QRCode from 'qrcode';
 import { API_BASE_URL } from '@/lib/api';
 import { loadGoogleFontDynamically } from '../constants/fontsCatalog';
-
-/**
- * Image loader with cache and fallback
- */
+// Image loader with cache and fallback
 const imageCache = new Map();
-
 export const loadSafeImage = (src) => {
   return new Promise((resolve) => {
     if (!src) return resolve(null);
-
     let resolvedSrc = src;
     if (typeof resolvedSrc === 'string' && resolvedSrc.startsWith('/uploads')) {
       resolvedSrc = `${API_BASE_URL}${resolvedSrc}`;
     }
-
     if (imageCache.has(resolvedSrc)) {
       return resolve(imageCache.get(resolvedSrc));
     }
-
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
@@ -30,18 +23,13 @@ export const loadSafeImage = (src) => {
       resolve(null);
     };
     img.src = resolvedSrc;
-
     // Timeout safety
     setTimeout(() => resolve(null), 5000);
   });
 };
-
-/**
- * Replace placeholders in template text
- */
+// Replace placeholders in template text
 export const replaceDynamicPlaceholders = (text, participant = {}, event = {}) => {
   if (!text || typeof text !== 'string') return '';
-
   const name = participant.ParticipantName || participant.UserName || participant.name || participant.TeamLeaderName || participant.LeaderName || 'Participant Name';
   const regId = participant.IdCardNumber || (participant.UserId ? `EV${event.Id || ''}-U${participant.UserId}` : 'EV-2026-001');
   const college = participant.College || participant.MemberCollege || participant.college || event.CollegeName || 'Aditya Institute of Technology and Management';
@@ -55,33 +43,27 @@ export const replaceDynamicPlaceholders = (text, participant = {}, event = {}) =
   const members = Array.isArray(participant.members) ? participant.members : [];
   const hasRealMembers = members.length > 0;
   const membersCount = hasRealMembers ? members.length : (participant.TeamSize || 4);
-
   const lead = members.find(m => (m.Role || '').toLowerCase().includes('lead')) || members[0] || {};
   const otherMembers = members.filter(m => m !== lead);
   const member1 = lead;
   const member2 = otherMembers[0] || (members.length > 1 ? members[1] : {});
   const member3 = otherMembers[1] || (members.length > 2 ? members[2] : {});
   const member4 = otherMembers[2] || (members.length > 3 ? members[3] : {});
-
   const teamLeadName = lead.UserName || lead.MemberName || participant.LeaderName || (hasRealMembers ? '' : 'Alex Rivers');
   const m1Name = member1.UserName || member1.MemberName || teamLeadName;
   const m2Name = member2.UserName || member2.MemberName || (hasRealMembers ? '' : 'Priya Sharma');
   const m3Name = member3.UserName || member3.MemberName || (hasRealMembers ? '' : 'David Chen');
   const m4Name = member4.UserName || member4.MemberName || (hasRealMembers ? '' : 'Aisha Patel');
-
   const m1Role = member1.Role || 'TEAM LEADER';
   const m2Role = member2.Role || (hasRealMembers ? (member2.UserName ? 'MEMBER' : '') : 'MEMBER');
   const m3Role = member3.Role || (hasRealMembers ? (member3.UserName ? 'MEMBER' : '') : 'MEMBER');
   const m4Role = member4.Role || (hasRealMembers ? (member4.UserName ? 'MEMBER' : '') : 'MEMBER');
-
   const m1Roll = member1.RollNumber || member1.RollNo || '21A51A0501';
   const m2Roll = member2.RollNumber || member2.RollNo || '21A51A4205';
   const m3Roll = member3.RollNumber || member3.RollNo || '21A51A1210';
   const m4Roll = member4.RollNumber || member4.RollNo || '21A51A0415';
-
   const eventName = event.EventName || event.eventName || 'Ayojan Hackathon';
   const category = participant.ParticipantCategory || (participant.TeamLeader ? 'Team Leader' : 'Participant');
-
   let dateVal = event.PhysicalStartDate || event.StartDate || event.startDate || 'Upcoming';
   if (dateVal && dateVal !== 'Upcoming') {
     const d = new Date(dateVal);
@@ -89,7 +71,6 @@ export const replaceDynamicPlaceholders = (text, participant = {}, event = {}) =
       dateVal = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
   }
-
   return text
     .replace(/\{\{participant_name\}\}/gi, name)
     .replace(/\{\{registration_id\}\}/gi, regId)
@@ -119,10 +100,7 @@ export const replaceDynamicPlaceholders = (text, participant = {}, event = {}) =
     .replace(/\{\{event_date\}\}/gi, dateVal)
     .replace(/\{\{participant_category\}\}/gi, category);
 };
-
-/**
- * Generate Avatar fallback for missing participant photo
- */
+// Generate Avatar fallback for missing participant photo
 const drawAvatarFallback = (ctx, x, y, width, height, name = 'P', borderRadius = 0) => {
   ctx.save();
   ctx.beginPath();
@@ -132,14 +110,12 @@ const drawAvatarFallback = (ctx, x, y, width, height, name = 'P', borderRadius =
     ctx.rect(x, y, width, height);
   }
   ctx.clip();
-
   // Gradient background
   const grad = ctx.createLinearGradient(x, y, x + width, y + height);
   grad.addColorStop(0, '#047857');
   grad.addColorStop(1, '#064e3b');
   ctx.fillStyle = grad;
   ctx.fillRect(x, y, width, height);
-
   // Initials
   const initials = (name || 'P')
     .split(' ')
@@ -147,7 +123,6 @@ const drawAvatarFallback = (ctx, x, y, width, height, name = 'P', borderRadius =
     .slice(0, 2)
     .map(w => w[0].toUpperCase())
     .join('');
-
   ctx.fillStyle = '#ffffff';
   ctx.font = `bold ${Math.max(14, Math.floor(width * 0.38))}px Inter, sans-serif`;
   ctx.textAlign = 'center';
@@ -155,10 +130,7 @@ const drawAvatarFallback = (ctx, x, y, width, height, name = 'P', borderRadius =
   ctx.fillText(initials || 'P', x + width / 2, y + height / 2);
   ctx.restore();
 };
-
-/**
- * Main function: Renders a card side onto an HTML5 canvas at custom scale
- */
+// Main function: Renders a card side onto an HTML5 canvas at custom scale
 export const renderCardSide = async (
   canvas,
   sideConfig,
@@ -167,7 +139,6 @@ export const renderCardSide = async (
   options = {}
 ) => {
   if (!canvas || !sideConfig) return;
-
   const {
     scale = 2,
     cardWidth = 380,
@@ -176,22 +147,17 @@ export const renderCardSide = async (
     showCropMarks = false,
     previewMode = false
   } = options;
-
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-
   // Set real pixel resolution and unconditionally reset transforms
   const pixelWidth = Math.round(cardWidth * scale);
   const pixelHeight = Math.round(cardHeight * scale);
-
   canvas.width = pixelWidth;
   canvas.height = pixelHeight;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, pixelWidth, pixelHeight);
-
   ctx.save();
   ctx.scale(scale, scale);
-
   // 1. Draw Card Background (Solid, Gradient, or Image)
   const bgType = sideConfig.bgType === 'solid'
     ? 'solid'
@@ -204,11 +170,9 @@ export const renderCardSide = async (
     : (sideConfig.gradientColor1 && sideConfig.gradientColor2 && !sideConfig.backgroundColor)
     ? 'gradient'
     : 'solid';
-
   if (bgType === 'gradient') {
     const angle = Number(sideConfig.gradientAngle) || 135;
     let x0 = 0, y0 = 0, x1 = 0, y1 = cardHeight;
-
     if (angle === 90) {
       x0 = 0; y0 = 0; x1 = cardWidth; y1 = 0; // left to right
     } else if (angle === 180) {
@@ -219,7 +183,6 @@ export const renderCardSide = async (
       // 135 deg default diagonal down
       x0 = 0; y0 = 0; x1 = cardWidth; y1 = cardHeight;
     }
-
     const grad = ctx.createLinearGradient(x0, y0, x1, y1);
     grad.addColorStop(0, sideConfig.gradientColor1 || '#064e3b');
     grad.addColorStop(1, sideConfig.gradientColor2 || '#022c22');
@@ -231,7 +194,6 @@ export const renderCardSide = async (
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, cardWidth, cardHeight);
   }
-
   // Draw Background Image if present and bgType is 'image'
   if (bgType === 'image' && sideConfig.backgroundImage) {
     const bgImg = await loadSafeImage(sideConfig.backgroundImage);
@@ -239,7 +201,6 @@ export const renderCardSide = async (
       const imgRatio = bgImg.width / bgImg.height;
       const cardRatio = cardWidth / cardHeight;
       let sWidth, sHeight, sx, sy;
-
       if (cardRatio > imgRatio) {
         sWidth = bgImg.width;
         sHeight = bgImg.width / cardRatio;
@@ -251,13 +212,11 @@ export const renderCardSide = async (
         sx = (bgImg.width - sWidth) / 2;
         sy = 0;
       }
-
       ctx.save();
       const imgOpacity = sideConfig.bgImageOpacity !== undefined ? Number(sideConfig.bgImageOpacity) : 1;
       ctx.globalAlpha = imgOpacity;
       ctx.drawImage(bgImg, sx, sy, sWidth, sHeight, 0, 0, cardWidth, cardHeight);
       ctx.restore();
-
       // Draw dark overlay on top of background image if enabled
       const overlayOpacity = Number(sideConfig.bgOverlayOpacity) || 0;
       if (overlayOpacity > 0) {
@@ -266,46 +225,37 @@ export const renderCardSide = async (
       }
     }
   }
-
   // 2. Sort elements by zIndex
   const elements = Array.isArray(sideConfig.elements) ? [...sideConfig.elements] : [];
   elements.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-
   const isTeamCard = Array.isArray(participant?.members) || Boolean(participant?.TeamId && participant?.TeamName);
   const actualMemberCount = (Array.isArray(participant?.members) && participant.members.length > 0)
     ? participant.members.length
     : (isTeamCard ? Number(participant.TeamSize || 4) : 0);
-
   // 3. Render each element
   for (const elem of elements) {
     if (elem.hidden) continue;
-
     // Check dynamic visibility for member-specific elements on team cards
     if (isTeamCard && actualMemberCount > 0) {
       const isM4 = elem.id?.includes('member-4') || elem.dynamicField?.includes('member_4');
       const isM3 = elem.id?.includes('member-3') || elem.dynamicField?.includes('member_3');
       const isM2 = elem.id?.includes('member-2') || elem.dynamicField?.includes('member_2');
-
       if (actualMemberCount < 4 && isM4) continue;
       if (actualMemberCount < 3 && isM3) continue;
       if (actualMemberCount < 2 && isM2) continue;
     }
-
     ctx.save();
-
     let x = Number(elem.x) || 0;
     const y = Number(elem.y) || 0;
     const w = Number(elem.width) || 100;
     const h = Number(elem.height) || 40;
     const rotation = (Number(elem.rotation) || 0) * (Math.PI / 180);
     const opacity = elem.opacity !== undefined ? Number(elem.opacity) : 1;
-
     // Dynamically center team member cards if the team has 1, 2, or 3 members
     if (isTeamCard && actualMemberCount > 0 && actualMemberCount < 4) {
       const isM1 = elem.id?.includes('member-1') || elem.dynamicField?.includes('member_1') || elem.dynamicField === 'team_lead_photo';
       const isM2 = elem.id?.includes('member-2') || elem.dynamicField?.includes('member_2');
       const isM3 = elem.id?.includes('member-3') || elem.dynamicField?.includes('member_3');
-
       if (actualMemberCount === 2 && (isM1 || isM2)) {
         x = x + 174;
       } else if (actualMemberCount === 3 && (isM1 || isM2 || isM3)) {
@@ -314,23 +264,19 @@ export const renderCardSide = async (
         x = x + 260;
       }
     }
-
     ctx.globalAlpha = opacity;
-
     // Apply rotation around element center
     if (rotation !== 0) {
       ctx.translate(x + w / 2, y + h / 2);
       ctx.rotate(rotation);
       ctx.translate(-(x + w / 2), -(y + h / 2));
     }
-
     // --- A. SHAPE ELEMENT ---
     if (elem.type === 'shape') {
       const radius = Number(elem.borderRadius) || 0;
       const strokeWidth = Number(elem.strokeWidth) || 0;
       const strokeColor = elem.stroke || 'transparent';
       const fill = elem.fill || '#10b981';
-
       ctx.beginPath();
       if (elem.shapeType === 'circle') {
         const radiusCircle = Math.min(w, h) / 2;
@@ -345,19 +291,16 @@ export const renderCardSide = async (
           ctx.rect(x, y, w, h);
         }
       }
-
       if (elem.shapeType !== 'line') {
         ctx.fillStyle = fill;
         ctx.fill();
       }
-
       if (strokeWidth > 0 && strokeColor !== 'transparent') {
         ctx.lineWidth = strokeWidth;
         ctx.strokeStyle = strokeColor;
         ctx.stroke();
       }
     }
-
     // --- B. TEXT ELEMENT ---
     else if (elem.type === 'text') {
       const rawText = elem.text || '';
@@ -369,7 +312,6 @@ export const renderCardSide = async (
       } else if (elem.textTransform === 'capitalize') {
         processedText = processedText.replace(/\b\w/g, (c) => c.toUpperCase());
       }
-
       const fontSize = Number(elem.fontSize) || 14;
       const fontWeight = elem.fontWeight || 'normal';
       const fontStyle = elem.fontStyle === 'italic' ? 'italic ' : '';
@@ -377,29 +319,22 @@ export const renderCardSide = async (
       const color = elem.color || '#ffffff';
       const align = elem.textAlign || 'center';
       const letterSpacing = Number(elem.letterSpacing) || 0;
-
       loadGoogleFontDynamically(fontFamily);
-
       ctx.font = `${fontStyle}${fontWeight} ${fontSize}px ${fontFamily}`;
       ctx.fillStyle = color;
       ctx.textBaseline = 'top';
-
       if (ctx.letterSpacing !== undefined) {
         ctx.letterSpacing = `${letterSpacing}px`;
       }
-
       let textX = x;
       if (align === 'center') textX = x + w / 2;
       else if (align === 'right') textX = x + w;
-
       ctx.textAlign = align;
-
       // Handle simple multi-line wrap
       const words = processedText.split(' ');
       let line = '';
       const lines = [];
       const maxWidth = w;
-
       for (let n = 0; n < words.length; n++) {
         const testLine = line + words[n] + ' ';
         const metrics = ctx.measureText(testLine);
@@ -411,22 +346,18 @@ export const renderCardSide = async (
         }
       }
       lines.push(line.trim());
-
       const lineHeight = fontSize * 1.25;
       lines.forEach((l, idx) => {
         ctx.fillText(l, textX, y + idx * lineHeight);
       });
     }
-
     // --- C. IMAGE ELEMENT ---
     else if (elem.type === 'image') {
       const radius = Number(elem.borderRadius) || 0;
       const borderWidth = Number(elem.borderWidth) || 0;
       const borderColor = elem.borderColor || '#10b981';
-
       let imgSrc = elem.src;
       let avatarFallbackName = participant.ParticipantName || 'P';
-
       const members = Array.isArray(participant.members) ? participant.members : [];
       const lead = members.find(m => (m.Role || '').toLowerCase().includes('lead')) || members[0] || {};
       const otherMembers = members.filter(m => m !== lead);
@@ -434,13 +365,11 @@ export const renderCardSide = async (
       const member2 = otherMembers[0] || members[1] || {};
       const member3 = otherMembers[1] || members[2] || {};
       const member4 = otherMembers[2] || members[3] || {};
-
       const isPhotoField = elem.dynamicField && (
         elem.dynamicField === 'participant_photo' ||
         elem.dynamicField === 'team_lead_photo' ||
         elem.dynamicField.startsWith('member_')
       );
-
       if (elem.dynamicField === 'participant_photo') {
         imgSrc = participant.Photo || participant.photo || elem.src;
         avatarFallbackName = participant.ParticipantName || participant.UserName || 'P';
@@ -457,9 +386,7 @@ export const renderCardSide = async (
         imgSrc = member4.Photo || elem.src;
         avatarFallbackName = member4.UserName || member4.MemberName || 'M4';
       }
-
       const img = imgSrc ? await loadSafeImage(imgSrc) : null;
-
       ctx.save();
       ctx.beginPath();
       if (radius > 0) {
@@ -468,12 +395,10 @@ export const renderCardSide = async (
         ctx.rect(x, y, w, h);
       }
       ctx.clip();
-
       if (img) {
         const fit = elem.objectFit || (isPhotoField ? 'cover' : 'contain');
         const imgRatio = img.width / img.height;
         const elemRatio = w / h;
-
         if (fit === 'contain') {
           // Scale image to fit inside w & h without cropping (perfect for logos)
           let renderW, renderH, renderX, renderY;
@@ -513,7 +438,6 @@ export const renderCardSide = async (
         drawAvatarFallback(ctx, x, y, w, h, avatarFallbackName, radius);
       }
       ctx.restore();
-
       // Border stroke around image
       if (borderWidth > 0 && borderColor !== 'transparent') {
         ctx.beginPath();
@@ -527,7 +451,6 @@ export const renderCardSide = async (
         ctx.stroke();
       }
     }
-
     // --- D. QR CODE ELEMENT ---
     else if (elem.type === 'qr') {
       const radius = Number(elem.borderRadius) || 0;
@@ -535,7 +458,6 @@ export const renderCardSide = async (
       const borderColor = elem.borderColor || 'transparent';
       const qrColor = elem.color || '#000000';
       const qrBg = elem.bgColor || '#ffffff';
-
       // Verification / Team URL format
       const isTeam = Boolean(participant.TeamId || participant.TeamName || participant.TeamLeaderName);
       const teamId = participant.TeamId || participant.Id || '';
@@ -545,7 +467,6 @@ export const renderCardSide = async (
       const verifyUrl = isTeam && teamId
         ? `${origin}/teams/public/${teamId}`
         : `${origin}/verify-id?token=${encodeURIComponent(token)}&eventId=${encodeURIComponent(eventId)}`;
-
       try {
         const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
           margin: 1,
@@ -555,7 +476,6 @@ export const renderCardSide = async (
             light: qrBg
           }
         });
-
         const qrImg = await loadSafeImage(qrDataUrl);
         if (qrImg) {
           ctx.save();
@@ -568,7 +488,6 @@ export const renderCardSide = async (
           ctx.clip();
           ctx.drawImage(qrImg, x, y, w, h);
           ctx.restore();
-
           if (borderWidth > 0 && borderColor && borderColor !== 'transparent') {
             ctx.beginPath();
             if (radius > 0) {
@@ -585,10 +504,8 @@ export const renderCardSide = async (
         console.error('Error rendering QR code onto canvas:', qrErr);
       }
     }
-
     ctx.restore();
   }
-
   // 4. Safe print margins guide (visual in designer)
   if (showSafeMargin) {
     const margin = Number(sideConfig.safeMargin) || 15;
@@ -599,7 +516,6 @@ export const renderCardSide = async (
     ctx.strokeRect(margin, margin, cardWidth - margin * 2, cardHeight - margin * 2);
     ctx.restore();
   }
-
   // 5. Crop marks (cutting margins for print sheet)
   if (showCropMarks) {
     ctx.save();
@@ -615,8 +531,6 @@ export const renderCardSide = async (
     ctx.stroke();
     ctx.restore();
   }
-
   ctx.restore();
 };
-
 export const renderCardSideCanvas = renderCardSide;

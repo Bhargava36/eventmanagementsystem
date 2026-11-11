@@ -13,10 +13,8 @@ import {
   Mail,
   Layers
 } from 'lucide-react';
-
 export default function TermsOfService() {
   const lastUpdated = "October 26, 2026";
-
   const sections = [
     {
       id: "acceptance",
@@ -127,12 +125,10 @@ export default function TermsOfService() {
       ),
     },
   ];
-
   return (
     <div className="relative min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white pt-24 pb-20 px-4 sm:px-6 lg:px-8 selection:bg-emerald-500 selection:text-white">
       {/* Background Subtle Glow - pure emerald & dark */}
       <div className="absolute top-20 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-emerald-500/10 via-emerald-500/5 to-transparent blur-3xl pointer-events-none -z-10" />
-
       <div className="max-w-4xl mx-auto space-y-10">
         {/* Navigation Breadcrumb */}
         <div className="flex items-center justify-between">
@@ -148,7 +144,6 @@ export default function TermsOfService() {
             <span>Effective: {lastUpdated}</span>
           </div>
         </div>
-
         {/* Hero Header */}
         <div className="space-y-4 text-center sm:text-left border-b border-slate-200 dark:border-zinc-800 pb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -162,7 +157,6 @@ export default function TermsOfService() {
             Please read these terms carefully before registering for competitions, creating teams, or hosting events on the AYOJAN platform.
           </p>
         </div>
-
         {/* Quick Jump Bar */}
         <div className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/40 backdrop-blur-sm">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-3">
@@ -180,7 +174,6 @@ export default function TermsOfService() {
             ))}
           </div>
         </div>
-
         {/* Sections */}
         <div className="space-y-8">
           {sections.map((section, idx) => {
@@ -208,7 +201,6 @@ export default function TermsOfService() {
             );
           })}
         </div>
-
         {/* Contact & Support Section */}
         <div className="p-6 sm:p-8 rounded-3xl border border-emerald-500/30 bg-emerald-500/5 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="space-y-1">

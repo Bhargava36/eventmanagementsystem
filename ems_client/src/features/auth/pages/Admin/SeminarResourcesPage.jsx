@@ -15,10 +15,8 @@ import {
   X,
   FileSpreadsheet
 } from 'lucide-react';
-
 export default function SeminarResourcesPage() {
   const toast = useToast();
-
   const admin = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -26,22 +24,18 @@ export default function SeminarResourcesPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
-
   const [formData, setFormData] = useState({
     Title: '',
     ResourceType: 'Slides',
     ResourceUrl: '',
     Description: ''
   });
-
   const fetchResources = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -57,17 +51,14 @@ export default function SeminarResourcesPage() {
       setLoading(false);
     }
   }, [eventId, toast]);
-
   useEffect(() => {
     fetchResources();
   }, [fetchResources]);
-
   const handleOpenAdd = () => {
     setEditingResource(null);
     setFormData({ Title: '', ResourceType: 'Slides', ResourceUrl: '', Description: '' });
     setIsModalOpen(true);
   };
-
   const handleOpenEdit = (res) => {
     setEditingResource(res);
     setFormData({
@@ -78,7 +69,6 @@ export default function SeminarResourcesPage() {
     });
     setIsModalOpen(true);
   };
-
   const handleSaveResource = async (e) => {
     e.preventDefault();
     if (!eventId) return;
@@ -86,14 +76,12 @@ export default function SeminarResourcesPage() {
       toast.error('Title and Resource URL are required');
       return;
     }
-
     try {
       setSaving(true);
       const url = editingResource
         ? `${API_BASE_URL}/api/seminars/resources/${editingResource.Id}`
         : `${API_BASE_URL}/api/seminars/${eventId}/resources`;
       const method = editingResource ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -112,7 +100,6 @@ export default function SeminarResourcesPage() {
       setSaving(false);
     }
   };
-
   const handleDeleteResource = async (id) => {
     if (!window.confirm('Delete this resource link?')) return;
     try {
@@ -127,7 +114,6 @@ export default function SeminarResourcesPage() {
       toast.error('Could not delete resource');
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 font-sans">
       {/* Header Banner */}
@@ -144,7 +130,6 @@ export default function SeminarResourcesPage() {
             Upload and distribute speaker presentation slides, proceedings booklets, and recording links.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
           <button
             onClick={fetchResources}
@@ -154,7 +139,6 @@ export default function SeminarResourcesPage() {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-500' : ''}`} />
           </button>
-
           <button
             onClick={handleOpenAdd}
             className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition cursor-pointer"
@@ -164,7 +148,6 @@ export default function SeminarResourcesPage() {
           </button>
         </div>
       </div>
-
       {/* Grid of Resources */}
       {loading ? (
         <div className="flex items-center justify-center py-24 text-slate-400 dark:text-zinc-500 text-sm gap-3">
@@ -206,18 +189,15 @@ export default function SeminarResourcesPage() {
                     {new Date(res.CreatedAt).toLocaleDateString()}
                   </span>
                 </div>
-
                 <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
                   {res.Title}
                 </h3>
-
                 {res.Description && (
                   <p className="text-xs text-slate-600 dark:text-zinc-400 line-clamp-3 leading-relaxed">
                     {res.Description}
                   </p>
                 )}
               </div>
-
               <div className="pt-4 mt-4 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between">
                 <a
                   href={res.ResourceUrl}
@@ -228,7 +208,6 @@ export default function SeminarResourcesPage() {
                   <ExternalLink className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Open Resource</span>
                 </a>
-
                 <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => handleOpenEdit(res)}
@@ -237,7 +216,6 @@ export default function SeminarResourcesPage() {
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
-
                   <button
                     onClick={() => handleDeleteResource(res.Id)}
                     className="p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 transition cursor-pointer"
@@ -251,7 +229,6 @@ export default function SeminarResourcesPage() {
           ))}
         </div>
       )}
-
       {/* Modal: Upload or Edit Resource */}
       <AnimatePresence>
         {isModalOpen && (
@@ -280,7 +257,6 @@ export default function SeminarResourcesPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <form onSubmit={handleSaveResource} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
@@ -295,7 +271,6 @@ export default function SeminarResourcesPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
                     Material Type
@@ -312,7 +287,6 @@ export default function SeminarResourcesPage() {
                     <option value="Notes">Speaker Notes & Handouts</option>
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
                     Resource File / URL *
@@ -326,7 +300,6 @@ export default function SeminarResourcesPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
                     Description
@@ -339,7 +312,6 @@ export default function SeminarResourcesPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm resize-none transition-all"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800/80">
                   <button
                     type="button"

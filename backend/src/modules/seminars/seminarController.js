@@ -1,5 +1,4 @@
 const seminarServices = require('./seminarServices');
-
 // --- Speakers ---
 const getSpeakers = (req, res) => {
     const { eventId } = req.params;
@@ -8,7 +7,6 @@ const getSpeakers = (req, res) => {
         res.status(200).json({ speakers: results || [] });
     });
 };
-
 const createSpeaker = (req, res) => {
     const { eventId } = req.params;
     const { Name } = req.body;
@@ -20,7 +18,6 @@ const createSpeaker = (req, res) => {
         res.status(201).json({ message: 'Speaker added successfully', speaker: result });
     });
 };
-
 const updateSpeaker = (req, res) => {
     const { speakerId } = req.params;
     seminarServices.updateSpeaker(speakerId, req.body, (err, result) => {
@@ -28,7 +25,6 @@ const updateSpeaker = (req, res) => {
         res.status(200).json({ message: 'Speaker updated successfully' });
     });
 };
-
 const deleteSpeaker = (req, res) => {
     const { speakerId } = req.params;
     seminarServices.deleteSpeaker(speakerId, (err, result) => {
@@ -36,7 +32,6 @@ const deleteSpeaker = (req, res) => {
         res.status(200).json({ message: 'Speaker deleted successfully' });
     });
 };
-
 // --- Sessions / Agenda ---
 const getSessions = (req, res) => {
     const { eventId } = req.params;
@@ -45,7 +40,6 @@ const getSessions = (req, res) => {
         res.status(200).json({ sessions: results || [] });
     });
 };
-
 const createSession = (req, res) => {
     const { eventId } = req.params;
     const { SessionTitle, StartTime, EndTime } = req.body;
@@ -57,7 +51,6 @@ const createSession = (req, res) => {
         res.status(201).json({ message: 'Agenda slot created successfully', session: result });
     });
 };
-
 const updateSession = (req, res) => {
     const { sessionId } = req.params;
     seminarServices.updateSession(sessionId, req.body, (err, result) => {
@@ -65,7 +58,6 @@ const updateSession = (req, res) => {
         res.status(200).json({ message: 'Agenda slot updated successfully' });
     });
 };
-
 const deleteSession = (req, res) => {
     const { sessionId } = req.params;
     seminarServices.deleteSession(sessionId, (err, result) => {
@@ -73,7 +65,6 @@ const deleteSession = (req, res) => {
         res.status(200).json({ message: 'Agenda slot deleted successfully' });
     });
 };
-
 // --- Delegates & Attendance ---
 const getDelegates = (req, res) => {
     const { eventId } = req.params;
@@ -82,7 +73,6 @@ const getDelegates = (req, res) => {
         res.status(200).json({ delegates: results || [] });
     });
 };
-
 const checkInDelegate = (req, res) => {
     const { eventId } = req.params;
     const { userId, teamId, checkInBy, status = 'CheckedIn' } = req.body;
@@ -94,7 +84,6 @@ const checkInDelegate = (req, res) => {
         res.status(200).json({ message: 'Delegate status updated successfully', checkInTime: status === 'CheckedIn' ? new Date() : null });
     });
 };
-
 const submitFeedback = (req, res) => {
     const { eventId } = req.params;
     const { userId, rating, comments } = req.body;
@@ -106,7 +95,6 @@ const submitFeedback = (req, res) => {
         res.status(200).json({ message: 'Feedback submitted successfully' });
     });
 };
-
 const issueCertificate = (req, res) => {
     const { eventId } = req.params;
     const { userId } = req.body;
@@ -115,7 +103,6 @@ const issueCertificate = (req, res) => {
         res.status(200).json({ message: 'Certificate issued successfully' });
     });
 };
-
 // --- Resources ---
 const getResources = (req, res) => {
     const { eventId } = req.params;
@@ -124,7 +111,6 @@ const getResources = (req, res) => {
         res.status(200).json({ resources: results || [] });
     });
 };
-
 const createResource = (req, res) => {
     const { eventId } = req.params;
     const { Title, ResourceUrl } = req.body;
@@ -136,7 +122,6 @@ const createResource = (req, res) => {
         res.status(201).json({ message: 'Resource uploaded successfully', resource: result });
     });
 };
-
 const updateResource = (req, res) => {
     const { resourceId } = req.params;
     seminarServices.updateResource(resourceId, req.body, (err, result) => {
@@ -144,7 +129,6 @@ const updateResource = (req, res) => {
         res.status(200).json({ message: 'Resource updated successfully' });
     });
 };
-
 const deleteResource = (req, res) => {
     const { resourceId } = req.params;
     seminarServices.deleteResource(resourceId, (err, result) => {
@@ -152,7 +136,6 @@ const deleteResource = (req, res) => {
         res.status(200).json({ message: 'Resource deleted successfully' });
     });
 };
-
 module.exports = {
     getSpeakers,
     createSpeaker,

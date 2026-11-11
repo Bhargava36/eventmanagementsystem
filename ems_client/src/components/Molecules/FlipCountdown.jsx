@@ -1,23 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-
-/**
- * Precision Time Segment
- * Renders a clean, official digit card with smooth, non-blocking motion.
- */
+// Precision Time Segment Renders a clean, official digit card with smooth, non-blocking motion.
 const TimeSegment = ({ value, label, isAccent = false, eventTheme = null }) => {
   const formattedVal = String(Math.max(0, value || 0)).padStart(2, '0');
-
   const accentStyle = isAccent && eventTheme ? {
     backgroundColor: eventTheme.badgeBg,
     borderColor: eventTheme.badgeBorder,
     borderWidth: 1,
   } : {};
-
   const accentTextStyle = isAccent && eventTheme ? {
     color: eventTheme.accent,
   } : {};
-
   return (
     <div
       style={accentStyle}
@@ -48,7 +41,6 @@ const TimeSegment = ({ value, label, isAccent = false, eventTheme = null }) => {
           {formattedVal}
         </motion.span>
       </div>
-
       {/* Segment Label */}
       <span
         style={accentTextStyle}
@@ -65,21 +57,14 @@ const TimeSegment = ({ value, label, isAccent = false, eventTheme = null }) => {
     </div>
   );
 };
-
-/**
- * Subtle Official Colon Separator
- */
+// Subtle Official Colon Separator
 const ColonSeparator = () => (
   <div className="flex flex-col items-center justify-center gap-1.5 h-12 sm:h-14 px-0.5 select-none self-center">
     <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
     <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
   </div>
 );
-
-/**
- * Official Smooth Countdown Display
- * Self-manages its timer so parent pages NEVER re-render on every tick.
- */
+// Official Smooth Countdown Display Self-manages its timer so parent pages NEVER re-render on every tick.
 export default function FlipCountdown({ targetDate, timeLeft: externalTimeLeft, eventTheme = null }) {
   const [internalTimeLeft, setInternalTimeLeft] = useState({
     days: 0,
@@ -87,21 +72,17 @@ export default function FlipCountdown({ targetDate, timeLeft: externalTimeLeft, 
     minutes: 0,
     seconds: 0,
   });
-
   useEffect(() => {
     if (!targetDate) return;
-
     const calculate = () => {
       try {
         const target = new Date(targetDate).getTime();
         const now = Date.now();
         const diff = target - now;
-
         if (isNaN(diff) || diff <= 0) {
           setInternalTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
           return;
         }
-
         setInternalTimeLeft({
           days: Math.floor(diff / (1000 * 60 * 60 * 24)),
           hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
@@ -112,14 +93,11 @@ export default function FlipCountdown({ targetDate, timeLeft: externalTimeLeft, 
         console.error('Countdown error:', e);
       }
     };
-
     calculate();
     const interval = setInterval(calculate, 1000);
     return () => clearInterval(interval);
   }, [targetDate]);
-
   const tl = targetDate ? internalTimeLeft : (externalTimeLeft || internalTimeLeft);
-
   return (
     <div className="inline-flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-2xl bg-slate-100/90 dark:bg-black border border-slate-200/90 dark:border-zinc-800 shadow-inner backdrop-blur-sm">
       <TimeSegment value={tl.days} label="Days" eventTheme={eventTheme} />

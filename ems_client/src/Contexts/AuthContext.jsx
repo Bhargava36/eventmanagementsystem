@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-
+import { API_BASE_URL } from '@/lib/api';
 export const AuthContext = createContext(null);
-
 export function parseJwt(token) {
   try {
     if (!token || typeof token !== 'string') return null;
@@ -20,13 +19,11 @@ export function parseJwt(token) {
     return null;
   }
 }
-
 export function isTokenExpired(token) {
   const decoded = parseJwt(token);
   if (!decoded || !decoded.exp) return false;
   return decoded.exp * 1000 < Date.now();
 }
-
 export function getDefaultDashboard(role) {
   switch (role) {
     case 'super_admin':
@@ -42,7 +39,6 @@ export function getDefaultDashboard(role) {
       return '/';
   }
 }
-
 export function getRoleLoginPath(role) {
   switch (role) {
     case 'super_admin':
@@ -58,7 +54,6 @@ export function getRoleLoginPath(role) {
       return '/user/login';
   }
 }
-
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [user, setUser] = useState(() => {
@@ -71,8 +66,21 @@ export function AuthProvider({ children }) {
   });
   const [role, setRole] = useState(() => localStorage.getItem('role'));
   const [isLoading, setIsLoading] = useState(true);
-
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const currentToken = localStorage.getItem('token');
+    if (currentToken) {
+      try {
+        await fetch(`${API_BASE_URL}/api/security/logout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${currentToken}`
+          }
+        });
+      } catch (e) {
+        console.warn('Backend session logout failed:', e);
+      }
+    }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('role');
@@ -81,7 +89,6 @@ export function AuthProvider({ children }) {
     setUser(null);
     setRole(null);
   }, []);
-
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     if (savedToken) {
@@ -101,32 +108,25 @@ export function AuthProvider({ children }) {
     }
     setIsLoading(false);
   }, [logout]);
-
   const login = useCallback((newToken, userData, explicitRole) => {
     if (newToken) {
       localStorage.setItem('token', newToken);
       setToken(newToken);
     }
-
     const decoded = parseJwt(newToken);
     const resolvedRole = explicitRole || decoded?.role || userData?.role || null;
-
     const mergedUser = {
       ...(userData || {}),
       ...(resolvedRole ? { role: resolvedRole } : {}),
     };
-
     localStorage.setItem('user', JSON.stringify(mergedUser));
     setUser(mergedUser);
-
     if (resolvedRole) {
       localStorage.setItem('role', resolvedRole);
       setRole(resolvedRole);
     }
   }, []);
-
   const isAuthenticated = Boolean(token && !isTokenExpired(token));
-
   return (
     <AuthContext.Provider
       value={{

@@ -15,7 +15,6 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { isSoloTeamSize } from '../../../../lib/utils';
-
 /* ── dot-pulse keyframes ── */
 const DotStyle = () => (
   <style>{`
@@ -28,7 +27,6 @@ const DotStyle = () => (
     .t-dp3 { animation: teamDotPulse 1.8s ease-in-out 0.64s infinite; }
   `}</style>
 );
-
 const CardDots = () => (
   <span className="flex items-center gap-[3px] shrink-0">
     <span className="t-dp1 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
@@ -36,7 +34,6 @@ const CardDots = () => (
     <span className="t-dp3 w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-600" />
   </span>
 );
-
 const StatusBadge = ({ status = '' }) => {
   const s = status.toLowerCase();
   let cls = 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800';
@@ -48,41 +45,31 @@ const StatusBadge = ({ status = '' }) => {
     </span>
   );
 };
-
 export default function MyTeams() {
   const navigate = useNavigate();
-
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   useEffect(() => {
     fetchMyTeams();
   }, []);
-
   const fetchMyTeams = async () => {
     try {
       setLoading(true);
       setError('');
-
       const user = JSON.parse(localStorage.getItem('user') || 'null');
       const userId = user?.Id;
-
       if (!userId) {
         setError('User ID not found');
         return;
       }
-
       const response = await fetch(
         `${API_BASE_URL}/api/teams/my-teams/${userId}`
       );
-
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch teams');
       }
-
       setTeams(data.teams || []);
     } catch (err) {
       console.error('Get my teams error:', err);
@@ -91,7 +78,6 @@ export default function MyTeams() {
       setLoading(false);
     }
   };
-
   const fmt = (dateStr) => {
     if (!dateStr) return '—';
     try {
@@ -104,13 +90,10 @@ export default function MyTeams() {
       return dateStr;
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white transition-colors duration-300">
       <DotStyle />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-8">
-
         {/* ── HEADER ── */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-slate-200 dark:border-zinc-800">
           <div>
@@ -132,7 +115,6 @@ export default function MyTeams() {
             </div>
           )}
         </div>
-
         {/* ── CONTENT ── */}
         {loading ? (
           <div className="py-24 text-center bg-white dark:bg-zinc-950 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
@@ -176,7 +158,6 @@ export default function MyTeams() {
                 Number(team.TeamSize) === 1
               );
               const isLead = !isIndividual && (team.Role || '').toLowerCase().includes('lead');
-
               return (
                 <motion.div
                   key={team.TeamId || idx}
@@ -211,7 +192,6 @@ export default function MyTeams() {
                     </div>
                     <CardDots />
                   </div>
-
                   {/* Event & Team Info */}
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
@@ -221,7 +201,6 @@ export default function MyTeams() {
                       {team.EventName || 'Hackathon Event'}
                     </h3>
                   </div>
-
                   {/* Details strip */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300">
@@ -232,7 +211,6 @@ export default function MyTeams() {
                       )}
                       <span className="font-semibold truncate">{team.TeamName}</span>
                     </div>
-
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-slate-700 dark:text-zinc-300">
                       <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500">
                         {isIndividual ? 'Type:' : 'Size:'}
@@ -241,7 +219,6 @@ export default function MyTeams() {
                         {isIndividual ? 'Individual' : `${team.TeamSize || 1} Members`}
                       </span>
                     </div>
-
                     {(team.StartDate || team.EndDate) && (
                       <div className="col-span-2 flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-slate-600 dark:text-zinc-400">
                         <Calendar className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
@@ -251,7 +228,6 @@ export default function MyTeams() {
                       </div>
                     )}
                   </div>
-
                   {/* Card actions */}
                   <div className="flex items-center gap-2 pt-2 mt-auto border-t border-slate-100 dark:border-zinc-800">
                     <button
@@ -275,7 +251,6 @@ export default function MyTeams() {
             })}
           </div>
         )}
-
       </div>
     </div>
   );

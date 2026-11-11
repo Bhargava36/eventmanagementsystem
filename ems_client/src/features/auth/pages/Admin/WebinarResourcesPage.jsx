@@ -18,7 +18,6 @@ import {
   Presentation,
   X
 } from 'lucide-react';
-
 const WEBINAR_RESOURCE_TYPES = [
   'Keynote Slide Deck (PDF / PPTX)',
   'Full Session Video Recording',
@@ -27,7 +26,6 @@ const WEBINAR_RESOURCE_TYPES = [
   'Delegate Resource Pack',
   'External Reference Link'
 ];
-
 export default function WebinarResourcesPage() {
   const toast = useToast();
   const admin = useMemo(() => {
@@ -37,9 +35,7 @@ export default function WebinarResourcesPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeType, setActiveType] = useState('all');
@@ -47,14 +43,12 @@ export default function WebinarResourcesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
-
   const [formData, setFormData] = useState({
     Title: '',
     ResourceType: 'Keynote Slide Deck (PDF / PPTX)',
     ResourceUrl: '',
     Description: ''
   });
-
   const fetchResources = async () => {
     if (!eventId) return;
     try {
@@ -70,11 +64,9 @@ export default function WebinarResourcesPage() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchResources();
   }, [eventId]);
-
   const filteredResources = useMemo(() => {
     return resources.filter((r) => {
       const matchesType = activeType === 'all' || r.ResourceType === activeType;
@@ -84,14 +76,12 @@ export default function WebinarResourcesPage() {
       return matchesType && matchesSearch;
     });
   }, [resources, activeType, searchQuery]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.Title.trim() || !formData.ResourceUrl.trim()) {
       toast.error('Title and Resource URL are required');
       return;
     }
-
     try {
       setSaving(true);
       const res = await fetch(`${API_BASE_URL}/api/webinars/${eventId}/resources`, {
@@ -99,12 +89,10 @@ export default function WebinarResourcesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || 'Failed to create resource');
       }
-
       toast.success('Resource added to webinar portal');
       setIsModalOpen(false);
       setFormData({
@@ -121,7 +109,6 @@ export default function WebinarResourcesPage() {
       setSaving(false);
     }
   };
-
   const handleDelete = async (resourceId) => {
     if (!window.confirm('Delete this resource from the webinar?')) return;
     try {
@@ -136,13 +123,11 @@ export default function WebinarResourcesPage() {
       toast.error('Failed to delete resource');
     }
   };
-
   const handleCopyLink = (url, id) => {
     navigator.clipboard.writeText(url);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
-
   const getResourceIcon = (type) => {
     const t = (type || '').toLowerCase();
     if (t.includes('video') || t.includes('recording')) return <Video className="w-5 h-5 text-rose-500" />;
@@ -150,7 +135,6 @@ export default function WebinarResourcesPage() {
     if (t.includes('whitepaper') || t.includes('pdf') || t.includes('doc')) return <FileText className="w-5 h-5 text-blue-500" />;
     return <LinkIcon className="w-5 h-5 text-amber-500" />;
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black p-4 sm:p-6 md:p-8 space-y-6">
       {/* Top Header Card */}
@@ -167,7 +151,6 @@ export default function WebinarResourcesPage() {
             Publish speaker presentation slides, video recordings, whitepapers, and delegate resource packages for your webinar participants.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
           <button
             onClick={fetchResources}
@@ -185,7 +168,6 @@ export default function WebinarResourcesPage() {
           </button>
         </div>
       </div>
-
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-72">
@@ -198,7 +180,6 @@ export default function WebinarResourcesPage() {
             className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs focus:outline-none focus:border-emerald-500"
           />
         </div>
-
         <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-200/60 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 self-stretch sm:self-auto overflow-x-auto">
           {[
             { id: 'all', label: `All (${resources.length})` },
@@ -220,7 +201,6 @@ export default function WebinarResourcesPage() {
           ))}
         </div>
       </div>
-
       {/* Grid */}
       {loading ? (
         <div className="p-12 text-center text-slate-400">
@@ -267,7 +247,6 @@ export default function WebinarResourcesPage() {
                     {res.ResourceType}
                   </span>
                 </div>
-
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 transition-colors line-clamp-2">
                     {res.Title}
@@ -279,7 +258,6 @@ export default function WebinarResourcesPage() {
                   )}
                 </div>
               </div>
-
               <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-zinc-800/80">
                 <div className="flex items-center gap-2">
                   <a
@@ -299,7 +277,6 @@ export default function WebinarResourcesPage() {
                     {copiedId === res.Id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
-
                 <button
                   onClick={() => handleDelete(res.Id)}
                   className="p-1.5 rounded-xl border border-rose-500/20 hover:bg-rose-500/10 text-rose-500 transition cursor-pointer"
@@ -312,7 +289,6 @@ export default function WebinarResourcesPage() {
           ))}
         </div>
       )}
-
       {/* Modal */}
       <AnimatePresence>
         {isModalOpen && (
@@ -339,7 +315,6 @@ export default function WebinarResourcesPage() {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
@@ -354,7 +329,6 @@ export default function WebinarResourcesPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                     Material Type *
@@ -371,7 +345,6 @@ export default function WebinarResourcesPage() {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                     Direct Resource URL / Link *
@@ -385,7 +358,6 @@ export default function WebinarResourcesPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500 font-mono text-xs"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1.5">
                     Summary / Description
@@ -398,7 +370,6 @@ export default function WebinarResourcesPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-emerald-500 resize-none"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800">
                   <button
                     type="button"

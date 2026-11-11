@@ -1,9 +1,8 @@
 const express = require("express");
-
 const router = express.Router();
-
 const adminController = require("./adminController");
-
+const { optionalAuth } = require("../../middleware/authmiddleware");
+router.use(optionalAuth);
 router.post('/register', adminController.registerAdmin);
 router.post('/login', adminController.loginAdminController);
 router.post('/assign-event', adminController.assignEventToAdmin);

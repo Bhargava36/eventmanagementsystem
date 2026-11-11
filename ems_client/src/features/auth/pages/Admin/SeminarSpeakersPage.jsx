@@ -16,10 +16,8 @@ import {
   Sparkles,
   ExternalLink
 } from 'lucide-react';
-
 export default function SeminarSpeakersPage() {
   const toast = useToast();
-
   const admin = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -27,15 +25,12 @@ export default function SeminarSpeakersPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [speakers, setSpeakers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSpeaker, setEditingSpeaker] = useState(null);
   const [saving, setSaving] = useState(false);
-
   const [formData, setFormData] = useState({
     Name: '',
     Designation: '',
@@ -46,7 +41,6 @@ export default function SeminarSpeakersPage() {
     LinkedinUrl: '',
     OrderIndex: 0
   });
-
   const fetchSpeakers = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -62,11 +56,9 @@ export default function SeminarSpeakersPage() {
       setLoading(false);
     }
   }, [eventId, toast]);
-
   useEffect(() => {
     fetchSpeakers();
   }, [fetchSpeakers]);
-
   const handleOpenModal = (speaker = null) => {
     if (speaker) {
       setEditingSpeaker(speaker);
@@ -95,7 +87,6 @@ export default function SeminarSpeakersPage() {
     }
     setIsModalOpen(true);
   };
-
   const handleSaveSpeaker = async (e) => {
     e.preventDefault();
     if (!eventId) return;
@@ -103,22 +94,18 @@ export default function SeminarSpeakersPage() {
       toast.error('Speaker Name is required');
       return;
     }
-
     try {
       setSaving(true);
       const url = editingSpeaker
         ? `${API_BASE_URL}/api/seminars/speakers/${editingSpeaker.Id}`
         : `${API_BASE_URL}/api/seminars/${eventId}/speakers`;
       const method = editingSpeaker ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
-
       if (!res.ok) throw new Error('Failed to save speaker');
-
       toast.success(editingSpeaker ? 'Speaker details updated!' : 'Speaker added successfully!');
       setIsModalOpen(false);
       fetchSpeakers();
@@ -129,7 +116,6 @@ export default function SeminarSpeakersPage() {
       setSaving(false);
     }
   };
-
   const handleDeleteSpeaker = async (id) => {
     if (!window.confirm('Are you sure you want to remove this keynote speaker?')) return;
     try {
@@ -144,7 +130,6 @@ export default function SeminarSpeakersPage() {
       toast.error('Could not delete speaker');
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6 sm:space-y-8 font-sans">
       {/* Header Banner */}
@@ -161,7 +146,6 @@ export default function SeminarSpeakersPage() {
             Manage keynote addresses, guest lecturers, panel chairs, and invited dignitaries.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
           <button
             onClick={fetchSpeakers}
@@ -171,7 +155,6 @@ export default function SeminarSpeakersPage() {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-500' : ''}`} />
           </button>
-
           <button
             onClick={() => handleOpenModal()}
             className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition cursor-pointer"
@@ -181,7 +164,6 @@ export default function SeminarSpeakersPage() {
           </button>
         </div>
       </div>
-
       {/* Speakers Grid */}
       {loading ? (
         <div className="flex items-center justify-center py-24 text-slate-400 dark:text-zinc-500 text-sm gap-3">
@@ -240,21 +222,18 @@ export default function SeminarSpeakersPage() {
                     </p>
                   </div>
                 </div>
-
                 {speaker.Topic && (
                   <div className="p-3.5 rounded-2xl bg-slate-50/70 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800">
                     <p className="text-[10px] text-slate-400 dark:text-zinc-500 uppercase font-bold tracking-wider">Keynote Topic</p>
                     <p className="text-xs font-semibold text-slate-800 dark:text-zinc-200 mt-1 line-clamp-2">{speaker.Topic}</p>
                   </div>
                 )}
-
                 {speaker.Bio && (
                   <p className="text-xs text-slate-600 dark:text-zinc-400 line-clamp-3 leading-relaxed">
                     {speaker.Bio}
                   </p>
                 )}
               </div>
-
               <div className="pt-4 mt-4 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between">
                 <div>
                   {speaker.LinkedinUrl ? (
@@ -271,7 +250,6 @@ export default function SeminarSpeakersPage() {
                     <span className="text-xs text-slate-400 dark:text-zinc-600">No profile link</span>
                   )}
                 </div>
-
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleOpenModal(speaker)}
@@ -293,7 +271,6 @@ export default function SeminarSpeakersPage() {
           ))}
         </div>
       )}
-
       {/* Modal: Add/Edit Speaker */}
       <AnimatePresence>
         {isModalOpen && (
@@ -320,7 +297,6 @@ export default function SeminarSpeakersPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <form onSubmit={handleSaveSpeaker} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
@@ -335,7 +311,6 @@ export default function SeminarSpeakersPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
                   />
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
@@ -349,7 +324,6 @@ export default function SeminarSpeakersPage() {
                       className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
                     />
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
                       Organization / University
@@ -363,7 +337,6 @@ export default function SeminarSpeakersPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
                     Keynote Talk Topic
@@ -376,7 +349,6 @@ export default function SeminarSpeakersPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
                     Photo URL
@@ -389,7 +361,6 @@ export default function SeminarSpeakersPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
                     LinkedIn / Website Profile URL
@@ -402,7 +373,6 @@ export default function SeminarSpeakersPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
                   />
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-1">
                     Speaker Bio / Achievements
@@ -415,7 +385,6 @@ export default function SeminarSpeakersPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm resize-none transition-all"
                   />
                 </div>
-
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-zinc-800/80">
                   <button
                     type="button"

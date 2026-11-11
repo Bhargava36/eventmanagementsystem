@@ -1,5 +1,4 @@
 const alumniService = require('./alumniService');
-
 // Config
 const getConfig = async (req, res) => {
     try {
@@ -10,7 +9,6 @@ const getConfig = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const saveConfig = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -20,7 +18,6 @@ const saveConfig = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 // Agenda
 const getAgenda = async (req, res) => {
     try {
@@ -31,7 +28,6 @@ const getAgenda = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const createAgenda = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -41,7 +37,6 @@ const createAgenda = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const updateAgenda = async (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -51,7 +46,6 @@ const updateAgenda = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const deleteAgenda = async (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -61,7 +55,6 @@ const deleteAgenda = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 // Speakers
 const getSpeakers = async (req, res) => {
     try {
@@ -72,7 +65,6 @@ const getSpeakers = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const createSpeaker = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -82,7 +74,6 @@ const createSpeaker = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const updateSpeaker = async (req, res) => {
     try {
         const { speakerId } = req.params;
@@ -92,7 +83,6 @@ const updateSpeaker = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const deleteSpeaker = async (req, res) => {
     try {
         const { speakerId } = req.params;
@@ -102,7 +92,6 @@ const deleteSpeaker = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 // Registrations (uses registered_teams directly!)
 const getRegistrations = async (req, res) => {
     try {
@@ -113,7 +102,6 @@ const getRegistrations = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const registerAlumnus = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -127,7 +115,6 @@ const registerAlumnus = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 // Live Check-in & Food Scanner
 const checkInAlumnus = async (req, res) => {
     try {
@@ -138,7 +125,6 @@ const checkInAlumnus = async (req, res) => {
         return res.status(400).json({ success: false, message: err.message });
     }
 };
-
 const scanFoodToken = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -148,7 +134,6 @@ const scanFoodToken = async (req, res) => {
         return res.status(400).json({ success: false, message: err.message });
     }
 };
-
 // Batch Invites
 const sendBatchInvites = async (req, res) => {
     try {
@@ -159,7 +144,6 @@ const sendBatchInvites = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 // Memories
 const getMemories = async (req, res) => {
     try {
@@ -170,7 +154,6 @@ const getMemories = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const createMemory = async (req, res) => {
     try {
         const { eventId } = req.params;
@@ -180,7 +163,6 @@ const createMemory = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const deleteMemory = async (req, res) => {
     try {
         const { memoryId } = req.params;
@@ -190,7 +172,6 @@ const deleteMemory = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 module.exports = {
     getConfig,
     saveConfig,
@@ -211,4 +192,3 @@ module.exports = {
     createMemory,
     deleteMemory
 };
-

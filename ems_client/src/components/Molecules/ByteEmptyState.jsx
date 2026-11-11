@@ -2,18 +2,15 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw, Compass } from 'lucide-react';
 import useTheme from '../../Hooks/useTheme';
-
 function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, title, description, speechText, actionLabel, onAction }) {
   const { theme } = useTheme();
   const [isPetted, setIsPetted] = useState(false);
-
   const handleMascotClick = () => {
     setIsPetted(true);
     setTimeout(() => {
       setIsPetted(false);
     }, 2400);
   };
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96, y: 15 }}
@@ -38,7 +35,6 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
             </motion.div>
           )}
         </AnimatePresence>
-
         <svg
           viewBox="0 0 240 200"
           className="w-full h-full overflow-visible"
@@ -53,22 +49,16 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
               <stop offset="0%" stopColor="#ffffff" />
               <stop offset="100%" stopColor="#e2e8f0" />
             </linearGradient>
-
             <linearGradient id="byteScreenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#09090b" />
               <stop offset="100%" stopColor="#040405" />
             </linearGradient>
-
             <radialGradient id="byteBeaconGlow" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#10b981" />
               <stop offset="100%" stopColor="#059669" />
             </radialGradient>
           </defs>
-
-          {/*
-            Shadow ellipse — animate scaleX on a motion.g centred at (120,182)
-            instead of animating rx directly on the ellipse element.
-          */}
+          {/* Shadow ellipse — animate scaleX on a motion.g centred at (120,182) instead of animating rx directly on the ellipse element. */}
           <motion.g
             style={{ transformOrigin: '120px 182px' }}
             animate={{
@@ -83,7 +73,6 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
           >
             <ellipse cx="120" cy="182" rx="48" ry="7" className="fill-slate-300 dark:fill-black" />
           </motion.g>
-
           <motion.g
             animate={
               isPetted
@@ -115,17 +104,14 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
               }}
               transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
             />
-
             <rect x="64"  y="65" width="8" height="18" rx="3" className="fill-slate-400 dark:fill-zinc-700" />
             <rect x="168" y="65" width="8" height="18" rx="3" className="fill-slate-400 dark:fill-zinc-700" />
-
             <rect
               x="70" y="40" width="100" height="74" rx="22"
               fill={theme === 'dark' ? 'url(#byteChassisDark)' : 'url(#byteChassisLight)'}
               stroke={theme === 'dark' ? '#3f3f46' : '#cbd5e1'}
               strokeWidth="2.5"
             />
-
             <rect
               x="79" y="49" width="82" height="56" rx="14"
               fill="url(#byteScreenGrad)"
@@ -133,7 +119,6 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
               strokeWidth="1.5"
               strokeOpacity="0.4"
             />
-
             {isPetted ? (
               <g>
                 <path d="M 93 72 C 93 64 105 64 105 72" stroke="#10b981" strokeWidth="3.5" strokeLinecap="round" fill="none" />
@@ -157,10 +142,8 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
                   <circle cx="142" cy="72" r="6" fill="#10b981" />
                   <circle cx="140" cy="70" r="2" fill="#ffffff" />
                 </motion.g>
-
                 <ellipse cx="87"  cy="80" rx="3.5" ry="2" fill="#fb7185" opacity="0.6" />
                 <ellipse cx="153" cy="80" rx="3.5" ry="2" fill="#fb7185" opacity="0.6" />
-
                 {/* Mouth — animate opacity/scaleY only; no geometry attr animation */}
                 <motion.g
                   style={{ transformOrigin: '120px 84px' }}
@@ -177,18 +160,13 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
                 </motion.g>
               </g>
             )}
-
             <rect
               x="82" y="120" width="76" height="44" rx="16"
               fill={theme === 'dark' ? 'url(#byteChassisDark)' : 'url(#byteChassisLight)'}
               stroke={theme === 'dark' ? '#3f3f46' : '#cbd5e1'}
               strokeWidth="2.5"
             />
-
-            {/*
-              Progress bar — animate scaleX on a motion.g anchored at left edge
-              instead of animating width directly on the rect element.
-            */}
+            {/* Progress bar — animate scaleX on a motion.g anchored at left edge instead of animating width directly on the rect element. */}
             <g transform="translate(104, 134)">
               <rect x="0" y="0" width="32" height="12" rx="4" className="fill-slate-200 dark:fill-zinc-800" />
               <motion.g
@@ -199,7 +177,6 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
                 <rect x="2" y="2" width="28" height="8" rx="3" className="fill-emerald-500" />
               </motion.g>
             </g>
-
             <g transform="translate(54, 126)">
               <motion.g
                 animate={{ rotate: [-8, 8, -8] }}
@@ -211,11 +188,7 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
                 <text x="7" y="22" fill="#ef4444" fontSize="11" fontWeight="bold">?</text>
               </motion.g>
             </g>
-
-            {/*
-              Arm/cable — only animates rotate (a CSS transform), so it's safe on motion.g.
-              The path itself is a plain <path> with a static d attribute.
-            */}
+            {/* Arm/cable — only animates rotate (a CSS transform), so it's safe on motion.g. The path itself is a plain <path> with a static d attribute. */}
             <g transform="translate(162, 130)">
               <motion.g
                 style={{ transformOrigin: '9px 13px' }}
@@ -231,7 +204,6 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
                 />
               </motion.g>
             </g>
-
             <motion.g
               animate={{
                 y: [0, -6, 0],
@@ -246,7 +218,6 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
           </motion.g>
         </svg>
       </div>
-
       <div className="space-y-2 mt-1">
         <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           {title || 'No Events Found'}
@@ -265,7 +236,6 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
           ))}
         </p>
       </div>
-
       <div className="pt-4 flex flex-col items-center gap-3">
         {hasActiveFilters && (
           <button
@@ -276,7 +246,6 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
             <span>Reset All Filters</span>
           </button>
         )}
-
         {actionLabel && onAction && (
           <button
             onClick={onAction}
@@ -285,7 +254,6 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
             <span>{actionLabel}</span>
           </button>
         )}
-
         {onQuickSearch && (
           <div className="pt-2 flex flex-wrap items-center justify-center gap-1.5">
             <span className="text-[11px] text-slate-400 dark:text-zinc-500 font-medium mr-1 flex items-center gap-1">
@@ -307,5 +275,4 @@ function ByteEmptyState({ searchTerm, hasActiveFilters, onReset, onQuickSearch, 
     </motion.div>
   );
 }
-
 export default ByteEmptyState;

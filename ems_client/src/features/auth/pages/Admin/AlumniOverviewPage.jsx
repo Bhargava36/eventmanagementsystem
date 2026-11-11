@@ -23,17 +23,14 @@ import {
   ArrowRight,
   Plus
 } from 'lucide-react';
-
 const PRESET_BATCHES = [
   '2010', '2011', '2012', '2013', '2014', '2015',
   '2016', '2017', '2018', '2019', '2020', '2021',
   '2022', '2023', '2024', '2025'
 ];
-
 export default function AlumniOverviewPage() {
   const navigate = useNavigate();
   const toast = useToast();
-
   const admin = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -41,9 +38,7 @@ export default function AlumniOverviewPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [eventData, setEventData] = useState(null);
   const [registrations, setRegistrations] = useState([]);
   const [speakers, setSpeakers] = useState([]);
@@ -51,7 +46,6 @@ export default function AlumniOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [savingConfig, setSavingConfig] = useState(false);
   const [newBatchInput, setNewBatchInput] = useState('');
-
   // Alumni Configuration State
   const [config, setConfig] = useState({
     TargetBatches: '2015,2016,2017,2018,2019,2020,2021,2022,2023,2024',
@@ -62,7 +56,6 @@ export default function AlumniOverviewPage() {
     WelcomeNote: 'Welcome back home! We are thrilled to celebrate your journey, reconnect with old classmates, and build lifelong bonds.',
     AlumniFundLink: ''
   });
-
   const loadAllData = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -74,13 +67,11 @@ export default function AlumniOverviewPage() {
         fetch(`${API_BASE_URL}/api/alumni/${eventId}/speakers`),
         fetch(`${API_BASE_URL}/api/alumni/${eventId}/agenda`)
       ]);
-
       if (evRes.ok) {
         const ev = await evRes.json();
         const cur = Array.isArray(ev) ? ev[0] : (ev.event || ev);
         setEventData(cur);
       }
-
       if (cfgRes.ok) {
         const cData = await cfgRes.json();
         const curCfg = cData.config || cData;
@@ -96,17 +87,14 @@ export default function AlumniOverviewPage() {
           });
         }
       }
-
       if (regRes.ok) {
         const rData = await regRes.json();
         setRegistrations(rData.registrations || []);
       }
-
       if (spkRes.ok) {
         const sData = await spkRes.json();
         setSpeakers(sData.speakers || []);
       }
-
       if (sesRes.ok) {
         const sesData = await sesRes.json();
         setSessions(sesData.sessions || sesData.agenda || (Array.isArray(sesData) ? sesData : []));
@@ -118,11 +106,9 @@ export default function AlumniOverviewPage() {
       setLoading(false);
     }
   }, [eventId, toast]);
-
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
-
   // Derived Batches Array
   const selectedBatches = useMemo(() => {
     return (config.TargetBatches || '')
@@ -130,7 +116,6 @@ export default function AlumniOverviewPage() {
       .map((b) => b.trim())
       .filter(Boolean);
   }, [config.TargetBatches]);
-
   const toggleBatch = (batch) => {
     let updated;
     if (selectedBatches.includes(batch)) {
@@ -140,7 +125,6 @@ export default function AlumniOverviewPage() {
     }
     setConfig((prev) => ({ ...prev, TargetBatches: updated.join(',') }));
   };
-
   const handleAddCustomBatch = (e) => {
     e.preventDefault();
     const b = newBatchInput.trim();
@@ -151,7 +135,6 @@ export default function AlumniOverviewPage() {
     }
     setNewBatchInput('');
   };
-
   const handleSaveConfig = async (e) => {
     if (e) e.preventDefault();
     if (!eventId) return;
@@ -171,7 +154,6 @@ export default function AlumniOverviewPage() {
       setSavingConfig(false);
     }
   };
-
   // Stats calculation
   const stats = useMemo(() => {
     const total = registrations.length;
@@ -180,14 +162,12 @@ export default function AlumniOverviewPage() {
     const checkedIn = registrations.filter((r) => r.GateCheckInStatus === 'CheckedIn').length;
     const foodServed = registrations.filter((r) => Boolean(r.FoodTokenScanned)).length;
     const checkInRate = total > 0 ? Math.round((checkedIn / total) * 100) : 0;
-
     return { total, attending, totalGuests, checkedIn, foodServed, checkInRate };
   }, [registrations]);
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-8">
       {/* Top Header Banner in Solid Theme - No Gradients */}
-      <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 p-6 sm:p-8 text-slate-900 dark:text-white shadow-sm">
+      <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 p-6 sm:p-8 text-slate-900 dark:text-white shadow-sm">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
@@ -201,11 +181,10 @@ export default function AlumniOverviewPage() {
               Manage reunion configuration, target graduating batches, track alumni RSVPs, deploy camera QR check-ins, and celebrate lifelong camaraderie.
             </p>
           </div>
-
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => navigate('/admin/alumni/attendance')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs bg-white dark:bg-white/10 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/20 border border-slate-200 dark:border-white/10 shadow-sm transition-all active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs bg-white dark:bg-zinc-800 text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-white/20 border border-gray-200 dark:border-zinc-800 shadow-sm transition-all active:scale-95"
             >
               <QrCode className="w-4 h-4 text-emerald-500" />
               Gate Scanner
@@ -220,13 +199,12 @@ export default function AlumniOverviewPage() {
           </div>
         </div>
       </div>
-
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
           whileHover={{ y: -3 }}
           onClick={() => navigate('/admin/alumni/registrations')}
-          className="cursor-pointer p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 shadow-sm hover:border-emerald-500/50 transition-all"
+          className="cursor-pointer p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/50 transition-all"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">Total Registered</span>
@@ -242,11 +220,10 @@ export default function AlumniOverviewPage() {
             {stats.attending} confirmed RSVPs
           </p>
         </motion.div>
-
         <motion.div
           whileHover={{ y: -3 }}
           onClick={() => navigate('/admin/alumni/registrations')}
-          className="cursor-pointer p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 shadow-sm hover:border-emerald-500/50 transition-all"
+          className="cursor-pointer p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/50 transition-all"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">Accompanying Guests</span>
@@ -262,11 +239,10 @@ export default function AlumniOverviewPage() {
             {stats.total + stats.totalGuests} total banquet attendees
           </p>
         </motion.div>
-
         <motion.div
           whileHover={{ y: -3 }}
           onClick={() => navigate('/admin/alumni/attendance')}
-          className="cursor-pointer p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 shadow-sm hover:border-emerald-500/50 transition-all"
+          className="cursor-pointer p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/50 transition-all"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">Gate Check-in</span>
@@ -278,15 +254,14 @@ export default function AlumniOverviewPage() {
             <span className="text-2xl sm:text-3xl font-extrabold">{stats.checkedIn}</span>
             <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">{stats.checkInRate}% arrived</span>
           </div>
-          <div className="w-full bg-slate-100 dark:bg-white/5 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div className="w-full bg-slate-100 dark:bg-zinc-900 h-1.5 rounded-full mt-2 overflow-hidden">
             <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${stats.checkInRate}%` }} />
           </div>
         </motion.div>
-
         <motion.div
           whileHover={{ y: -3 }}
           onClick={() => navigate('/admin/alumni/agenda')}
-          className="cursor-pointer p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 shadow-sm hover:border-emerald-500/50 transition-all"
+          className="cursor-pointer p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-sm hover:border-emerald-500/50 transition-all"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-gray-400">Reunion Agenda</span>
@@ -303,10 +278,9 @@ export default function AlumniOverviewPage() {
           </p>
         </motion.div>
       </div>
-
       {/* Main Configuration Card */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-white/10 pb-5">
+      <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-zinc-800 pb-5">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Building2 className="w-5 h-5 text-emerald-500" />
@@ -316,7 +290,6 @@ export default function AlumniOverviewPage() {
               Configure target batches, guest permissions, banquet hall venue, and personalized welcome messaging.
             </p>
           </div>
-
           <button
             onClick={handleSaveConfig}
             disabled={savingConfig}
@@ -330,7 +303,6 @@ export default function AlumniOverviewPage() {
             Save Configuration
           </button>
         </div>
-
         <form onSubmit={handleSaveConfig} className="space-y-6">
           {/* Target Batches Selector */}
           <div className="space-y-3">
@@ -340,7 +312,6 @@ export default function AlumniOverviewPage() {
             <p className="text-xs text-slate-500 dark:text-gray-400">
               Click to toggle graduating batches targeted for this meet or add custom batches below:
             </p>
-
             <div className="flex flex-wrap gap-2 pt-1">
               {PRESET_BATCHES.map((batch) => {
                 const isSelected = selectedBatches.includes(batch);
@@ -352,7 +323,7 @@ export default function AlumniOverviewPage() {
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                       isSelected
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                        : 'bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-gray-300 border-slate-200 dark:border-white/10 hover:border-emerald-500/50'
+                        : 'bg-slate-100 dark:bg-zinc-900 text-slate-700 dark:text-gray-300 border-gray-200 dark:border-zinc-800 hover:border-emerald-500/50'
                     }`}
                   >
                     Class of {batch}
@@ -361,7 +332,6 @@ export default function AlumniOverviewPage() {
                 );
               })}
             </div>
-
             {/* Custom Batch input */}
             <div className="flex items-center gap-2 pt-2">
               <input
@@ -369,19 +339,18 @@ export default function AlumniOverviewPage() {
                 placeholder="Add other batch (e.g. 2005 or 1999)"
                 value={newBatchInput}
                 onChange={(e) => setNewBatchInput(e.target.value)}
-                className="w-64 px-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500"
+                className="w-64 px-3.5 py-2 text-xs rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500"
               />
               <button
                 type="button"
                 onClick={handleAddCustomBatch}
-                className="px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-200 dark:bg-white/10 text-slate-800 dark:text-white hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1"
+                className="px-3.5 py-2 text-xs font-bold rounded-xl bg-slate-200 dark:bg-zinc-800 text-slate-800 dark:text-white hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Batch
               </button>
             </div>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             {/* Venue Hall */}
             <div className="space-y-2">
@@ -394,10 +363,9 @@ export default function AlumniOverviewPage() {
                 value={config.VenueHall}
                 onChange={(e) => setConfig({ ...config, VenueHall: e.target.value })}
                 placeholder="e.g. Main Campus Auditorium &amp; North Lawns"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 text-sm"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 text-sm"
               />
             </div>
-
             {/* Dress Code */}
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-gray-300 flex items-center gap-2">
@@ -409,10 +377,9 @@ export default function AlumniOverviewPage() {
                 value={config.DressCode}
                 onChange={(e) => setConfig({ ...config, DressCode: e.target.value })}
                 placeholder="e.g. Smart Casual / Festive Traditional"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 text-sm"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 text-sm"
               />
             </div>
-
             {/* Guest Policy */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -436,7 +403,7 @@ export default function AlumniOverviewPage() {
                   <select
                     value={config.MaxGuests}
                     onChange={(e) => setConfig({ ...config, MaxGuests: Number(e.target.value) })}
-                    className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-emerald-500"
+                    className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:border-emerald-500"
                   >
                     <option value={1}>1 Guest (+1)</option>
                     <option value={2}>2 Guests (+2)</option>
@@ -446,7 +413,6 @@ export default function AlumniOverviewPage() {
                 </div>
               )}
             </div>
-
             {/* Alumni Fund / Giving Link */}
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-gray-300 flex items-center gap-2">
@@ -458,11 +424,10 @@ export default function AlumniOverviewPage() {
                 value={config.AlumniFundLink}
                 onChange={(e) => setConfig({ ...config, AlumniFundLink: e.target.value })}
                 placeholder="https://giving.college.edu/alumni-fund"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 text-sm"
+                className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 text-sm"
               />
             </div>
           </div>
-
           {/* Welcome Note */}
           <div className="space-y-2 pt-2">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-gray-300">
@@ -473,23 +438,21 @@ export default function AlumniOverviewPage() {
               value={config.WelcomeNote}
               onChange={(e) => setConfig({ ...config, WelcomeNote: e.target.value })}
               placeholder="A heartfelt message to your returning alumni..."
-              className="w-full p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 text-sm leading-relaxed"
+              className="w-full p-4 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 text-sm leading-relaxed"
             />
           </div>
         </form>
       </div>
-
       {/* Quick Launchpad to 11 Steps */}
       <div className="space-y-4">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-gray-300 flex items-center gap-2">
           <Building2 className="w-4 h-4 text-emerald-500" />
           Alumni Event Operations Hub
         </h3>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div
             onClick={() => navigate('/admin/alumni/agenda')}
-            className="p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
+            className="p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
           >
             <div className="flex items-center justify-between">
               <CalendarDays className="w-5 h-5 text-emerald-500" />
@@ -500,10 +463,9 @@ export default function AlumniOverviewPage() {
               Schedule activities, keynote talks, campus tours, and distinguished alumni sessions.
             </p>
           </div>
-
           <div
             onClick={() => navigate('/admin/alumni/registrations')}
-            className="p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
+            className="p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
           >
             <div className="flex items-center justify-between">
               <Users className="w-5 h-5 text-emerald-500" />
@@ -514,10 +476,9 @@ export default function AlumniOverviewPage() {
               Filter by batch, inspect accompanying guest lists, view attendee profiles, and export CSV.
             </p>
           </div>
-
           <div
             onClick={() => navigate('/admin/alumni/attendance')}
-            className="p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
+            className="p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
           >
             <div className="flex items-center justify-between">
               <QrCode className="w-5 h-5 text-emerald-500" />
@@ -528,10 +489,9 @@ export default function AlumniOverviewPage() {
               Instant camera QR check-in at gate and meal voucher validation with audio feedback.
             </p>
           </div>
-
           <div
             onClick={() => navigate('/admin/alumni/invites')}
-            className="p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
+            className="p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
           >
             <div className="flex items-center justify-between">
               <Send className="w-5 h-5 text-emerald-500" />
@@ -542,10 +502,9 @@ export default function AlumniOverviewPage() {
               Compose custom invitations and broadcast them to previous alumni batches.
             </p>
           </div>
-
           <div
             onClick={() => navigate('/admin/alumni/memories')}
-            className="p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
+            className="p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
           >
             <div className="flex items-center justify-between">
               <Camera className="w-5 h-5 text-emerald-500" />
@@ -556,10 +515,9 @@ export default function AlumniOverviewPage() {
               Curate nostalgic photos, batch moments, and reunion highlights for attendees.
             </p>
           </div>
-
           <div
             onClick={() => navigate('/admin/feedback')}
-            className="p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
+            className="p-5 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 hover:border-emerald-500/60 shadow-sm cursor-pointer transition-all space-y-2 group"
           >
             <div className="flex items-center justify-between">
               <CheckCircle2 className="w-5 h-5 text-emerald-500" />

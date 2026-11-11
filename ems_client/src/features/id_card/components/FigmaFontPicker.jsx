@@ -13,7 +13,6 @@ import {
   FONT_CATEGORIES,
   loadGoogleFontDynamically
 } from '../constants/fontsCatalog';
-
 export default function FigmaFontPicker({
   value,
   onChange,
@@ -24,7 +23,6 @@ export default function FigmaFontPicker({
   const [activeCategory, setActiveCategory] = useState('All');
   const dropdownRef = useRef(null);
   const listRef = useRef(null);
-
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -37,7 +35,6 @@ export default function FigmaFontPicker({
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
-
   // Current active font object
   const currentFontObj = useMemo(() => {
     return (
@@ -45,14 +42,12 @@ export default function FigmaFontPicker({
       FONTS_CATALOG[0]
     );
   }, [value]);
-
   // Ensure current font is loaded
   useEffect(() => {
     if (currentFontObj?.family) {
       loadGoogleFontDynamically(currentFontObj.family);
     }
   }, [currentFontObj]);
-
   // Filtered fonts based on search & category
   const filteredFonts = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -67,14 +62,12 @@ export default function FigmaFontPicker({
       return matchCat && matchQuery;
     });
   }, [search, activeCategory]);
-
   // Preload visible fonts when dropdown opens
   useEffect(() => {
     if (isOpen) {
       filteredFonts.slice(0, 25).forEach((f) => loadGoogleFontDynamically(f.family));
     }
   }, [isOpen, filteredFonts]);
-
   return (
     <div className="relative w-full select-none" ref={dropdownRef}>
       {/* 1. Figma-Style Trigger Button */}
@@ -103,7 +96,6 @@ export default function FigmaFontPicker({
             </p>
           </div>
         </div>
-
         <div className="flex items-center gap-1.5 shrink-0 pl-1">
           <ChevronDown
             className={`w-4 h-4 text-slate-400 dark:text-zinc-400 transition-transform duration-200 ${
@@ -112,7 +104,6 @@ export default function FigmaFontPicker({
           />
         </div>
       </button>
-
       {/* 2. Figma-Style Popover Menu (Controlled Height, stays inside window) */}
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white dark:bg-[#0d0f12] border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[380px] animate-in fade-in slide-in-from-top-1 duration-150">
@@ -138,7 +129,6 @@ export default function FigmaFontPicker({
                 </button>
               )}
             </div>
-
             {/* Category Filter Chips */}
             <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
               {FONT_CATEGORIES.map((cat) => {
@@ -160,7 +150,6 @@ export default function FigmaFontPicker({
               })}
             </div>
           </div>
-
           {/* Font List Items */}
           <div
             ref={listRef}
@@ -169,7 +158,6 @@ export default function FigmaFontPicker({
             {filteredFonts.map((f) => {
               const isSelected = currentFontObj.value === f.value;
               loadGoogleFontDynamically(f.family);
-
               return (
                 <button
                   key={f.name}
@@ -200,7 +188,6 @@ export default function FigmaFontPicker({
                       {f.category}
                     </span>
                   </div>
-
                   {/* Right: Badge & Selected Check */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-[9px] uppercase font-mono px-1.5 py-0.2 rounded bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-500 dark:text-zinc-400">
@@ -213,14 +200,12 @@ export default function FigmaFontPicker({
                 </button>
               );
             })}
-
             {filteredFonts.length === 0 && (
               <div className="py-8 text-center text-slate-400 dark:text-zinc-500 text-xs">
                 No matching font styles found.
               </div>
             )}
           </div>
-
           {/* Footer with Studio Grid Shortcut */}
           <div className="p-2 border-t border-slate-200 dark:border-zinc-800/80 bg-slate-50 dark:bg-[#101417] flex items-center justify-between text-[11px] shrink-0">
             <span className="text-slate-500 dark:text-zinc-500 font-mono">

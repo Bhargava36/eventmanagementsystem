@@ -15,7 +15,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-// The 7 Official Campus & Virtual Event Infrastructure Capabilities (Clean & Spacious)
 const INFRASTRUCTURE_CARDS = [
   {
     id: "card-1",
@@ -82,7 +81,6 @@ export default function LogisticsAutomationSection() {
   const animFrameId = useRef(null);
   const isInView = useInView(containerRef, { margin: "150px" });
 
-  // Position and scrolling state
   const scrollPosRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -92,40 +90,32 @@ export default function LogisticsAutomationSection() {
   const lastDragTime = useRef(0);
   const lastDragX = useRef(0);
 
-  // Responsive card measurements
   const [containerWidth, setContainerWidth] = useState(1200);
   const cardWidth = 320;
   const cardGap = 16;
   const singleSetWidth = INFRASTRUCTURE_CARDS.length * (cardWidth + cardGap);
-
-  // Triplicate cards so the 3D loop repeats infinitely without seam
   const loopCards = [...INFRASTRUCTURE_CARDS, ...INFRASTRUCTURE_CARDS, ...INFRASTRUCTURE_CARDS];
 
-  // Direct GPU Transform updater - 0 React Re-renders!
   const updateCardTransforms = useCallback((pos) => {
     const containerCenter = containerWidth / 2;
     for (let idx = 0; idx < loopCards.length; idx++) {
       const el = cardRefs.current[idx];
       if (!el) continue;
-
       const cardX = idx * (cardWidth + cardGap) - pos;
       const cardCenter = cardX + cardWidth / 2;
       const dist = cardCenter - containerCenter;
       const norm = dist / (containerWidth * 0.45);
       const clampedNorm = Math.max(-1.8, Math.min(1.8, norm));
-
       const rotateY = clampedNorm * -20;
       const translateZ = -Math.pow(Math.abs(clampedNorm), 1.6) * 75;
       const scale = Math.max(0.84, 1 - Math.abs(clampedNorm) * 0.05);
       const opacity = Math.max(0.5, 1 - Math.abs(clampedNorm) * 0.2);
-
       el.style.transform = `translateX(${-pos}px) perspective(1300px) rotateY(${rotateY}deg) translateZ(${translateZ}px) scale(${scale})`;
       el.style.opacity = opacity;
       el.style.zIndex = Math.round(100 - Math.abs(clampedNorm) * 20);
     }
   }, [containerWidth, singleSetWidth, cardWidth, cardGap, loopCards.length]);
 
-  // Measure container dimensions
   useEffect(() => {
     const updateWidth = () => {
       if (containerRef.current) {
@@ -138,45 +128,35 @@ export default function LogisticsAutomationSection() {
     return () => window.removeEventListener("resize", updateWidth);
   }, []);
 
-  // Update layout once containerWidth is known
   useEffect(() => {
     updateCardTransforms(scrollPosRef.current);
   }, [containerWidth, updateCardTransforms]);
 
-  // Continuous silky smooth auto-scroll loop (Pauses when offscreen!)
   useEffect(() => {
     if (!isInView) return;
-
     const baseSpeed = 0.8;
-
     const animateLoop = () => {
       if (!isDragging) {
         const currentSpeed = isHovered ? 0.2 : baseSpeed;
-
         if (Math.abs(velocity.current) > 0.05) {
           scrollPosRef.current += velocity.current;
           velocity.current *= 0.94;
         } else {
           scrollPosRef.current += currentSpeed;
         }
-
-        // Infinite seamless loop wrapping
         if (scrollPosRef.current >= singleSetWidth) {
           scrollPosRef.current -= singleSetWidth;
         } else if (scrollPosRef.current < 0) {
           scrollPosRef.current += singleSetWidth;
         }
-
         updateCardTransforms(scrollPosRef.current);
       }
       animFrameId.current = requestAnimationFrame(animateLoop);
     };
-
     animFrameId.current = requestAnimationFrame(animateLoop);
     return () => cancelAnimationFrame(animFrameId.current);
   }, [isInView, isDragging, isHovered, singleSetWidth, updateCardTransforms]);
 
-  // Mouse Drag / Touch Swipe Handlers (Hand cursor dragging like reference image)
   const handleMouseDown = (e) => {
     setIsDragging(true);
     dragStartX.current = e.pageX || (e.touches && e.touches[0].pageX);
@@ -192,15 +172,11 @@ export default function LogisticsAutomationSection() {
       const currentX = e.pageX || (e.touches && e.touches[0].pageX);
       const diff = dragStartX.current - currentX;
       scrollPosRef.current = dragStartScroll.current + diff;
-
-      // Track release velocity for flicking momentum
       const now = performance.now();
       const dt = Math.max(1, now - lastDragTime.current);
       velocity.current = ((lastDragX.current - currentX) / dt) * 14;
       lastDragTime.current = now;
       lastDragX.current = currentX;
-
-      // Wrap if exceeded bounds
       if (scrollPosRef.current >= singleSetWidth) {
         scrollPosRef.current -= singleSetWidth;
         dragStartScroll.current -= singleSetWidth;
@@ -208,7 +184,6 @@ export default function LogisticsAutomationSection() {
         scrollPosRef.current += singleSetWidth;
         dragStartScroll.current += singleSetWidth;
       }
-
       updateCardTransforms(scrollPosRef.current);
     },
     [isDragging, singleSetWidth, updateCardTransforms]
@@ -218,7 +193,6 @@ export default function LogisticsAutomationSection() {
     setIsDragging(false);
   };
 
-  // Nav Arrows
   const scrollStep = (direction) => {
     const shift = (cardWidth + cardGap) * 1.5;
     scrollPosRef.current += direction * shift;
@@ -232,10 +206,8 @@ export default function LogisticsAutomationSection() {
       id="logistics"
       className="relative w-full py-20 sm:py-28 overflow-hidden bg-white dark:bg-black text-slate-900 dark:text-white transition-colors duration-300 select-none"
     >
-      {/* Background Subtle Dot Pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:32px_32px] opacity-[0.03] dark:opacity-[0.05] pointer-events-none" />
 
-      {/* Header Container with Staggered Scroll Reveal */}
       <motion.div
         initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
         whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -252,7 +224,6 @@ export default function LogisticsAutomationSection() {
           </p>
         </div>
 
-        {/* Navigation Controls with Spring Reveal */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -277,9 +248,6 @@ export default function LogisticsAutomationSection() {
         </motion.div>
       </motion.div>
 
-      {/* ======================================================== */}
-      {/* 3D CYLINDRICAL CURVED CAROUSEL CONTAINER (CoverFlow Arc) */}
-      {/* ======================================================== */}
       <motion.div
         initial={{ opacity: 0, y: 50, scale: 0.96, filter: 'blur(8px)' }}
         whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
@@ -305,7 +273,6 @@ export default function LogisticsAutomationSection() {
           perspectiveOrigin: "50% 50%",
         }}
       >
-        {/* Horizontal Moving Ribbon */}
         <div
           ref={trackRef}
           className="absolute left-0 top-0 h-full flex items-center"
@@ -316,7 +283,6 @@ export default function LogisticsAutomationSection() {
         >
           {loopCards.map((card, idx) => {
             const IconComponent = card.icon;
-
             return (
               <div
                 key={`${card.id}-${idx}`}
@@ -330,11 +296,9 @@ export default function LogisticsAutomationSection() {
                   willChange: "transform, opacity",
                 }}
               >
-                {/* CARD BODY: Ultra-Spacious, Clean, Uncongested Modern Card (Zero Pills) */}
                 <div
                   className="w-full h-full rounded-2xl p-8 sm:p-9 flex flex-col justify-between overflow-hidden relative bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-xl dark:shadow-none hover:border-emerald-500/80 dark:hover:border-emerald-500/70 transition-all duration-300 group"
                 >
-                  {/* TOP & MIDDLE: Icon, Index, Title, and Description */}
                   <div>
                     <div className="flex items-center justify-between">
                       <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-zinc-900 text-slate-900 dark:text-white flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-zinc-800 group-hover:border-emerald-500/50 group-hover:bg-emerald-500/10 transition-colors">
@@ -355,7 +319,6 @@ export default function LogisticsAutomationSection() {
                     </div>
                   </div>
 
-                  {/* BOTTOM: Minimal Category & Subtle Hover Arrow (Zero Pills) */}
                   <div className="pt-6 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-between text-xs font-medium text-slate-500 dark:text-zinc-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                     <span className="tracking-wide">{card.category}</span>
                     <ArrowUpRight className="w-4 h-4 text-slate-400 dark:text-zinc-500 group-hover:text-emerald-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />

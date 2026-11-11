@@ -1,7 +1,8 @@
 const express = require("express");
 const controller = require("./physicalServicesController");
+const { optionalAuth } = require("../../middleware/authmiddleware");
 const router = express.Router();
-
+router.use(optionalAuth);
 router.get("/teams/:teamId/preferences", controller.getTeamPreference);
 router.put("/teams/:teamId/preferences", controller.saveTeamPreference);
 router.get("/events/:eventId/team-preferences", controller.getEventTeamPreferences);
@@ -13,6 +14,4 @@ router.post("/events/:eventId/food-tokens", controller.generateFoodTokens);
 router.get("/food-tokens/verify", controller.verifyFoodToken);
 router.post("/food-tokens/verify", controller.verifyFoodToken);
 router.post("/food-tokens/redeem", controller.redeemFoodToken);
-
 module.exports = router;
-

@@ -12,7 +12,6 @@ import {
   Info
 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
-
 export default function ParticipantAttendanceView({
   eventId,
   userId,
@@ -24,10 +23,8 @@ export default function ParticipantAttendanceView({
   const [loading, setLoading] = useState(true);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [error, setError] = useState(null);
-
   const isWebinar = String(eventType).toLowerCase() === 'webinar';
   const apiPrefix = isWebinar ? 'webinars' : 'workshops';
-
   const fetchAttendance = async () => {
     if (!eventId || !userId) {
       setLoading(false);
@@ -49,11 +46,9 @@ export default function ParticipantAttendanceView({
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchAttendance();
   }, [eventId, userId, apiPrefix]);
-
   // Derive days count from sessions or start/end dates
   const daysList = useMemo(() => {
     const sessionDays = new Set();
@@ -63,24 +58,19 @@ export default function ParticipantAttendanceView({
     attendanceRecords.forEach((r) => {
       if (r.DayNumber) sessionDays.add(Number(r.DayNumber));
     });
-
     if (sessionDays.size > 0) {
       return Array.from(sessionDays).sort((a, b) => a - b);
     }
-
     if (startDate && endDate) {
       const s = new Date(startDate);
       const e = new Date(endDate);
       const diffDays = Math.max(1, Math.ceil((e - s) / (1000 * 60 * 60 * 24)));
       return Array.from({ length: Math.min(diffDays, 7) }, (_, i) => i + 1);
     }
-
     return [1];
   }, [sessions, attendanceRecords, startDate, endDate]);
-
   // Standard session slots: Morning & Evening
   const slots = ['Morning', 'Evening'];
-
   // Map records by `${DayNumber}-${SessionSlot}`
   const recordMap = useMemo(() => {
     const map = {};
@@ -90,13 +80,11 @@ export default function ParticipantAttendanceView({
     });
     return map;
   }, [attendanceRecords]);
-
   // Summary counts
   const summary = useMemo(() => {
     let presentCount = 0;
     let absentCount = 0;
     let notMarkedCount = 0;
-
     daysList.forEach((day) => {
       slots.forEach((slot) => {
         const rec = recordMap[`${day}-${slot}`];
@@ -110,11 +98,9 @@ export default function ParticipantAttendanceView({
         }
       });
     });
-
     const totalSlots = daysList.length * slots.length;
     return { presentCount, absentCount, notMarkedCount, totalSlots };
   }, [daysList, slots, recordMap]);
-
   return (
     <div className="space-y-6">
       {/* Overview Cards */}
@@ -137,7 +123,6 @@ export default function ParticipantAttendanceView({
               : 'Attendance records updated live by organizers'}
           </p>
         </div>
-
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/40">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-semibold mb-1">
             <span>Verified Sessions</span>
@@ -150,7 +135,6 @@ export default function ParticipantAttendanceView({
             Attendance check-ins completed
           </p>
         </div>
-
         <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/40">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400 font-semibold mb-1">
             <span>Pending Check-ins</span>
@@ -164,7 +148,6 @@ export default function ParticipantAttendanceView({
           </p>
         </div>
       </div>
-
       {/* Main Attendance Breakdown */}
       <div className="space-y-4">
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
@@ -186,7 +169,6 @@ export default function ParticipantAttendanceView({
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-500' : ''}`} />
           </button>
         </div>
-
         {loading ? (
           <div className="p-10 text-center text-slate-400">
             <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-500" />
@@ -210,7 +192,6 @@ export default function ParticipantAttendanceView({
                     Day {dayNum} Attendance
                   </span>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {slots.map((slot) => {
                     const key = `${dayNum}-${slot}`;
@@ -219,7 +200,6 @@ export default function ParticipantAttendanceView({
                     const isPresent = status === 'checked_in' || status === 'present';
                     const isAbsent = status === 'absent';
                     const isNotMarked = !isPresent && !isAbsent;
-
                     return (
                       <div
                         key={slot}
@@ -247,7 +227,6 @@ export default function ParticipantAttendanceView({
                               : 'Attendance not marked yet'}
                           </p>
                         </div>
-
                         <div>
                           {isPresent && (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300">
@@ -255,14 +234,12 @@ export default function ParticipantAttendanceView({
                               <span>Present</span>
                             </span>
                           )}
-
                           {isAbsent && (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300">
                               <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
                               <span>Absent</span>
                             </span>
                           )}
-
                           {isNotMarked && (
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400">
                               <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -278,7 +255,6 @@ export default function ParticipantAttendanceView({
             ))}
           </div>
         )}
-
         {/* Verification Note */}
         <div className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/30 flex items-start gap-3">
           <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />

@@ -16,10 +16,7 @@ import {
   Activity,
   Bot
 } from 'lucide-react';
-
-/**
- * Intelligent icon resolver based on theme name / keywords.
- */
+// Intelligent icon resolver based on theme name / keywords.
 export const getThemeIcon = (name = '', desc = '') => {
   const text = `${name} ${desc}`.toLowerCase();
   if (
@@ -120,21 +117,7 @@ export const getThemeIcon = (name = '', desc = '') => {
   }
   return Compass;
 };
-
-/**
- * PhysicalHackathonThemesSection
- * 
- * Clean, modern showcase for Hackathon Innovation Themes.
- * Displays ONLY:
- * - Theme Photo or Icon
- * - Theme Title
- * - Theme Description
- * 
- * STRICT GUIDELINES:
- * - No pills anywhere
- * - No problem statements / challenges
- * - Seamless match with the application design
- */
+// PhysicalHackathonThemesSection Clean, modern showcase for Hackathon Innovation Themes.
 export default function PhysicalHackathonThemesSection({
   themes = [],
   event = {},
@@ -142,7 +125,6 @@ export default function PhysicalHackathonThemesSection({
 }) {
   const isHackathon = (event?.EventType || '').toLowerCase() === 'hackathon';
   if (!isHackathon) return null;
-
   return (
     <div className="space-y-4 pt-1">
       {/* ── SECTION HEADER (Clean layout matching Venue Specifications & Amenities) ── */}
@@ -166,13 +148,11 @@ export default function PhysicalHackathonThemesSection({
           </p>
         </div>
       </div>
-
       {themes && themes.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {themes.map((theme, idx) => {
             const IconComponent = getThemeIcon(theme.ThemeName, theme.Description);
             const hasImage = Boolean(theme.ImageUrl && theme.ImageUrl.trim());
-
             return (
               <div
                 key={theme.Id || idx}
@@ -213,19 +193,16 @@ export default function PhysicalHackathonThemesSection({
                       >
                         <IconComponent className="h-6 w-6" />
                       </div>
-
                       {/* Clean Typographic Track Index (NO PILL BADGE) */}
                       <span className="font-mono text-xs font-semibold text-slate-400 dark:text-zinc-600 tracking-wider pt-1">
                         {String(idx + 1).padStart(2, '0')}
                       </span>
                     </div>
                   )}
-
                   {/* Theme Title */}
                   <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors">
                     {theme.ThemeName}
                   </h4>
-
                   {/* Theme Description */}
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 leading-relaxed mt-2 line-clamp-4">
                     {theme.Description || 'Explore, formulate and build novel solutions under this technical domain.'}

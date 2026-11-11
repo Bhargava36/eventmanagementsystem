@@ -43,8 +43,6 @@ import {
 } from 'lucide-react';
 import { GiTeamIdea } from "react-icons/gi";
 import { LuClipboardCheck,LuUserCheck } from "react-icons/lu";
-
-
 const logoElement = (
   <div className="relative w-5 h-5 flex items-center justify-center">
     <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -53,9 +51,6 @@ const logoElement = (
     <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 bottom-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
   </div>
 );
-
-
-
 const SidebarContent = ({
   isMobile = false,
   collapsed,
@@ -67,7 +62,6 @@ const SidebarContent = ({
   const location = useLocation();
   const toast = useToast();
   const { user, logout } = useAuth();
-
   const [adminData, setAdminData] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -77,11 +71,9 @@ const SidebarContent = ({
   });
   const [imageError, setImageError] = useState(false);
   const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
-
   const handleSwitchEvent = async (targetEvent) => {
     if (!targetEvent || Number(targetEvent.Id) === Number(adminData?.EventId)) return;
     const targetAdminId = adminData?.Id || adminData?.id || user?.Id || user?.id;
-
     const updated = {
       ...adminData,
       EventId: targetEvent.Id,
@@ -96,7 +88,6 @@ const SidebarContent = ({
       localStorage.removeItem(`admin_dashboard_cache_${adminData?.EventId}`);
     } catch (e) {}
     setAdminData(updated);
-
     // Call backend switch-event to persist selection in users.EventId
     if (targetAdminId) {
       try {
@@ -109,13 +100,11 @@ const SidebarContent = ({
         console.warn('Backend switch failed:', e);
       }
     }
-
     window.dispatchEvent(new CustomEvent('admin-event-updated', { detail: targetEvent }));
     toast.success(`Switched workspace to: ${targetEvent.EventName}`);
     navigate('/admin/dashboard');
     setTimeout(() => window.location.reload(), 250);
   };
-
   useEffect(() => {
     if (collapsed) {
       setShowText(false);
@@ -126,7 +115,6 @@ const SidebarContent = ({
       return () => clearTimeout(timer);
     }
   }, [collapsed]);
-
   useEffect(() => {
     const syncAdminData = () => {
       try {
@@ -137,7 +125,6 @@ const SidebarContent = ({
         // ignore
       }
     };
-
     const targetAdminId = adminData?.Id || adminData?.id || user?.Id || user?.id;
     if (targetAdminId) {
       fetch(`${API_BASE_URL}/api/admin/${targetAdminId}`)
@@ -153,12 +140,10 @@ const SidebarContent = ({
           } else if (Array.isArray(data.events?.[0]?.events)) {
             eventsList = data.events[0].events;
           }
-
           setAdminData((prev) => {
             // Find active event among assigned events, or fallback to prev.EventId
             const activeId = prev?.EventId || adminObj.EventId;
             const currentEvent = eventsList.find((e) => Number(e.Id) === Number(activeId)) || eventsList[0] || null;
-
             const updated = {
               ...prev,
               Id: adminObj.Id || prev?.Id,
@@ -174,7 +159,6 @@ const SidebarContent = ({
               Location: currentEvent ? currentEvent.Location : prev?.Location,
               events: eventsList.length > 0 ? eventsList : (prev?.events || [])
             };
-
             try {
               localStorage.setItem('admin', JSON.stringify(updated));
             } catch (e) {}
@@ -184,7 +168,6 @@ const SidebarContent = ({
         })
         .catch(() => {});
     }
-
     const targetEventId = adminData?.EventId || user?.EventId;
     if (targetEventId) {
       fetch(`${API_BASE_URL}/api/events/${targetEventId}`)
@@ -210,7 +193,6 @@ const SidebarContent = ({
         })
         .catch(() => {});
     }
-
     window.addEventListener('storage', syncAdminData);
     window.addEventListener('admin-event-updated', syncAdminData);
     window.addEventListener('admin-profile-updated', syncAdminData);
@@ -222,26 +204,21 @@ const SidebarContent = ({
       window.removeEventListener('profileUpdated', syncAdminData);
     };
   }, [adminData?.EventId, user?.EventId, adminData?.Id, user?.Id]);
-
   const canShowText = isMobile || showText;
-
   function handleLogout() {
     logout();
     toast.success('Logged out successfully');
     navigate('/admin/login');
   }
-
   const adminDisplayName = adminData?.AdminName || user?.AdminName || adminData?.UserName || user?.UserName || adminData?.name || user?.name || 'Admin';
   const adminPhoto = adminData?.Photo || adminData?.photo || user?.Photo || user?.photo || adminData?.ProfilePic || '';
   const rawMode = adminData?.HackathonMode || user?.HackathonMode;
   const { showVirtual, showPhysical, isBoth } = getTrackVisibility(rawMode, adminData?.Location);
   const typeInfo = getEventTypeInfo(adminData?.EventType);
   const isIndividual = isSoloTeamSize(adminData?.TeamSize || user?.TeamSize) || typeInfo.isWorkshop || typeInfo.isWebinar || typeInfo.isSeminar || typeInfo.isAlumni;
-
   // Track operation labels based on event type
   let virtualTrackName = isBoth ? 'Virtual Event' : 'Event Operations';
   let physicalTrackName = isBoth ? 'Physical Event' : 'Event Operations';
-
   if (typeInfo.isWorkshop) {
     virtualTrackName = isBoth ? 'Online Workshop' : 'Workshop Sessions';
     physicalTrackName = isBoth ? 'In-Person Workshop' : 'Workshop Operations';
@@ -258,10 +235,8 @@ const SidebarContent = ({
     virtualTrackName = isBoth ? 'Virtual Fest' : 'Fest Operations';
     physicalTrackName = isBoth ? 'Fest Arena' : 'Fest Operations';
   }
-
   // Only Hackathons and Contests/Fests use judging evaluators and scorecard results
   const hasEvaluators = typeInfo.isHackathon || typeInfo.isCodingContest || typeInfo.isTechFest;
-
   // Dynamic participant naming
   let participantLabel = 'Registered Teams';
   if (typeInfo.isWorkshop) {
@@ -279,7 +254,6 @@ const SidebarContent = ({
   } else {
     participantLabel = isIndividual ? 'Registered Participants' : 'Registered Teams';
   }
-
   // Dynamic core team naming
   let coreTeamLabel = 'Core Team';
   if (typeInfo.isWorkshop) {
@@ -289,7 +263,6 @@ const SidebarContent = ({
   } else if (typeInfo.isSeminar) {
     coreTeamLabel = 'Speakers & Committee';
   }
-
   const menuItems = [
     {
       name: 'My Events',
@@ -298,7 +271,6 @@ const SidebarContent = ({
       badge: adminData?.events?.length > 1 ? `${adminData.events.length}` : null,
       end: false,
     },
-
     {
       name: 'Dashboard',
       icon: LayoutDashboard,
@@ -306,8 +278,6 @@ const SidebarContent = ({
       badge: null,
       end: true,
     },
-  
-
     ...(typeInfo.isWorkshop
       ? [
         {
@@ -340,7 +310,6 @@ const SidebarContent = ({
         },
       ]
       : []),
-
     ...(typeInfo.isWebinar
       ? [
         {
@@ -380,7 +349,6 @@ const SidebarContent = ({
         },
       ]
       : []),
-
     ...(typeInfo.isSeminar
       ? [
         {
@@ -420,7 +388,6 @@ const SidebarContent = ({
         },
       ]
       : []),
-
     ...(typeInfo.isAlumni
       ? [
         {
@@ -467,16 +434,8 @@ const SidebarContent = ({
         },
       ]
       : []),
-
     ...(typeInfo.isProjectExpo
       ? [
-        {
-          name: 'Expo Studio & Domains',
-          icon: Sliders,
-          path: '/admin/expo/settings',
-          badge: null,
-          end: false,
-        },
         {
           name: 'Project Submissions',
           icon: FileText,
@@ -514,7 +473,6 @@ const SidebarContent = ({
         },
       ]
       : []),
-
     ...(showVirtual && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni && !typeInfo.isProjectExpo
       ? [
         {
@@ -537,7 +495,6 @@ const SidebarContent = ({
           : []),
       ]
       : []),
-
     ...(showPhysical && !typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni && !typeInfo.isProjectExpo
       ? [
         {
@@ -560,7 +517,6 @@ const SidebarContent = ({
           : []),
       ]
       : []),
-
     ...(hasEvaluators && !typeInfo.isAlumni && !typeInfo.isProjectExpo
       ? [
         {
@@ -572,7 +528,6 @@ const SidebarContent = ({
         },
       ]
       : []),
-
     ...(!typeInfo.isWorkshop && !typeInfo.isWebinar && !typeInfo.isSeminar && !typeInfo.isAlumni && !typeInfo.isProjectExpo
       ? [
         {
@@ -609,10 +564,10 @@ const SidebarContent = ({
       badge: null,
       end: false,
     },
-    { 
-      name: 'Feedback', 
-      icon: MessageCircleQuestion, 
-      path: '/admin/feedback', 
+    {
+      name: 'Feedback',
+      icon: MessageCircleQuestion,
+      path: '/admin/feedback',
       badge: null,
     },
     {
@@ -623,8 +578,6 @@ const SidebarContent = ({
       end: false,
     },
   ];
-
-
   return (
     <aside
       className={`relative ${isMobile ? 'w-[280px]' : collapsed ? 'w-[90px]' : 'w-[280px]'
@@ -639,7 +592,6 @@ const SidebarContent = ({
           {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
         </button>
       )}
-
       {isMobile && (
         <button
           onClick={() => setMobileOpen(false)}
@@ -648,7 +600,6 @@ const SidebarContent = ({
           <CircleX className="w-7 h-7 text-white" />
         </button>
       )}
-
       {/* Fixed Header */}
       <div
         className={`flex items-center gap-3 mb-6 mt-2 shrink-0 ${!isMobile && collapsed ? 'justify-center' : ''
@@ -686,10 +637,7 @@ const SidebarContent = ({
           </motion.div>
         )}
       </div>
-
       <div className="border-t border-gray-200 dark:border-[#1A2440] mb-3 shrink-0"></div>
-     
-
       {/* Only Navigation Links Scroll */}
       <LayoutGroup id={isMobile ? 'admin-nav-mobile' : 'admin-nav-desktop'}>
         <nav className="space-y-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden sidebar-scrollbar">
@@ -698,7 +646,6 @@ const SidebarContent = ({
             const isCurrentActive = item.end
               ? location.pathname === item.path
               : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
-
             return (
               <NavLink
                 key={item.name}
@@ -749,7 +696,6 @@ const SidebarContent = ({
           })}
         </nav>
       </LayoutGroup>
-
       {/* Fixed Footer */}
       <div className="mt-auto shrink-0 pt-1 ">
         <ThemeToggle variant="sidebar" canShowText={canShowText} />
@@ -776,11 +722,9 @@ const SidebarContent = ({
     </aside>
   );
 };
-
 const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-black overflow-hidden">
       <div className="hidden lg:flex h-screen sticky top-0 z-20">
@@ -791,14 +735,12 @@ const Sidebar = () => {
           setMobileOpen={setMobileOpen}
         />
       </div>
-
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
-
       <div
         className={`fixed top-0 left-0 z-50 h-full lg:hidden transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
@@ -810,7 +752,6 @@ const Sidebar = () => {
           setMobileOpen={setMobileOpen}
         />
       </div>
-
       <div className="flex-1 min-w-0 overflow-y-auto h-screen bg-gray-50 dark:bg-black transition-colors relative">
         <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 sticky top-0 z-30">
           <div className="flex items-center gap-3">
@@ -834,16 +775,13 @@ const Sidebar = () => {
           </div>
           <NotificationBellDropdown align="right" />
         </div>
-
         {/* Floating Top-Right Notification Island on Desktop */}
         <div className="hidden lg:flex fixed top-5 right-6 z-40 items-center">
           <NotificationBellDropdown align="right" variant="floating" />
         </div>
-
         <Outlet />
       </div>
     </div>
   );
 };
-
 export default Sidebar;

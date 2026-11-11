@@ -1,5 +1,4 @@
 const db = require('../../config/db');
-
 // Ensure table exists on initialization
 const initTable = () => {
     const createSql = `
@@ -22,9 +21,9 @@ const initTable = () => {
         db.query(`ALTER TABLE platform_feedback ADD COLUMN IF NOT EXISTS UserPhoto VARCHAR(500) NULL AFTER UserEmail`, () => {});
     });
 };
-
-initTable();
-
+if (process.env.AUTO_MIGRATE === 'true') {
+    initTable();
+}
 const createPlatformFeedback = (data, callback) => {
     const { UserId, UserName, UserEmail, UserPhoto, Rating, Category, Comments } = data;
     const query = `
@@ -47,7 +46,6 @@ const createPlatformFeedback = (data, callback) => {
         });
     });
 };
-
 const getAllPlatformFeedback = (callback) => {
     const query = `SELECT * FROM platform_feedback ORDER BY CreatedAt DESC`;
     db.query(query, (err, results) => {
@@ -55,22 +53,21 @@ const getAllPlatformFeedback = (callback) => {
         callback(null, results);
     });
 };
-
 const getTestimonials = (limit = 12, callback) => {
     const query = `
-        SELECT 
-            pf.Id, 
-            pf.UserId, 
-            pf.UserName, 
-            pf.UserEmail, 
-            pf.Rating, 
-            pf.Category, 
-            pf.Comments, 
+        SELECT
+            pf.Id,
+            pf.UserId,
+            pf.UserName,
+            pf.UserEmail,
+            pf.Rating,
+            pf.Category,
+            pf.Comments,
             pf.CreatedAt,
             COALESCE(
                 NULLIF(TRIM(pf.UserPhoto), ''),
                 (
-                    SELECT u.Photo FROM users u 
+                    SELECT u.Photo FROM users u
                     WHERE (pf.UserId IS NOT NULL AND u.Id = pf.UserId)
                        OR (pf.UserEmail IS NOT NULL AND LOWER(TRIM(u.Email)) = LOWER(TRIM(pf.UserEmail)))
                        OR (LOWER(TRIM(u.UserName)) = LOWER(TRIM(pf.UserName)))
@@ -78,7 +75,7 @@ const getTestimonials = (limit = 12, callback) => {
                     LIMIT 1
                 ),
                 (
-                    SELECT rtm.Photo FROM registered_team_members rtm 
+                    SELECT rtm.Photo FROM registered_team_members rtm
                     WHERE (pf.UserId IS NOT NULL AND rtm.UserId = pf.UserId)
                        OR (pf.UserEmail IS NOT NULL AND LOWER(TRIM(rtm.MemberEmail)) = LOWER(TRIM(pf.UserEmail)))
                        OR (LOWER(TRIM(rtm.MemberName)) = LOWER(TRIM(pf.UserName)))
@@ -87,7 +84,7 @@ const getTestimonials = (limit = 12, callback) => {
                     LIMIT 1
                 ),
                 (
-                    SELECT ect.Photo FROM event_core_team ect 
+                    SELECT ect.Photo FROM event_core_team ect
                     WHERE (pf.UserEmail IS NOT NULL AND LOWER(TRIM(ect.Email)) = LOWER(TRIM(pf.UserEmail)))
                        OR (LOWER(TRIM(ect.Name)) = LOWER(TRIM(pf.UserName)))
                     AND ect.Photo IS NOT NULL AND TRIM(ect.Photo) != ''
@@ -97,18 +94,18 @@ const getTestimonials = (limit = 12, callback) => {
             ) AS UserPhoto
         FROM platform_feedback pf
         WHERE pf.Status = 'approved' AND pf.Rating >= 3
-        ORDER BY 
-            (CASE 
+        ORDER BY
+            (CASE
                 WHEN (
                     COALESCE(
                         NULLIF(TRIM(pf.UserPhoto), ''),
                         (SELECT u.Photo FROM users u WHERE (pf.UserId IS NOT NULL AND u.Id = pf.UserId) OR (pf.UserEmail IS NOT NULL AND LOWER(TRIM(u.Email)) = LOWER(TRIM(pf.UserEmail))) LIMIT 1)
                     ) IS NOT NULL
-                ) THEN 0 
-                ELSE 1 
+                ) THEN 0
+                ELSE 1
             END) ASC,
-            pf.Rating DESC, 
-            pf.CreatedAt DESC 
+            pf.Rating DESC,
+            pf.CreatedAt DESC
         LIMIT ?
     `;
     db.query(query, [Number(limit)], (err, results) => {
@@ -116,7 +113,6 @@ const getTestimonials = (limit = 12, callback) => {
         callback(null, results);
     });
 };
-
 const deletePlatformFeedback = (id, callback) => {
     const query = `DELETE FROM platform_feedback WHERE Id = ?`;
     db.query(query, [id], (err, result) => {
@@ -124,7 +120,6 @@ const deletePlatformFeedback = (id, callback) => {
         callback(null, result);
     });
 };
-
 module.exports = {
     createPlatformFeedback,
     getAllPlatformFeedback,

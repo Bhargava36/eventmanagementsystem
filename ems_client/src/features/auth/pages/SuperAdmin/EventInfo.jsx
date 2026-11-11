@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '../../../../components/Organisms/Footer';
-
 import {
     ArrowLeft,
     Pencil,
@@ -38,19 +37,16 @@ import {
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';
 import { validateEventDates } from '../../../../lib/utils';
-
 function EventInfo() {
     const navigate = useNavigate();
     const { id } = useParams();
     const location = useLocation();
     const toast = useToast();
-
     const initialEvent = location.state?.initialEvent || null;
     const [event, setEvent] = useState(initialEvent);
     const [loading, setLoading] = useState(!initialEvent);
     const [error, setError] = useState('');
     const [isEditing, setIsEditing] = useState(false);
-
     const [showAdminModal, setShowAdminModal] = useState(false);
     const [admins, setAdmins] = useState([]);
     const [adminLoading, setAdminLoading] = useState(true);
@@ -63,22 +59,18 @@ function EventInfo() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [existingAdminUser, setExistingAdminUser] = useState(null);
     const [checkingEmail, setCheckingEmail] = useState(false);
-    
     const [adminForm, setAdminForm] = useState({
         AdminName: '',
         Email: '',
         Password: '',
         Mobile: ''
     });
-
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
-
     const [activePosterIndex, setActivePosterIndex] = useState(0);
     const [lightboxImage, setLightboxImage] = useState(null);
     const [isPaused, setIsPaused] = useState(false);
     const [aboutPhaseTab, setAboutPhaseTab] = useState('all');
-
     const [formData, setFormData] = useState({
         EventName: initialEvent?.EventName || '',
         Description: initialEvent?.Description || '',
@@ -119,46 +111,35 @@ function EventInfo() {
         MaxCapacity: initialEvent?.MaxCapacity || '',
         MaxAdmins: initialEvent?.MaxAdmins || 5,
     });
-
     const handleBack = () => {
         navigate('/sidebar/events');
     };
-
     useEffect(() => {
         fetchEventById(Boolean(initialEvent));
         fetchAdmins();
     }, [id]);
-
     useEffect(() => {
         if (!event?.Posters || event.Posters.length <= 1 || isEditing || isPaused) return;
-
         const timer = setInterval(() => {
             setActivePosterIndex((prev) => (prev + 1) % event.Posters.length);
         }, 3500);
-
         return () => clearInterval(timer);
     }, [event?.Posters, isEditing, isPaused]);
-
     const fetchEventById = async (isBackground = false) => {
         try {
             if (!isBackground) setLoading(true);
             setError('');
-
             const res = await fetch(
                 `${API_BASE_URL}/api/events/${id}`
             );
-
             const data = await res.json();
-
             if (!res.ok) {
                 throw new Error(
                     data.message || 'Failed to fetch event'
                 );
             }
-
             setEvent(data.event);
             setActivePosterIndex(0);
-
             setFormData({
                 EventName: data.event.EventName || '',
                 Description: data.event.Description || '',
@@ -207,23 +188,18 @@ function EventInfo() {
             setLoading(false);
         }
     };
-
     const fetchAdmins = async () => {
         try {
             setAdminLoading(true);
-
             const res = await fetch(
                 `${API_BASE_URL}/api/admin/event/${id}`
             );
-
             const data = await res.json();
-
             if (!res.ok) {
                 throw new Error(
                     data.message || 'Failed to fetch admins'
                 );
             }
-
             setAdmins(data.admins);
         } catch (error) {
             console.error('Fetch admins error:', error);
@@ -232,14 +208,12 @@ function EventInfo() {
             setAdminLoading(false);
         }
     };
-
     const checkUserByEmail = async (emailToSearch) => {
         const trimmed = (emailToSearch || '').trim().toLowerCase();
         if (!trimmed || !trimmed.includes('@') || !trimmed.includes('.')) {
             setExistingAdminUser(null);
             return;
         }
-
         try {
             setCheckingEmail(true);
             const res = await fetch(`${API_BASE_URL}/api/users/email/${encodeURIComponent(trimmed)}`);
@@ -264,25 +238,19 @@ function EventInfo() {
             setCheckingEmail(false);
         }
     };
-
     const maxAdmins = Number(formData.MaxAdmins || event?.MaxAdmins || 5);
-
     const handleCreateAdmin = async (e) => {
         e.preventDefault();
-
         if (admins.length >= maxAdmins) {
             toast.error(`Admin quota reached. This event is configured for a maximum of ${maxAdmins} admins only.`);
             return;
         }
-
         if (!existingAdminUser && !adminForm.Password) {
             toast.error('Password is required for a new admin.');
             return;
         }
-
         try {
             setAdminSaving(true);
-
             const payload = {
                 AdminName: adminForm.AdminName,
                 Email: adminForm.Email,
@@ -292,7 +260,6 @@ function EventInfo() {
             if (adminForm.Password) {
                 payload.Password = adminForm.Password;
             }
-
             const res = await fetch(
                 `${API_BASE_URL}/api/admin/register`,
                 {
@@ -303,17 +270,13 @@ function EventInfo() {
                     body: JSON.stringify(payload)
                 }
             );
-
             const data = await res.json();
-
             if (!res.ok) {
                 throw new Error(
                     data.message || 'Admin creation failed'
                 );
             }
-
             toast.success(existingAdminUser ? 'Existing user assigned as Admin for this event!' : 'Admin created and assigned successfully!');
-
             setAdminForm({
                 AdminName: '',
                 Email: '',
@@ -321,9 +284,7 @@ function EventInfo() {
                 Mobile: ''
             });
             setExistingAdminUser(null);
-
             setShowAdminModal(false);
-
             await fetchAdmins();
         } catch (error) {
             console.error('Create admin error:', error);
@@ -332,11 +293,9 @@ function EventInfo() {
             setAdminSaving(false);
         }
     };
-
     const handleRemoveAdmin = (admin) => {
         setAdminToRemove(admin);
     };
-
     const confirmRemoveAdmin = async () => {
         if (!adminToRemove) return;
         try {
@@ -344,12 +303,10 @@ function EventInfo() {
             const res = await fetch(`${API_BASE_URL}/api/admin/${adminToRemove.Id}/event/${id}`, {
                 method: 'DELETE'
             });
-
             const data = await res.json();
             if (!res.ok) {
                 throw new Error(data.message || 'Failed to remove admin from event');
             }
-
             toast.success(data.message || 'Admin removed from event successfully');
             setAdminToRemove(null);
             await fetchAdmins();
@@ -360,12 +317,10 @@ function EventInfo() {
             setRemovingAdminId(null);
         }
     };
-
     const handleOpenQuotaModal = () => {
         setQuotaInput(maxAdmins);
         setShowQuotaModal(true);
     };
-
     const handleSaveQuota = async (e) => {
         e?.preventDefault();
         const parsed = parseInt(quotaInput, 10);
@@ -382,14 +337,11 @@ function EventInfo() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Failed to update quota');
-
             // Instantly update local state so UI updates immediately without manual reload
             setEvent((prev) => (prev ? { ...prev, MaxAdmins: parsed } : prev));
             setFormData((prev) => ({ ...prev, MaxAdmins: parsed }));
-
             toast.success(`Admin quota updated to ${parsed} organizers`);
             setShowQuotaModal(false);
-
             // Background refresh to keep all server fields in sync
             await fetchEventById(true);
         } catch (err) {
@@ -398,15 +350,12 @@ function EventInfo() {
             setQuotaSaving(false);
         }
     };
-
     const handleAdminInputChange = (e) => {
         const { name, value } = e.target;
-
         setAdminForm((prev) => ({
             ...prev,
             [name]: value
         }));
-
         if (name === 'Email') {
             const trimmed = value.trim().toLowerCase();
             if (trimmed.includes('@') && trimmed.includes('.')) {
@@ -419,16 +368,13 @@ function EventInfo() {
             }
         }
     };
-
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-
         setFormData((prev) => ({
             ...prev,
             [name]: value,
         }));
     };
-
     const compressImage = (file) => {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -461,18 +407,15 @@ function EventInfo() {
             reader.readAsDataURL(file);
         });
     };
-
     const resolvePosterUrl = (url) => {
         if (!url) return '';
         if (typeof url !== 'string') return url?.url || '';
         if (url.startsWith('/uploads')) return `${API_BASE_URL}${url}`;
         return url;
     };
-
     const handlePosterUpload = async (e) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-
         for (const file of files) {
             if (!file.type.startsWith('image/')) {
                 toast.error(`${file.name} is not a valid image file.`);
@@ -481,12 +424,10 @@ function EventInfo() {
             try {
                 const uploadData = new FormData();
                 uploadData.append('file', file);
-
                 const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
                     method: 'POST',
                     body: uploadData
                 });
-
                 if (uploadRes.ok) {
                     const result = await uploadRes.json();
                     const fileUrl = result.fileUrl || result.url;
@@ -516,14 +457,12 @@ function EventInfo() {
         }
         e.target.value = '';
     };
-
     const handleRemovePoster = (indexToRemove) => {
         setFormData((prev) => ({
             ...prev,
             Posters: (prev.Posters || []).filter((_, idx) => idx !== indexToRemove)
         }));
     };
-
     const handleSetPrimaryPoster = (indexToPrimary) => {
         setFormData((prev) => {
             const posters = [...(prev.Posters || [])];
@@ -536,7 +475,6 @@ function EventInfo() {
             };
         });
     };
-
     const formatDateForInput = (dateString) => {
         if (!dateString) return '';
         try {
@@ -547,7 +485,6 @@ function EventInfo() {
             return '';
         }
     };
-
     const calculateDuration = (start, end) => {
         if (!start || !end) return null;
         const s = new Date(start);
@@ -558,7 +495,6 @@ function EventInfo() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
         return `${diffDays} ${diffDays === 1 ? 'Day' : 'Days'}`;
     };
-
     const getFormCompleteness = () => {
         const requiredKeys = ['EventName', 'TeamSize', 'StartDate', 'EndDate', 'Location', 'EventType'];
         let filled = 0;
@@ -569,13 +505,10 @@ function EventInfo() {
         const score = Math.round(((filled + (hasPosters ? 1 : 0)) / (requiredKeys.length + 1)) * 100);
         return Math.min(100, Math.max(0, score));
     };
-
     const handleUpdateEvent = async (e) => {
         e.preventDefault();
-
         try {
             setSaving(true);
-
             // Chronological date sequence validation
             if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') {
                 const vErr = validateEventDates({
@@ -619,7 +552,6 @@ function EventInfo() {
                     return;
                 }
             }
-
             const payload = { ...formData };
             if (formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') {
                 payload.StartDate = formData.VirtualStartDate || formData.StartDate;
@@ -659,7 +591,6 @@ function EventInfo() {
                 payload.PhysicalRegistrationEnd = payload.RegistrationEnd;
                 payload.PhysicalPrizeMoney = formData.PhysicalPrizeMoney || formData.PrizeMoney;
             }
-
             const res = await fetch(
                 `${API_BASE_URL}/api/events/${id}`,
                 {
@@ -670,25 +601,19 @@ function EventInfo() {
                     body: JSON.stringify(payload),
                 }
             );
-
             const data = await res.json();
-
             if (!res.ok) {
                 throw new Error(
                     data.message || 'Failed to update event'
                 );
             }
-
             toast.success('Event updated successfully');
-
             // Clear admin caches and notify admin dashboard / sidebars
             try {
                 localStorage.removeItem(`admin_dashboard_cache_${id}`);
             } catch (e) {}
             window.dispatchEvent(new Event('admin-event-updated'));
-
             setIsEditing(false);
-
             await fetchEventById();
         } catch (error) {
             console.error('Update event error:', error);
@@ -697,30 +622,24 @@ function EventInfo() {
             setSaving(false);
         }
     };
-
     const handleDeleteEvent = () => {
         setShowDeleteModal(true);
     };
-
     const confirmDeleteEvent = async () => {
         try {
             setDeleting(true);
-
             const res = await fetch(
                 `${API_BASE_URL}/api/events/${id}`,
                 {
                     method: 'DELETE',
                 }
             );
-
             const data = await res.json();
-
             if (!res.ok) {
                 throw new Error(
                     data.message || 'Failed to delete event'
                 );
             }
-
             toast.success('Event deleted successfully');
             setShowDeleteModal(false);
             navigate('/sidebar/events');
@@ -731,7 +650,6 @@ function EventInfo() {
             setDeleting(false);
         }
     };
-
     if (loading && !event) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-black flex flex-col animate-pulse transition-colors">
@@ -764,14 +682,12 @@ function EventInfo() {
             </div>
         );
     }
-
     if (error) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-black flex flex-col items-center justify-center gap-4">
                 <p className="text-red-500">
                     {error}
                 </p>
-
                 <button
                     onClick={handleBack}
                     className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg"
@@ -781,14 +697,12 @@ function EventInfo() {
             </div>
         );
     }
-
     if (!event) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-black flex flex-col items-center justify-center gap-4">
                 <p className="text-gray-600 dark:text-gray-300">
                     Event not found
                 </p>
-
                 <button
                     onClick={handleBack}
                     className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg"
@@ -798,38 +712,28 @@ function EventInfo() {
             </div>
         );
     }
-
     return (
         <div className="bg-gray-50 dark:bg-black min-h-screen transition-colors">
-
             <motion.div
                 initial={{ opacity: 0, y: -15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, ease: 'easeOut' }}
                 className="pt-4 sm:pt-6 px-4 sm:px-6 md:px-8"
             >
-
                 <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4">
-
                     <span
                         onClick={handleBack}
                         className="hover:text-emerald-700 dark:hover:text-emerald-500 cursor-pointer"
                     >
                         Events
                     </span>
-
                     <span>›</span>
-
                     <span className="text-gray-900 dark:text-white">
                         Event Details
                     </span>
-
                 </div>
-
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-
                     <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
-
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -838,21 +742,15 @@ function EventInfo() {
                         >
                             <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
                         </motion.button>
-
                         <div className="min-w-0">
-
                             <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-black dark:text-white">
                                 {event.EventName}
                             </h1>
-
                             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
                                 {event.Description}
                             </p>
-
                         </div>
-
                     </div>
-
                     <motion.button
                         whileHover={{ scale: admins.length >= maxAdmins ? 1 : 1.02 }}
                         whileTap={{ scale: admins.length >= maxAdmins ? 1 : 0.98 }}
@@ -871,18 +769,14 @@ function EventInfo() {
                     >
                         <Plus className="w-4 h-4" />
                         <span>
-                            {admins.length >= maxAdmins 
-                                ? `Admin Quota Full (${admins.length}/${maxAdmins})` 
+                            {admins.length >= maxAdmins
+                                ? `Admin Quota Full (${admins.length}/${maxAdmins})`
                                 : `Add Admin (${admins.length}/${maxAdmins})`}
                         </span>
                     </motion.button>
-
                 </div>
-
             </motion.div>
-
             {isEditing ? (
-
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -890,9 +784,7 @@ function EventInfo() {
                     transition={{ duration: 0.3 }}
                     className="p-4 sm:p-6 md:p-8"
                 >
-
                     <form onSubmit={handleUpdateEvent}>
-
                         <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm mb-6">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                 <div>
@@ -908,7 +800,6 @@ function EventInfo() {
                                         Update event details, posters, dates, and preview how participants see this event in real time.
                                     </p>
                                 </div>
-
                                 <div className="flex items-center gap-3">
                                     <button
                                         type="button"
@@ -927,7 +818,6 @@ function EventInfo() {
                                     </button>
                                 </div>
                             </div>
-
                             <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800/80">
                                 <div className="flex items-center justify-between text-xs mb-2">
                                     <span className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
@@ -953,11 +843,8 @@ function EventInfo() {
                                 </div>
                             </div>
                         </div>
-
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
                             <div className="lg:col-span-7 xl:col-span-8 space-y-6">
-
                                 <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
                                     <div className="flex items-center gap-2.5 pb-3 border-b border-gray-100 dark:border-gray-800">
                                         <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
@@ -972,7 +859,6 @@ function EventInfo() {
                                             </p>
                                         </div>
                                     </div>
-
                                     <div>
                                         <div className="flex items-center justify-between mb-2">
                                             <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -992,7 +878,6 @@ function EventInfo() {
                                             className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
                                         />
                                     </div>
-
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -1023,7 +908,6 @@ function EventInfo() {
                                                 ))}
                                             </div>
                                         </div>
-
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Event Status
@@ -1044,7 +928,6 @@ function EventInfo() {
                                             </p>
                                         </div>
                                     </div>
-
                                     {(formData.EventType === 'Seminar' || formData.EventType === 'Conference') && (
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border border-emerald-500/30 bg-emerald-50/20 dark:bg-emerald-950/20">
                                             <div>
@@ -1075,7 +958,6 @@ function EventInfo() {
                                             </div>
                                         </div>
                                     )}
-
                                     <div>
                                         <div className="flex items-center justify-between mb-1.5">
                                             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -1099,7 +981,6 @@ function EventInfo() {
                                             SuperAdmin can assign up to this number of organizers to manage this event.
                                         </p>
                                     </div>
-
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                             Hackathon / Participation Mode
@@ -1140,7 +1021,6 @@ function EventInfo() {
                                         />
                                     </div>
                                 </div>
-
                                 <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
                                     <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
                                         <div className="flex items-center gap-2.5">
@@ -1160,7 +1040,6 @@ function EventInfo() {
                                             {(formData.Posters || []).length} Uploaded
                                         </span>
                                     </div>
-
                                     <label className="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all bg-gray-50/50 dark:bg-gray-900/40 group">
                                         <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform mb-2">
                                             <UploadCloud className="w-6 h-6" />
@@ -1179,7 +1058,6 @@ function EventInfo() {
                                             className="hidden"
                                         />
                                     </label>
-
                                     {(formData.Posters || []).length > 0 && (
                                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                                             {formData.Posters.map((poster, index) => (
@@ -1192,7 +1070,6 @@ function EventInfo() {
                                                         alt={`Poster ${index + 1}`}
                                                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                                     />
-
                                                     <div className="absolute top-1.5 left-1.5 z-10">
                                                         {index === 0 ? (
                                                             <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-600 text-white shadow">
@@ -1208,7 +1085,6 @@ function EventInfo() {
                                                             </button>
                                                         )}
                                                     </div>
-
                                                     <div className="absolute top-1.5 right-1.5 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button
                                                             type="button"
@@ -1232,7 +1108,6 @@ function EventInfo() {
                                         </div>
                                     )}
                                 </div>
-
                                 <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
                                     <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
                                         <div className="flex items-center gap-2.5">
@@ -1254,7 +1129,6 @@ function EventInfo() {
                                             </span>
                                         )}
                                     </div>
-
                                     {formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical' ? (
                                         <div className="space-y-4">
                                             <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-500/5 space-y-3">
@@ -1315,7 +1189,6 @@ function EventInfo() {
                                                     </div>
                                                 </div>
                                             </div>
-
                                             <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50/40 dark:bg-emerald-500/5 space-y-3">
                                                 <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-wider">
                                                     <MapPin className="w-3.5 h-3.5" />
@@ -1388,7 +1261,6 @@ function EventInfo() {
                                                         Closes before Event Starts
                                                     </span>
                                                 </div>
-
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -1402,7 +1274,6 @@ function EventInfo() {
                                                             className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm font-medium"
                                                         />
                                                     </div>
-
                                                     <div>
                                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                                             To: Registration Closing Date
@@ -1417,7 +1288,6 @@ function EventInfo() {
                                                     </div>
                                                 </div>
                                             </div>
-
                                             {/* 2. Event Schedule (From & To) Second */}
                                             <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/20 space-y-3">
                                                 <div className="flex items-center justify-between">
@@ -1429,7 +1299,6 @@ function EventInfo() {
                                                         Official Duration
                                                     </span>
                                                 </div>
-
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     <div>
                                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -1451,7 +1320,6 @@ function EventInfo() {
                                                             className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 text-xs sm:text-sm font-medium"
                                                         />
                                                     </div>
-
                                                     <div>
                                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                                             To: Event End Date
@@ -1476,7 +1344,6 @@ function EventInfo() {
                                             </div>
                                         </div>
                                     )}
-
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                             Allowed Team Size
@@ -1506,7 +1373,6 @@ function EventInfo() {
                                             ))}
                                         </div>
                                     </div>
-
                                     <div>
                                         <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                             Event Location / Venue
@@ -1523,7 +1389,6 @@ function EventInfo() {
                                             />
                                         </div>
                                     </div>
-
                                     {(formData.HackathonMode === 'Both' || formData.HackathonMode === 'Virtual and Physical') ? (
                                         <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 space-y-4">
                                             <div className="flex items-center gap-2">
@@ -1533,7 +1398,6 @@ function EventInfo() {
                                                     <p className="text-xs text-gray-500 dark:text-gray-400">Configure separate prize money for Physical and Virtual tracks.</p>
                                                 </div>
                                             </div>
-
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
                                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -1548,7 +1412,6 @@ function EventInfo() {
                                                         className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 text-sm"
                                                     />
                                                 </div>
-
                                                 <div>
                                                     <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                                         Virtual Track Prize Money
@@ -1563,7 +1426,6 @@ function EventInfo() {
                                                     />
                                                 </div>
                                             </div>
-
                                             <div className="flex items-center justify-between pt-2 border-t border-amber-200/60 dark:border-amber-800/40 text-xs">
                                                 <span className="text-gray-600 dark:text-gray-400 font-medium">Combined Pool Note</span>
                                                 <span className="font-extrabold text-amber-600 dark:text-amber-400">
@@ -1589,7 +1451,6 @@ function EventInfo() {
                                         </div>
                                     )}
                                 </div>
-
                                 <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
                                     <div className="flex items-center gap-2.5 pb-2 border-b border-gray-100 dark:border-gray-800">
                                         <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
@@ -1613,7 +1474,6 @@ function EventInfo() {
                                         </p>
                                     </div>
                                 </div>
-
                                 <div className="bg-white dark:bg-black rounded-2xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm space-y-5">
                                     <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-800">
                                         <div className="flex items-center gap-2.5">
@@ -1629,7 +1489,6 @@ function EventInfo() {
                                                 </p>
                                             </div>
                                         </div>
-
                                         <div className="flex items-center gap-1.5 p-1 rounded-xl bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
                                             <div
                                                 className="w-5 h-5 rounded-lg border border-black/10 shadow-sm"
@@ -1648,7 +1507,6 @@ function EventInfo() {
                                             />
                                         </div>
                                     </div>
-
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -1672,7 +1530,6 @@ function EventInfo() {
                                                 />
                                             </div>
                                         </div>
-
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Secondary Color
@@ -1695,7 +1552,6 @@ function EventInfo() {
                                                 />
                                             </div>
                                         </div>
-
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                                 Tertiary Color
@@ -1720,11 +1576,8 @@ function EventInfo() {
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
-
                             <div className="lg:col-span-5 xl:col-span-4 sticky top-6 space-y-5">
-
                                 <div className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
                                     <div className="px-5 py-3.5 bg-gray-50 dark:bg-gray-900/70 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                                         <div className="flex items-center gap-2">
@@ -1740,7 +1593,6 @@ function EventInfo() {
                                             </span>
                                         </div>
                                     </div>
-
                                     <div className="relative aspect-[16/9] w-full bg-gradient-to-br from-emerald-600 to-teal-800 overflow-hidden flex items-center justify-center">
                                         {(formData.Posters || []).length > 0 ? (
                                             <img
@@ -1754,7 +1606,6 @@ function EventInfo() {
                                                 <p className="text-xs font-semibold">Upload a poster to preview here</p>
                                             </div>
                                         )}
-
                                         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
                                             <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-white backdrop-blur-md shadow">
                                                 {formData.EventStatus || 'Upcoming'}
@@ -1766,7 +1617,6 @@ function EventInfo() {
                                             )}
                                         </div>
                                     </div>
-
                                     <div className="p-5 space-y-4">
                                         <div>
                                             <h4 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-1">
@@ -1776,7 +1626,6 @@ function EventInfo() {
                                                 {formData.Description || 'Brief event overview will appear here as you type.'}
                                             </p>
                                         </div>
-
                                         <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800/80 text-xs">
                                             <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-300">
                                                 <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -1784,12 +1633,10 @@ function EventInfo() {
                                                     {formData.StartDate ? new Date(formData.StartDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Start Date'} - {formData.EndDate ? new Date(formData.EndDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'End Date'}
                                                 </span>
                                             </div>
-
                                             <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-300">
                                                 <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                                 <span className="line-clamp-1">{formData.Location || 'Location not specified'}</span>
                                             </div>
-
                                             <div className="flex items-center gap-2.5 text-gray-600 dark:text-gray-300">
                                                 <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                                                 <span>{formData.TeamSize || 'Team size not set'}</span>
@@ -1797,12 +1644,10 @@ function EventInfo() {
                                         </div>
                                     </div>
                                 </div>
-
                                 <div className="bg-white dark:bg-black rounded-2xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
                                     <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">
                                         Readiness Checklist
                                     </h4>
-
                                     <div className="space-y-2 text-xs">
                                         {[
                                             { label: 'Event Name & Type defined', done: Boolean(formData.EventName && formData.EventType) },
@@ -1827,7 +1672,6 @@ function EventInfo() {
                                         ))}
                                     </div>
                                 </div>
-
                                 <div className="bg-white dark:bg-black rounded-2xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col gap-2.5">
                                     <button
                                         type="submit"
@@ -1837,7 +1681,6 @@ function EventInfo() {
                                         <Save className="w-4 h-4" />
                                         <span>{saving ? 'Saving Event Updates...' : 'Publish & Update Event'}</span>
                                     </button>
-
                                     <button
                                         type="button"
                                         onClick={() => setIsEditing(false)}
@@ -1846,30 +1689,20 @@ function EventInfo() {
                                         Discard Changes
                                     </button>
                                 </div>
-
                             </div>
-
                         </div>
-
                     </form>
-
                 </motion.div>
-
             ) : (
-
                 <div className="p-4 sm:p-6 md:p-8 grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-
                     <div className="xl:col-span-2 space-y-4 sm:space-y-6">
-
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.1 }}
                             className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
                                 {event.Posters && event.Posters.length > 0 ? (
                                     <div
                                         className="flex flex-col gap-2.5"
@@ -1890,7 +1723,6 @@ function EventInfo() {
                                                     onClick={() => setLightboxImage(resolvePosterUrl(event.Posters[activePosterIndex] || event.Posters[0]))}
                                                 />
                                             </AnimatePresence>
-
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                             <button
                                                 type="button"
@@ -1900,7 +1732,6 @@ function EventInfo() {
                                             >
                                                 <Maximize2 className="w-4 h-4" />
                                             </button>
-
                                             {event.Posters.length > 1 && (
                                                 <>
                                                     <button
@@ -1913,7 +1744,6 @@ function EventInfo() {
                                                     >
                                                         <ChevronLeft className="w-4 h-4" />
                                                     </button>
-
                                                     <button
                                                         type="button"
                                                         onClick={(e) => {
@@ -1924,7 +1754,6 @@ function EventInfo() {
                                                     >
                                                         <ChevronRight className="w-4 h-4" />
                                                     </button>
-
                                                     <div className="absolute bottom-3 inset-x-0 flex items-center justify-center gap-1.5 pointer-events-none">
                                                         {event.Posters.map((_, idx) => (
                                                             <span
@@ -1940,7 +1769,6 @@ function EventInfo() {
                                                 </>
                                             )}
                                         </div>
-
                                         {event.Posters.length > 1 && (
                                             <div className="flex items-center gap-2 overflow-x-auto py-1 px-0.5 no-scrollbar">
                                                 {event.Posters.map((poster, index) => (
@@ -1982,45 +1810,33 @@ function EventInfo() {
                                         </button>
                                     </div>
                                 )}
-
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
                                     <div className="flex items-start gap-3">
-
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             <LayoutGrid className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                         </div>
-
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Event Type
                                             </p>
-
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {event.EventType || '-'}
                                             </p>
                                         </div>
-
                                     </div>
-
                                     <div className="flex items-start gap-3">
-
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                         </div>
-
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Event Status
                                             </p>
-
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {event.EventStatus || '-'}
                                             </p>
                                         </div>
-
                                     </div>
-
                                     <div className="flex items-start gap-3">
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             {event.HackathonMode === 'Virtual' ? (
@@ -2042,7 +1858,6 @@ function EventInfo() {
                                             </p>
                                         </div>
                                     </div>
-
                                     {(event.HackathonMode === 'Both' || (event.VirtualStartDate && event.PhysicalStartDate)) ? (
                                         <>
                                             <div className="flex items-start gap-3">
@@ -2067,7 +1882,6 @@ function EventInfo() {
                                                     )}
                                                 </div>
                                             </div>
-
                                             <div className="flex items-start gap-3">
                                                 <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                                     <MapPin className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
@@ -2106,7 +1920,6 @@ function EventInfo() {
                                                     </p>
                                                 </div>
                                             </div>
-
                                             <div className="flex items-start gap-3">
                                                 <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                                     <Calendar className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
@@ -2122,54 +1935,41 @@ function EventInfo() {
                                             </div>
                                         </>
                                     )}
-
                                     <div className="flex items-start gap-3">
-
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             <MapPin className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                         </div>
-
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Location
                                             </p>
-
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {event.Location || '-'}
                                             </p>
                                         </div>
-
                                     </div>
-
                                     <div className="flex items-start gap-3">
-
                                         <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                                             <Clock className="w-4 h-4 text-emerald-700 dark:text-emerald-500" />
                                         </div>
-
                                         <div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">
                                                 Created On
                                             </p>
-
                                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                 {new Date(event.CreatedAt).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                             </p>
                                         </div>
-
                                     </div>
-
                                     {(event.VirtualPrizeMoney || event.PhysicalPrizeMoney || event.PrizeMoney) && (
                                         <div className="flex items-start gap-3">
                                             <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/20">
                                                 <Trophy className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                                             </div>
-
                                             <div>
                                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                                     Prize Pool
                                                 </p>
-
                                                 {(event.HackathonMode === 'Both' || event.HackathonMode === 'Virtual and Physical') && (event.PhysicalPrizeMoney || event.VirtualPrizeMoney) ? (
                                                     <div className="space-y-1 mt-0.5">
                                                         {event.PhysicalPrizeMoney && (
@@ -2191,28 +1991,21 @@ function EventInfo() {
                                             </div>
                                         </div>
                                     )}
-
                                 </div>
-
                             </div>
-
                         </motion.div>
-
-
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.2 }}
                             className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
-
                             {(() => {
                                 const isDualMode = Boolean(
                                     event.HackathonMode === 'Both' ||
                                     ((event.VirtualFacilities || event.VirtualRequirements || event.VirtualStartDate) &&
-                                     (event.PhysicalFacilities || event.PhysicalRequirements || event.PhysicalStartDate))
+                                      (event.PhysicalFacilities || event.PhysicalRequirements || event.PhysicalStartDate))
                                 );
-
                                 return (
                                     <>
                                         <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
@@ -2259,11 +2052,9 @@ function EventInfo() {
                                                 </div>
                                             )}
                                         </div>
-
                                         <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                                             {event.Description || '-'}
                                         </p>
-
                                         {isDualMode ? (
                                             <div className="mt-6 space-y-4">
                                                 {(aboutPhaseTab === 'all' || aboutPhaseTab === 'virtual') && (
@@ -2293,7 +2084,6 @@ function EventInfo() {
                                                                 Online Track
                                                             </span>
                                                         </div>
-
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
                                                             <div>
                                                                 <h5 className="text-xs font-semibold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -2318,7 +2108,6 @@ function EventInfo() {
                                                                     )}
                                                                 </div>
                                                             </div>
-
                                                             <div>
                                                                 <h5 className="text-xs font-semibold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                                                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -2345,7 +2134,6 @@ function EventInfo() {
                                                         </div>
                                                     </div>
                                                 )}
-
                                                 {(aboutPhaseTab === 'all' || aboutPhaseTab === 'physical') && (
                                                     <div className="rounded-xl p-4 sm:p-5 border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/20 dark:bg-emerald-950/10 space-y-4">
                                                         <div className="flex items-center justify-between flex-wrap gap-2">
@@ -2373,7 +2161,6 @@ function EventInfo() {
                                                                 In-Person / Venue
                                                             </span>
                                                         </div>
-
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
                                                             <div>
                                                                 <h5 className="text-xs font-semibold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -2398,7 +2185,6 @@ function EventInfo() {
                                                                     )}
                                                                 </div>
                                                             </div>
-
                                                             <div>
                                                                 <h5 className="text-xs font-semibold text-emerald-900 dark:text-emerald-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                                                                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -2438,7 +2224,6 @@ function EventInfo() {
                                                         </span>
                                                     )}
                                                 </div>
-
                                                 <div className="space-y-2.5">
                                                     {(event.VirtualFacilities || event.PhysicalFacilities || event.Facilities) ? (
                                                         (event.VirtualFacilities || event.PhysicalFacilities || event.Facilities)
@@ -2461,11 +2246,9 @@ function EventInfo() {
                                                         </p>
                                                     )}
                                                 </div>
-
                                                 <h3 className="text-base font-semibold text-gray-900 dark:text-white mt-6 mb-3">
                                                     Requirements
                                                 </h3>
-
                                                 <div className="space-y-2.5">
                                                     {(event.VirtualRequirements || event.PhysicalRequirements || event.Requirements) ? (
                                                         (event.VirtualRequirements || event.PhysicalRequirements || event.Requirements)
@@ -2493,20 +2276,16 @@ function EventInfo() {
                                     </>
                                 );
                             })()}
-
                         </motion.div>
-
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.3 }}
                             className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
-
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                                 Registration Details
                             </h2>
-
                             {Boolean(event.HackathonMode === 'Both' || (event.VirtualRegistrationStart && event.PhysicalRegistrationStart)) ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="p-4 rounded-xl bg-emerald-50/20 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-800/60">
@@ -2525,7 +2304,6 @@ function EventInfo() {
                                             </p>
                                         </div>
                                     </div>
-
                                     <div className="p-4 rounded-xl bg-emerald-50/20 dark:bg-emerald-950/10 border border-emerald-200 dark:border-emerald-800/60">
                                         <div className="flex items-center gap-2 mb-2">
                                             <MapPin className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
@@ -2553,7 +2331,6 @@ function EventInfo() {
                                             {event.RegistrationStart ? new Date(event.RegistrationStart).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : '-'}
                                         </p>
                                     </div>
-
                                     <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                                             Registration End
@@ -2564,17 +2341,12 @@ function EventInfo() {
                                     </div>
                                 </div>
                             )}
-
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 pt-5 border-t border-gray-200 dark:border-gray-800">
-
                                 <div>
-
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                                         Primary Color
                                     </p>
-
                                     <div className="flex items-center gap-2">
-
                                         <div
                                             className="w-8 h-8 rounded-md border"
                                             style={{
@@ -2582,23 +2354,16 @@ function EventInfo() {
                                                     event.PrimaryColor,
                                             }}
                                         />
-
                                         <span className="text-sm text-gray-900 dark:text-white">
                                             {event.PrimaryColor || '-'}
                                         </span>
-
                                     </div>
-
                                 </div>
-
                                 <div>
-
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                                         Secondary Color
                                     </p>
-
                                     <div className="flex items-center gap-2">
-
                                         <div
                                             className="w-8 h-8 rounded-md border"
                                             style={{
@@ -2606,23 +2371,16 @@ function EventInfo() {
                                                     event.SecondaryColor,
                                             }}
                                         />
-
                                         <span className="text-sm text-gray-900 dark:text-white">
                                             {event.SecondaryColor || '-'}
                                         </span>
-
                                     </div>
-
                                 </div>
-
                                 <div>
-
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                                         Tertiary Color
                                     </p>
-
                                     <div className="flex items-center gap-2">
-
                                         <div
                                             className="w-8 h-8 rounded-md border"
                                             style={{
@@ -2630,23 +2388,16 @@ function EventInfo() {
                                                     event.TertiaryColor,
                                             }}
                                         />
-
                                         <span className="text-sm text-gray-900 dark:text-white">
                                             {event.TertiaryColor || '-'}
                                         </span>
-
                                     </div>
-
                                 </div>
-
                                 <div>
-
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                                         Primary Text Color
                                     </p>
-
                                     <div className="flex items-center gap-2">
-
                                         <div
                                             className="w-8 h-8 rounded-md border"
                                             style={{
@@ -2654,23 +2405,16 @@ function EventInfo() {
                                                     event.PrimaryTextColor,
                                             }}
                                         />
-
                                         <span className="text-sm text-gray-900 dark:text-white">
                                             {event.PrimaryTextColor || '-'}
                                         </span>
-
                                     </div>
-
                                 </div>
-
                                 <div>
-
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                                         Secondary Text Color
                                     </p>
-
                                     <div className="flex items-center gap-2">
-
                                         <div
                                             className="w-8 h-8 rounded-md border"
                                             style={{
@@ -2678,23 +2422,16 @@ function EventInfo() {
                                                     event.SecondaryTextColor,
                                             }}
                                         />
-
                                         <span className="text-sm text-gray-900 dark:text-white">
                                             {event.SecondaryTextColor || '-'}
                                         </span>
-
                                     </div>
-
                                 </div>
-
                                 <div>
-
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                                         Tertiary Text Color
                                     </p>
-
                                     <div className="flex items-center gap-2">
-
                                         <div
                                             className="w-8 h-8 rounded-md border"
                                             style={{
@@ -2702,131 +2439,89 @@ function EventInfo() {
                                                     event.TertiaryTextColor,
                                             }}
                                         />
-
                                         <span className="text-sm text-gray-900 dark:text-white">
                                             {event.TertiaryTextColor || '-'}
                                         </span>
-
                                     </div>
-
                                 </div>
-
                             </div>
-
                         </motion.div>
-
                     </div>
-
                     <div className="space-y-4 sm:space-y-6">
-
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.15 }}
                             className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
-
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                                 Event Summary
                             </h2>
-
                             <div className="space-y-4">
-
                                 <div className="flex justify-between gap-4">
-
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
                                         Event ID
                                     </p>
-
                                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                         #{event.Id}
                                     </p>
-
                                 </div>
-
                                 <div className="flex justify-between gap-4">
-
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
                                         Event Type
                                     </p>
-
                                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                         {event.EventType || '-'}
                                     </p>
-
                                 </div>
-
                                 <div className="flex justify-between gap-4">
-
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
                                         Status
                                     </p>
-
                                     <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-500">
                                         {event.EventStatus || '-'}
                                     </p>
-
                                 </div>
-
                                 <div className="flex justify-between gap-4">
-
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
                                         Hackathon Mode
                                     </p>
-
                                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                         {event.HackathonMode || '-'}
                                     </p>
-
                                 </div>
-
                                 <div className="flex justify-between gap-4">
-
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
                                         Team Size
                                     </p>
-
                                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                         {event.TeamSize || '-'}
                                     </p>
-
                                 </div>
-
                                 <div className="flex justify-between gap-4">
-
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
                                         Location
                                     </p>
-
                                     <p className="text-sm font-semibold text-gray-900 dark:text-white text-right">
                                         {event.Location || '-'}
                                     </p>
-
                                 </div>
-
                                 <div className="flex justify-between gap-4">
-
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
                                         Admin Quota
                                     </p>
-
                                     <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                         {maxAdmins} Organizers Max
                                     </p>
-
                                 </div>
-
                             </div>
-
                         </motion.div>
-
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.25 }}
                             className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
-
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -2844,7 +2539,6 @@ function EventInfo() {
                                         (Edit Quota)
                                     </button>
                                 </div>
-
                                 {admins.length < maxAdmins ? (
                                     <button
                                         type="button"
@@ -2860,36 +2554,25 @@ function EventInfo() {
                                     </span>
                                 )}
                             </div>
-
                             {adminLoading ? (
-
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                     Loading admins...
                                 </p>
-
                             ) : admins.length === 0 ? (
-
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                     No admin assigned to this event.
                                 </p>
-
                             ) : (
-
                                 <div className="space-y-3">
-
                                     {admins.map((admin, idx) => (
-
                                         <motion.div
                                             key={admin?.Id ? `admin-${admin.Id}` : `admin-idx-${idx}`}
                                             whileHover={{ x: 2 }}
                                             transition={{ duration: 0.2 }}
                                             className="p-4 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800"
                                         >
-
                                             <div className="flex items-start justify-between gap-3">
-
                                                 <div className="min-w-0 flex-1">
-
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                                                             {admin.AdminName || 'Event Admin'}
@@ -2898,29 +2581,22 @@ function EventInfo() {
                                                             • #{idx + 1}
                                                         </span>
                                                     </div>
-
                                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                                                         {admin.Email}
                                                     </p>
-
                                                     {admin.Mobile && (
                                                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                                             {admin.Mobile}
                                                         </p>
                                                     )}
-
                                                 </div>
-
                                                 <div className="text-right shrink-0 flex flex-col items-end">
-
                                                     <p className="text-[11px] text-gray-400 dark:text-gray-500">
                                                         Role
                                                     </p>
-
                                                     <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 truncate max-w-[130px]">
                                                         {admin.AdminEventRole || 'Organizer'}
                                                     </p>
-
                                                     <button
                                                         type="button"
                                                         onClick={() => handleRemoveAdmin(admin)}
@@ -2935,70 +2611,45 @@ function EventInfo() {
                                                         )}
                                                         <span>Remove</span>
                                                     </button>
-
                                                 </div>
-
                                             </div>
-
                                         </motion.div>
-
                                     ))}
-
                                 </div>
-
                             )}
-
                         </motion.div>
-
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.35 }}
                             className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
-
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                                 Event Schedule
                             </h2>
-
                             <div className="space-y-5">
-
                                 <div className="flex gap-3">
-
                                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-700 mt-1.5 shrink-0" />
-
                                     <div>
-
                                         <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                             Registration Start
                                         </p>
-
                                         <p className="text-xs text-emerald-700 mt-1">
                                             {new Date(event.RegistrationStart || '-').toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                         </p>
-
                                     </div>
-
                                 </div>
-
                                 <div className="flex gap-3">
-
                                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-700 mt-1.5 shrink-0" />
-
                                     <div>
-
                                         <p className="text-sm font-semibold text-gray-900 dark:text-white">
                                             Registration End
                                         </p>
-
                                         <p className="text-xs text-emerald-700 mt-1">
                                             {new Date(event.RegistrationEnd || '-').toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
                                         </p>
-
                                     </div>
-
                                 </div>
-
                                 {(event.HackathonMode === 'Both' || (event.VirtualStartDate && event.PhysicalStartDate)) ? (
                                     <>
                                         <div className="flex gap-3">
@@ -3019,7 +2670,6 @@ function EventInfo() {
                                                 )}
                                             </div>
                                         </div>
-
                                         <div className="flex gap-3">
                                             <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 mt-1.5 shrink-0" />
                                             <div>
@@ -3052,7 +2702,6 @@ function EventInfo() {
                                                 </p>
                                             </div>
                                         </div>
-
                                         <div className="flex gap-3">
                                             <div className="w-2.5 h-2.5 rounded-full bg-emerald-700 mt-1.5 shrink-0" />
                                             <div>
@@ -3066,24 +2715,18 @@ function EventInfo() {
                                         </div>
                                     </>
                                 )}
-
                             </div>
-
                         </motion.div>
-
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.4, delay: 0.45 }}
                             className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
-
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                                 Actions
                             </h2>
-
                             <div className="space-y-3">
-
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
@@ -3093,7 +2736,6 @@ function EventInfo() {
                                     <Pencil className="w-4 h-4" />
                                     Edit Event
                                 </motion.button>
-
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
@@ -3102,22 +2744,15 @@ function EventInfo() {
                                     className="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-500 px-4 py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
                                 >
                                     <Trash2 className="w-4 h-4" />
-
                                     {deleting
                                         ? 'Deleting...'
                                         : 'Delete Event'}
                                 </motion.button>
-
                             </div>
-
                         </motion.div>
-
                     </div>
-
                 </div>
-
             )}
-
             <AnimatePresence>
                 {showAdminModal && (
                     <div key="create-admin-modal-portal" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -3129,7 +2764,6 @@ function EventInfo() {
                             onClick={() => !adminSaving && setShowAdminModal(false)}
                             className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
                         />
-
                         <motion.div
                             key="create-admin-panel"
                             initial={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -3161,7 +2795,6 @@ function EventInfo() {
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
-
                             <form onSubmit={handleCreateAdmin} className="space-y-4">
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between">
@@ -3191,7 +2824,6 @@ function EventInfo() {
                                         )}
                                     </div>
                                 </div>
-
                                 {existingAdminUser && (
                                     <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2 text-xs">
                                         <div className="flex items-center gap-2">
@@ -3205,7 +2837,6 @@ function EventInfo() {
                                         </span>
                                     </div>
                                 )}
-
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <div className="flex items-center justify-between">
@@ -3231,7 +2862,6 @@ function EventInfo() {
                                             />
                                         </div>
                                     </div>
-
                                     <div className="space-y-1.5">
                                         <div className="flex items-center justify-between">
                                             <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
@@ -3256,7 +2886,6 @@ function EventInfo() {
                                         </div>
                                     </div>
                                 </div>
-
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between">
                                         <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
@@ -3276,7 +2905,6 @@ function EventInfo() {
                                         />
                                     </div>
                                 </div>
-
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                                         Assigned Event
@@ -3289,12 +2917,10 @@ function EventInfo() {
                                         className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900/60 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed"
                                     />
                                 </div>
-
                                 <div className="flex items-center justify-between pt-4 mt-6 border-t border-gray-200 dark:border-gray-800">
                                     <span className="text-xs text-gray-500 dark:text-gray-400">
                                         Slots remaining: <strong className="text-emerald-600 dark:text-emerald-400">{Math.max(0, maxAdmins - admins.length)}</strong>
                                     </span>
-
                                     <div className="flex items-center gap-3">
                                         <button
                                             type="button"
@@ -3327,7 +2953,6 @@ function EventInfo() {
                         </motion.div>
                     </div>
                 )}
-
                 {/* Remove Admin Confirmation Modal */}
                 {adminToRemove && (
                     <div key="remove-admin-modal-portal" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -3363,7 +2988,6 @@ function EventInfo() {
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-
                             <div className="space-y-3 mb-6">
                                 <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                                     Are you sure you want to remove <strong className="text-gray-900 dark:text-white font-semibold">{adminToRemove.AdminName || 'this organizer'}</strong> from managing this event?
@@ -3377,7 +3001,6 @@ function EventInfo() {
                                     • This admin will lose management access to this event immediately.
                                 </p>
                             </div>
-
                             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100 dark:border-gray-800">
                                 <button
                                     type="button"
@@ -3409,7 +3032,6 @@ function EventInfo() {
                         </motion.div>
                     </div>
                 )}
-
                 {/* Adjust Admin Quota Modal */}
                 {showQuotaModal && (
                     <div key="adjust-quota-modal-portal" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -3447,7 +3069,6 @@ function EventInfo() {
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-
                             <form onSubmit={handleSaveQuota} className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
@@ -3481,7 +3102,6 @@ function EventInfo() {
                                         ))}
                                     </div>
                                 </div>
-
                                 <div className="p-3 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 text-xs">
                                     <p className="text-gray-600 dark:text-gray-400">
                                         • Currently assigned: <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">{admins.length} Admins</strong>
@@ -3490,7 +3110,6 @@ function EventInfo() {
                                         SuperAdmin will be allowed to assign up to {quotaInput || 0} organizers for this event.
                                     </p>
                                 </div>
-
                                 <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100 dark:border-gray-800">
                                     <button
                                         type="button"
@@ -3519,7 +3138,6 @@ function EventInfo() {
                         </motion.div>
                     </div>
                 )}
-
                 {/* Delete Event Confirmation Modal */}
                 {showDeleteModal && (
                     <div key="delete-event-modal-portal" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -3555,7 +3173,6 @@ function EventInfo() {
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-
                             <div className="space-y-3 mb-6">
                                 <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
                                     Are you sure you want to permanently delete <strong className="text-gray-900 dark:text-white font-semibold">"{event?.EventName}"</strong>?
@@ -3564,7 +3181,6 @@ function EventInfo() {
                                     ⚠️ This action is irreversible. All registrations, tracks, schedules, and admin allocations tied to this event will be permanently deleted.
                                 </div>
                             </div>
-
                             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100 dark:border-gray-800">
                                 <button
                                     type="button"
@@ -3596,7 +3212,6 @@ function EventInfo() {
                         </motion.div>
                     </div>
                 )}
-
                 {lightboxImage && (
                     <div key="lightbox-modal-portal" className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
                         <motion.div
@@ -3607,7 +3222,6 @@ function EventInfo() {
                             onClick={() => setLightboxImage(null)}
                             className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity"
                         />
-
                         <motion.div
                             key="lightbox-panel"
                             initial={{ scale: 0.92, opacity: 0 }}
@@ -3623,7 +3237,6 @@ function EventInfo() {
                             >
                                 <X className="w-5 h-5" />
                             </button>
-
                             <img
                                 src={lightboxImage}
                                 alt="Event Poster Preview"
@@ -3633,9 +3246,7 @@ function EventInfo() {
                     </div>
                 )}
             </AnimatePresence>
-
         </div>
     );
 }
-
 export default EventInfo;

@@ -11,20 +11,17 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  Legend,
+  Tooltip
 } from 'recharts';
 import {
   BarChart3,
   TrendingUp,
   PieChart as PieIcon,
-  Calendar,
   Users,
-  ShieldCheck,
   Zap,
   Activity,
   Layers,
-  UsersRound,
+  UsersRound
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -71,10 +68,10 @@ export default function SuperAdminAnalytics({
   totalUsers = 0,
   totalTeams = 0,
   totalEvents = 0,
-  isDark = false,
+  isDark = false
 }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'events' | 'trends' | 'modes'
-  const [pieMode, setPieMode] = useState('mode'); // 'mode' | 'status'
+  const [activeTab, setActiveTab] = useState('all');
+  const [pieMode, setPieMode] = useState('mode');
 
   // 1. Data for Event Scale (Bar Chart: Teams vs Members per Event)
   const eventScaleData = useMemo(() => {
@@ -83,10 +80,9 @@ export default function SuperAdminAnalytics({
         { name: 'Hackathon Alpha', members: 45, teams: 12 },
         { name: 'CodeSprint 2026', members: 68, teams: 18 },
         { name: 'TechSummit Expo', members: 32, teams: 8 },
-        { name: 'AI Challenge', members: 54, teams: 15 },
+        { name: 'AI Challenge', members: 54, teams: 15 }
       ];
     }
-
     return events.slice(0, 8).map((evt) => {
       const name = evt.EventName || evt.eventName || 'Event';
       const truncatedName = name.length > 14 ? name.substring(0, 12) + '...' : name;
@@ -94,7 +90,7 @@ export default function SuperAdminAnalytics({
         fullName: name,
         name: truncatedName,
         members: Number(evt.MemberCount ?? evt.UserCount ?? evt.userCount ?? 0),
-        teams: Number(evt.TeamCount ?? evt.teamCount ?? 0),
+        teams: Number(evt.TeamCount ?? evt.teamCount ?? 0)
       };
     });
   }, [events]);
@@ -109,13 +105,13 @@ export default function SuperAdminAnalytics({
         modeData: [
           { name: 'Virtual', value: 3, color: '#3B82F6' },
           { name: 'Physical', value: 5, color: '#10B981' },
-          { name: 'Hybrid (Both)', value: 2, color: '#8B5CF6' },
+          { name: 'Hybrid (Both)', value: 2, color: '#8B5CF6' }
         ],
         statusData: [
           { name: 'Ongoing', value: 2, color: '#10B981' },
           { name: 'Upcoming', value: 6, color: '#F59E0B' },
-          { name: 'Completed', value: 2, color: '#6B7280' },
-        ],
+          { name: 'Completed', value: 2, color: '#6B7280' }
+        ]
       };
     }
 
@@ -145,30 +141,28 @@ export default function SuperAdminAnalytics({
       modeData: [
         { name: 'Physical', value: modes.Physical || 0, color: '#10B981' },
         { name: 'Virtual', value: modes.Virtual || 0, color: '#06B6D4' },
-        { name: 'Hybrid', value: modes.Hybrid || 0, color: '#8B5CF6' },
+        { name: 'Hybrid', value: modes.Hybrid || 0, color: '#8B5CF6' }
       ].filter((d) => d.value > 0),
       statusData: [
         { name: 'Ongoing', value: statuses.Ongoing || 0, color: '#10B981' },
         { name: 'Upcoming', value: statuses.Upcoming || 0, color: '#F59E0B' },
-        { name: 'Completed', value: statuses.Completed || 0, color: '#6B7280' },
-      ].filter((d) => d.value > 0),
+        { name: 'Completed', value: statuses.Completed || 0, color: '#6B7280' }
+      ].filter((d) => d.value > 0)
     };
   }, [events]);
 
   // 3. Data for Registration Trend / Velocity (Area Chart)
   const registrationTrendData = useMemo(() => {
     if (!recentRegistrations || recentRegistrations.length === 0) {
-      // Fallback synthetic trend based on total registrations
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const base = Math.max(1, Math.round(totalMembers / 14));
       return days.map((day, i) => ({
         date: day,
         registrations: Math.round(base * (1 + (i % 3) * 0.4 + (i === 6 ? 0.8 : 0))),
-        teams: Math.max(1, Math.round((base * (1 + (i % 3) * 0.4)) / 3.5)),
+        teams: Math.max(1, Math.round((base * (1 + (i % 3) * 0.4)) / 3.5))
       }));
     }
 
-    // Group actual registrations by date (last 7 recorded groups)
     const dateMap = {};
     recentRegistrations.forEach((r) => {
       const rawDate = r.CreatedAt || r.createdAt || r.ActivityDate || r.date;
@@ -194,7 +188,7 @@ export default function SuperAdminAnalytics({
         { date: 'Phase 1', registrations: Math.round(totalMembers * 0.2), teams: Math.round(totalTeams * 0.2) },
         { date: 'Phase 2', registrations: Math.round(totalMembers * 0.35), teams: Math.round(totalTeams * 0.35) },
         { date: 'Phase 3', registrations: Math.round(totalMembers * 0.65), teams: Math.round(totalTeams * 0.65) },
-        { date: 'Current', registrations: totalMembers || 12, teams: totalTeams || 4 },
+        { date: 'Current', registrations: totalMembers || 12, teams: totalTeams || 4 }
       ];
     }
     return entries.slice(-7);
@@ -238,14 +232,14 @@ export default function SuperAdminAnalytics({
             { id: 'all', label: 'All Charts' },
             { id: 'events', label: 'Event Scale' },
             { id: 'trends', label: 'Trends' },
-            { id: 'modes', label: 'Distribution' },
+            { id: 'modes', label: 'Distribution' }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer ${
                 activeTab === tab.id
-                  ? 'bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                  ? 'bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 shadow-xs'
                   : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
               }`}
             >
@@ -322,7 +316,7 @@ export default function SuperAdminAnalytics({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
-            className={`rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm ${
+            className={`rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-xs ${
               activeTab === 'events' ? 'lg:col-span-12' : 'lg:col-span-7'
             }`}
           >
@@ -338,11 +332,11 @@ export default function SuperAdminAnalytics({
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
+                  <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500 inline-block" />
                   Members
                 </span>
                 <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-cyan-500 inline-block" />
+                  <span className="w-2.5 h-2.5 rounded-xs bg-cyan-500 inline-block" />
                   Teams
                 </span>
               </div>
@@ -412,7 +406,7 @@ export default function SuperAdminAnalytics({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.1 }}
-            className={`rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm ${
+            className={`rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-xs ${
               activeTab === 'modes' ? 'lg:col-span-12' : 'lg:col-span-5'
             }`}
           >
@@ -431,7 +425,7 @@ export default function SuperAdminAnalytics({
               <div className="flex items-center gap-1 p-0.5 bg-gray-100 dark:bg-zinc-900 rounded-lg border border-gray-200/80 dark:border-zinc-800 text-[11px]">
                 <button
                   onClick={() => setPieMode('mode')}
-                  className={`px-2 py-1 rounded-md font-medium transition-all ${
+                  className={`px-2 py-1 rounded-md font-medium transition-all cursor-pointer ${
                     pieMode === 'mode'
                       ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
                       : 'text-gray-500'
@@ -441,7 +435,7 @@ export default function SuperAdminAnalytics({
                 </button>
                 <button
                   onClick={() => setPieMode('status')}
-                  className={`px-2 py-1 rounded-md font-medium transition-all ${
+                  className={`px-2 py-1 rounded-md font-medium transition-all cursor-pointer ${
                     pieMode === 'status'
                       ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
                       : 'text-gray-500'
@@ -517,7 +511,7 @@ export default function SuperAdminAnalytics({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.15 }}
-            className={`rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm ${
+            className={`rounded-2xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-xs ${
               activeTab === 'trends' ? 'lg:col-span-12' : 'lg:col-span-12'
             }`}
           >
@@ -531,14 +525,13 @@ export default function SuperAdminAnalytics({
                   Real-time timeline of participant registrations & team formations
                 </p>
               </div>
-
               <div className="flex items-center gap-4 text-xs">
                 <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-sm" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-xs" />
                   Registrations
                 </span>
                 <span className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
-                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block shadow-sm" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block shadow-xs" />
                   Teams Formed
                 </span>
               </div>

@@ -1,17 +1,16 @@
 const { randomBytes } = require("crypto");
 const db = require("../../config/db");
-
 const getTeamPreference = async (teamId, userId) => {
     const [rows] = await db.promise().query(
-        `SELECT 
-            t.Id AS TeamId, 
-            t.TeamLeadUserId, 
-            t.EventId, 
-            t.TeamName, 
-            er.ParticipationMode, 
-            er.Status AS RegistrationStatus, 
-            e.EventName, 
-            e.AccommodationEnabled, 
+        `SELECT
+            t.Id AS TeamId,
+            t.TeamLeadUserId,
+            t.EventId,
+            t.TeamName,
+            er.ParticipationMode,
+            er.Status AS RegistrationStatus,
+            e.EventName,
+            e.AccommodationEnabled,
             e.FoodEnabled,
             e.AccommodationFee,
             e.FoodFee,
@@ -20,8 +19,8 @@ const getTeamPreference = async (teamId, userId) => {
             e.AdminPaymentQr,
             e.AdminPaymentInstructions,
             (SELECT COUNT(*) FROM registered_team_members tm WHERE tm.TeamId = t.Id) AS MemberCount,
-            COALESCE(p.AccommodationRequested, 0) AS AccommodationRequested, 
-            COALESCE(p.FoodAccepted, 0) AS FoodAccepted, 
+            COALESCE(p.AccommodationRequested, 0) AS AccommodationRequested,
+            COALESCE(p.FoodAccepted, 0) AS FoodAccepted,
             (p.TeamId IS NOT NULL) AS PreferencesSubmitted,
             p.TotalAmount,
             p.PaymentRefId,
@@ -30,18 +29,17 @@ const getTeamPreference = async (teamId, userId) => {
             COALESCE(p.BookingStatus, 'Pending') AS BookingStatus,
             p.AdminRemarks,
             p.BookingCreatedAt
-        FROM registered_teams t 
-        INNER JOIN events e ON e.Id = t.EventId 
-        INNER JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId 
-        LEFT JOIN physical_team_preferences p ON p.EventId = t.EventId AND p.TeamId = t.Id 
-        INNER JOIN registered_team_members member ON member.TeamId = t.Id AND member.UserId = ? 
-        WHERE t.Id = ? 
-        LIMIT 1`, 
+        FROM registered_teams t
+        INNER JOIN events e ON e.Id = t.EventId
+        INNER JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
+        LEFT JOIN physical_team_preferences p ON p.EventId = t.EventId AND p.TeamId = t.Id
+        INNER JOIN registered_team_members member ON member.TeamId = t.Id AND member.UserId = ?
+        WHERE t.Id = ?
+        LIMIT 1`,
         [userId, teamId]
     );
     return rows[0] || null;
 };
-
 const saveTeamPreference = async (teamId, userId, accommodationRequested, foodAccepted, bookingDetails = {}) => {
     const [teams] = await db.promise().query(
         `SELECT
@@ -70,7 +68,6 @@ const saveTeamPreference = async (teamId, userId, accommodationRequested, foodAc
         error.status = 403;
         throw error;
     }
-
     if (
         String(team.ParticipationMode).toLowerCase() !== "physical" ||
         String(team.RegistrationStatus).toLowerCase() !== "approved"
@@ -83,20 +80,17 @@ const saveTeamPreference = async (teamId, userId, accommodationRequested, foodAc
     }
     // Unified Food & Accommodation preference: they are requested together
     const unifiedRequest = Boolean(accommodationRequested || foodAccepted);
-
     if (unifiedRequest && Number(team.AccommodationEnabled) !== 1 && Number(team.FoodEnabled) !== 1) {
         const error = new Error("Food & Accommodation selection is not enabled for this event.");
         error.status = 403;
         throw error;
     }
-
     const {
         totalAmount = 0,
         paymentRefId = '',
         paymentReceiptUrl = '',
         paymentNotes = ''
     } = bookingDetails;
-
     await db.promise().query(
         `INSERT INTO physical_team_preferences
             (EventId, TeamId, AccommodationRequested, FoodAccepted, TotalAmount, PaymentRefId, PaymentReceiptUrl, PaymentNotes, BookingStatus)
@@ -120,10 +114,8 @@ const saveTeamPreference = async (teamId, userId, accommodationRequested, foodAc
             paymentNotes ? String(paymentNotes).trim() : null
         ]
     );
-
     return getTeamPreference(teamId, userId);
 };
-
 const getFoodParticipants = async (eventId) => {
     const [events] = await db.promise().query(
         "SELECT FoodEnabled, AccommodationEnabled FROM events WHERE Id = ?",
@@ -139,7 +131,6 @@ const getFoodParticipants = async (eventId) => {
         error.status = 403;
         throw error;
     }
-
     const [participants] = await db.promise().query(
         `SELECT DISTINCT
             t.Id AS TeamId,
@@ -183,10 +174,8 @@ const getFoodParticipants = async (eventId) => {
         ORDER BY t.TeamName, ParticipantName`,
         [eventId]
     );
-
     return participants;
 };
-
 const getAccommodationParticipants = async (eventId) => {
     const [events] = await db.promise().query(
         "SELECT AccommodationEnabled, FoodEnabled FROM events WHERE Id = ?",
@@ -202,7 +191,6 @@ const getAccommodationParticipants = async (eventId) => {
         error.status = 403;
         throw error;
     }
-
     const [participants] = await db.promise().query(
         `SELECT DISTINCT
             t.Id AS TeamId,
@@ -245,10 +233,8 @@ const getAccommodationParticipants = async (eventId) => {
         ORDER BY t.TeamName, ParticipantName`,
         [eventId]
     );
-
     return participants;
 };
-
 const getEventTeamPreferences = async (eventId) => {
     const [rows] = await db.promise().query(
         `SELECT
@@ -273,7 +259,6 @@ const getEventTeamPreferences = async (eventId) => {
     );
     return rows;
 };
-
 const generateFoodTokens = async (eventId, mealType) => {
     const [events] = await db.promise().query(
         "SELECT FoodEnabled FROM events WHERE Id = ?",
@@ -289,7 +274,6 @@ const generateFoodTokens = async (eventId, mealType) => {
         error.status = 403;
         throw error;
     }
-
     const [participants] = await db.promise().query(
         `SELECT preference.TeamId, member.UserId
         FROM physical_team_preferences preference
@@ -310,11 +294,9 @@ const generateFoodTokens = async (eventId, mealType) => {
             AND token.Id IS NULL`,
         [mealType, eventId]
     );
-
     if (participants.length === 0) {
         return { generated: 0 };
     }
-
     const values = participants.map(({ TeamId, UserId }) => [
         eventId,
         TeamId,
@@ -328,13 +310,11 @@ const generateFoodTokens = async (eventId, mealType) => {
         VALUES ?`,
         [values]
     );
-
     return { generated: result.affectedRows };
 };
-
 const getFacilityBookings = async (eventId) => {
     const [rows] = await db.promise().query(
-        `SELECT 
+        `SELECT
             p.EventId,
             p.TeamId,
             t.TeamName,
@@ -361,21 +341,17 @@ const getFacilityBookings = async (eventId) => {
     );
     return rows;
 };
-
 const updateBookingStatus = async (eventId, teamId, bookingStatus, adminRemarks = '') => {
     const validStatuses = ['Pending', 'Approved', 'Rejected'];
     const status = validStatuses.includes(bookingStatus) ? bookingStatus : 'Pending';
-
     await db.promise().query(
-        `UPDATE physical_team_preferences 
+        `UPDATE physical_team_preferences
          SET BookingStatus = ?, AdminRemarks = ?
          WHERE EventId = ? AND TeamId = ?`,
         [status, adminRemarks || null, eventId, teamId]
     );
-
     return { success: true, bookingStatus: status, adminRemarks };
 };
-
 const verifyFoodToken = async (tokenString) => {
     const cleanToken = String(tokenString || '').trim();
     if (!cleanToken) {
@@ -383,9 +359,8 @@ const verifyFoodToken = async (tokenString) => {
         error.status = 400;
         throw error;
     }
-
     const [rows] = await db.promise().query(
-        `SELECT 
+        `SELECT
             ft.Id,
             ft.EventId,
             ft.TeamId,
@@ -408,16 +383,13 @@ const verifyFoodToken = async (tokenString) => {
         LIMIT 1`,
         [cleanToken]
     );
-
     if (rows.length === 0) {
         const notFound = new Error('Invalid token. No food token found with this code.');
         notFound.status = 404;
         throw notFound;
     }
-
     return rows[0];
 };
-
 const redeemFoodToken = async (tokenString) => {
     const cleanToken = String(tokenString || '').trim();
     if (!cleanToken) {
@@ -425,29 +397,24 @@ const redeemFoodToken = async (tokenString) => {
         error.status = 400;
         throw error;
     }
-
     const tokenInfo = await verifyFoodToken(cleanToken);
-
     if (tokenInfo.IsRedeemed) {
         const conflict = new Error(`Token already redeemed for ${tokenInfo.MealType} on ${new Date(tokenInfo.RedeemedAt).toLocaleString()}.`);
         conflict.status = 409;
         conflict.tokenInfo = tokenInfo;
         throw conflict;
     }
-
     const [result] = await db.promise().query(
         `UPDATE physical_food_tokens
          SET IsRedeemed = 1, RedeemedAt = NOW()
          WHERE Token = ? AND (IsRedeemed = 0 OR IsRedeemed IS NULL)`,
         [cleanToken]
     );
-
     if (result.affectedRows === 0) {
         const raceConflict = new Error('Token was already redeemed.');
         raceConflict.status = 409;
         throw raceConflict;
     }
-
     const updated = await verifyFoodToken(cleanToken);
     return {
         success: true,
@@ -455,7 +422,6 @@ const redeemFoodToken = async (tokenString) => {
         tokenInfo: updated
     };
 };
-
 module.exports = {
     getTeamPreference,
     saveTeamPreference,
@@ -468,4 +434,3 @@ module.exports = {
     verifyFoodToken,
     redeemFoodToken
 };
-

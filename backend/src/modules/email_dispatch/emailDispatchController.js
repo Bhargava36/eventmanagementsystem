@@ -1,5 +1,4 @@
 const emailService = require('./emailDispatchService');
-
 const getLogs = async (req, res) => {
     try {
         const { page = 1, limit = 25, status = 'ALL', emailType = 'ALL', search = '' } = req.query;
@@ -9,7 +8,6 @@ const getLogs = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const retry = async (req, res) => {
     try {
         const { id } = req.params;
@@ -19,7 +17,6 @@ const retry = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 const sendTest = async (req, res) => {
     try {
         const { to, subject, body } = req.body;
@@ -30,10 +27,8 @@ const sendTest = async (req, res) => {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
-
 module.exports = {
     getLogs,
     retry,
     sendTest
 };
-

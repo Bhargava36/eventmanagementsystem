@@ -38,7 +38,6 @@ import {
 } from 'lucide-react';
 import { getThemeIcon } from '@/components/Molecules/PhysicalHackathonThemesSection';
 import { isSoloTeamSize } from '@/lib/utils';
-
 const readApiResponse = async (response, fallbackMessage) => {
   const body = await response.text();
   let data = {};
@@ -59,11 +58,9 @@ const readApiResponse = async (response, fallbackMessage) => {
   }
   return data;
 };
-
 const isEnabled = (value) => {
   if (typeof value === 'boolean') return value;
   if (typeof value === 'number') return value === 1;
-
   const normalized = String(value ?? '').trim().toLowerCase();
   if (['false', '0', 'no', 'disabled', 'off', ''].includes(normalized)) {
     return false;
@@ -73,7 +70,6 @@ const isEnabled = (value) => {
   }
   return false;
 };
-
 const StatusBadge = ({ enabled }) => (
   <span
     className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${
@@ -85,35 +81,27 @@ const StatusBadge = ({ enabled }) => (
     {enabled ? 'Enabled' : 'Disabled'}
   </span>
 );
-
 const StatusIcon = ({ status, className }) =>
   String(status || '').toLowerCase() === 'pending'
     ? <Clock className={className} />
     : <CheckCircle2 className={className} />;
-
 function AdminPhysicalEvent() {
   const navigate = useNavigate();
-
   const admin = JSON.parse(localStorage.getItem('admin') || 'null');
   const eventId = admin?.EventId;
-
   const [eventDetails, setEventDetails] = useState(null);
   const [eventLoading, setEventLoading] = useState(true);
   const [eventError, setEventError] = useState('');
-
   const [activeTab, setActiveTab] = useState('teams'); // 'teams' | 'accommodation' | 'food' | 'id-cards' | 'controls'
-
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-
   const [roomCounts, setRoomCounts] = useState({
     total: 0,
     allocated: 0,
     available: 0
   });
-
   const [roomCountsLoading, setRoomCountsLoading] = useState(true);
   const [accommodationChoiceCounts, setAccommodationChoiceCounts] = useState({
     participants: 0,
@@ -133,7 +121,6 @@ function AdminPhysicalEvent() {
   const [serviceCountsError, setServiceCountsError] = useState("");
   const [teamServicePreferences, setTeamServicePreferences] = useState({});
   const [idCardStatusByTeam, setIdCardStatusByTeam] = useState({});
-
   // ── Hackathon Themes & Problem Statements Management ──
   const [themes, setThemes] = useState([]);
   const [themesLoading, setThemesLoading] = useState(false);
@@ -141,13 +128,11 @@ function AdminPhysicalEvent() {
   const [participantStatements, setParticipantStatements] = useState([]);
   const [physicalPSMode, setPhysicalPSMode] = useState('organizer_provided');
   const [statementSelections, setStatementSelections] = useState([]);
-
   // Theme Form Modal
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [editingThemeId, setEditingThemeId] = useState(null);
   const [themeForm, setThemeForm] = useState({ ThemeName: '', Description: '', DisplayOrder: 0, ImageUrl: '' });
   const [themeSaving, setThemeSaving] = useState(false);
-
   // Problem Statement Form Modal (for Organizer-Provided mode)
   const [showStatementModal, setShowStatementModal] = useState(false);
   const [editingStatementId, setEditingStatementId] = useState(null);
@@ -160,51 +145,42 @@ function AdminPhysicalEvent() {
     MaxTeams: 5
   });
   const [statementSaving, setStatementSaving] = useState(false);
-
   // Filters
   const [participantThemeFilter, setParticipantThemeFilter] = useState('ALL');
   const [participantCategoryFilter, setParticipantCategoryFilter] = useState('ALL');
   const [participantStatusFilter, setParticipantStatusFilter] = useState('ALL');
   const [statementCategoryFilter, setStatementCategoryFilter] = useState('ALL');
   const [searchPSSubmissions, setSearchPSSubmissions] = useState('');
-
   const accommodationEnabled =
     eventDetails?.AccommodationEnabled ??
     eventDetails?.accommodationEnabled ??
     eventDetails?.EnableAccommodation ??
     eventDetails?.enableAccommodation;
-
   const foodEnabled =
     eventDetails?.FoodEnabled ??
     eventDetails?.foodEnabled ??
     eventDetails?.EnableFood ??
     eventDetails?.enableFood;
-
   const idCardEnabled =
     eventDetails?.IDCardEnabled ??
     eventDetails?.idCardEnabled ??
     eventDetails?.EnableIDCard ??
     eventDetails?.enableIDCard;
-
   const handleAccomodationRedirect = () => {
     if (!isEnabled(accommodationEnabled)) return;
     navigate(`/admin/accomodation?eventId=${encodeURIComponent(eventId)}`);
   };
-
   const handleFoodRedirect = () => {
     if (!isEnabled(foodEnabled)) return;
     navigate(`/admin/food?eventId=${encodeURIComponent(eventId)}`);
   };
-
   const handleIdRedirect = () => {
     if (!isEnabled(idCardEnabled)) return;
     navigate(`/admin/id-card?eventId=${encodeURIComponent(eventId)}`);
   };
-
   const handleSettingsRedirect = () => {
     navigate('/admin/settings');
   };
-
   useEffect(() => {
     const fetchEventDetails = async () => {
       if (!eventId) {
@@ -212,29 +188,23 @@ function AdminPhysicalEvent() {
         setEventLoading(false);
         return;
       }
-
       try {
         setEventLoading(true);
         setEventError('');
-
         const response = await fetch(
           `${API_BASE_URL}/api/events/${eventId}`
         );
-
         if (!response.ok) {
           throw new Error(
             `Failed to fetch event details: ${response.status}`
           );
         }
-
         const data = await response.json();
-
         const event =
           data?.event ??
           data?.data?.event ??
           data?.data ??
           data;
-
         setEventDetails(event);
       } catch (err) {
         console.error('Fetch event details error:', err);
@@ -243,16 +213,13 @@ function AdminPhysicalEvent() {
         setEventLoading(false);
       }
     };
-
     fetchEventDetails();
   }, [eventId]);
-
   useEffect(() => {
     if (eventDetails?.PhysicalPSMode) {
       setPhysicalPSMode(eventDetails.PhysicalPSMode);
     }
   }, [eventDetails?.PhysicalPSMode]);
-
   const fetchThemesAndStatements = async () => {
     if (!eventId) return;
     try {
@@ -264,7 +231,6 @@ function AdminPhysicalEvent() {
         fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/publish-status`),
         fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/selections`)
       ]);
-
       if (tRes.status === 'fulfilled' && tRes.value.ok) {
         const tData = await tRes.value.json();
         setThemes(tData.themes || []);
@@ -287,13 +253,11 @@ function AdminPhysicalEvent() {
       setThemesLoading(false);
     }
   };
-
   useEffect(() => {
     if (eventId && (eventDetails?.EventType || '').toLowerCase() === 'hackathon') {
       fetchThemesAndStatements();
     }
   }, [eventId, eventDetails?.EventType]);
-
   const handleSaveTheme = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!themeForm.ThemeName.trim()) {
@@ -306,7 +270,6 @@ function AdminPhysicalEvent() {
         ? `${API_BASE_URL}/api/problem-statements/themes/${editingThemeId}`
         : `${API_BASE_URL}/api/problem-statements/event/${eventId}/themes`;
       const method = editingThemeId ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -326,7 +289,6 @@ function AdminPhysicalEvent() {
       setThemeSaving(false);
     }
   };
-
   const handleDeleteTheme = async (themeId) => {
     if (!window.confirm('Are you sure you want to delete this theme?')) return;
     try {
@@ -339,7 +301,6 @@ function AdminPhysicalEvent() {
       alert(err.message || 'Failed to delete theme');
     }
   };
-
   const handleSaveStatement = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!statementForm.ProblemCode.trim() || !statementForm.Title.trim()) {
@@ -352,7 +313,6 @@ function AdminPhysicalEvent() {
         ? `${API_BASE_URL}/api/problem-statements/${editingStatementId}`
         : `${API_BASE_URL}/api/problem-statements/event/${eventId}`;
       const method = editingStatementId ? 'PUT' : 'POST';
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -372,7 +332,6 @@ function AdminPhysicalEvent() {
       setStatementSaving(false);
     }
   };
-
   const handleDeleteStatement = async (psId) => {
     if (!window.confirm('Are you sure you want to delete this problem statement?')) return;
     try {
@@ -385,7 +344,6 @@ function AdminPhysicalEvent() {
       alert(err.message || 'Failed to delete statement');
     }
   };
-
   const handleUpdateParticipantStatus = async (id, status, remarks = '') => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/problem-statements/participant-statements/${id}/status`, {
@@ -399,21 +357,18 @@ function AdminPhysicalEvent() {
       alert(err.message || 'Failed to update status');
     }
   };
-
   const eventName =
     eventDetails?.EventName ??
     eventDetails?.eventName ??
     eventDetails?.Name ??
     eventDetails?.name ??
     'Event name unavailable';
-
   const eventDescription =
     eventDetails?.Description ??
     eventDetails?.description ??
     eventDetails?.EventDescription ??
     eventDetails?.eventDescription ??
     'Physical Event';
-
   const startDate =
     eventDetails?.StartDate ??
     eventDetails?.startDate ??
@@ -421,7 +376,6 @@ function AdminPhysicalEvent() {
     eventDetails?.eventStartDate ??
     eventDetails?.Start_Date ??
     null;
-
   const endDate =
     eventDetails?.EndDate ??
     eventDetails?.endDate ??
@@ -429,7 +383,6 @@ function AdminPhysicalEvent() {
     eventDetails?.eventEndDate ??
     eventDetails?.End_Date ??
     null;
-
   const location =
     eventDetails?.Location ??
     eventDetails?.location ??
@@ -438,16 +391,12 @@ function AdminPhysicalEvent() {
     eventDetails?.EventLocation ??
     eventDetails?.eventLocation ??
     'Location unavailable';
-
   const formatDate = (value) => {
     if (!value) return 'Not specified';
-
     const date = new Date(value);
-
     if (Number.isNaN(date.getTime())) {
       return String(value);
     }
-
     return date.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
@@ -455,30 +404,24 @@ function AdminPhysicalEvent() {
       timeZone: 'UTC'
     });
   };
-
   const fetchTeams = async () => {
     if (!eventId) {
       setError('No event assigned to this admin.');
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       setError('');
-
       const response = await fetch(
         `${API_BASE_URL}/api/teams/event/${eventId}`
       );
-
       if (!response.ok) {
         throw new Error(
           `Failed to fetch registered teams: ${response.status}`
         );
       }
-
       const data = await response.json();
-
       const registeredTeams = Array.isArray(data)
         ? data
         : Array.isArray(data?.teams)
@@ -486,14 +429,12 @@ function AdminPhysicalEvent() {
           : Array.isArray(data?.data)
             ? data.data
             : [];
-
       const physicalTeams = registeredTeams.filter((team) => {
         const mode = String(
           team.ParticipationMode ??
           team.participationMode ??
           ''
         ).trim().toLowerCase();
-
         return (
           mode === 'physical' ||
           mode === 'both' ||
@@ -501,7 +442,6 @@ function AdminPhysicalEvent() {
           mode.includes('physical')
         );
       });
-
       setTeams(physicalTeams);
     } catch (err) {
       console.error('Fetch teams error:', err);
@@ -511,33 +451,26 @@ function AdminPhysicalEvent() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchTeams();
   }, [eventId]);
-
   useEffect(() => {
     const fetchRoomCounts = async () => {
       if (!eventId) {
         setRoomCountsLoading(false);
         return;
       }
-
       try {
         setRoomCountsLoading(true);
-
         const response = await fetch(
           `${API_BASE_URL}/api/accommodation?eventId=${encodeURIComponent(eventId)}`
         );
-
         if (!response.ok) {
           throw new Error(
             `Failed to fetch accommodation rooms: ${response.status}`
           );
         }
-
         const data = await response.json();
-
         const allRooms = Array.isArray(data)
           ? data
           : Array.isArray(data?.rooms)
@@ -545,19 +478,15 @@ function AdminPhysicalEvent() {
             : Array.isArray(data?.data)
               ? data.data
               : [];
-
         const eventRooms = allRooms.filter((room) => {
           const roomEventId =
             room.EventId ??
             room.eventId ??
             room.event_id;
-
           return roomEventId != null &&
             String(roomEventId) === String(eventId);
         });
-
         const total = eventRooms.length;
-
         const allocated = eventRooms.filter((room) => {
           const occupied = Number(
             room.Occupied ??
@@ -566,10 +495,8 @@ function AdminPhysicalEvent() {
             room.allocatedCount ??
             0
           );
-
           return occupied > 0;
         }).length;
-
         setRoomCounts({
           total,
           allocated,
@@ -582,21 +509,17 @@ function AdminPhysicalEvent() {
         setRoomCountsLoading(false);
       }
     };
-
     fetchRoomCounts();
   }, [eventId]);
-
   useEffect(() => {
     const fetchServiceCounts = async () => {
       if (!eventId) {
         setServiceCountsLoading(false);
         return;
       }
-
       setServiceCountsLoading(true);
       setServiceCountsError('');
       const requests = [];
-
       requests.push(
         fetch(`${API_BASE_URL}/api/physical-services/events/${eventId}/team-preferences`)
           .then(async (response) => {
@@ -620,7 +543,6 @@ function AdminPhysicalEvent() {
             });
           })
       );
-
       if (eventDetails) {
         if (isEnabled(foodEnabled)) {
           requests.push(
@@ -645,7 +567,6 @@ function AdminPhysicalEvent() {
         } else {
           setFoodCounts({ participants: 0, teams: 0, tokens: 0 });
         }
-
       if (isEnabled(idCardEnabled)) {
         requests.push(
           fetch(`${API_BASE_URL}/api/id-cards/events/${eventId}/participants`)
@@ -689,7 +610,6 @@ function AdminPhysicalEvent() {
         setIdCardStatusByTeam({});
       }
       }
-
       try {
         await Promise.all(requests);
       } catch (countError) {
@@ -699,13 +619,10 @@ function AdminPhysicalEvent() {
         setServiceCountsLoading(false);
       }
     };
-
     fetchServiceCounts();
   }, [eventId, eventDetails, foodEnabled, idCardEnabled]);
-
   const filteredTeams = teams.filter((team) => {
     const search = searchTerm.trim().toLowerCase();
-
     return [
       team.TeamName,
       team.name,
@@ -723,19 +640,16 @@ function AdminPhysicalEvent() {
       String(value || '').toLowerCase().includes(search)
     );
   });
-
   const handleTeamDetails = (team) => {
     const teamId =
       team.TeamId ??
       team.TeamID ??
       team.Id ??
       team.id;
-
     if (!teamId) {
       window.alert('Team ID is not available.');
       return;
     }
-
     navigate(`/admin/teams/${teamId}`, {
       state: {
         team,
@@ -743,7 +657,6 @@ function AdminPhysicalEvent() {
       }
     });
   };
-
   const getBadgeStyle = (status) => {
     switch (String(status || '').toLowerCase()) {
       case 'completed':
@@ -751,34 +664,26 @@ function AdminPhysicalEvent() {
       case 'accepted':
       case 'generated':
         return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-500';
-
       case 'pending':
         return 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-500';
-
       case 'disabled':
         return 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-slate-400';
-
       default:
         return 'bg-slate-50 text-slate-700 dark:bg-zinc-800 dark:text-slate-300';
     }
   };
-
   const getTeamName = (team) =>
     team.TeamName || team.name || 'Unnamed Team';
-
   const getCollege = (team) =>
     team.College || team.college || '—';
-
   const getState = (team) =>
     team.State || team.state || '—';
-
   const getMemberCount = (team) =>
     team.TeamSize ??
     team.MemberCount ??
     team.MembersCount ??
     team.members ??
     '—';
-
   const getInitials = (name) =>
     String(name || '')
       .split(/\s+/)
@@ -787,7 +692,6 @@ function AdminPhysicalEvent() {
       .map((word) => word[0])
       .join('')
       .toUpperCase() || 'TM';
-
   const avatarColors = [
     'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400',
     'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400',
@@ -795,7 +699,6 @@ function AdminPhysicalEvent() {
     'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400',
     'bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400'
   ];
-
   const countCards = [
     {
       label: 'Total Rooms',
@@ -810,23 +713,19 @@ function AdminPhysicalEvent() {
       value: roomCounts.available
     }
   ];
-
   return (
     <div className="min-h-screen w-full min-w-0 bg-slate-50 p-3 font-sans text-slate-900 dark:bg-black dark:text-white sm:p-5 lg:p-8">
       <div className="mx-auto w-full max-w-[1600px] min-w-0 space-y-5 sm:space-y-6">
-
         <div className="flex flex-col items-start justify-between gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-black sm:p-8 lg:flex-row lg:items-center">
           <div className="flex-1 space-y-4">
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
                 <Tent className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
               </div>
-
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white sm:text-3xl lg:text-4xl">
                 Physical Event Management
               </h1>
             </div>
-
             <p className="max-w-3xl text-sm leading-relaxed text-slate-500 dark:text-slate-400 sm:text-base">
               Manage accommodation, food, ID cards and other physical event
               arrangements for{' '}
@@ -836,7 +735,6 @@ function AdminPhysicalEvent() {
               . Ensure a smooth and seamless experience for all physical participants.
             </p>
           </div>
-
           <button
             type="button"
             onClick={fetchTeams}
@@ -849,18 +747,15 @@ function AdminPhysicalEvent() {
             Refresh Teams
           </button>
         </div>
-
         <div className="grid grid-cols-1 gap-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-black sm:grid-cols-2 sm:p-6 xl:grid-cols-[1.5fr_1.2fr_1fr] xl:items-center xl:gap-6 xl:px-8">
           <div className="flex items-center gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 dark:border-zinc-800 dark:bg-black">
               <CalendarDays className="h-5 w-5 text-emerald-700 dark:text-emerald-500" />
             </div>
-
             <div className="min-w-0">
               <h2 className="truncate text-sm font-bold text-slate-900 dark:text-white">
                 {eventLoading ? 'Loading event...' : eventName}
               </h2>
-
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                 {eventLoading
                   ? 'Loading...'
@@ -868,15 +763,12 @@ function AdminPhysicalEvent() {
               </p>
             </div>
           </div>
-
           <div className="flex items-center gap-3">
             <CalendarDays className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-500" />
-
             <div className="min-w-0">
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                 Event Dates
               </p>
-
               <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
                 {eventLoading
                   ? 'Loading dates...'
@@ -884,22 +776,18 @@ function AdminPhysicalEvent() {
               </p>
             </div>
           </div>
-
           <div className="flex items-center gap-3">
             <MapPin className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-500" />
-
             <div className="min-w-0">
               <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                 Venue
               </p>
-
               <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
                 {eventLoading ? 'Loading location...' : location}
               </p>
             </div>
           </div>
         </div>
-
         {eventError && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
             {eventError}
@@ -910,7 +798,6 @@ function AdminPhysicalEvent() {
             {serviceCountsError}
           </div>
         )}
-
         {/* Modern Folder-Style Tabs Navigation Bar matching AdminDashboard model */}
         <div className="space-y-0">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 relative z-10 -mb-px">
@@ -972,7 +859,6 @@ function AdminPhysicalEvent() {
                     ) : (
                       <div className="absolute inset-0 rounded-t-2xl bg-slate-100 dark:bg-black border border-slate-200 dark:border-zinc-800 z-0" />
                     )}
-
                     <span
                       className={`relative z-20 flex items-center gap-2 ${
                         isActive
@@ -991,7 +877,6 @@ function AdminPhysicalEvent() {
               })}
             </div>
           </div>
-
           {/* Unified Content Card Seamlessly Attached to Tabs */}
           <div
             className={`p-6 sm:p-8 ${
@@ -1014,7 +899,6 @@ function AdminPhysicalEvent() {
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-500/10">
                         <Users className="h-6 w-6 text-emerald-700 dark:text-emerald-500" />
                       </div>
-
                   <div>
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                       Registered Physical Teams ({teams.length})
@@ -1024,7 +908,6 @@ function AdminPhysicalEvent() {
                     </p>
                   </div>
                 </div>
-
                 <div className="relative w-full min-w-0 lg:w-80">
                   <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
@@ -1036,14 +919,12 @@ function AdminPhysicalEvent() {
                   />
                 </div>
               </div>
-
               <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-zinc-800/80">
                 <span className="text-sm text-slate-500 dark:text-slate-400">
                   {loading
                     ? 'Loading physical teams...'
                     : `${filteredTeams.length} matching physical team(s)`}
                 </span>
-
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -1054,7 +935,6 @@ function AdminPhysicalEvent() {
                     <Palette className="h-3.5 w-3.5 text-emerald-500" />
                     <span>Design Team Cards</span>
                   </button>
-
                   <button
                     type="button"
                     onClick={fetchTeams}
@@ -1066,13 +946,11 @@ function AdminPhysicalEvent() {
                   </button>
                 </div>
               </div>
-
               {error && (
                 <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
                   {error}
                 </div>
               )}
-
               <div className="overflow-x-auto overscroll-x-contain">
                 <table className="w-full min-w-[900px] text-left text-sm">
                   <thead>
@@ -1087,7 +965,6 @@ function AdminPhysicalEvent() {
                       <th className="whitespace-nowrap px-6 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
-
                   <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/50">
                     {loading ? (
                       <tr>
@@ -1111,13 +988,11 @@ function AdminPhysicalEvent() {
                           team.TeamLeadName ||
                           team.leadName ||
                           '—';
-
                         const leadEmail =
                           team.LeaderEmail ||
                           team.TeamLeadEmail ||
                           team.Email ||
                           '—';
-
                         const teamId = team.TeamId ?? team.TeamID ?? team.Id ?? team.id;
                         const servicePreference = teamServicePreferences[String(teamId)];
                         const accommodation = !isEnabled(accommodationEnabled)
@@ -1142,7 +1017,6 @@ function AdminPhysicalEvent() {
                             : cardStatus.generated === cardStatus.total
                               ? 'Generated'
                               : 'Partial';
-
                         return (
                           <tr
                             key={team.TeamId || team.TeamID || team.Id || team.id || index}
@@ -1153,33 +1027,27 @@ function AdminPhysicalEvent() {
                                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold ${avatarColors[index % avatarColors.length]}`}>
                                   {getInitials(teamName)}
                                 </div>
-
                                 <span className="font-bold text-slate-900 dark:text-white">
                                   {teamName}
                                 </span>
                               </div>
                             </td>
-
                             <td className="whitespace-nowrap px-6 py-4">
                               <p className="font-semibold text-slate-900 dark:text-slate-200">
                                 {leadName}
                               </p>
-
                               <p className="text-xs text-slate-500 dark:text-slate-400">
                                 {leadEmail}
                               </p>
                             </td>
-
                             <td className="whitespace-nowrap px-6 py-4">
                               <p className="font-medium text-slate-700 dark:text-slate-300">
                                 {getCollege(team)}
                               </p>
-
                               <p className="text-xs text-slate-500 dark:text-slate-400">
                                 {getState(team)}
                               </p>
                             </td>
-
                             <td className="whitespace-nowrap px-6 py-4">
                               <div className="flex items-center justify-center gap-1.5 text-slate-700 dark:text-slate-300">
                                 <Users className="h-4 w-4 text-slate-400" />
@@ -1188,28 +1056,24 @@ function AdminPhysicalEvent() {
                                 </span>
                               </div>
                             </td>
-
                             <td className="whitespace-nowrap px-6 py-4">
                               <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${getBadgeStyle(accommodation === 'Requested' ? 'requested' : accommodation === 'Disabled' ? 'disabled' : accommodation === 'Declined' ? 'disabled' : 'Pending')}`}>
                                 <BedDouble className="h-3 w-3" />
                                 {accommodation}
                               </span>
                             </td>
-
                             <td className="whitespace-nowrap px-6 py-4">
                               <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${getBadgeStyle(food === 'Accepted' ? 'accepted' : food === 'Disabled' || food === 'Declined' ? 'disabled' : 'Pending')}`}>
                                 <StatusIcon status={food === 'Accepted' ? 'completed' : food === 'Disabled' || food === 'Declined' ? 'disabled' : 'Pending'} className="h-3 w-3" />
                                 {food}
                               </span>
                             </td>
-
                             <td className="whitespace-nowrap px-6 py-4">
                               <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${getBadgeStyle(idCard === 'Generated' ? 'generated' : idCard === 'Disabled' ? 'disabled' : 'Pending')}`}>
                                 <StatusIcon status={idCard === 'Generated' ? 'completed' : idCard === 'Disabled' ? 'disabled' : 'Pending'} className="h-3 w-3" />
                                 {idCard}
                               </span>
                             </td>
-
                             <td className="whitespace-nowrap px-6 py-4 text-right">
                               <button
                                 type="button"
@@ -1229,7 +1093,6 @@ function AdminPhysicalEvent() {
               </div>
             </motion.div>
           )}
-
           {/* TAB 2: ACCOMMODATION MANAGEMENT */}
           {activeTab === 'accommodation' && (
             <motion.div
@@ -1255,7 +1118,6 @@ function AdminPhysicalEvent() {
                     </p>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={handleAccomodationRedirect}
@@ -1267,7 +1129,6 @@ function AdminPhysicalEvent() {
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
-
               {/* KPI Cards Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black">
@@ -1301,7 +1162,6 @@ function AdminPhysicalEvent() {
                   </p>
                 </div>
               </div>
-
               {/* Status Banner */}
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-xs sm:text-sm text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-500/10 dark:text-emerald-300 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -1318,7 +1178,6 @@ function AdminPhysicalEvent() {
                   Allocate in Rooms &rarr;
                 </button>
               </div>
-
               {/* Teams Requesting Accommodation Table */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-black space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
@@ -1330,7 +1189,6 @@ function AdminPhysicalEvent() {
                   </div>
                   <span className="text-xs text-slate-500">Only teams that marked "Yes" for lodging</span>
                 </div>
-
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead>
@@ -1392,7 +1250,6 @@ function AdminPhysicalEvent() {
               </div>
             </motion.div>
           )}
-
           {/* TAB 3: FOOD MANAGEMENT */}
           {activeTab === 'food' && (
             <motion.div
@@ -1418,19 +1275,8 @@ function AdminPhysicalEvent() {
                     </p>
                   </div>
                 </div>
-
-                {/* <button
-                  type="button"
-                  onClick={handleFoodRedirect}
-                  disabled={!isEnabled(foodEnabled)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 px-5 py-2.5 text-xs sm:text-sm font-bold text-white shadow-sm transition disabled:opacity-50 cursor-pointer dark:bg-emerald-600 dark:hover:bg-emerald-500"
-                >
-                  <Utensils className="h-4 w-4" />
-                  <span>{isEnabled(foodEnabled) ? 'Manage Food Distribution' : 'Food Disabled'}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </button> */}
+                {/* Unused template component */}
               </div>
-
               {/* KPI Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black">
@@ -1455,7 +1301,6 @@ function AdminPhysicalEvent() {
                   <p className="text-[11px] text-slate-400 mt-0.5">Breakfast, Lunch & Dinner</p>
                 </div>
               </div>
-
               {/* Teams Opted into Food Table */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-black space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
@@ -1467,7 +1312,6 @@ function AdminPhysicalEvent() {
                   </div>
                   <span className="text-xs text-slate-500">Only teams that marked "Yes" for food</span>
                 </div>
-
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead>
@@ -1529,7 +1373,6 @@ function AdminPhysicalEvent() {
               </div>
             </motion.div>
           )}
-
           {/* TAB 4: ID CARDS GENERATION STUDIO */}
           {activeTab === 'id-cards' && (
             <motion.div
@@ -1555,7 +1398,6 @@ function AdminPhysicalEvent() {
                     </p>
                   </div>
                 </div>
-
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     type="button"
@@ -1566,7 +1408,6 @@ function AdminPhysicalEvent() {
                     <Palette className="h-4 w-4 text-emerald-500" />
                     <span>ID Card Designer</span>
                   </button>
-
                   <button
                     type="button"
                     onClick={() => {
@@ -1594,7 +1435,6 @@ function AdminPhysicalEvent() {
                       </span>
                     )}
                   </button>
-
                   <button
                     type="button"
                     onClick={handleIdRedirect}
@@ -1607,7 +1447,6 @@ function AdminPhysicalEvent() {
                   </button>
                 </div>
               </div>
-
               {/* KPI Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black">
@@ -1629,7 +1468,6 @@ function AdminPhysicalEvent() {
                   </p>
                 </div>
               </div>
-
               {/* Progress Bar */}
               <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black space-y-2">
                 <div className="flex items-center justify-between text-xs font-bold">
@@ -1647,7 +1485,6 @@ function AdminPhysicalEvent() {
                   />
                 </div>
               </div>
-
               {/* Teams ID Card Status Table */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-black space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
@@ -1659,7 +1496,6 @@ function AdminPhysicalEvent() {
                   </div>
                   <span className="text-xs text-slate-500">Status of badge issuance per team</span>
                 </div>
-
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead>
@@ -1687,7 +1523,6 @@ function AdminPhysicalEvent() {
                             : cardStatus.generated === cardStatus.total
                               ? 'Generated'
                               : `${cardStatus.generated}/${cardStatus.total} Ready`;
-
                           return (
                             <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/30">
                               <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-white">
@@ -1729,7 +1564,6 @@ function AdminPhysicalEvent() {
               </div>
             </motion.div>
           )}
-
           {/* TAB: HACKATHON THEMES & PROBLEM STATEMENTS */}
           {activeTab === 'themes-challenges' && (
             <motion.div
@@ -1758,7 +1592,6 @@ function AdminPhysicalEvent() {
                     </p>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2 flex-wrap">
                   <button
                     type="button"
@@ -1772,7 +1605,6 @@ function AdminPhysicalEvent() {
                     <Plus className="h-3.5 w-3.5" />
                     <span>Add New Theme</span>
                   </button>
-
                   {physicalPSMode === 'organizer_provided' && (
                     <button
                       type="button"
@@ -1795,7 +1627,6 @@ function AdminPhysicalEvent() {
                   )}
                 </div>
               </div>
-
               {/* Active Format Info Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
                 <div className="flex items-center gap-2.5">
@@ -1816,7 +1647,6 @@ function AdminPhysicalEvent() {
                       : 'Participants select from organizer-defined challenge statements'}
                   </span>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => navigate('/admin/settings')}
@@ -1826,7 +1656,6 @@ function AdminPhysicalEvent() {
                   <span>Configure Settings in Event Settings &rarr;</span>
                 </button>
               </div>
-
               {/* ── THEMES SECTION ── */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
@@ -1841,7 +1670,6 @@ function AdminPhysicalEvent() {
                       </p>
                     </div>
                   </div>
-
                   <button
                     type="button"
                     onClick={() => {
@@ -1855,7 +1683,6 @@ function AdminPhysicalEvent() {
                     <span>Add Theme</span>
                   </button>
                 </div>
-
                 {themesLoading ? (
                   <div className="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
                     <RefreshCw className="h-4 w-4 animate-spin text-emerald-600" />
@@ -1889,10 +1716,8 @@ function AdminPhysicalEvent() {
                       const submissionCount = participantStatements.filter(
                         (p) => (p.ThemeName || '').trim().toLowerCase() === theme.ThemeName.trim().toLowerCase()
                       ).length;
-
                       const IconComponent = getThemeIcon(theme.ThemeName, theme.Description);
                       const hasImage = Boolean(theme.ImageUrl && theme.ImageUrl.trim());
-
                       return (
                         <div
                           key={theme.Id || theme.id || theme.ThemeName || index}
@@ -1904,7 +1729,6 @@ function AdminPhysicalEvent() {
                                 <img src={theme.ImageUrl} alt={theme.ThemeName} className="w-full h-full object-cover" />
                               </div>
                             )}
-
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
@@ -1914,7 +1738,6 @@ function AdminPhysicalEvent() {
                                   #{String(idx + 1).padStart(2, '0')}
                                 </span>
                               </div>
-
                               <div className="flex items-center gap-1">
                                 <button
                                   type="button"
@@ -1943,16 +1766,13 @@ function AdminPhysicalEvent() {
                                 </button>
                               </div>
                             </div>
-
                             <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                               {theme.ThemeName}
                             </h4>
-
                             <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2">
                               {theme.Description || 'No description provided.'}
                             </p>
                           </div>
-
                           <div className="pt-2 border-t border-slate-200/60 dark:border-zinc-800 flex items-center justify-between text-[11px] font-semibold text-slate-400">
                             <span>Order #{theme.DisplayOrder || idx + 1}</span>
                             <span>
@@ -1967,7 +1787,6 @@ function AdminPhysicalEvent() {
                   </div>
                 )}
               </div>
-
               {/* ── PROBLEM STATEMENTS / SUBMISSIONS VIEW (DYNAMIC) ── */}
               {physicalPSMode === 'organizer_provided' ? (
                 /* ORGANIZER-PROVIDED PROBLEM STATEMENTS */
@@ -1984,7 +1803,6 @@ function AdminPhysicalEvent() {
                         </p>
                       </div>
                     </div>
-
                     <div className="flex items-center gap-2 flex-wrap">
                       <select
                         value={statementCategoryFilter}
@@ -1996,7 +1814,6 @@ function AdminPhysicalEvent() {
                         <option value="Hardware">Hardware</option>
                         <option value="Both">Both (Hybrid)</option>
                       </select>
-
                       <button
                         type="button"
                         onClick={() => {
@@ -2018,7 +1835,6 @@ function AdminPhysicalEvent() {
                       </button>
                     </div>
                   </div>
-
                   {organizerStatements.length === 0 ? (
                     <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-2">
                       <FileText className="h-8 w-8 mx-auto text-slate-400" />
@@ -2038,7 +1854,6 @@ function AdminPhysicalEvent() {
                           (s) => Number(s.ProblemStatementId) === Number(ps.Id)
                         );
                         const isFull = assignedSelections.length >= (ps.MaxTeams || 5);
-
                         return (
                         <div
                           key={ps.Id || ps.id || ps.ProblemCode || index}
@@ -2071,7 +1886,6 @@ function AdminPhysicalEvent() {
                                 {assignedSelections.length} / {ps.MaxTeams || 5} Teams Selected
                               </span>
                             </div>
-
                             <div className="flex items-center gap-1.5">
                               <button
                                 type="button"
@@ -2100,11 +1914,9 @@ function AdminPhysicalEvent() {
                               </button>
                             </div>
                           </div>
-
                           <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                             {ps.Title}
                           </h4>
-
                           {ps.Description && (
                             <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
                               {ps.Description}
@@ -2131,7 +1943,6 @@ function AdminPhysicalEvent() {
                         </p>
                       </div>
                     </div>
-
                     {/* Filters */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <input
@@ -2141,7 +1952,6 @@ function AdminPhysicalEvent() {
                         placeholder="Search team or statement..."
                         className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                       />
-
                       <select
                         value={participantThemeFilter}
                         onChange={(e) => setParticipantThemeFilter(e.target.value)}
@@ -2152,7 +1962,6 @@ function AdminPhysicalEvent() {
                           <option key={t.Id || t.id || t.ThemeName || idx} value={t.ThemeName}>{t.ThemeName}</option>
                         ))}
                       </select>
-
                       <select
                         value={participantCategoryFilter}
                         onChange={(e) => setParticipantCategoryFilter(e.target.value)}
@@ -2163,7 +1972,6 @@ function AdminPhysicalEvent() {
                         <option value="Hardware">Hardware</option>
                         <option value="Both">Both (Hybrid)</option>
                       </select>
-
                       <select
                         value={participantStatusFilter}
                         onChange={(e) => setParticipantStatusFilter(e.target.value)}
@@ -2176,7 +1984,6 @@ function AdminPhysicalEvent() {
                       </select>
                     </div>
                   </div>
-
                   {participantStatements.length === 0 ? (
                     <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-2">
                       <Target className="h-8 w-8 mx-auto text-slate-400" />
@@ -2214,12 +2021,10 @@ function AdminPhysicalEvent() {
                                   <span className="text-xs text-slate-500 ml-2">({ps.College})</span>
                                 )}
                               </div>
-
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400">
                                   {ps.ThemeName || 'General Innovation'}
                                 </span>
-
                                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                                   (ps.Category || '').toLowerCase() === 'hardware'
                                     ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
@@ -2229,7 +2034,6 @@ function AdminPhysicalEvent() {
                                 }`}>
                                   {ps.Category === 'Both' ? 'Hardware & Software' : (ps.Category || 'Software')}
                                 </span>
-
                                 <select
                                   value={ps.Status || 'Approved'}
                                   onChange={(e) => handleUpdateParticipantStatus(ps.Id, e.target.value)}
@@ -2245,7 +2049,6 @@ function AdminPhysicalEvent() {
                                 </select>
                               </div>
                             </div>
-
                             <div className="space-y-1">
                               <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                                 {ps.Title}
@@ -2256,7 +2059,6 @@ function AdminPhysicalEvent() {
                                 </p>
                               )}
                             </div>
-
                             <div className="pt-2 border-t border-slate-200/60 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
                               {ps.TechStack && (
                                 <div className="flex items-center gap-1.5 font-medium">
@@ -2274,7 +2076,6 @@ function AdminPhysicalEvent() {
               )}
             </motion.div>
           )}
-
           {/* THEME FORM MODAL */}
           <AnimatePresence>
             {showThemeModal && (
@@ -2297,7 +2098,6 @@ function AdminPhysicalEvent() {
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-
                   <form onSubmit={handleSaveTheme} className="space-y-3">
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
@@ -2311,7 +2111,6 @@ function AdminPhysicalEvent() {
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                       />
                     </div>
-
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                         Display Order
@@ -2323,7 +2122,6 @@ function AdminPhysicalEvent() {
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                       />
                     </div>
-
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                         Theme Description
@@ -2336,7 +2134,6 @@ function AdminPhysicalEvent() {
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                       />
                     </div>
-
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                         Theme Image / Photo URL (Optional)
@@ -2350,7 +2147,6 @@ function AdminPhysicalEvent() {
                       />
                       <p className="text-[10px] text-slate-400 mt-1">If empty, a modern technical icon based on the theme name will be shown automatically.</p>
                     </div>
-
                     <div className="flex items-center justify-end gap-2 pt-2">
                       <button
                         type="button"
@@ -2372,7 +2168,6 @@ function AdminPhysicalEvent() {
               </div>
             )}
           </AnimatePresence>
-
           {/* PROBLEM STATEMENT FORM MODAL */}
           <AnimatePresence>
             {showStatementModal && (
@@ -2395,7 +2190,6 @@ function AdminPhysicalEvent() {
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-
                   <form onSubmit={handleSaveStatement} className="space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
@@ -2410,7 +2204,6 @@ function AdminPhysicalEvent() {
                           className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                         />
                       </div>
-
                       <div>
                         <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                           Domain Category *
@@ -2425,7 +2218,6 @@ function AdminPhysicalEvent() {
                           <option value="Both">Both (Hybrid)</option>
                         </select>
                       </div>
-
                       <div>
                         <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                           Innovation Theme
@@ -2442,7 +2234,6 @@ function AdminPhysicalEvent() {
                         </select>
                       </div>
                     </div>
-
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                         Problem Title *
@@ -2455,7 +2246,6 @@ function AdminPhysicalEvent() {
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                       />
                     </div>
-
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                         Detailed Description & Scope
@@ -2468,7 +2258,6 @@ function AdminPhysicalEvent() {
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                       />
                     </div>
-
                     <div className="flex items-center justify-end gap-2 pt-2">
                       <button
                         type="button"
@@ -2490,7 +2279,6 @@ function AdminPhysicalEvent() {
               </div>
             )}
           </AnimatePresence>
-
           {/* TAB 5: EVENT CONTROLS */}
           {activeTab === 'controls' && (
             <motion.div
@@ -2516,7 +2304,6 @@ function AdminPhysicalEvent() {
                     </p>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={handleSettingsRedirect}
@@ -2527,7 +2314,6 @@ function AdminPhysicalEvent() {
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
-
               {/* 3 Rich Control Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Accommodation Service Card */}
@@ -2546,7 +2332,6 @@ function AdminPhysicalEvent() {
                       Allows physical teams to opt-in for hostel/campus lodging and permits organizers to allocate rooms, view capacity, and track occupants.
                     </p>
                   </div>
-
                   <div className="space-y-2 pt-4 border-t border-slate-200/60 dark:border-zinc-800/80">
                     <button
                       type="button"
@@ -2559,7 +2344,6 @@ function AdminPhysicalEvent() {
                     </button>
                   </div>
                 </div>
-
                 {/* Food Service Card */}
                 <div className="rounded-3xl border border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/70 dark:bg-black p-6 shadow-xs flex flex-col justify-between space-y-5">
                   <div className="space-y-3">
@@ -2576,7 +2360,6 @@ function AdminPhysicalEvent() {
                       Provides automated QR tokens for breakfast, lunch, and dinner meals. Organizers can track meal collection and token scans in real time.
                     </p>
                   </div>
-
                   <div className="space-y-2 pt-4 border-t border-slate-200/60 dark:border-zinc-800/80">
                     <button
                       type="button"
@@ -2589,7 +2372,6 @@ function AdminPhysicalEvent() {
                     </button>
                   </div>
                 </div>
-
                 {/* ID Cards Service Card */}
                 <div className="rounded-3xl border border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/70 dark:bg-black p-6 shadow-xs flex flex-col justify-between space-y-5">
                   <div className="space-y-3">
@@ -2606,7 +2388,6 @@ function AdminPhysicalEvent() {
                       Generates participant badge passes with barcode/QR verification. Useful for campus security, lab workstation entrance, and attendance.
                     </p>
                   </div>
-
                   <div className="space-y-2 pt-4 border-t border-slate-200/60 dark:border-zinc-800/80">
                     <button
                       type="button"
@@ -2629,5 +2410,4 @@ function AdminPhysicalEvent() {
     </div>
   );
 }
-
 export default AdminPhysicalEvent;

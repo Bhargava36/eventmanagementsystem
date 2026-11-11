@@ -1,6 +1,5 @@
 const coreTeamService = require("./coreServices");
 const { saveBase64File } = require("../../middleware/multer");
-
 const createCoreTeam = (req, res) => {
     const { EventId, Role, Name, Phone, Email, Department, Type, Photo } = req.body;
     const savedPhoto = saveBase64File(Photo, "images");
@@ -11,14 +10,12 @@ const createCoreTeam = (req, res) => {
                 message: "Failed to add core team member"
             });
         }
-
         res.status(201).json({
             message: "Core team member added successfully",
             id: result.insertId
         });
     });
 };
-
 const getCoreTeamByEvent = (req, res) => {
     const eventId = req.params.eventId;
     coreTeamService.getCoreTeamByEvent(eventId, (err, result) => {
@@ -28,13 +25,11 @@ const getCoreTeamByEvent = (req, res) => {
                 message: "Failed to get core team"
             });
         }
-
         res.status(200).json({
             members: result
         });
     });
 };
-
 const getCoreTeamById = (req, res) => {
     const id = req.params.id;
     coreTeamService.getCoreTeamById(id, (err, result) => {
@@ -44,24 +39,20 @@ const getCoreTeamById = (req, res) => {
                 message: "Failed to get core team member"
             });
         }
-
         if (result.length === 0) {
             return res.status(404).json({
                 message: "Core team member not found"
             });
         }
-
         res.status(200).json({
             member: result[0]
         });
     });
 };
-
 const updateCoreTeam = (req, res) => {
     const { Role, Name, Phone, Email, Department, Type, Photo } = req.body;
     const id = req.params.id;
     const savedPhoto = saveBase64File(Photo, "images");
-
     coreTeamService.updateCoreTeam(id, Role, Name, Phone, Email, Department, Type, savedPhoto, (err, result) => {
         if (err) {
             console.log(err);
@@ -69,20 +60,17 @@ const updateCoreTeam = (req, res) => {
                 message: "Failed to update core team member"
             });
         }
-
         if (result.affectedRows === 0) {
             return res.status(404).json({
                 message: "Core team member not found"
             });
         }
-
         res.status(200).json({
             message: "Core team member updated successfully",
             result
         });
     });
 };
-
 const deleteCoreTeam = (req, res) => {
     const id = req.params.id;
     coreTeamService.deleteCoreTeam(id, (err, result) => {
@@ -92,19 +80,16 @@ const deleteCoreTeam = (req, res) => {
                 message: "Failed to delete core team member"
             });
         }
-
         if (result.affectedRows === 0) {
             return res.status(404).json({
                 message: "Core team member not found"
             });
         }
-
         res.status(200).json({
             message: "Core team member deleted successfully"
         });
     });
 };
-
 module.exports = {
     createCoreTeam,
     getCoreTeamByEvent,

@@ -1,6 +1,7 @@
 const mysql = require('mysql2');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 require('dotenv').config();
-
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -8,13 +9,14 @@ const db = mysql.createPool({
     database: process.env.DB_NAME,
     port: Number(process.env.DB_PORT),
     waitForConnections: true,
-    connectionLimit: 20,
+    connectionLimit: 8,
+    maxIdle: 8,
+    idleTimeout: 60000,
     queueLimit: 0,
     connectTimeout: 10000,
     enableKeepAlive: true,
     keepAliveInitialDelay: 10000
 });
-
 const migrationQueries = [
     `CREATE TABLE IF NOT EXISTS roles (
         Id INT AUTO_INCREMENT PRIMARY KEY,
@@ -22,14 +24,12 @@ const migrationQueries = [
         Description VARCHAR(255),
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `INSERT INTO roles (Id, RoleName, Description) VALUES
         (1, 'super_admin', 'Super Administrator'),
         (2, 'admin', 'Event Organizer / Admin'),
         (3, 'user', 'Participant / Student'),
         (4, 'evaluator', 'Event Evaluator / Judge')
     ON DUPLICATE KEY UPDATE RoleName = VALUES(RoleName), Description = VALUES(Description)`,
-
     `CREATE TABLE IF NOT EXISTS events (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventName VARCHAR(255) NOT NULL,
@@ -62,7 +62,6 @@ const migrationQueries = [
         Posters LONGTEXT,
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS users (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         UserName VARCHAR(255) NOT NULL,
@@ -81,7 +80,6 @@ const migrationQueries = [
         FOREIGN KEY (RoleId) REFERENCES roles(Id),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS RoleId INT NOT NULL DEFAULT 3`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS EventId INT DEFAULT NULL`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`,
@@ -89,7 +87,6 @@ const migrationQueries = [
     `ALTER TABLE users MODIFY COLUMN Mobile VARCHAR(25) NULL DEFAULT NULL`,
     `ALTER TABLE users MODIFY COLUMN Gender ENUM('Male', 'Female', 'Other') NULL DEFAULT NULL`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS Posters LONGTEXT`,
-
     `CREATE TABLE IF NOT EXISTS registered_teams (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         TeamName VARCHAR(255) NOT NULL,
@@ -106,7 +103,6 @@ const migrationQueries = [
         FOREIGN KEY (TeamLeadUserId) REFERENCES users(Id) ON DELETE CASCADE,
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS event_registrations (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -118,13 +114,12 @@ const migrationQueries = [
         UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_reg_event (EventId),
         INDEX idx_reg_team (TeamId),
+        INDEX idx_reg_event_status (EventId, Status),
         UNIQUE KEY unique_team_event_mode (EventId, TeamId, ParticipationMode),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
         FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `DROP TABLE IF EXISTS problem_statements`,
-
     `CREATE TABLE IF NOT EXISTS event_prizes (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -133,7 +128,6 @@ const migrationQueries = [
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
         UNIQUE (EventId, PrizeRank)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS registered_team_members (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         UserId INT NULL DEFAULT NULL,
@@ -150,7 +144,6 @@ const migrationQueries = [
         FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE,
         FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS event_core_team (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     EventId INT NOT NULL,
@@ -167,7 +160,6 @@ const migrationQueries = [
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualStartDate VARCHAR(100)`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualEndDate VARCHAR(100)`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalStartDate VARCHAR(100)`,
@@ -183,7 +175,6 @@ const migrationQueries = [
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS AccommodationEnabled TINYINT(1) NOT NULL DEFAULT 0`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS FoodEnabled TINYINT(1) NOT NULL DEFAULT 0`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS IDCardEnabled TINYINT(1) NOT NULL DEFAULT 0`,
-
     `CREATE TABLE IF NOT EXISTS event_descriptions (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -193,7 +184,6 @@ const migrationQueries = [
         UNIQUE KEY unique_event_desc (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS event_facilities (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -203,7 +193,6 @@ const migrationQueries = [
         INDEX idx_fac_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS event_requirements (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -213,7 +202,6 @@ const migrationQueries = [
         INDEX idx_req_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE event_core_team ADD COLUMN IF NOT EXISTS Photo LONGTEXT`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PrizeMoney VARCHAR(255)`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS VirtualPrizeMoney VARCHAR(255)`,
@@ -239,7 +227,6 @@ const migrationQueries = [
     `ALTER TABLE physical_team_preferences ADD COLUMN IF NOT EXISTS BookingStatus ENUM('Pending', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending'`,
     `ALTER TABLE physical_team_preferences ADD COLUMN IF NOT EXISTS AdminRemarks TEXT NULL`,
     `ALTER TABLE physical_team_preferences ADD COLUMN IF NOT EXISTS BookingCreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP`,
-
     `CREATE TABLE IF NOT EXISTS event_timelines (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -254,7 +241,6 @@ const migrationQueries = [
         INDEX idx_timeline_track (Track),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS accommodation_blocks (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NULL,
@@ -266,7 +252,6 @@ const migrationQueries = [
         INDEX idx_block_gender (Gender),
         INDEX idx_block_event (EventId)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS Accommodation (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     EventId INT NULL,
@@ -289,7 +274,6 @@ const migrationQueries = [
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `ALTER TABLE Accommodation ADD COLUMN IF NOT EXISTS BlockId INT NULL`,
     `ALTER TABLE Accommodation ADD COLUMN IF NOT EXISTS EventId INT NULL`,
-
     `CREATE TABLE IF NOT EXISTS accommodation_allocations (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     EventId INT NOT NULL,
@@ -304,7 +288,6 @@ const migrationQueries = [
     FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
     FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS participant_id_cards (
     Id INT AUTO_INCREMENT PRIMARY KEY,
     EventId INT NOT NULL,
@@ -430,13 +413,11 @@ const migrationQueries = [
     FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
     FOREIGN KEY (EvaluatorId) REFERENCES evaluators(Id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     // Problem Statement Management for Virtual Events
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS ThemePublished TINYINT(1) NOT NULL DEFAULT 0`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS ProblemStatementsPublished TINYINT(1) NOT NULL DEFAULT 0`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PSSelectionDeadline DATETIME DEFAULT NULL`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PSMaxTeamsPerStatement INT NOT NULL DEFAULT 5`,
-
     `CREATE TABLE IF NOT EXISTS event_problem_statements (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -452,7 +433,6 @@ const migrationQueries = [
         UNIQUE KEY unique_event_problem_code (EventId, ProblemCode),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS problem_statement_selections (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -466,9 +446,7 @@ const migrationQueries = [
         FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
         FOREIGN KEY (ProblemStatementId) REFERENCES event_problem_statements(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE event_problem_statements ADD COLUMN IF NOT EXISTS Theme VARCHAR(255) DEFAULT NULL`,
-
     `CREATE TABLE IF NOT EXISTS event_themes (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -480,12 +458,9 @@ const migrationQueries = [
         UNIQUE KEY unique_event_theme (EventId, ThemeName),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE event_themes ADD COLUMN IF NOT EXISTS ImageUrl VARCHAR(500) DEFAULT NULL`,
-
     `ALTER TABLE physical_food_tokens ADD COLUMN IF NOT EXISTS IsRedeemed TINYINT(1) NOT NULL DEFAULT 0`,
     `ALTER TABLE physical_food_tokens ADD COLUMN IF NOT EXISTS RedeemedAt TIMESTAMP NULL DEFAULT NULL`,
-
     `CREATE TABLE IF NOT EXISTS hackathon_project_submissions (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -505,7 +480,6 @@ const migrationQueries = [
         FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
         FOREIGN KEY (ProblemStatementId) REFERENCES event_problem_statements(Id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS password_reset_otps (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         Email VARCHAR(255) NOT NULL,
@@ -515,7 +489,6 @@ const migrationQueries = [
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_pro_email (Email)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS event_attendance (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -534,7 +507,6 @@ const migrationQueries = [
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
         FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS event_broadcasts (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -548,12 +520,10 @@ const migrationQueries = [
         INDEX idx_eb_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalPSMode VARCHAR(50) NOT NULL DEFAULT 'organizer_provided'`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalPSPublished TINYINT(1) NOT NULL DEFAULT 0`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalPSSelectionDeadline DATETIME DEFAULT NULL`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS PhysicalPSMaxTeamsPerStatement INT NOT NULL DEFAULT 5`,
-
     `CREATE TABLE IF NOT EXISTS participant_problem_statements (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -573,16 +543,13 @@ const migrationQueries = [
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
         FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE participant_problem_statements ADD COLUMN IF NOT EXISTS Category VARCHAR(50) NOT NULL DEFAULT 'Software'`,
     `ALTER TABLE event_problem_statements ADD COLUMN IF NOT EXISTS Category VARCHAR(50) NOT NULL DEFAULT 'Software'`,
-
     `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS VerificationToken VARCHAR(100) UNIQUE DEFAULT NULL`,
     `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS TemplateId INT DEFAULT NULL`,
     `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS FrontImageUrl VARCHAR(500) DEFAULT NULL`,
     `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS BackImageUrl VARCHAR(500) DEFAULT NULL`,
     `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS GeneratedAt TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP`,
-
     `CREATE TABLE IF NOT EXISTS id_card_templates (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -599,7 +566,6 @@ const migrationQueries = [
         INDEX idx_id_templates_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS id_card_batches (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -615,9 +581,7 @@ const migrationQueries = [
         INDEX idx_batches_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE id_card_templates ADD COLUMN IF NOT EXISTS CardType VARCHAR(50) NOT NULL DEFAULT 'id_card'`,
-
     `CREATE TABLE IF NOT EXISTS feedback (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         UserName VARCHAR(100) NOT NULL,
@@ -627,10 +591,8 @@ const migrationQueries = [
         Comments TEXT,
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE feedback ADD COLUMN IF NOT EXISTS EventId INT NULL`,
     `ALTER TABLE feedback ADD COLUMN IF NOT EXISTS AdminId INT NULL`,
-
     `CREATE TABLE IF NOT EXISTS platform_feedback (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         UserId INT NULL,
@@ -642,21 +604,18 @@ const migrationQueries = [
         Status VARCHAR(20) DEFAULT 'approved',
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE evaluators ADD COLUMN IF NOT EXISTS RoleId INT NOT NULL DEFAULT 4`,
     `ALTER TABLE evaluators ADD COLUMN IF NOT EXISTS EventRole VARCHAR(100) DEFAULT 'Technical Evaluator'`,
     `UPDATE evaluators SET EventRole = Role WHERE EventRole IS NULL OR EventRole = 'Technical Evaluator'`,
     `UPDATE evaluators SET RoleId = 4 WHERE RoleId IS NULL OR RoleId = 0`,
     `ALTER TABLE evaluators MODIFY COLUMN PlainTextPassword VARCHAR(255) NULL DEFAULT NULL`,
     `UPDATE evaluators SET PlainTextPassword = NULL WHERE PlainTextPassword IS NOT NULL`,
-
     `ALTER TABLE Accommodation ADD COLUMN IF NOT EXISTS EventId INT NULL`,
     `ALTER TABLE Accommodation ADD INDEX IF NOT EXISTS idx_accommodation_event (EventId)`,
     `ALTER TABLE Accommodation DROP INDEX IF EXISTS room_num`,
     `ALTER TABLE Accommodation ADD UNIQUE KEY IF NOT EXISTS unique_event_room (EventId, room_num)`,
     `UPDATE Accommodation r INNER JOIN accommodation_blocks b ON r.BlockId = b.Id SET r.EventId = b.EventId WHERE r.EventId IS NULL AND b.EventId IS NOT NULL`,
     `UPDATE Accommodation r INNER JOIN accommodation_allocations a ON r.Id = a.RoomId SET r.EventId = a.EventId WHERE r.EventId IS NULL`,
-
     `CREATE TABLE IF NOT EXISTS event_admins (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         AdminId INT NOT NULL,
@@ -669,12 +628,10 @@ const migrationQueries = [
         FOREIGN KEY (AdminId) REFERENCES users(Id) ON DELETE CASCADE,
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `INSERT IGNORE INTO event_admins (AdminId, EventId, Role)
      SELECT Id, EventId, 'Organizer'
      FROM users
      WHERE RoleId = 2 AND EventId IS NOT NULL`,
-
     `CREATE TABLE IF NOT EXISTS workshop_sessions (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -695,7 +652,6 @@ const migrationQueries = [
         INDEX idx_ws_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS workshop_resources (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -708,12 +664,10 @@ const migrationQueries = [
         INDEX idx_wr_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE event_attendance ADD COLUMN IF NOT EXISTS DayNumber INT NOT NULL DEFAULT 1`,
     `ALTER TABLE event_attendance ADD COLUMN IF NOT EXISTS SessionSlot VARCHAR(50) NOT NULL DEFAULT 'Morning'`,
     `ALTER TABLE event_attendance ADD COLUMN IF NOT EXISTS AttendanceDate VARCHAR(50) NULL`,
     `ALTER TABLE event_attendance MODIFY COLUMN Status VARCHAR(50) NOT NULL DEFAULT 'not_checked_in'`,
-
     `CREATE TABLE IF NOT EXISTS webinar_sessions (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -734,7 +688,6 @@ const migrationQueries = [
         INDEX idx_webinar_sessions_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS webinar_resources (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -747,7 +700,6 @@ const migrationQueries = [
         INDEX idx_webinar_resources_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS webinar_feedback (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -766,7 +718,6 @@ const migrationQueries = [
         INDEX idx_webinar_feedback_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS webinar_questions (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -784,7 +735,6 @@ const migrationQueries = [
         INDEX idx_webinar_qa_status (Status),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS webinar_question_upvotes (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         QuestionId INT NOT NULL,
@@ -794,11 +744,9 @@ const migrationQueries = [
         INDEX idx_wqu_question (QuestionId),
         FOREIGN KEY (QuestionId) REFERENCES webinar_questions(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS AuditoriumVenue VARCHAR(255) NULL`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS MaxCapacity INT DEFAULT NULL`,
     `ALTER TABLE events ADD COLUMN IF NOT EXISTS MaxAdmins INT NOT NULL DEFAULT 5`,
-
     `CREATE TABLE IF NOT EXISTS seminar_speakers (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -814,7 +762,6 @@ const migrationQueries = [
         INDEX idx_seminar_speakers_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS seminar_sessions (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -830,7 +777,6 @@ const migrationQueries = [
         INDEX idx_seminar_sessions_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS seminar_attendance (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -850,7 +796,6 @@ const migrationQueries = [
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
         FOREIGN KEY (UserId) REFERENCES users(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS seminar_resources (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -862,7 +807,6 @@ const migrationQueries = [
         INDEX idx_seminar_res_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS activity_logs (
         Id BIGINT AUTO_INCREMENT PRIMARY KEY,
         Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -888,7 +832,6 @@ const migrationQueries = [
         INDEX idx_logs_user (UserId),
         INDEX idx_logs_action (Action)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS email_dispatch_logs (
         Id BIGINT AUTO_INCREMENT PRIMARY KEY,
         RecipientEmail VARCHAR(255) NOT NULL,
@@ -907,7 +850,6 @@ const migrationQueries = [
         INDEX idx_email_type (EmailType),
         INDEX idx_email_sent_at (SentAt DESC)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS database_backups (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         Filename VARCHAR(255) NOT NULL,
@@ -920,7 +862,6 @@ const migrationQueries = [
         Notes TEXT DEFAULT NULL,
         INDEX idx_backup_created_at (CreatedAt DESC)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS webhook_endpoints (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         Name VARCHAR(100) NOT NULL,
@@ -936,7 +877,6 @@ const migrationQueries = [
         INDEX idx_webhook_active (IsActive),
         INDEX idx_webhook_platform (Platform)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS webhook_logs (
         Id BIGINT AUTO_INCREMENT PRIMARY KEY,
         WebhookId INT NOT NULL,
@@ -952,7 +892,6 @@ const migrationQueries = [
         INDEX idx_whlogs_status (Status),
         INDEX idx_whlogs_created (CreatedAt DESC)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS user_notifications (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         UserId INT DEFAULT NULL,
@@ -967,7 +906,6 @@ const migrationQueries = [
         INDEX idx_notif_read (IsRead),
         INDEX idx_notif_created (CreatedAt DESC)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS alumni_configs (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -983,7 +921,6 @@ const migrationQueries = [
         UNIQUE KEY uq_alumni_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS alumni_speakers (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -1001,7 +938,6 @@ const migrationQueries = [
         INDEX idx_alumni_spk_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS alumni_sessions (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -1017,7 +953,6 @@ const migrationQueries = [
         INDEX idx_alumni_sess_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS GraduationYear VARCHAR(50) NULL`,
     `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS CurrentCompany VARCHAR(150) NULL`,
     `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS Designation VARCHAR(150) NULL`,
@@ -1030,7 +965,6 @@ const migrationQueries = [
     `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS GateCheckInTime DATETIME NULL`,
     `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS FoodTokenScanned BOOLEAN DEFAULT FALSE`,
     `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS FoodScannedTime DATETIME NULL`,
-
     `CREATE TABLE IF NOT EXISTS alumni_memories (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -1042,7 +976,6 @@ const migrationQueries = [
         INDEX idx_alumni_mem_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS project_expo_configs (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL UNIQUE,
@@ -1065,7 +998,6 @@ const migrationQueries = [
         INDEX idx_pec_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS project_expo_domains (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -1075,7 +1007,6 @@ const migrationQueries = [
         INDEX idx_ped_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS project_expo_submissions (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -1105,7 +1036,6 @@ const migrationQueries = [
         FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
         FOREIGN KEY (DomainId) REFERENCES project_expo_domains(Id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS project_expo_booths (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -1120,7 +1050,6 @@ const migrationQueries = [
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
         FOREIGN KEY (AllocatedTeamId) REFERENCES registered_teams(Id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS project_expo_schedules (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -1138,7 +1067,6 @@ const migrationQueries = [
         FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE,
         FOREIGN KEY (JudgeId) REFERENCES evaluators(Id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS project_expo_criteria (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -1148,7 +1076,6 @@ const migrationQueries = [
         INDEX idx_pecr_event (EventId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS project_expo_scores (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -1166,7 +1093,6 @@ const migrationQueries = [
         FOREIGN KEY (JudgeId) REFERENCES evaluators(Id) ON DELETE CASCADE,
         FOREIGN KEY (CriteriaId) REFERENCES project_expo_criteria(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
-
     `CREATE TABLE IF NOT EXISTS project_expo_results (
         Id INT AUTO_INCREMENT PRIMARY KEY,
         EventId INT NOT NULL,
@@ -1181,11 +1107,103 @@ const migrationQueries = [
         INDEX idx_per_team (TeamId),
         FOREIGN KEY (EventId) REFERENCES events(Id) ON DELETE CASCADE,
         FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `CREATE TABLE IF NOT EXISTS user_sessions (
+        Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        UserId INT NOT NULL,
+        UserEmail VARCHAR(255) NOT NULL,
+        UserRole VARCHAR(50) NOT NULL,
+        SessionTokenHash VARCHAR(64) NOT NULL UNIQUE,
+        IpAddress VARCHAR(64) NOT NULL,
+        UserAgent TEXT NULL,
+        DeviceType VARCHAR(50) DEFAULT 'Desktop',
+        Browser VARCHAR(50) DEFAULT 'Unknown',
+        Os VARCHAR(50) DEFAULT 'Unknown',
+        LocationCity VARCHAR(100) DEFAULT NULL,
+        LastActivityAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        ExpiresAt TIMESTAMP NOT NULL,
+        IsRevoked TINYINT(1) DEFAULT 0,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_us_user (UserId),
+        INDEX idx_us_role (UserRole),
+        INDEX idx_us_revoked (IsRevoked),
+        INDEX idx_us_expires (ExpiresAt),
+        INDEX idx_us_token (SessionTokenHash)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `CREATE TABLE IF NOT EXISTS login_history (
+        Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        UserId INT NULL,
+        AttemptedEmail VARCHAR(255) NOT NULL,
+        Role VARCHAR(50) NULL,
+        Status ENUM('SUCCESS', 'FAILED_PASSWORD', 'ACCOUNT_LOCKED', 'INVALID_USER', 'PASSWORD_RESET', 'SESSION_REVOKED') NOT NULL,
+        IpAddress VARCHAR(64) NOT NULL,
+        UserAgent TEXT NULL,
+        FailureReason VARCHAR(255) NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_lh_email (AttemptedEmail),
+        INDEX idx_lh_status (Status),
+        INDEX idx_lh_ip (IpAddress),
+        INDEX idx_lh_created (CreatedAt DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `CREATE TABLE IF NOT EXISTS failed_login_attempts (
+        Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        Identifier VARCHAR(255) NOT NULL UNIQUE,
+        AttemptCount INT DEFAULT 1,
+        FirstAttemptAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        LastAttemptAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        LockedUntil TIMESTAMP NULL,
+        INDEX idx_fla_ident (Identifier),
+        INDEX idx_fla_locked (LockedUntil)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `CREATE TABLE IF NOT EXISTS audit_logs (
+        Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        ActorUserId INT NULL,
+        ActorEmail VARCHAR(255) NOT NULL,
+        ActorRole VARCHAR(50) NOT NULL,
+        EventId INT NULL,
+        Action VARCHAR(100) NOT NULL,
+        Module VARCHAR(50) NOT NULL,
+        EntityType VARCHAR(50) NOT NULL,
+        EntityId VARCHAR(100) NOT NULL,
+        PreviousValue JSON NULL,
+        NewValue JSON NULL,
+        IpAddress VARCHAR(64) NULL,
+        UserAgent TEXT NULL,
+        Status ENUM('SUCCESS', 'FAILED') DEFAULT 'SUCCESS',
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_al_actor (ActorUserId),
+        INDEX idx_al_event (EventId),
+        INDEX idx_al_action (Action),
+        INDEX idx_al_module (Module),
+        INDEX idx_al_entity (EntityType, EntityId),
+        INDEX idx_al_created (CreatedAt DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `CREATE TABLE IF NOT EXISTS security_alerts (
+        Id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        AlertCode VARCHAR(50) NOT NULL,
+        Severity ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') NOT NULL,
+        Title VARCHAR(255) NOT NULL,
+        Description TEXT NOT NULL,
+        EventId INT NULL,
+        TargetUserId INT NULL,
+        SourceIp VARCHAR(64) NULL,
+        Metadata JSON NULL,
+        Status ENUM('OPEN', 'INVESTIGATING', 'RESOLVED', 'FALSE_POSITIVE') DEFAULT 'OPEN',
+        AssignedToUserId INT NULL,
+        ResolutionNotes TEXT NULL,
+        ResolvedAt TIMESTAMP NULL,
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_sa_severity (Severity),
+        INDEX idx_sa_status (Status),
+        INDEX idx_sa_code (AlertCode),
+        INDEX idx_sa_event (EventId),
+        INDEX idx_sa_created (CreatedAt DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS TwoFactorEnabled TINYINT(1) DEFAULT 0`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS TwoFactorCode VARCHAR(10) NULL`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS TwoFactorExpiresAt DATETIME NULL`
 ];
-
 let isMigrating = false;
-
 const migrate = () => {
     if (isMigrating) return Promise.resolve();
     isMigrating = true;
@@ -1222,24 +1240,29 @@ const migrate = () => {
         runQuery(0);
     });
 };
-
 db.migrate = migrate;
-
+const dbCircuitBreaker = require('../modules/security/dbCircuitBreaker');
+db.on('connection', () => {
+    dbCircuitBreaker.recordSuccess();
+});
+db.on('error', (err) => {
+    dbCircuitBreaker.recordFailure(err);
+});
 db.getConnection((err, connection) => {
     if (err) {
-        console.log("database connection failed");
-        console.log(err);
+        dbCircuitBreaker.recordFailure(err);
+        console.log("database connection failed:", err.message || err);
     } else {
+        dbCircuitBreaker.recordSuccess();
         console.log("connected to the database successfully");
         connection.release();
-        if (require.main !== module) {
+        if (process.env.AUTO_MIGRATE === 'true') {
             migrate().catch((error) => {
                 console.error("Migration error:", error.message);
             });
         }
     }
 });
-
 if (require.main === module) {
     migrate()
         .then(() => {
@@ -1253,5 +1276,4 @@ if (require.main === module) {
             process.exit(1);
         });
 }
-
 module.exports = db;

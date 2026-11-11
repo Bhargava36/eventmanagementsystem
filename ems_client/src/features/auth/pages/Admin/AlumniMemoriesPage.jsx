@@ -13,10 +13,8 @@ import {
   Heart,
   Eye
 } from 'lucide-react';
-
 export default function AlumniMemoriesPage() {
   const toast = useToast();
-
   const admin = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem('admin') || '{}');
@@ -24,15 +22,12 @@ export default function AlumniMemoriesPage() {
       return {};
     }
   }, []);
-
   const eventId = admin?.EventId;
-
   const [memories, setMemories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [lightboxItem, setLightboxItem] = useState(null);
   const [selectedBatchFilter, setSelectedBatchFilter] = useState('ALL');
-
   // Form State
   const [form, setForm] = useState({
     Title: '',
@@ -41,7 +36,6 @@ export default function AlumniMemoriesPage() {
     UploadedBy: 'Alumni Association'
   });
   const [submitting, setSubmitting] = useState(false);
-
   const loadMemories = useCallback(async () => {
     if (!eventId) return;
     try {
@@ -57,11 +51,9 @@ export default function AlumniMemoriesPage() {
       setLoading(false);
     }
   }, [eventId, toast]);
-
   useEffect(() => {
     loadMemories();
   }, [loadMemories]);
-
   const handleSaveMemory = async (e) => {
     e.preventDefault();
     if (!form.Title.trim() || !form.MediaUrl.trim()) {
@@ -76,7 +68,6 @@ export default function AlumniMemoriesPage() {
         body: JSON.stringify(form)
       });
       if (!res.ok) throw new Error('Failed to post memory');
-
       toast.success('Memory posted to nostalgia wall!');
       setModalOpen(false);
       setForm({
@@ -92,7 +83,6 @@ export default function AlumniMemoriesPage() {
       setSubmitting(false);
     }
   };
-
   const handleDeleteMemory = async (id) => {
     if (!window.confirm('Delete this nostalgia memory photo?')) return;
     try {
@@ -106,7 +96,6 @@ export default function AlumniMemoriesPage() {
       toast.error(err.message || 'Error deleting memory');
     }
   };
-
   // Batches for filtering
   const batchesList = useMemo(() => {
     const s = new Set();
@@ -115,17 +104,15 @@ export default function AlumniMemoriesPage() {
     });
     return Array.from(s).sort().reverse();
   }, [memories]);
-
   const filteredMemories = useMemo(() => {
     return memories.filter((m) => {
       return selectedBatchFilter === 'ALL' || String(m.BatchYear) === selectedBatchFilter;
     });
   }, [memories, selectedBatchFilter]);
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-3xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">
             <Camera className="w-4 h-4" />
@@ -138,7 +125,6 @@ export default function AlumniMemoriesPage() {
             Curate vintage campus snapshots, graduation day pictures, and current reunion moments for all attending batches.
           </p>
         </div>
-
         <button
           onClick={() => setModalOpen(true)}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-md active:scale-95 transition-all"
@@ -147,10 +133,9 @@ export default function AlumniMemoriesPage() {
           Add Memory / Photo
         </button>
       </div>
-
       {/* Filter Toolbar */}
       {batchesList.length > 0 && (
-        <div className="flex items-center gap-3 overflow-x-auto pb-1 border-b border-slate-200 dark:border-white/10">
+        <div className="flex items-center gap-3 overflow-x-auto pb-1 border-b border-gray-200 dark:border-zinc-800">
           <span className="text-xs font-bold text-slate-400">Filter Batch:</span>
           <button
             onClick={() => setSelectedBatchFilter('ALL')}
@@ -177,10 +162,9 @@ export default function AlumniMemoriesPage() {
           ))}
         </div>
       )}
-
       {/* Photo Grid */}
       {filteredMemories.length === 0 ? (
-        <div className="p-16 text-center rounded-3xl bg-white dark:bg-black border border-dashed border-slate-300 dark:border-white/10 space-y-3">
+        <div className="p-16 text-center rounded-3xl bg-white dark:bg-black border border-dashed border-slate-300 dark:border-zinc-800 space-y-3">
           <Camera className="w-12 h-12 text-slate-400 mx-auto" />
           <h3 className="font-bold text-base">Nostalgia Wall is Empty</h3>
           <p className="text-xs text-slate-500 dark:text-gray-400 max-w-sm mx-auto">
@@ -199,11 +183,11 @@ export default function AlumniMemoriesPage() {
           {filteredMemories.map((m) => (
             <div
               key={m.Id}
-              className="group relative rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 bg-white dark:bg-black shadow-sm flex flex-col justify-between"
+              className="group relative rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-800 bg-white dark:bg-black shadow-sm flex flex-col justify-between"
             >
               <div
                 onClick={() => setLightboxItem(m)}
-                className="relative aspect-video sm:aspect-square overflow-hidden bg-slate-100 dark:bg-white/5 cursor-pointer"
+                className="relative aspect-video sm:aspect-square overflow-hidden bg-slate-100 dark:bg-zinc-900 cursor-pointer"
               >
                 <img
                   src={m.MediaUrl}
@@ -217,7 +201,6 @@ export default function AlumniMemoriesPage() {
                   <Eye className="w-6 h-6" />
                 </div>
               </div>
-
               <div className="p-3.5 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -243,7 +226,6 @@ export default function AlumniMemoriesPage() {
           ))}
         </div>
       )}
-
       {/* UPLOAD MODAL */}
       <AnimatePresence>
         {modalOpen && (
@@ -252,9 +234,9 @@ export default function AlumniMemoriesPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-white/10 p-6 space-y-4 shadow-2xl"
+              className="w-full max-w-md rounded-3xl bg-white dark:bg-black border border-gray-200 dark:border-zinc-800 p-6 space-y-4 shadow-2xl"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/10 pb-3">
+              <div className="flex items-center justify-between border-b border-gray-100 dark:border-zinc-800 pb-3">
                 <h3 className="font-bold text-base">Add Nostalgia Photo</h3>
                 <button
                   onClick={() => setModalOpen(false)}
@@ -263,7 +245,6 @@ export default function AlumniMemoriesPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <form onSubmit={handleSaveMemory} className="space-y-4 text-xs">
                 <div className="space-y-1">
                   <label className="font-bold text-slate-600 dark:text-gray-300">Memory Title / Caption</label>
@@ -273,10 +254,9 @@ export default function AlumniMemoriesPage() {
                     value={form.Title}
                     onChange={(e) => setForm({ ...form, Title: e.target.value })}
                     placeholder="e.g. 2018 Convocation Day or Canteen Fun"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="space-y-1">
                   <label className="font-bold text-slate-600 dark:text-gray-300">Image URL</label>
                   <input
@@ -285,10 +265,9 @@ export default function AlumniMemoriesPage() {
                     value={form.MediaUrl}
                     onChange={(e) => setForm({ ...form, MediaUrl: e.target.value })}
                     placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-600 dark:text-gray-300">Batch Year</label>
@@ -297,7 +276,7 @@ export default function AlumniMemoriesPage() {
                       value={form.BatchYear}
                       onChange={(e) => setForm({ ...form, BatchYear: e.target.value })}
                       placeholder="e.g. 2018"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div className="space-y-1">
@@ -307,11 +286,10 @@ export default function AlumniMemoriesPage() {
                       value={form.UploadedBy}
                       onChange={(e) => setForm({ ...form, UploadedBy: e.target.value })}
                       placeholder="e.g. CSE 2018 Alumni"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 focus:outline-none focus:border-emerald-500"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>
-
                 <div className="flex items-center justify-end gap-2 pt-3">
                   <button
                     type="button"
@@ -333,7 +311,6 @@ export default function AlumniMemoriesPage() {
           </div>
         )}
       </AnimatePresence>
-
       {/* LIGHTBOX MODAL */}
       <AnimatePresence>
         {lightboxItem && (
@@ -354,7 +331,6 @@ export default function AlumniMemoriesPage() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               <div className="rounded-2xl overflow-hidden max-h-[75vh] flex items-center justify-center bg-black">
                 <img
                   src={lightboxItem.MediaUrl}

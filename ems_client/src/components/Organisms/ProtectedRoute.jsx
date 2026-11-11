@@ -2,11 +2,9 @@ import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import useAuth from '../../Hooks/useAuth';
 import Unauthorized from '../ui/Unauthorized';
-
 export default function ProtectedRoute({ allowedRoles = [], redirectPath, children }) {
   const { isAuthenticated, role, isLoading, getRoleLoginPath } = useAuth();
   const location = useLocation();
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
@@ -17,18 +15,14 @@ export default function ProtectedRoute({ allowedRoles = [], redirectPath, childr
       </div>
     );
   }
-
   if (!isAuthenticated) {
     const targetLogin =
       redirectPath ||
       (allowedRoles.length > 0 ? getRoleLoginPath(allowedRoles[0]) : '/login');
-
     return <Navigate to={targetLogin} state={{ from: location }} replace />;
   }
-
   if (allowedRoles.length > 0 && (!role || !allowedRoles.includes(role))) {
     return <Unauthorized allowedRoles={allowedRoles} />;
   }
-
   return children ? children : <Outlet />;
 }

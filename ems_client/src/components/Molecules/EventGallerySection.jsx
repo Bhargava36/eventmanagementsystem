@@ -2,19 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Maximize2, X, ChevronLeft, ChevronRight } from 'lucide-react';
-
-/**
- * EventGallerySection
- * Displays event photo gallery cleanly in a responsive grid with a full-screen lightbox viewer.
- * Season grouping removed per user requirement - photos display cleanly without tags.
- */
+// EventGallerySection Displays event photo gallery cleanly in a responsive grid with a full-screen lightbox viewer.
 export default function EventGallerySection({
   gallery = [],
   eventName = 'Event',
   eventTheme = null,
 }) {
   const [activeImageIndex, setActiveImageIndex] = useState(null);
-
   // Normalize gallery items (strictly gallery images, not banner posters)
   const items = useMemo(() => {
     return (gallery || [])
@@ -31,11 +25,9 @@ export default function EventGallerySection({
       })
       .filter((i) => Boolean(i.url));
   }, [gallery]);
-
   if (items.length === 0) {
     return null;
   }
-
   return (
     <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6">
       {/* Header */}
@@ -70,7 +62,6 @@ export default function EventGallerySection({
           </div>
         </div>
       </div>
-
       {/* Gallery Photo Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {items.map((item, idx) => (
@@ -88,7 +79,6 @@ export default function EventGallerySection({
               alt={item.caption || `${eventName} gallery photo ${idx + 1}`}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-
             {/* Subtle Overlay on Hover */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-3.5">
               <div className="flex justify-end">
@@ -96,7 +86,6 @@ export default function EventGallerySection({
                   <Maximize2 className="w-3.5 h-3.5" />
                 </span>
               </div>
-
               {item.caption && (
                 <p className="text-xs font-semibold text-white line-clamp-2 bg-black/60 backdrop-blur-md p-2 rounded-xl">
                   {item.caption}
@@ -106,7 +95,6 @@ export default function EventGallerySection({
           </motion.div>
         ))}
       </div>
-
       {/* Lightbox for Gallery */}
       <AnimatePresence>
         {activeImageIndex !== null && (
@@ -124,7 +112,6 @@ export default function EventGallerySection({
                 <span className="text-xs font-mono text-zinc-300">
                   {activeImageIndex + 1} / {items.length}
                 </span>
-
                 <button
                   type="button"
                   onClick={() => setActiveImageIndex(null)}
@@ -133,7 +120,6 @@ export default function EventGallerySection({
                   <X className="w-5 h-5" />
                 </button>
               </div>
-
               {/* Image */}
               <div
                 className="relative max-w-full max-h-[80vh] flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-zinc-800 bg-black"
@@ -144,7 +130,6 @@ export default function EventGallerySection({
                   alt={items[activeImageIndex]?.caption || 'Gallery photo'}
                   className="max-w-full max-h-[75vh] object-contain rounded-2xl"
                 />
-
                 {items[activeImageIndex]?.caption && (
                   <div className="w-full p-3 bg-zinc-950/90 border-t border-zinc-800 text-center">
                     <p className="text-xs font-medium text-zinc-200">
@@ -152,7 +137,6 @@ export default function EventGallerySection({
                     </p>
                   </div>
                 )}
-
                 {items.length > 1 && (
                   <>
                     <button

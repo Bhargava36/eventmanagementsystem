@@ -1,6 +1,5 @@
 const db = require("../../config/db");
 const bcrypt = require("bcrypt");
-
 const createUser = async (UserName, Email, Password, Mobile, Gender, College, Location, State, callback, RoleId = 3) => {
     try {
         const hashedPassword = await bcrypt.hash(Password, 10);
@@ -9,7 +8,6 @@ const createUser = async (UserName, Email, Password, Mobile, Gender, College, Lo
             if (err) {
                 return callback(err, null);
             }
-
             const newUserId = result.insertId;
             const linkSql = `UPDATE registered_team_members SET UserId = ? WHERE LOWER(MemberEmail) = LOWER(?) AND UserId IS NULL`;
             db.query(linkSql, [newUserId, Email], () => {
@@ -21,34 +19,30 @@ const createUser = async (UserName, Email, Password, Mobile, Gender, College, Lo
         return callback(err, null);
     }
 };
-
 const loginUser = (Email, callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Password, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.Photo, r.RoleName 
-        FROM users u 
-        JOIN roles r ON u.RoleId = r.Id 
+        SELECT u.Id, u.UserName, u.Email, u.Password, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.Photo, u.TwoFactorEnabled, r.RoleName
+        FROM users u
+        JOIN roles r ON u.RoleId = r.Id
         WHERE LOWER(u.Email) = LOWER(?)
     `;
     db.query(query, [Email], (err, result) => {
         if (err) {
             return callback(err, null);
         }
-
         if (result && result.length > 0) {
             const u = result[0];
             const linkSql = `UPDATE registered_team_members SET UserId = ? WHERE LOWER(MemberEmail) = LOWER(?) AND UserId IS NULL`;
             db.query(linkSql, [u.Id, Email], () => {});
         }
-
         return callback(null, result);
     });
 };
-
 const getAllUsers = (callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.CreatedAt, u.Photo, r.RoleName, e.EventName 
-        FROM users u 
-        JOIN roles r ON u.RoleId = r.Id 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.CreatedAt, u.Photo, r.RoleName, e.EventName
+        FROM users u
+        JOIN roles r ON u.RoleId = r.Id
         LEFT JOIN events e ON u.EventId = e.Id
         ORDER BY u.CreatedAt DESC
     `;
@@ -56,30 +50,26 @@ const getAllUsers = (callback) => {
         if (err) {
             return callback(err, null);
         }
-
         return callback(null, result);
     });
 };
-
 const getUserById = (id, callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.CreatedAt, u.Photo, r.RoleName 
-        FROM users u 
-        JOIN roles r ON u.RoleId = r.Id 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.CreatedAt, u.Photo, r.RoleName
+        FROM users u
+        JOIN roles r ON u.RoleId = r.Id
         WHERE u.Id = ?
     `;
     db.query(query, [id], (err, result) => {
         if (err) {
             return callback(err, null);
         }
-
         return callback(null, result);
     });
 };
-
 const getUserCount = (callback) => {
     const query = `
-        SELECT 
+        SELECT
             (SELECT COUNT(*) FROM users WHERE RoleId = 3) AS userCount,
             (SELECT COUNT(*) FROM registered_team_members) AS totalMembersCount,
             COALESCE((SELECT COUNT(DISTINCT tm.Id) FROM registered_team_members tm JOIN event_registrations er ON tm.TeamId = er.TeamId), 0) AS registeredMembersCount
@@ -88,27 +78,23 @@ const getUserCount = (callback) => {
         if (err) {
             return callback(err, null);
         }
-
         return callback(null, result[0]);
     });
 };
-
 const getUserByEmail = (Email, callback) => {
     const query = `
-        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.Photo, r.RoleName 
-        FROM users u 
-        JOIN roles r ON u.RoleId = r.Id 
+        SELECT u.Id, u.UserName, u.Email, u.Mobile, u.Gender, u.College, u.Location, u.State, u.RoleId, u.EventId, u.Photo, r.RoleName
+        FROM users u
+        JOIN roles r ON u.RoleId = r.Id
         WHERE LOWER(u.Email) = LOWER(?)
     `;
     db.query(query, [Email], (err, result) => {
         if (err) {
             return callback(err, null);
         }
-
         return callback(null, result);
     });
 };
-
 const updateUser = ( id, UserName, Email, Mobile, Gender, College, Location, State, Photo, callback ) => {
     // If Photo is undefined, keep existing; if passed (string or null), update Photo
     let query, params;
@@ -123,23 +109,19 @@ const updateUser = ( id, UserName, Email, Mobile, Gender, College, Location, Sta
             if (err) {
                 return callback(err, null);
             }
-
             return callback(null, result);
         }
     );
 };
-
 const checkEmailExists = (Email, callback) => {
     const query = `SELECT Id FROM users WHERE LOWER(Email) = LOWER(?) LIMIT 1`;
     db.query(query, [Email], (err, result) => {
         if (err) {
             return callback(err, null);
         }
-
         return callback(null, result);
     });
 };
-
 const sendPasswordResetOtp = async (email, callback) => {
     const cleanEmail = String(email || '').trim().toLowerCase();
     if (!cleanEmail) {
@@ -147,27 +129,22 @@ const sendPasswordResetOtp = async (email, callback) => {
         error.status = 400;
         return callback(error);
     }
-
     // Check if user exists in users table
     db.query('SELECT Id, UserName, Email FROM users WHERE LOWER(Email) = ? LIMIT 1', [cleanEmail], async (userErr, userRows) => {
         if (userErr) return callback(userErr);
-
         if (!userRows || userRows.length === 0) {
             const notFound = new Error('No registered account found with this email address.');
             notFound.status = 404;
             return callback(notFound);
         }
-
         const account = userRows[0];
         try {
                 // Generate 6-digit OTP code
                 const otp = Math.floor(100000 + Math.random() * 900000).toString();
                 const otpHash = await bcrypt.hash(otp, 10);
-
                 // Invalidate any previously pending OTPs for this email
                 db.query('UPDATE password_reset_otps SET IsUsed = 1 WHERE LOWER(Email) = ?', [cleanEmail], (invalErr) => {
                     if (invalErr) console.warn('OTP invalidation warning:', invalErr.message);
-
                     // Insert new OTP with 10 minute expiry
                     const insertSql = `
                         INSERT INTO password_reset_otps (Email, OtpHash, ExpiresAt, IsUsed)
@@ -175,7 +152,6 @@ const sendPasswordResetOtp = async (email, callback) => {
                     `;
                     db.query(insertSql, [cleanEmail, otpHash], async (saveErr, saveResult) => {
                         if (saveErr) return callback(saveErr);
-
                         // Send email via SMTP protocol
                         try {
                             const { sendOtpEmail } = require('../../config/mailer');
@@ -203,17 +179,14 @@ const sendPasswordResetOtp = async (email, callback) => {
             }
     });
 };
-
 const verifyPasswordResetOtp = (email, otp, callback) => {
     const cleanEmail = String(email || '').trim().toLowerCase();
     const cleanOtp = String(otp || '').trim();
-
     if (!cleanEmail || !cleanOtp) {
         const error = new Error('Email and verification code are required');
         error.status = 400;
         return callback(error);
     }
-
     const query = `
         SELECT Id, OtpHash, ExpiresAt, IsUsed
         FROM password_reset_otps
@@ -223,7 +196,6 @@ const verifyPasswordResetOtp = (email, otp, callback) => {
     `;
     db.query(query, [cleanEmail], async (err, rows) => {
         if (err) return callback(err);
-
         if (!rows || rows.length === 0) {
             // Check if there was an expired one
             const checkQuery = `SELECT Id, ExpiresAt FROM password_reset_otps WHERE LOWER(Email) = ? ORDER BY CreatedAt DESC LIMIT 1`;
@@ -239,7 +211,6 @@ const verifyPasswordResetOtp = (email, otp, callback) => {
             });
             return;
         }
-
         const record = rows[0];
         try {
             const isMatch = await bcrypt.compare(cleanOtp, record.OtpHash);
@@ -248,14 +219,12 @@ const verifyPasswordResetOtp = (email, otp, callback) => {
                 invalid.status = 400;
                 return callback(invalid);
             }
-
             const jwt = require('jsonwebtoken');
             const resetToken = jwt.sign(
                 { email: cleanEmail, otpId: record.Id, purpose: 'password_reset' },
                 process.env.JWT_SECRECT || 'secret',
                 { expiresIn: '15m' }
             );
-
             return callback(null, {
                 success: true,
                 message: 'Verification code verified successfully.',
@@ -267,17 +236,14 @@ const verifyPasswordResetOtp = (email, otp, callback) => {
         }
     });
 };
-
 const resetPasswordWithOtp = async (email, otp, resetToken, newPassword, callback) => {
     let cleanEmail = String(email || '').trim().toLowerCase();
     const cleanPassword = String(newPassword || '').trim();
-
     if (!cleanPassword || cleanPassword.length < 6) {
         const err = new Error('New password must be at least 6 characters long.');
         err.status = 400;
         return callback(err);
     }
-
     // Verify token or OTP
     if (resetToken) {
         try {
@@ -307,27 +273,21 @@ const resetPasswordWithOtp = async (email, otp, resetToken, newPassword, callbac
         error.status = 400;
         return callback(error);
     }
-
     proceedUpdate();
-
     async function proceedUpdate() {
         try {
             const hashedPassword = await bcrypt.hash(cleanPassword, 10);
-
             // Update in users table
             db.query('UPDATE users SET Password = ? WHERE LOWER(Email) = ?', [hashedPassword, cleanEmail], (uErr, uResult) => {
                 if (uErr) return callback(uErr);
-
                 // Invalidate all OTPs for this email
                 db.query('UPDATE password_reset_otps SET IsUsed = 1 WHERE LOWER(Email) = ?', [cleanEmail], () => {});
-
                 // Fetch user name and send confirmation email
                 db.query('SELECT UserName FROM users WHERE LOWER(Email) = ? LIMIT 1', [cleanEmail], (nameErr, nameRows) => {
                     const uName = nameRows && nameRows.length > 0 ? nameRows[0].UserName : 'Participant';
                     const { sendPasswordResetSuccessEmail } = require('../../config/mailer');
                     sendPasswordResetSuccessEmail(cleanEmail, uName);
                 });
-
                 return callback(null, {
                     success: true,
                     message: 'Password has been reset successfully! You can now log in with your new password.'
@@ -338,7 +298,6 @@ const resetPasswordWithOtp = async (email, otp, resetToken, newPassword, callbac
         }
     }
 };
-
 module.exports = {
     createUser,
     loginUser,

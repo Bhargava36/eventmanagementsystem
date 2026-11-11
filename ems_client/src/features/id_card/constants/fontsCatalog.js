@@ -1,8 +1,4 @@
-/**
- * Comprehensive Catalog of 150+ Top Designer & Stylish Google Fonts
- * Categorized by design aesthetic for ID Cards, Badges, VIP Passes & Certificates
- */
-
+// Comprehensive Catalog of 150+ Top Designer & Stylish Google Fonts Categorized by design aesthetic for ID Cards, Badges, VIP Passes & Certificates
 export const FONT_CATEGORIES = [
   'All',
   'Modern Sans',
@@ -13,7 +9,6 @@ export const FONT_CATEGORIES = [
   'Tech & Mono',
   'Retro & Funky'
 ];
-
 export const FONTS_CATALOG = [
   // ════════════════════════════════════════════════════════════════
   // 1. MODERN & CLEAN SANS (Minimalist, Professional, Sleek UI)
@@ -46,7 +41,6 @@ export const FONTS_CATALOG = [
   { name: 'Red Hat Display', family: 'Red Hat Display', category: 'Modern Sans', badge: 'Open Tech', value: "'Red Hat Display', sans-serif" },
   { name: 'Hanken Grotesk', family: 'Hanken Grotesk', category: 'Modern Sans', badge: 'Swiss Modern', value: "'Hanken Grotesk', sans-serif" },
   { name: 'Schibsted Grotesk', family: 'Schibsted Grotesk', category: 'Modern Sans', badge: 'Digital News', value: "'Schibsted Grotesk', sans-serif" },
-
   // ════════════════════════════════════════════════════════════════
   // 2. DISPLAY & BOLD IMPACT (Heavy, Festival, Stage, Poster)
   // ════════════════════════════════════════════════════════════════
@@ -74,7 +68,6 @@ export const FONTS_CATALOG = [
   { name: 'Kanit', family: 'Kanit', category: 'Display & Bold', badge: 'Tech Display', value: "'Kanit', sans-serif" },
   { name: 'Teko', family: 'Teko', category: 'Display & Bold', badge: 'Ultra Tall Condensed', value: "'Teko', sans-serif" },
   { name: 'Staatliches', family: 'Staatliches', category: 'Display & Bold', badge: 'Bauhaus Display', value: "'Staatliches', cursive" },
-
   // ════════════════════════════════════════════════════════════════
   // 3. CYBER, TECH & SCI-FI (Hackathons, AI, Gaming, Web3)
   // ════════════════════════════════════════════════════════════════
@@ -98,7 +91,6 @@ export const FONTS_CATALOG = [
   { name: 'Ruda', family: 'Ruda', category: 'Cyber & Sci-Fi', badge: 'Digital Engineering', value: "'Ruda', sans-serif" },
   { name: 'Monoton', family: 'Monoton', category: 'Cyber & Sci-Fi', badge: 'Laser Line Neon', value: "'Monoton', cursive" },
   { name: 'RocGrotesk', family: 'Syncopate', category: 'Cyber & Sci-Fi', badge: 'Ultra Wide Tech', value: "'Syncopate', sans-serif" },
-
   // ════════════════════════════════════════════════════════════════
   // 4. LUXURY & ROYAL SERIF (VIP, Crest, University, Dignitaries)
   // ════════════════════════════════════════════════════════════════
@@ -123,7 +115,6 @@ export const FONTS_CATALOG = [
   { name: 'Abril Fatface', family: 'Abril Fatface', category: 'Luxury Serif', badge: 'Heavy Title Serif', value: "'Abril Fatface', cursive" },
   { name: 'Cardo', family: 'Cardo', category: 'Luxury Serif', badge: 'Scholarly Medieval', value: "'Cardo', serif" },
   { name: 'Cinzel Decorative Bold', family: 'Cinzel Decorative', category: 'Luxury Serif', badge: 'Emblem Crest', value: "'Cinzel Decorative', serif" },
-
   // ════════════════════════════════════════════════════════════════
   // 5. CALLIGRAPHY & SIGNATURE SCRIPT (VIP Guest, Passes, Artistic)
   // ════════════════════════════════════════════════════════════════
@@ -151,7 +142,6 @@ export const FONTS_CATALOG = [
   { name: 'Reenie Beanie', family: 'Reenie Beanie', category: 'Calligraphy & Script', badge: 'Ballpoint Doodle', value: "'Reenie Beanie', cursive" },
   { name: 'Kalam', family: 'Kalam', category: 'Calligraphy & Script', badge: 'Natural Marker', value: "'Kalam', cursive" },
   { name: 'Nothing You Could Do', family: 'Nothing You Could Do', category: 'Calligraphy & Script', badge: 'Raw Signature', value: "'Nothing You Could Do', cursive" },
-
   // ════════════════════════════════════════════════════════════════
   // 6. TECH & MONOSPACE (Developers, Hackers, QR / Data Codes)
   // ════════════════════════════════════════════════════════════════
@@ -170,7 +160,6 @@ export const FONTS_CATALOG = [
   { name: 'Nova Mono', family: 'Nova Mono', category: 'Tech & Mono', badge: 'Cyber Matrix', value: "'Nova Mono', monospace" },
   { name: 'Red Hat Mono', family: 'Red Hat Mono', category: 'Tech & Mono', badge: 'Enterprise Linux', value: "'Red Hat Mono', monospace" },
   { name: 'Anonymous Pro', family: 'Anonymous Pro', category: 'Tech & Mono', badge: 'Console Hacker', value: "'Anonymous Pro', monospace" },
-
   // ════════════════════════════════════════════════════════════════
   // 7. RETRO, VINTAGE & CREATIVE (Thematic, Gaming, Street, Gothic)
   // ════════════════════════════════════════════════════════════════
@@ -194,31 +183,20 @@ export const FONTS_CATALOG = [
   { name: 'Eater', family: 'Eater', category: 'Retro & Funky', badge: 'Distressed Grunge', value: "'Eater', cursive" },
   { name: 'Nosifer', family: 'Nosifer', category: 'Retro & Funky', badge: 'Blood Dripping Metal', value: "'Nosifer', cursive" }
 ];
-
-/**
- * Cache of dynamically loaded fonts in document.head
- */
+// Cache of dynamically loaded fonts in document.head
 const loadedFontsMap = new Set();
-
-/**
- * Ensures a Google Font is fetched and loaded into the browser document
- * so HTML5 canvas ctx.font can draw it immediately.
- */
+// Ensures a Google Font is fetched and loaded into the browser document so HTML5 canvas ctx.font can draw it immediately.
 export const loadGoogleFontDynamically = (fontFamilyName) => {
   if (!fontFamilyName || typeof window === 'undefined') return;
-
   // Extract clean font family name (e.g. "'Press Start 2P', cursive" -> "Press Start 2P")
   const match = fontFamilyName.match(/['"]?([^'",]+)['"]?/);
   const cleanName = match && match[1] ? match[1].trim() : fontFamilyName.trim();
-
   if (loadedFontsMap.has(cleanName)) return;
-
   const linkId = `google-font-${cleanName.replace(/\s+/g, '-').toLowerCase()}`;
   if (document.getElementById(linkId)) {
     loadedFontsMap.add(cleanName);
     return;
   }
-
   try {
     const link = document.createElement('link');
     link.id = linkId;
@@ -227,7 +205,6 @@ export const loadGoogleFontDynamically = (fontFamilyName) => {
     link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(cleanName).replace(/%20/g, '+')}:wght@400;600;700;800;900&display=swap`;
     document.head.appendChild(link);
     loadedFontsMap.add(cleanName);
-
     // Warm up font in document.fonts API
     if (document.fonts && document.fonts.load) {
       document.fonts.load(`16px "${cleanName}"`).catch(() => {});
