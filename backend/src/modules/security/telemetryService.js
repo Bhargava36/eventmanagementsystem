@@ -200,7 +200,26 @@ const getSystemHealth = () => {
         });
     });
 };
+
+/**
+ * Returns non-sensitive aggregate API latency (ms) and request success rate (%)
+ * for public platform telemetry displays.
+ */
+const getPublicPerformanceMetrics = () => {
+    const latencyStats = calculatePercentiles();
+    const medianLatencyMs = latencyStats.p50 > 0 ? latencyStats.p50 : latencyStats.avg;
+    const apiSuccessRate = totalRequestsTracked > 0
+        ? Number(Math.max(0, 100 - (totalErrorsTracked / totalRequestsTracked) * 100).toFixed(1))
+        : 100;
+
+    return {
+        medianLatencyMs,
+        apiSuccessRate
+    };
+};
+
 module.exports = {
     trackRequestMetric,
-    getSystemHealth
+    getSystemHealth,
+    getPublicPerformanceMetrics
 };

@@ -1,206 +1,269 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Minus, ArrowRight, MessageCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import gsap from 'gsap';
+"use client";
+
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { ArrowUpRight, HelpCircle, Mail } from "lucide-react";
 
 const FAQS = [
   {
-    q: 'Who is eligible to participate in AYOJAN competitions?',
-    a: 'AYOJAN events are open to students, developers, designers, and innovators globally. Each competition details whether participation is virtual (open globally online) or on-campus (in-person attendance).',
+    id: "eligibility",
+    num: "01",
+    q: "Who can participate in events hosted on AYOJAN?",
+    a: "AYOJAN lists hackathons, project expos, workshops, seminars, webinars, and alumni meets across on-campus, virtual, and hybrid formats. Open eligibility varies by each host chapter and is shown clearly on every public event page.",
+    linkLabel: "Browse open events",
+    linkHref: "/events",
   },
   {
-    q: 'Are events on AYOJAN completely free for students?',
-    a: 'Yes, 100%. All student registrations, squad submissions, and participation are free. We never charge entry fees to participate, access mentors, or receive bounty rewards.',
+    id: "solo-or-team",
+    num: "02",
+    q: "Can I register individually or form a team?",
+    a: "Both options are supported. Workshops, talks, and solo tracks accept individual sign-ups, while team competitions allow squad creation with shareable invite codes so teammates can join under one entry.",
+    linkLabel: "Create student account",
+    linkHref: "/user/register",
   },
   {
-    q: 'Can I register as an individual crafter without an existing team?',
-    a: 'Yes. Solo innovators can sign up and participate individually, or take advantage of squad codes and open squad listings on the event page to team up with fellow participants before competition starts.',
+    id: "qr-and-stays",
+    num: "03",
+    q: "How do digital ID passes, meals, and accommodation work?",
+    a: "Participants receive custom digital ID passes paired with verifiable QR verification for entry checkpoints. On physical events that enable catering or lodging, organizers also coordinate meal scan tracking and room assignments.",
+    linkLabel: "Verify an ID pass",
+    linkHref: "/verify-id",
   },
   {
-    q: 'How are meals, accommodation, and campus logistics handled?',
-    a: 'For physical on-campus events that offer meals and lodging, registered attendees receive automated Digital ID Passes, cafeteria food tokens, and hostel block room allocations within their dashboard.',
+    id: "jury-scoring",
+    num: "04",
+    q: "How does multi-round jury evaluation work?",
+    a: "Organizers set structured evaluation criteria per round and grant access to assigned evaluators through the Jury Portal. Evaluators score participating teams or exhibition booths directly before standings are published.",
+    linkLabel: "Jury evaluation portal",
+    linkHref: "/evaluator/login",
   },
   {
-    q: 'How does multi-round judging and prize disbursement work?',
-    a: 'Submissions are evaluated through structured judging rubrics across rounds. Winners are published on transparent leaderboards, and prize bounties are disbursed directly via bank transfer or verified credentials.',
+    id: "host-events",
+    num: "05",
+    q: "How can student chapters and colleges host events?",
+    a: "Institutional coordinators and club leads can register an organizer account to publish event pages, manage registrations, design custom ID passes, assign rooms or expo booths, and send targeted email broadcasts.",
+    linkLabel: "Register as organizer",
+    linkHref: "/admin/register",
   },
   {
-    q: 'How can universities and student chapters host events on AYOJAN?',
-    a: 'Colleges and clubs can register directly through our Organizer Portal. You gain access to manage registrations, assign mentors, review Git submissions, allocate lodging, and score participants.',
+    id: "policies-support",
+    num: "06",
+    q: "Where can I review event guidelines and privacy policies?",
+    a: "Platform terms, privacy notices, event guidelines, and official support desks are published openly so attendees, evaluators, and host institutions share clear expectations before registering.",
+    linkLabel: "Read platform policies",
+    linkHref: "/policies",
   },
 ];
 
 export default function HomeFaqSection() {
-  const [openIndex, setOpenIndex] = useState(0);
-  const supportCardRef = useRef(null);
-  const sectionRef = useRef(null);
-  const sidebarRef = useRef(null);
-  const faqListRef = useRef(null);
+  const reduceMotion = useReducedMotion();
+  const [openId, setOpenId] = useState("eligibility");
 
-  const toggle = (idx) => {
-    setOpenIndex(openIndex === idx ? null : idx);
+  const toggleItem = (id) => {
+    setOpenId((prev) => (prev === id ? null : id));
   };
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      if (sidebarRef.current) {
-        gsap.from(sidebarRef.current, {
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 85%',
-            toggleActions: 'play reverse play reverse',
-          },
-          y: 40,
-          opacity: 0,
-          filter: 'blur(8px)',
-          duration: 0.85,
-          ease: 'power3.out',
-        });
-      }
-
-      const items = faqListRef.current?.children;
-      if (items && items.length) {
-        gsap.from(items, {
-          scrollTrigger: {
-            trigger: faqListRef.current,
-            start: 'top 85%',
-            toggleActions: 'play reverse play reverse',
-          },
-          y: 35,
-          opacity: 0,
-          filter: 'blur(6px)',
-          duration: 0.75,
-          stagger: 0.08,
-          ease: 'power3.out',
-        });
-      }
-    }, sectionRef);
-
-    const card = supportCardRef.current;
-    if (!card) return () => ctx.revert();
-
-    const onEnter = () => gsap.to(card, { y: -4, borderColor: '#10b981', duration: 0.3, ease: 'power2.out' });
-    const onLeave = () => gsap.to(card, { y: 0, borderColor: 'var(--card-border, rgba(39, 39, 42, 1))', duration: 0.3, ease: 'power2.out' });
-
-    card.addEventListener('mouseenter', onEnter);
-    card.addEventListener('mouseleave', onLeave);
-
-    return () => {
-      ctx.revert();
-      card.removeEventListener('mouseenter', onEnter);
-      card.removeEventListener('mouseleave', onLeave);
-    };
-  }, []);
 
   return (
     <section
-      ref={sectionRef}
       id="faq"
-      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 w-full md:max-w-[80%] mx-auto scroll-mt-20"
+      className="relative w-full py-20 sm:py-28 bg-white dark:bg-black text-slate-900 dark:text-white border-t border-slate-200/70 dark:border-zinc-800/80 transition-colors duration-300 selection:bg-emerald-500 selection:text-white scroll-mt-20"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
-        {/* Left Column: Sticky Title & Support Box */}
-        <div ref={sidebarRef} className="lg:col-span-5 lg:sticky lg:top-28 space-y-6">
-          <div className="space-y-3">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
-              Frequently Asked Questions.
-            </h2>
-            <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 font-normal leading-relaxed">
-              Everything you need to know about squad creation, campus stays, evaluations, and hosting events.
-            </p>
-          </div>
-
-          <div
-            ref={supportCardRef}
-            className="p-6 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-4 shadow-sm transition-colors duration-200"
+      <div className="w-full md:max-w-[80%] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+          {/* LEFT COLUMN: Sticky Header & Viewfinder Support Desk */}
+          <motion.div
+            initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-5 lg:sticky lg:top-28 space-y-7"
           >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                <MessageCircle className="w-4 h-4" />
-              </div>
-              <h3 className="font-bold text-sm text-slate-900 dark:text-white">Have a specific question?</h3>
+            <div className="space-y-3.5">
+              
+
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-[1.12]">
+                Questions, <br />
+                <span className="font-heading italic text-emerald-600 dark:text-emerald-400">
+                  Answered Clearly.
+                </span>
+              </h2>
+
+              <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 font-normal leading-relaxed max-w-md">
+                Key operational details across event registrations, QR check-ins, jury rubrics, and hosting workflows.
+              </p>
             </div>
-            <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed font-normal">
-              Our organizers and developer community are ready to assist with squad formation, rulebooks, or accommodation queries.
-            </p>
-            <Link
-              to="/events"
-              className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors"
-            >
-              <span>Explore events & community</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
 
-        {/* Right Column: Accordions */}
-        <div ref={faqListRef} className="lg:col-span-7 divide-y divide-slate-200 dark:divide-zinc-800">
-          {FAQS.map((faq, idx) => {
-            const isOpen = openIndex === idx;
-            return (
-              <div
-                key={idx}
-                className="py-6 first:pt-0 last:pb-0 transition-colors"
-              >
-                <button
-                  type="button"
-                  onClick={() => toggle(idx)}
-                  className="w-full text-left flex items-start justify-between gap-4 group cursor-pointer focus:outline-none"
-                  aria-expanded={isOpen}
-                >
-                  <span
-                    className={`text-base sm:text-lg font-semibold transition-colors ${
-                      isOpen
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400'
-                    }`}
-                  >
-                    {faq.q}
-                  </span>
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                      isOpen
-                        ? 'bg-emerald-500/20 text-emerald-500 rotate-180'
-                        : 'bg-slate-100 dark:bg-zinc-900 text-slate-400 dark:text-zinc-500 group-hover:text-white'
-                    }`}
-                  >
-                    {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                  </div>
-                </button>
+            {/* Architectural Viewfinder Support Card */}
+            <div className="group/help rounded-[24px] border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950 p-6 space-y-4 hover:border-emerald-500/60 transition-colors duration-200">
+              <div className="flex items-center gap-3">
+                <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
+                  
+                  <HelpCircle
+                    strokeWidth={1.6}
+                    className="w-4 h-4 text-emerald-600 dark:text-emerald-400"
+                  />
+                </div>
 
-                <AnimatePresence initial={false}>
-                  {isOpen && (
-                    <motion.div
-                      key="content"
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{
-                        height: 'auto',
-                        opacity: 1,
-                        transition: {
-                          height: { duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] },
-                          opacity: { duration: 0.25, delay: 0.05 },
-                        },
-                      }}
-                      exit={{
-                        height: 0,
-                        opacity: 0,
-                        transition: {
-                          height: { duration: 0.25, ease: [0.04, 0.62, 0.23, 0.98] },
-                          opacity: { duration: 0.15 },
-                        },
-                      }}
-                      className="overflow-hidden"
-                    >
-                      <p className="pt-3 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 font-normal leading-relaxed">
-                        {faq.a}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                    Need direct assistance?
+                  </h3>
+                  
+                </div>
               </div>
-            );
-          })}
+
+              <p className="text-xs sm:text-[13px] text-slate-600 dark:text-zinc-400 leading-relaxed font-normal">
+                Reach the platform desk for institution onboarding, schedule clarifications, or participant access questions.
+              </p>
+
+              <div className="pt-2 border-t border-slate-200/80 dark:border-zinc-800/80 flex flex-wrap items-center justify-between gap-3">
+                <a
+                  href="mailto:support@ayojan.live"
+                  className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-700 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>support@ayojan.live</span>
+                </a>
+
+                <Link
+                  to="/events"
+                  className="group/ev inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors"
+                >
+                  <span>Browse Events</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover/ev:translate-x-0.5 motion-safe:group-hover/ev:-translate-y-0.5" />
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* RIGHT COLUMN: Indexed Architectural Question Cards */}
+          <div className="lg:col-span-7 space-y-3.5">
+            {FAQS.map((faq, idx) => {
+              const isOpen = openId === faq.id;
+              return (
+                <motion.div
+                  key={faq.id}
+                  initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{
+                    duration: 0.42,
+                    delay: reduceMotion ? 0 : idx * 0.04,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className={`rounded-2xl border transition-colors duration-200 ${
+                    isOpen
+                      ? "border-emerald-500/60 bg-slate-50/70 dark:bg-zinc-950"
+                      : "border-slate-200 dark:border-zinc-800 bg-white dark:bg-black hover:border-slate-300 dark:hover:border-zinc-700"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleItem(faq.id)}
+                    aria-expanded={isOpen}
+                    className="w-full text-left p-5 sm:p-6 flex items-center justify-between gap-4 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60 rounded-2xl group"
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      {/* Monospace Tabular Index Pill */}
+                      <span
+                        className={`w-8 h-8 rounded-xl border text-[11px] font-mono font-bold flex items-center justify-center shrink-0 transition-colors duration-200 ${
+                          isOpen
+                            ? "border-emerald-600 bg-emerald-600 text-white"
+                            : "border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-500 dark:text-zinc-400 group-hover:border-emerald-500/50 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+                        }`}
+                      >
+                        {faq.num}
+                      </span>
+
+                      <h3
+                        className={`text-base sm:text-[17px] font-semibold leading-snug transition-colors ${
+                          isOpen
+                            ? "text-slate-900 dark:text-white"
+                            : "text-slate-800 dark:text-zinc-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+                        }`}
+                      >
+                        {faq.q}
+                      </h3>
+                    </div>
+
+                    {/* Crisp Rotating Crosshair + / - Indicator */}
+                    <span
+                      className={`relative w-7 h-7 rounded-full border flex items-center justify-center shrink-0 transition-colors duration-200 ${
+                        isOpen
+                          ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                          : "border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-500 dark:text-zinc-400 group-hover:border-emerald-500/60 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <span className="w-3 h-[1.5px] bg-current rounded-full" />
+                      <span
+                        className={`absolute w-[1.5px] h-3 bg-current rounded-full motion-safe:transition-transform motion-safe:duration-250 ${
+                          isOpen ? "rotate-90 scale-y-0" : "rotate-0 scale-y-100"
+                        }`}
+                      />
+                    </span>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        key="answer"
+                        initial={
+                          reduceMotion
+                            ? { opacity: 1 }
+                            : { height: 0, opacity: 0 }
+                        }
+                        animate={{
+                          height: "auto",
+                          opacity: 1,
+                          transition: reduceMotion
+                            ? { duration: 0 }
+                            : {
+                                height: {
+                                  duration: 0.28,
+                                  ease: [0.22, 1, 0.36, 1],
+                                },
+                                opacity: { duration: 0.2, delay: 0.04 },
+                              },
+                        }}
+                        exit={
+                          reduceMotion
+                            ? { opacity: 0 }
+                            : {
+                                height: 0,
+                                opacity: 0,
+                                transition: {
+                                  height: {
+                                    duration: 0.22,
+                                    ease: [0.22, 1, 0.36, 1],
+                                  },
+                                  opacity: { duration: 0.14 },
+                                },
+                              }
+                        }
+                        className="overflow-hidden"
+                      >
+                        <div className="px-5 sm:px-6 pb-5 sm:pb-6 pl-[68px] sm:pl-[76px] space-y-3">
+                          <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed font-normal">
+                            {faq.a}
+                          </p>
+
+                          <Link
+                            to={faq.linkHref}
+                            className="group/flink inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors"
+                          >
+                            <span>{faq.linkLabel}</span>
+                            <ArrowUpRight className="w-3.5 h-3.5 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover/flink:translate-x-0.5 motion-safe:group-hover/flink:-translate-y-0.5" />
+                          </Link>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>

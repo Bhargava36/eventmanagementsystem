@@ -1,5 +1,6 @@
 const db = require('../../config/db');
 const cacheService = require('../../utils/cacheService');
+const telemetryService = require('../security/telemetryService');
 const getEventStatus = (StartDate, EndDate) => {
     const today = new Date();
     const startDate = new Date(StartDate);
@@ -483,23 +484,31 @@ const getAdminDashboardSummary = (eventId, callback) => {
             return callback(err, null);
         });
 };
+const parsePrizeAmount = (rawValue) => {
+    if (!rawValue) return 0;
+    const match = String(rawValue).replace(/,/g, '').match(/\d+(?:\.\d+)?/);
+    if (!match) return 0;
+    const num = parseFloat(match[0]);
+    return !isNaN(num) && num > 0 ? num : 0;
+};
+
 const getPublicPlatformStats = (callback) => {
-    const cacheKey = 'stats:public_platform';
+    const cacheKey = 'stats:public_platform_v3';
     const cached = cacheService.get(cacheKey);
     if (cached) {
         return callback(null, cached);
     }
+    const queryStart = Date.now();
     const query = `
         SELECT
             (SELECT COUNT(*) FROM events) AS eventCount,
-            (SELECT COUNT(*) FROM users) AS userCount,
+            (SELECT COUNT(*) FROM users WHERE RoleId = 3) AS userCount,
             (SELECT COUNT(*) FROM registered_teams) AS teamCount,
-            (SELECT COUNT(*) FROM registered_team_members) AS memberCount,
-            (SELECT COUNT(DISTINCT College) FROM (
+            (SELECT COUNT(DISTINCT LOWER(TRIM(College))) FROM (
                 SELECT College FROM users WHERE College IS NOT NULL AND TRIM(College) != ''
-                UNION
+                UNION ALL
                 SELECT College FROM registered_teams WHERE College IS NOT NULL AND TRIM(College) != ''
-                UNION
+                UNION ALL
                 SELECT MemberCollege AS College FROM registered_team_members WHERE MemberCollege IS NOT NULL AND TRIM(MemberCollege) != ''
             ) AS distinct_colleges) AS collegeCount,
             (SELECT ROUND(COALESCE((COUNT(CASE WHEN Rating >= 4 THEN 1 END) / NULLIF(COUNT(*), 0)) * 100, 98)) FROM (
@@ -517,20 +526,15 @@ const getPublicPlatformStats = (callback) => {
             let totalPrize = 0;
             if (!prizeErr && Array.isArray(prizeResults)) {
                 prizeResults.forEach(row => {
-                    let amount = 0;
-                    if (row.PrizeMoney) {
-                        const num = parseFloat(String(row.PrizeMoney).replace(/[^0-9.]/g, ''));
-                        if (!isNaN(num) && num > 0) amount = num;
-                    } else {
-                        const vNum = parseFloat(String(row.VirtualPrizeMoney || '').replace(/[^0-9.]/g, '')) || 0;
-                        const pNum = parseFloat(String(row.PhysicalPrizeMoney || '').replace(/[^0-9.]/g, '')) || 0;
-                        amount = vNum + pNum;
-                    }
+                    const directPrize = parsePrizeAmount(row.PrizeMoney);
+                    const amount = directPrize > 0
+                        ? directPrize
+                        : parsePrizeAmount(row.VirtualPrizeMoney) + parsePrizeAmount(row.PhysicalPrizeMoney);
                     totalPrize += amount;
                 });
             }
             const counts = countResults[0] || {};
-            const totalBuilders = (counts.userCount || 0) + (counts.memberCount || 0);
+            const registeredUsers = Number(counts.userCount || 0);
             let prizeFormatted = '₹0';
             if (totalPrize >= 10000000) {
                 prizeFormatted = `₹${(totalPrize / 10000000).toFixed(1)}Cr+`;
@@ -541,22 +545,28 @@ const getPublicPlatformStats = (callback) => {
             } else if (totalPrize > 0) {
                 prizeFormatted = `₹${totalPrize.toLocaleString()}+`;
             }
+            const dbQueryMs = Math.max(1, Date.now() - queryStart);
+            const perf = telemetryService.getPublicPerformanceMetrics();
+            const medianLatencyMs = perf.medianLatencyMs > 0 ? perf.medianLatencyMs : dbQueryMs;
             const statsData = {
                 eventsCount: Number(counts.eventCount || 0),
                 eventsFormatted: `${counts.eventCount || 0}+`,
-                buildersCount: totalBuilders,
-                buildersFormatted: totalBuilders > 0 ? `${totalBuilders}+` : '0+',
+                usersCount: registeredUsers,
+                buildersCount: registeredUsers,
+                buildersFormatted: registeredUsers > 0 ? `${registeredUsers}+` : '0+',
                 teamsCount: Number(counts.teamCount || 0),
                 teamsFormatted: `${counts.teamCount || 0}+`,
                 collegesCount: Number(counts.collegeCount || 0),
                 collegesFormatted: `${counts.collegeCount || 0}+`,
                 satisfactionRate: Number(counts.satisfactionRate || 98),
                 satisfactionFormatted: `${counts.satisfactionRate || 98}%`,
+                medianLatencyMs,
+                apiSuccessRate: perf.apiSuccessRate,
                 totalPrizeMoney: totalPrize,
                 prizesFormatted: prizeFormatted,
                 freeForStudents: '100%'
             };
-            cacheService.set(cacheKey, statsData, 300);
+            cacheService.set(cacheKey, statsData, 60);
             return callback(null, statsData);
         });
     });

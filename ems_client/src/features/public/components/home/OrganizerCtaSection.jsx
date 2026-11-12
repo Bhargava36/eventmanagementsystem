@@ -1,476 +1,433 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+
+import React, { useState, useEffect, useRef, useId } from "react";
 import { Link } from "react-router-dom";
-import { motion, useInView } from "framer-motion";
 import {
-  Check,
+  motion,
+  AnimatePresence,
+  LayoutGroup,
+  useReducedMotion,
+} from "framer-motion";
+import {
   ArrowRight,
+  ArrowUpRight,
   QrCode,
-  ScanLine,
-  Sliders,
-  Radio,
-  ShieldCheck,
-  Zap,
-  Building2,
-  Users2,
-  Clock,
-  Send,
-  Lock,
-  ChevronRight,
-  TrendingUp,
+  CalendarPlus,
+  Compass,
+  Scale,
+  Check,
 } from "lucide-react";
-import { API_BASE_URL } from "@/lib/api";
-export default function OrganizerCtaSection() {
-  const containerRef = useRef(null);
-  const isInView = useInView(containerRef, { once: false, margin: "-60px" });
-  // Mouse tracking for ambient laser glow
-  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
-  const handleMouseMove = (e) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setMousePos({ x, y });
-  };
-  // Station 1: Turnstile Gate Scan Simulator State
-  const [scanCount, setScanCount] = useState(148);
-  const [isScanning, setIsScanning] = useState(false);
-  const [recentPass, setRecentPass] = useState({
-    name: "Arjun Verma",
-    roll: "22A91A0582",
-    track: "AI & Neural Systems",
-    status: "PASS_VERIFIED",
-  });
-  const triggerScan = () => {
-    if (isScanning) return;
-    setIsScanning(true);
-    const mockNames = [
-      { name: "Sneha Reddy", roll: "22A91A05F4", track: "Fullstack Cloud" },
-      { name: "Rohit Nair", roll: "22A91A0512", track: "Cybersecurity" },
-      { name: "Pooja Sharma", roll: "22A91A0599", track: "FinTech & Web3" },
-      { name: "Kiran Kumar", roll: "22A91A0536", track: "Open Innovation" },
-    ];
-    const picked = mockNames[Math.floor(Math.random() * mockNames.length)];
-    setTimeout(() => {
-      setScanCount((prev) => prev + 1);
-      setRecentPass({ ...picked, status: "PASS_VERIFIED" });
-      setIsScanning(false);
-    }, 450);
-  };
-  // Station 2: Live Jury Rubric Interactive Sliders State
-  const [scores, setScores] = useState({
-    tech: 94,
-    ux: 90,
-    impact: 95,
-  });
-  const compositeScore = (
-    (scores.tech * 0.4 + scores.ux * 0.3 + scores.impact * 0.3)
-  ).toFixed(1);
-  // Station 3: Emergency Dispatch & Broadcast Simulator State
-  const [dispatchLog, setDispatchLog] = useState([
-    {
-      id: 1,
-      title: "Round 2 Shortlist Published",
-      time: "2m ago",
-      channel: "SMS + Push + Portal",
-    },
-    {
-      id: 2,
-      title: "Mentorship Lab 03 Doors Open",
-      time: "8m ago",
-      channel: "Digital Displays",
-    },
-    {
-      id: 3,
-      title: "Hostel Meal Tokens Activated",
-      time: "24m ago",
-      channel: "Turnstile Badge",
-    },
-  ]);
-  const [isBroadcasting, setIsBroadcasting] = useState(false);
-  const triggerBroadcast = () => {
-    if (isBroadcasting) return;
-    setIsBroadcasting(true);
-    setTimeout(() => {
-      setDispatchLog((prev) => [
-        {
-          id: Date.now(),
-          title: "Flash Notice: Jury Evaluation Commenced",
-          time: "Just now",
-          channel: "Omni-Channel Broadcast",
-        },
-        ...prev.slice(0, 2),
-      ]);
-      setIsBroadcasting(false);
-    }, 500);
-  };
-  // Database Stats
-  const [stats, setStats] = useState({
-    eventsCount: 6,
-    collegesCount: 4,
-    buildersCount: 44,
-  });
+
+const LAUNCH_TRACKS = [
+  {
+    id: "organizer",
+    num: "01",
+    tabLabel: "Host Event",
+    icon: CalendarPlus,
+    eyebrow: "FOR COLLEGES & ORGANIZERS",
+    serial: "GATE // ADMIN-HOST",
+    headline: "Launch Your Next Event",
+    accentWord: "From Concept to Crowds.",
+    summary:
+      "Configure event pages, accept solo or team entries, design QR participant badges, coordinate rooms and meals, and publish jury scores.",
+    features: [
+      "Registration portals",
+      "Custom QR badge builder",
+      "Room & meal rosters",
+      "Email broadcasts",
+    ],
+    stubTag: "ORGANIZER ENTRY",
+    ctaLabel: "Create Your Event",
+    ctaHref: "/admin/register",
+    secondaryLabel: "Organizer Portal Sign In",
+    secondaryHref: "/admin/login",
+  },
+  {
+    id: "participant",
+    num: "02",
+    tabLabel: "Participant",
+    icon: Compass,
+    eyebrow: "FOR STUDENTS & TEAMS",
+    serial: "GATE // BUILDER-PASS",
+    headline: "Step Into Open Arenas",
+    accentWord: "Build, Pitch & Compete.",
+    summary:
+      "Browse open hackathons, project expos, workshops, and alumni meets across virtual and on-campus tracks with one digital ID pass.",
+    features: [
+      "Solo & team enrollment",
+      "Shareable invite codes",
+      "Digital QR pass wallet",
+      "Track standings",
+    ],
+    stubTag: "PARTICIPANT ENTRY",
+    ctaLabel: "Explore Open Events",
+    ctaHref: "/events",
+    secondaryLabel: "Verify an ID Pass",
+    secondaryHref: "/verify-id",
+  },
+  {
+    id: "evaluator",
+    num: "03",
+    tabLabel: "Jury Portal",
+    icon: Scale,
+    eyebrow: "FOR JURY & EVALUATORS",
+    serial: "GATE // JURY-BENCH",
+    headline: "Evaluate Every Round",
+    accentWord: "Structured & Transparent.",
+    summary:
+      "Sign in to your dedicated evaluator desk, score assigned project teams or expo booths against organizer criteria, and lock round rankings.",
+    features: [
+      "Assigned round queues",
+      "Weighted rubric criteria",
+      "Project & booth lookup",
+      "Instant tally sync",
+    ],
+    stubTag: "EVALUATOR ENTRY",
+    ctaLabel: "Jury Sign In",
+    ctaHref: "/evaluator/login",
+    secondaryLabel: "Browse Open Events",
+    secondaryHref: "/events",
+  },
+];
+
+// Precision observed SVG die-cut shell so notched geometry matches fluid HTML height
+function CredentialSvgFrame({
+  containerRef,
+  side,
+  isVertical,
+  variant = "body",
+}) {
+  const [box, setBox] = useState({ w: 0, h: 0 });
+
   useEffect(() => {
-    let isMounted = true;
-    const fetchStats = async () => {
-      const endpoints = [
-        `${API_BASE_URL}/api/events/public-stats`,
-        "/api/events/public-stats",
-      ];
-      for (const url of endpoints) {
-        try {
-          const res = await fetch(url);
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.stats && isMounted) {
-              setStats({
-                eventsCount: Math.max(1, Number(data.stats.eventsCount || 6)),
-                collegesCount: Math.max(1, Number(data.stats.collegesCount || 4)),
-                buildersCount: Math.max(1, Number(data.stats.buildersCount || 44)),
-              });
-              return;
-            }
-          }
-        } catch {}
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      const w = Math.round(el.clientWidth);
+      const h = Math.round(el.clientHeight);
+      if (w > 0 && h > 0) {
+        setBox((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
       }
-    };
-    fetchStats();
-    return () => {
-      isMounted = false;
-    };
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [containerRef]);
+
+  if (box.w === 0 || box.h === 0) return null;
+
+  const { w, h } = box;
+  const r = 26;
+  const nr = 12;
+  let pathD = "";
+
+  if (!isVertical && side === "left") {
+    // Rounded left corners, notched right corners meeting the perforated seam
+    pathD = `M ${r} 1 L ${w - nr} 1 A ${nr - 1} ${nr - 1} 0 0 0 ${w - 1} ${nr} L ${
+      w - 1
+    } ${h - nr} A ${nr - 1} ${nr - 1} 0 0 0 ${w - nr} ${h - 1} L ${r} ${
+      h - 1
+    } A ${r - 1} ${r - 1} 0 0 1 1 ${h - r} L 1 ${r} A ${r - 1} ${r - 1} 0 0 1 ${r} 1 Z`;
+  } else if (!isVertical && side === "right") {
+    // Notched left corners meeting the perforated seam, rounded right corners
+    pathD = `M ${nr} 1 L ${w - r} 1 A ${r - 1} ${r - 1} 0 0 1 ${w - 1} ${r} L ${
+      w - 1
+    } ${h - r} A ${r - 1} ${r - 1} 0 0 1 ${w - r} ${h - 1} L ${nr} ${
+      h - 1
+    } A ${nr - 1} ${nr - 1} 0 0 0 1 ${h - nr} L 1 ${nr} A ${nr - 1} ${
+      nr - 1
+    } 0 0 0 ${nr} 1 Z`;
+  } else if (isVertical && side === "left") {
+    // Mobile top pass body: rounded top corners, notched bottom corners
+    pathD = `M ${r} 1 L ${w - r} 1 A ${r - 1} ${r - 1} 0 0 1 ${w - 1} ${r} L ${
+      w - 1
+    } ${h - nr} A ${nr - 1} ${nr - 1} 0 0 0 ${w - nr} ${h - 1} L ${nr} ${
+      h - 1
+    } A ${nr - 1} ${nr - 1} 0 0 0 1 ${h - nr} L 1 ${r} A ${r - 1} ${
+      r - 1
+    } 0 0 1 ${r} 1 Z`;
+  } else {
+    // Mobile bottom stub: notched top corners, rounded bottom corners
+    pathD = `M ${nr} 1 L ${w - nr} 1 A ${nr - 1} ${nr - 1} 0 0 0 ${w - 1} ${nr} L ${
+      w - 1
+    } ${h - r} A ${r - 1} ${r - 1} 0 0 1 ${w - r} ${h - 1} L ${r} ${
+      h - 1
+    } A ${r - 1} ${r - 1} 0 0 1 1 ${h - r} L 1 ${nr} A ${nr - 1} ${
+      nr - 1
+    } 0 0 0 ${nr} 1 Z`;
+  }
+
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      aria-hidden="true"
+    >
+      <path
+        d={pathD}
+        strokeWidth="1.25"
+        className={
+          variant === "stub"
+            ? "fill-emerald-600 dark:fill-emerald-600 stroke-emerald-500 dark:stroke-emerald-400/70"
+            : "fill-white dark:fill-black stroke-slate-200 dark:stroke-zinc-800"
+        }
+      />
+    </svg>
+  );
+}
+
+export default function OrganizerCtaSection() {
+  const layoutUid = useId();
+  const reduceMotion = useReducedMotion();
+  const bodyRef = useRef(null);
+  const stubRef = useRef(null);
+
+  const [activeId, setActiveId] = useState("organizer");
+  const [isStubActive, setIsStubActive] = useState(false);
+  const [isVertical, setIsVertical] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsVertical(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
+
+  const currentTrack =
+    LAUNCH_TRACKS.find((t) => t.id === activeId) || LAUNCH_TRACKS[0];
+
   return (
     <section
       id="command"
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-      className="relative w-full py-32 sm:py-32 overflow-hidden bg-white dark:bg-black text-slate-900 dark:text-white transition-colors duration-300"
+      className="relative w-full py-24 sm:py-32 bg-white dark:bg-black text-slate-900 dark:text-white border-t border-slate-200/70 dark:border-zinc-800/80 transition-colors duration-300 selection:bg-emerald-500 selection:text-white overflow-hidden scroll-mt-20"
     >
-      {/* ======================================================== */}
-      {/* 1. EDGE-TO-EDGE AMBIENT HORIZON & GLOWING MATRIX         */}
-      {/* ======================================================== */}
-      {/* Top 100% Width Laser Horizon Accent Line */}
-      {/* Interactive Cursor Spotlight (spans edge to edge across entire screen) */}
-      {/* Unused template component */}
-      {/* Subtle Perspective Cyber Grid Background */}
-      {/* Unused template component */}
-      {/* Ambient Radial Depth Lights */}
-      <div className="absolute top-1/4 -left-32 w-96 h-96 bg-emerald-500/15 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-1/3 -right-32 w-96 h-96 bg-teal-500/15 rounded-full blur-[140px] pointer-events-none" />
-      {/* ======================================================== */}
-      {/* 2. CENTER STAGE: MONUMENTAL CINEMATIC HERO CTA           */}
-      {/* ======================================================== */}
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-        {/* Grand Headline with Cinematic Blur Reveal */}
-        <motion.h2
-          initial={{ opacity: 0, y: 25, filter: 'blur(8px)' }}
-          animate={isInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
-          transition={{ duration: 0.75, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-[4rem] font-black tracking-tight leading-[1.08] text-slate-900 dark:text-white"
-        >
-          Scale Your Next Event <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-400 dark:from-emerald-400 dark:via-teal-300 dark:to-emerald-200">
-            From Concept to Crowds.
-          </span>
-        </motion.h2>
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-base sm:text-lg md:text-xl text-slate-600 dark:text-zinc-300 max-w-3xl mx-auto leading-relaxed font-normal"
-        >
-          The authoritative operating system engineered for university chapters, tech clubs, and enterprise hosts. Automate participant registrations, issue NFC-compatible gate passes, coordinate hostel lodging, and execute multi-round jury scoring on one unified bridge.
-        </motion.p>
-        {/* High-Impact Conversion Buttons */}
+  
+
+      <div className="relative z-10 w-full md:max-w-[80%] mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Minimalist Section Intro Cue */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-3"
-        >
-          <Link
-            to="/admin/register"
-            className="w-full sm:w-auto px-8 py-4 rounded-full bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm tracking-wide shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 flex items-center justify-center gap-2.5 group"
-          >
-            <span>Create Your Event</span>
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-          <Link
-            to="/admin/login"
-            className="w-full sm:w-auto px-8 py-4 rounded-full border border-slate-300 dark:border-white/20 bg-white/80 dark:bg-white/5 hover:bg-slate-200/70 dark:hover:bg-white/10 text-slate-800 dark:text-white font-semibold text-sm tracking-wide backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 shadow-sm"
-          >
-            Organizer Portal Sign In
-          </Link>
-        </motion.div>
-        {/* Key Operational Badges */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="flex flex-wrap items-center justify-center gap-6 pt-2 text-xs font-medium text-slate-600 dark:text-zinc-400"
-        >
-          <div className="flex items-center gap-1.5">
-            <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
-            <span>100% Free for Student Chapters</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
-            <span>Instant Digital ID Badge Generator</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Check className="w-4 h-4 text-emerald-500 stroke-[3]" />
-            <span>Zero-Variance Rubric Consensus</span>
-          </div>
-        </motion.div>
-      </div>
-      {/* ======================================================== */}
-      {/* 3. FULL-WIDTH PANORAMIC 3-STATION INTERACTIVE COCKPIT    */}
-      {/* ======================================================== */}
-      <div className="relative z-10  w-full md:max-w-[80%] mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20">
-        {/* Terminal Header Bar with Animated Node Status */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.3 }}
-          transition={{ duration: 0.6 }}
-          className="flex items-center justify-between pb-4 border-b border-slate-300 dark:border-white/10 mb-8"
+          viewport={{ once: true, amount: 0.25 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-2.5"
         >
-          <div className="flex items-center gap-3">
-            <div className="flex gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block" />
-              <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
-              <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
+          
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+            Ready When You Are.
+          </h2>
+        </motion.div>
+
+        {/* Two-Piece Tear-Off Boarding Credential Pass */}
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0, y: 22 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-5xl mx-auto flex flex-col md:flex-row items-stretch md:min-h-[410px]"
+        >
+          {/* PIECE 1: Left Credential Pass Body */}
+          <div
+            ref={bodyRef}
+            className="relative flex-1 min-w-0 flex"
+          >
+            <CredentialSvgFrame
+              containerRef={bodyRef}
+              side="left"
+              isVertical={isVertical}
+              variant="body"
+            />
+
+            <div className="relative z-10 w-full p-7 sm:p-10 lg:p-11 flex flex-col justify-between">
+              <div className="space-y-6">
+              {/* Role Gate Selector Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <LayoutGroup id={`cta-gate-${layoutUid}`}>
+                  <div className="inline-flex flex-wrap items-center gap-1 p-1 rounded-full border border-slate-200 dark:border-zinc-800 bg-slate-50/90 dark:bg-zinc-950">
+                    {LAUNCH_TRACKS.map((track) => {
+                      const IconComponent = track.icon;
+                      const isActive = track.id === activeId;
+                      return (
+                        <button
+                          key={track.id}
+                          type="button"
+                          onClick={() => setActiveId(track.id)}
+                          className={`relative inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                            isActive
+                              ? "text-white"
+                              : "text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white"
+                          }`}
+                        >
+                          {isActive && (
+                            <motion.span
+                              layoutId="cta-boarding-pill"
+                              transition={{
+                                type: "spring",
+                                stiffness: 360,
+                                damping: 30,
+                              }}
+                              className="absolute inset-0 rounded-full bg-emerald-600"
+                            />
+                          )}
+                          <IconComponent className="relative z-10 w-3.5 h-3.5 shrink-0" />
+                          <span className="relative z-10">{track.tabLabel}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </LayoutGroup>
+
+               
+              </div>
+
+              {/* Morphing Editorial Pass Details */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentTrack.id}
+                  initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduceMotion ? undefined : { opacity: 0, y: -10 }}
+                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                  className="space-y-4 pt-1"
+                >
+                  <p className="text-[11px] font-mono uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">
+                    {currentTrack.eyebrow}
+                  </p>
+
+                  <h3 className="text-2xl sm:text-3xl lg:text-[38px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.12]">
+                    {currentTrack.headline}{" "}
+                    <span className="font-heading italic font-bold text-emerald-600 dark:text-emerald-400 block sm:inline">
+                      {currentTrack.accentWord}
+                    </span>
+                  </h3>
+
+                  <p className="text-sm sm:text-[15px] text-slate-600 dark:text-zinc-400 leading-relaxed max-w-xl font-normal">
+                    {currentTrack.summary}
+                  </p>
+
+                  {/* Compact Feature Tags */}
+                  <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+                    {currentTrack.features.map((feat) => (
+                      <div
+                        key={feat}
+                        className="inline-flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-zinc-300"
+                      >
+                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 stroke-[2.5]" />
+                        <span>{feat}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
-            <span className="text-xs font-mono font-bold tracking-wider text-slate-500 dark:text-zinc-400 uppercase">
-              AYOJAN MISSION CONTROL // INTERACTIVE LAB
-            </span>
+
+            {/* Secondary Quick Route at Bottom of Pass Body */}
+              <div className="mt-8 pt-5 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-between gap-4">
+                <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500">
+                  PASS #{currentTrack.num} • AYOJAN ACCESS
+                </span>
+                <Link
+                  to={currentTrack.secondaryHref}
+                  className="group/sec inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+                >
+                  <span>{currentTrack.secondaryLabel}</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover/sec:translate-x-0.5 motion-safe:group-hover/sec:-translate-y-0.5" />
+                </Link>
+              </div>
+            </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span>SYSTEMS NOMINAL</span>
+
+          {/* Perforated Tear Seam Divider between Pass Body & Action Stub */}
+          <div
+            className="relative flex md:flex-col items-center justify-center px-4 md:px-0 py-0 md:py-4 shrink-0"
+            aria-hidden="true"
+          >
+            <span
+              className={`w-full h-px md:w-px md:h-full border-t md:border-t-0 md:border-l border-dashed transition-colors duration-200 ${
+                isStubActive
+                  ? "border-emerald-500 dark:border-emerald-400"
+                  : "border-slate-300 dark:border-zinc-700"
+              }`}
+            />
+          </div>
+
+          {/* PIECE 2: Stationary Hit Wrapper + Detachable Emerald Launch Stub */}
+          <div
+            onMouseEnter={() => setIsStubActive(true)}
+            onMouseLeave={() => setIsStubActive(false)}
+            onFocus={() => setIsStubActive(true)}
+            onBlur={() => setIsStubActive(false)}
+            className="relative w-full md:w-[290px] lg:w-[320px] shrink-0 flex"
+          >
+            <motion.div
+              ref={stubRef}
+              animate={
+                reduceMotion
+                  ? undefined
+                  : isStubActive
+                  ? isVertical
+                    ? { y: 14, rotate: 1.2, scale: 1.01 }
+                    : { x: 24, y: -6, rotate: 3.2, scale: 1.015 }
+                  : { x: 0, y: 0, rotate: 0, scale: 1 }
+              }
+              transition={{ type: "spring", stiffness: 260, damping: 20 }}
+              style={{ transformOrigin: isVertical ? "50% 0%" : "0% 50%" }}
+              className="relative w-full flex"
+            >
+              <CredentialSvgFrame
+                containerRef={stubRef}
+                side="right"
+                isVertical={isVertical}
+                variant="stub"
+              />
+
+              <Link
+                to={currentTrack.ctaHref}
+                className="group/stub relative z-10 h-full w-full p-7 sm:p-8 flex flex-row md:flex-col items-center md:items-stretch justify-between gap-6 text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 rounded-[26px]"
+              >
+              {/* Stub Top Meta + Viewfinder QR Token */}
+              <div className="flex md:w-full items-center justify-between gap-4">
+                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-emerald-100">
+                  {currentTrack.stubTag}
+                </span>
+                <div className="hidden sm:flex relative w-11 h-11 items-center justify-center shrink-0">
+                 
+                  <QrCode className="w-10 h-10 text-white/90" strokeWidth={1.5} />
+                </div>
+              </div>
+
+              {/* Stub Center Action Prompt */}
+              <div className="hidden md:block my-auto py-4 space-y-1.5">
+                <span className="block text-[11px] font-mono uppercase tracking-[0.16em] text-emerald-100/90">
+                  Tear To Launch
+                </span>
+                <p className="font-heading text-2xl font-bold leading-snug text-white">
+                  {currentTrack.ctaLabel}
+                </p>
+              </div>
+
+              {/* Tactile Slot-Roll Launch Pill */}
+              <div className="inline-flex items-center justify-between gap-3 px-5 py-3.5 rounded-full bg-white text-slate-900 font-semibold text-sm shadow-xs shrink-0 md:w-full">
+                <span className="inline-flex flex-col overflow-hidden h-[20px]">
+                  <span className="flex flex-col motion-safe:transition-transform motion-safe:duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:group-hover/stub:-translate-y-[20px]">
+                    <span className="h-[20px] leading-[20px] truncate">
+                      {currentTrack.ctaLabel}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="h-[20px] leading-[20px] text-emerald-600 truncate"
+                    >
+                      {currentTrack.ctaLabel}
+                    </span>
+                  </span>
+                </span>
+                <ArrowRight className="w-4 h-4 text-emerald-600 shrink-0 motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover/stub:translate-x-1" />
+              </div>
+            </Link>
+            </motion.div>
           </div>
         </motion.div>
-        {/* 3 Full-Width Side-by-Side Interactive Terminals */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-20 sm:gap-8">
-          {/* -------------------------------------------------------- */}
-          {/* TERMINAL 01: Turnstile Gate QR Scanner Simulation        */}
-          {/* -------------------------------------------------------- */}
-          <motion.div
-            initial={{ opacity: 0, y: 50, x: -30, filter: 'blur(8px)' }}
-            whileInView={{ opacity: 1, y: 0, x: 0, filter: 'blur(0px)' }}
-            viewport={{ once: false, amount: 0.2 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-2xl bg-white/95 dark:bg-[#070c14]/90 border border-slate-200 dark:border-white/10 p-6 shadow-xl backdrop-blur-md flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 transition-colors duration-300"
-          >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <ScanLine className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="font-bold text-sm text-slate-900 dark:text-white">
-                    Station 01: Turnstile Scanner
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
-                  GATE B-02
-                </span>
-              </div>
-              {/* Simulated ID Card with Laser Scanner */}
-              <div className="relative rounded-xl bg-slate-50 dark:bg-black/70 border border-slate-200 dark:border-white/10 p-4 overflow-hidden">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/10 text-[10px] font-mono text-slate-500 dark:text-zinc-400">
-                  <span>TOKEN ID #8921-AYO</span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                    {recentPass.status}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 py-3">
-                  <div className="relative w-16 h-16 rounded-lg bg-white dark:bg-zinc-900 border border-slate-300 dark:border-zinc-700 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
-                    <QrCode className="w-full h-full text-slate-800 dark:text-white opacity-85" />
-                    {/* Laser Scanner Beam */}
-                    <motion.div
-                      animate={{ y: [-24, 24] }}
-                      transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-                      className="absolute inset-x-0 h-0.5 bg-emerald-500 shadow-[0_0_8px_#10b981]"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="font-bold text-sm text-slate-900 dark:text-white">
-                      {recentPass.name}
-                    </div>
-                    <div className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
-                      {recentPass.roll}
-                    </div>
-                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded inline-block">
-                      {recentPass.track}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-white/10 text-[11px] font-mono text-slate-500 dark:text-zinc-400">
-                  <span>Throughput: 0.14s</span>
-                  <span className="font-bold text-slate-800 dark:text-white">
-                    {scanCount} Passed
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="pt-4 mt-2">
-              <button
-                onClick={triggerScan}
-                disabled={isScanning}
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide transition-all shadow-md shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                <Zap className="w-3.5 h-3.5" />
-                <span>{isScanning ? "Verifying Token..." : "Simulate Live Gate Check-in"}</span>
-              </button>
-            </div>
-          </motion.div>
-          {/* -------------------------------------------------------- */}
-          {/* TERMINAL 02: Interactive Jury Rubric Consensus Engine    */}
-          {/* -------------------------------------------------------- */}
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.94, filter: 'blur(8px)' }}
-            whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-            viewport={{ once: false, amount: 0.2 }}
-            transition={{ duration: 0.8, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-2xl bg-white/95 dark:bg-[#070c14]/90 border border-slate-200 dark:border-white/10 p-6 shadow-xl backdrop-blur-md flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 transition-colors duration-300"
-          >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sliders className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="font-bold text-sm text-slate-900 dark:text-white">
-                    Station 02: Jury Consensus
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-mono text-slate-500 dark:text-zinc-400 block">
-                    Composite
-                  </span>
-                  <span className="text-base font-mono font-black text-emerald-600 dark:text-emerald-400">
-                    {compositeScore}/100
-                  </span>
-                </div>
-              </div>
-              {/* Interactive Scoring Sliders */}
-              <div className="space-y-3 rounded-xl bg-slate-50 dark:bg-black/70 border border-slate-200 dark:border-white/10 p-4">
-                {/* Criterion 1: Technical Rigor */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-slate-700 dark:text-zinc-300">Technical Rigor (40%)</span>
-                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{scores.tech}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="50"
-                    max="100"
-                    value={scores.tech}
-                    onChange={(e) => setScores({ ...scores, tech: Number(e.target.value) })}
-                    className="w-full accent-emerald-500 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-lg cursor-pointer"
-                  />
-                </div>
-                {/* Criterion 2: Architecture & UX */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-slate-700 dark:text-zinc-300">Architecture &amp; UX (30%)</span>
-                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{scores.ux}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="50"
-                    max="100"
-                    value={scores.ux}
-                    onChange={(e) => setScores({ ...scores, ux: Number(e.target.value) })}
-                    className="w-full accent-teal-500 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-lg cursor-pointer"
-                  />
-                </div>
-                {/* Criterion 3: Practical Impact */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-slate-700 dark:text-zinc-300">Practical Feasibility (30%)</span>
-                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">{scores.impact}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="50"
-                    max="100"
-                    value={scores.impact}
-                    onChange={(e) => setScores({ ...scores, impact: Number(e.target.value) })}
-                    className="w-full accent-emerald-500 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-lg cursor-pointer"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="pt-4 mt-2 flex items-center justify-between text-[11px] font-mono text-slate-500 dark:text-zinc-400 border-t border-slate-200 dark:border-white/10">
-              <span className="flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-emerald-500" />
-                Blind Jury Sealed
-              </span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                Hash: #9A2C-VERIFIED
-              </span>
-            </div>
-          </motion.div>
-          {/* -------------------------------------------------------- */}
-          {/* TERMINAL 03: Omni-Channel Live Emergency Broadcast Dispatch */}
-          {/* -------------------------------------------------------- */}
-          <motion.div
-            initial={{ opacity: 0, y: 50, x: 30, filter: 'blur(8px)' }}
-            whileInView={{ opacity: 1, y: 0, x: 0, filter: 'blur(0px)' }}
-            viewport={{ once: false, amount: 0.2 }}
-            transition={{ duration: 0.8, delay: 0.34, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-2xl bg-white/95 dark:bg-[#070c14]/90 border border-slate-200 dark:border-white/10 p-6 shadow-xl backdrop-blur-md flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 transition-colors duration-300"
-          >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Radio className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="font-bold text-sm text-slate-900 dark:text-white">
-                    Station 03: Event Announcer
-                  </span>
-                </div>
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-              </div>
-              {/* Simulated Live Broadcast Queue */}
-              <div className="space-y-2.5 rounded-xl bg-slate-50 dark:bg-black/70 border border-slate-200 dark:border-white/10 p-3.5">
-                {dispatchLog.map((log) => (
-                  <div
-                    key={log.id}
-                    className="p-2.5 rounded-lg bg-white dark:bg-zinc-900/90 border border-slate-200/80 dark:border-white/5 space-y-1 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-semibold text-slate-900 dark:text-white truncate">
-                        {log.title}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-mono shrink-0 ml-2">
-                        {log.time}
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                      Target: {log.channel}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="pt-4 mt-2">
-              <button
-                onClick={triggerBroadcast}
-                disabled={isBroadcasting}
-                className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-black font-bold text-xs tracking-wide transition-all hover:bg-slate-800 dark:hover:bg-zinc-200 shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>{isBroadcasting ? "Transmitting..." : "Send Test Flash Broadcast"}</span>
-              </button>
-            </div>
-          </motion.div>
-        </div>
       </div>
-      {/* ======================================================== */}
-      {/* 4. EDGE-TO-EDGE 100% WIDTH CONTINUOUS TELEMETRY TICKER    */}
-      {/* ======================================================== */}
     </section>
   );
 }

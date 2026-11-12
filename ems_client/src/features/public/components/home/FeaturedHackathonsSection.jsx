@@ -1,296 +1,439 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Calendar,
+  Camera,
   Trophy,
   ArrowUpRight,
-  ArrowRight
+  ArrowRight,
+  MapPin,
+  Monitor,
+  Layers,
+  Code2,
+  Wrench,
+  Video,
+  Mic,
+  Presentation,
+  Users,
+  RefreshCw,
 } from 'lucide-react';
-import { getEventTypeInfo } from '../../../../lib/utils';
-// SteppedTabShape Separate fixed-geometry contour cap (top 60px) + body fill.
-const SteppedTabShape = ({ className = "" }) => (
-  <div className={`absolute inset-0 pointer-events-none ${className}`}>
-    {/* Stepped Contour Cap (Fixed 60px height) */}
+import {
+  getEventTypeInfo,
+  normalizeHackathonMode,
+} from '../../../../lib/utils';
+
+// Stepped folder-tab surface with subtle top contour stroke for clean light/dark separation
+const SteppedTabShape = () => (
+  <div className="absolute inset-0 pointer-events-none">
     <svg
       viewBox="0 0 360 60"
       preserveAspectRatio="none"
-      className="absolute inset-x-0 top-0 h-[60px] w-full fill-current"
+      className="absolute inset-x-0 top-0 h-[60px] w-full"
     >
       <path
         d="M 0 0
-            L 165 0
-            C 182 0, 192 10, 192 24
-            L 192 34
-            C 192 48, 202 58, 218 58
-            L 360 58
-            L 360 60
-            L 0 60
-            Z"
+           L 165 0
+           C 182 0, 192 10, 192 24
+           L 192 34
+           C 192 48, 202 58, 218 58
+           L 360 58
+           L 360 60
+           L 0 60
+           Z"
+        className="fill-white dark:fill-black"
+      />
+      <path
+        d="M 0 0.75
+           L 165 0.75
+           C 182 0.75, 192 10.75, 192 24
+           L 192 34
+           C 192 47.25, 202 57.25, 218 57.25
+           L 360 57.25"
+        fill="none"
+        className="stroke-slate-200 dark:stroke-zinc-800"
+        strokeWidth="1.25"
       />
     </svg>
-    {/* Solid Body Fill from y=58px to bottom */}
-    <div className="absolute inset-x-0 top-[58px] bottom-0 bg-current" />
+    <div className="absolute inset-x-0 top-[58px] bottom-0 bg-white dark:bg-black" />
   </div>
 );
+
+function getEventPosterUrl(posters) {
+  if (!posters) return null;
+  let url = null;
+  if (Array.isArray(posters) && posters.length > 0) {
+    url = typeof posters[0] === 'string' ? posters[0] : posters[0]?.url || null;
+  } else if (typeof posters === 'string') {
+    try {
+      const parsed = JSON.parse(posters);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        url = typeof parsed[0] === 'string' ? parsed[0] : parsed[0]?.url || null;
+      } else {
+        url = parsed;
+      }
+    } catch {
+      url = posters;
+    }
+  }
+  if (url && typeof url === 'string' && url.startsWith('/uploads')) {
+    return `${API_BASE_URL}${url}`;
+  }
+  return typeof url === 'string' && url.trim() ? url.trim() : null;
+}
+
+function formatDateRange(start, end) {
+  if (!start) return 'Schedule TBA';
+  try {
+    const startDate = new Date(start);
+    if (isNaN(startDate.getTime())) return 'Schedule TBA';
+    const s = startDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+    if (!end) return s;
+    const endDate = new Date(end);
+    if (isNaN(endDate.getTime())) return s;
+    const sameDay =
+      startDate.getFullYear() === endDate.getFullYear() &&
+      startDate.getMonth() === endDate.getMonth() &&
+      startDate.getDate() === endDate.getDate();
+    if (sameDay) return s;
+    const e = endDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+    return `${s} – ${e}`;
+  } catch {
+    return 'Schedule TBA';
+  }
+}
+
+function formatPrize(event) {
+  const raw = event?.PrizeMoney || event?.PhysicalPrizeMoney || event?.VirtualPrizeMoney;
+  if (!raw) return null;
+  const str = String(raw).trim();
+  const num = Number(str.replace(/[^0-9.-]+/g, ''));
+  if (!isNaN(num) && num > 0) return `₹${num.toLocaleString('en-IN')}`;
+  return str || null;
+}
+
+function resolveModeLabel(event) {
+  const raw = String(event?.HackathonMode || '').trim().toLowerCase();
+  if (raw === 'hybrid') return 'Hybrid';
+  const normalized = normalizeHackathonMode(event?.HackathonMode, event?.Location);
+  if (normalized === 'both') return 'Virtual & Physical';
+  if (normalized === 'virtual') return 'Virtual';
+  return 'On-Campus';
+}
+
+function getEventIcon(typeInfo) {
+  if (typeInfo.isWebinar) return Video;
+  if (typeInfo.isWorkshop) return Wrench;
+  if (typeInfo.isSeminar) return Mic;
+  if (typeInfo.isProjectExpo) return Presentation;
+  if (typeInfo.isAlumni) return Users;
+  if (typeInfo.isCodingContest) return Code2;
+  return Layers;
+}
+
+function getStatusRank(status) {
+  const s = String(status || '').toLowerCase();
+  if (s === 'ongoing') return 0;
+  if (s === 'upcoming') return 1;
+  return 2;
+}
+
 export default function FeaturedHackathonsSection() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [brokenImages, setBrokenImages] = useState({});
-  // Unified fallback events
-  const defaultEvents = [
-    {
-      Id: 'evt-1',
-      EventName: 'HackMatrix 2026: AI & Systems',
-      Description: 'Build high-throughput autonomous agents, edge computing rails, and real-time distributed pipelines.',
-      StartDate: '2026-10-09',
-      EndDate: '2026-10-11',
-      HackathonMode: 'Hybrid',
-      PrizeMoney: '₹2,50,000',
-      EventType: 'Hackathon',
-    },
-    {
-      Id: 'evt-2',
-      EventName: 'NextGen Web3 & Security Summit',
-      Description: 'Architect resilient smart contracts, decentralized privacy layers, and audited zero-knowledge protocols.',
-      StartDate: '2026-10-16',
-      EndDate: '2026-10-18',
-      HackathonMode: 'Virtual',
-      PrizeMoney: '₹1,50,000',
-      EventType: 'Hackathon',
-    },
-    {
-      Id: 'evt-3',
-      EventName: 'CloudNative Turnstile Hackathon',
-      Description: 'Scale zero-trust event infrastructure, biometric turnstiles, and sub-second attendance validation.',
-      StartDate: '2026-10-24',
-      EndDate: '2026-10-26',
-      HackathonMode: 'Physical',
-      PrizeMoney: '₹3,00,000',
-      EventType: 'Hackathon',
-    },
-  ];
-  useEffect(() => {
-    fetchFeaturedEvents();
+
+  const fetchEventsFromApi = useCallback(async () => {
+    const res = await fetch(`${API_BASE_URL}/api/events`);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.message || 'Unable to load events');
+    }
+    return Array.isArray(data?.events) ? data.events : [];
   }, []);
-  const fetchFeaturedEvents = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/events`);
-      const data = await res.json();
-      if (res.ok && data.events && data.events.length > 0) {
-        const loaded = data.events.slice(0, 3);
-        if (loaded.length < 3) {
-          setEvents([...loaded, ...defaultEvents.slice(loaded.length, 3)]);
-        } else {
-          setEvents(loaded);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchEventsFromApi()
+      .then((list) => {
+        if (!cancelled) {
+          setEvents(list);
+          setError(null);
         }
-      } else {
-        setEvents(defaultEvents);
-      }
-    } catch {
-      setEvents(defaultEvents);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err?.message || 'Unable to connect to events service');
+          setEvents([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchEventsFromApi]);
+
+  const handleRetry = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await fetchEventsFromApi();
+      setEvents(list);
+    } catch (err) {
+      setError(err?.message || 'Unable to connect to events service');
+      setEvents([]);
     } finally {
       setLoading(false);
     }
   };
-  const getEventPosterUrl = (posters) => {
-    if (!posters) return null;
-    let url = null;
-    if (Array.isArray(posters) && posters.length > 0) {
-      url = typeof posters[0] === 'string' ? posters[0] : posters[0]?.url || null;
-    } else if (typeof posters === 'string') {
-      try {
-        const parsed = JSON.parse(posters);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          url = typeof parsed[0] === 'string' ? parsed[0] : parsed[0]?.url || null;
-        } else {
-          url = parsed;
-        }
-      } catch {
-        url = posters;
-      }
-    }
-    if (url && typeof url === 'string' && url.startsWith('/uploads')) {
-      return `${API_BASE_URL}${url}`;
-    }
-    return url;
-  };
-  const formatDate = (start, end) => {
-    if (!start) return '09–11 OCT';
-    try {
-      const s = new Date(start).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-      if (!end) return s;
-      const e = new Date(end).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-      return `${s} – ${e}`;
-    } catch {
-      return 'Upcoming Dates';
-    }
-  };
+
+  const featuredEvents = useMemo(() => {
+    return [...events]
+      .sort((a, b) => {
+        const rankDiff = getStatusRank(a.EventStatus) - getStatusRank(b.EventStatus);
+        if (rankDiff !== 0) return rankDiff;
+        const timeA = new Date(a.StartDate || 0).getTime() || 0;
+        const timeB = new Date(b.StartDate || 0).getTime() || 0;
+        return getStatusRank(a.EventStatus) === 1 ? timeA - timeB : timeB - timeA;
+      })
+      .slice(0, 3);
+  }, [events]);
+
   return (
     <section
       id="arena"
-      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8  w-full md:max-w-[80%] mx-auto scroll-mt-20 selection:bg-emerald-500 selection:text-white"
+      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 w-full md:max-w-[80%] mx-auto scroll-mt-20 selection:bg-emerald-500 selection:text-white"
     >
-      {/* Section Header with Staggered Scroll Reveal */}
+      {/* Section Header */}
       <motion.div
-        initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
-        whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-        viewport={{ once: false, amount: 0.25 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-16"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.25 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 sm:mb-14"
       >
         <div className="space-y-3 max-w-2xl">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
             Flagship Events
           </h2>
           <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 font-normal leading-relaxed">
-            Curated high-stakes challenges designed for student squads, solo developers, and university chapters.
+            Upcoming and live collegiate competitions, project expos, workshops, and campus events.
           </p>
         </div>
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: false, amount: 0.25 }}
-          transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
+
+        <Link
+          to="/events"
+          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors self-start md:self-auto group shrink-0"
         >
-          <Link
-            to="/events"
-            className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors self-start md:self-auto group"
-          >
-            <span>Explore all competitions</span>
-            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-        </motion.div>
+          <span>Explore all events</span>
+          <ArrowRight className="w-4 h-4 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+        </Link>
       </motion.div>
-      {/* 3 Stepped Folder-Tab Cards with Cascading Scroll Reveals */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {events.map((event, idx) => {
-          const posterUrl = getEventPosterUrl(event.Posters);
-          const rawPrize = event.PrizeMoney || event.PhysicalPrizeMoney || event.VirtualPrizeMoney;
-          const prize = (() => {
-            if (!rawPrize) return '₹2,50,000';
-            const str = String(rawPrize).trim();
-            const num = Number(str.replace(/[^0-9.-]+/g, ''));
-            if (!isNaN(num) && num > 0) return `₹${num.toLocaleString('en-IN')}`;
-            return str.startsWith('₹') ? str : `₹${str}`;
-          })();
-          const cardNum = String(idx + 1).padStart(2, '0');
-          return (
-            <motion.div
-              key={event.Id || idx}
-              initial={{ opacity: 0, y: 55, scale: 0.94, filter: 'blur(8px)' }}
-              whileInView={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-              viewport={{ once: false, amount: 0.15 }}
-              transition={{
-                duration: 0.85,
-                delay: idx * 0.16,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              whileHover={{
-                y: -10,
-                transition: { type: "spring", stiffness: 380, damping: 22 }
-              }}
-              onClick={() => navigate(`/events/${event.Id}`)}
-              className="group relative rounded-[32px] overflow-hidden cursor-pointer bg-white dark:bg-black shadow-md hover:shadow-2xl transition-all duration-500 border border-black/10 dark:border-white/10 hover:border-black dark:hover:border-white h-[500px] select-none"
+
+      {/* Loading Skeletons matching the folder card height */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[1, 2, 3].map((slot) => (
+            <div
+              key={slot}
+              className="rounded-[28px] border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black h-[480px] p-6 flex flex-col justify-between animate-pulse"
             >
-              {/* TOP VISUAL LAYER (Clean - NO pills on image, Expanded Height ~ 300px) */}
-              <div className="absolute inset-x-0 top-0 h-[300px] w-full overflow-hidden bg-black">
-                {posterUrl && !brokenImages[event.Id || idx] ? (
-                  <div className="relative w-full h-full">
-                    <img
-                      src={posterUrl}
-                      alt={event.EventName}
-                      onError={() => setBrokenImages((prev) => ({ ...prev, [event.Id || idx]: true }))}
-                      className="w-full h-full object-cover transition-all duration-700 ease-[cubic-bezier(0.34,1.5,0.64,1)] group-hover:scale-112 group-hover:-translate-y-2 filter contrast-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  </div>
-                ) : (
-                  /* Unified AYOJAN Brand Theme Visual */
-                  <div className="relative w-full h-full bg-gradient-to-br from-emerald-950/40 via-zinc-900 to-black overflow-hidden flex items-center justify-center">
-                    {/* Background grid */}
-                    <div
-                      className="absolute inset-0 opacity-[0.15]"
-                      style={{
-                        backgroundImage: `
-                          linear-gradient(to right, rgba(16, 185, 129, 0.3) 1px, transparent 1px),
-                          linear-gradient(to bottom, rgba(16, 185, 129, 0.3) 1px, transparent 1px)
-                        `,
-                        backgroundSize: "28px 28px",
-                      }}
-                    />
-                    {/* 3D Liquid Chrome Sculpture - Tactile Spring Bounce on Hover */}
-                    <img
-                      src="/assets/chrome_sculpture_card.jpg"
-                      alt="AYOJAN Event Sculpture"
-                      className="w-full h-full object-cover filter contrast-110 brightness-[0.95] mix-blend-screen opacity-85 transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-118 group-hover:-translate-y-2 group-hover:brightness-110"
-                    />
-                    {/* Ambient Emerald Glow Beam with spring expand */}
-                    <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/25 rounded-full blur-3xl pointer-events-none transition-all duration-700 ease-[cubic-bezier(0.34,1.4,0.64,1)] group-hover:scale-125 group-hover:opacity-75" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-black via-transparent to-transparent opacity-80" />
-                  </div>
-                )}
+              <div className="h-36 rounded-2xl bg-slate-100 dark:bg-zinc-900" />
+              <div className="space-y-3 pt-4">
+                <div className="h-3.5 w-24 rounded bg-slate-200 dark:bg-zinc-800" />
+                <div className="h-7 w-4/5 rounded bg-slate-200 dark:bg-zinc-800" />
+                <div className="h-4 w-full rounded bg-slate-100 dark:bg-zinc-900" />
+                <div className="h-4 w-2/3 rounded bg-slate-100 dark:bg-zinc-900" />
               </div>
-              {/* STEPPED FOLDER TAB DRAWER */}
-              {/* Pinned to bottom-0! Resting height: h-[420px] (tab top at y=80px, text anchored at bottom). */}
-              <div
-                className="absolute inset-x-0 bottom-0 h-[420px] group-hover:h-[280px] z-20 flex flex-col justify-between text-white dark:text-black transition-all duration-600 ease-[cubic-bezier(0.34,1.25,0.64,1)] overflow-hidden"
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="rounded-[28px] border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-10 text-center space-y-3">
+          <p className="text-sm font-semibold text-slate-900 dark:text-white">
+            Could not load featured events
+          </p>
+          <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
+            {error}
+          </p>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry</span>
+          </button>
+        </div>
+      ) : featuredEvents.length === 0 ? (
+        <div className="rounded-[28px] border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-10 text-center space-y-4">
+          <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+            <Layers className="w-5 h-5" />
+          </div>
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              No Events Published Yet
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400">
+              Upcoming campus competitions, expos, workshops, and alumni meets published by organizers will appear here.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link
+              to="/events"
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors"
+            >
+              Browse Events
+            </Link>
+            <Link
+              to="/admin/login"
+              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-300 hover:border-emerald-500/50 text-xs font-semibold transition-colors"
+            >
+              Organizer Sign In
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {featuredEvents.map((event, idx) => {
+            const posterUrl = getEventPosterUrl(event.Posters);
+            const hasValidPoster = Boolean(posterUrl && !brokenImages[event.Id || idx]);
+            const prize = formatPrize(event);
+            const cardNum = String(idx + 1).padStart(2, '0');
+            const typeInfo = getEventTypeInfo(event.EventType);
+            const TypeIcon = getEventIcon(typeInfo);
+            const modeLabel = resolveModeLabel(event);
+            const isVirtualOnly = modeLabel === 'Virtual';
+
+            return (
+              <motion.article
+                key={event.Id || idx}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }}
+                transition={{
+                  duration: 0.55,
+                  delay: idx * 0.08,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                onClick={() => navigate(`/events/${event.Id}`)}
+                className="group relative rounded-[28px] overflow-hidden cursor-pointer bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 hover:border-emerald-500/60 dark:hover:border-emerald-500/50 shadow-sm hover:shadow-xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 h-[480px] select-none"
               >
-                {/* Stepped Tab SVG Path automatically adopting pure white / pure black */}
-                <SteppedTabShape />
-                {/* TAB HEADER (Big Number on Left + Clean Arrow ↗ on Right Shelf) */}
-                <div className="relative z-10 px-6 pt-2 flex items-start justify-between">
-                  {/* Big Stepped Number (01, 02, 03) with spring scale */}
-                  <div
-                    style={{ fontFamily: '"Space Grotesk", sans-serif' }}
-                    className="text-5xl sm:text-6xl font-black tracking-tight text-black dark:text-white select-none leading-none pt-1 transition-all duration-500 ease-[cubic-bezier(0.34,1.4,0.64,1)] group-hover:scale-105 origin-left group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
-                  >
-                    {cardNum}
-                  </div>
-                  <div className="pt-16 pr-1">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-black dark:text-white transition-all duration-500 ease-[cubic-bezier(0.34,1.5,0.64,1)] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:scale-115 group-hover:translate-x-1 group-hover:-translate-y-1">
-                      <ArrowUpRight className="w-6 h-6 stroke-[2.5]" />
+                {/* TOP VISUAL LAYER (Full-bleed poster or recessed architectural fallback behind stepped tab) */}
+                <div className="absolute inset-x-0 top-0 h-[275px] w-full overflow-hidden bg-slate-100 dark:bg-zinc-900/45">
+                  {hasValidPoster ? (
+                    <div className="relative w-full h-full">
+                      <img
+                        src={posterUrl}
+                        alt={event.EventName}
+                        onError={() =>
+                          setBrokenImages((prev) => ({ ...prev, [event.Id || idx]: true }))
+                        }
+                        className="w-full h-full object-cover object-center will-change-transform transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
                     </div>
-                  </div>
-                </div>
-                {/* BOTTOM CONTENT AREA: Title, Description & Telemetry anchored to the bottom */}
-                <div className="relative z-10 px-6 pb-6 pt-2 space-y-3">
-                  <div>
-                    <h3
-                      style={{ fontFamily: '"Space Grotesk", sans-serif' }}
-                      className="text-xl sm:text-2xl font-bold flex justify-between items-center tracking-tight text-black dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors"
-                    >
-                      {event.EventName}
-                        {/* <span className="text-xs bg-emerald-400/30 rounded-full px-3 py-1 border border-emerald-400 text-emerald-600 dark:text-neutral-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{event.HackathonMode || 'Hybrid'}</span> */}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2 leading-relaxed mt-1">
-                      {event.Description || 'Collaborate with world-class crafters to build verifiable solutions.'}
-                    </p>
-                  </div>
-                  {/* BOTTOM TELEMETRY STRIP (Date + Clean Mode Text + Prize) — Displays ONLY on Hover with spring expansion */}
-                  <div className="overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.34,1.25,0.64,1)] max-h-0 opacity-0 group-hover:max-h-16 group-hover:opacity-100">
-                    <div className="pt-3 border-t border-black/10 dark:border-white/10 flex items-center justify-between text-xs font-mono select-none">
-                      {/* Date */}
-                      <div className="flex items-center gap-1.5 text-black/70 dark:text-white/70">
-                        <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>{formatDate(event.StartDate, event.EndDate)}</span>
+                  ) : (
+                    /* Clean, theme-faithful fallback visual when no poster exists or image fails to load */
+                    <div className="relative w-full h-full bg-slate-50 dark:bg-zinc-900/50 flex flex-col justify-between p-6 pb-20 overflow-hidden">
+                      <div className="relative z-10 flex items-center justify-center gap-4 will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1">
+                        <div className="flex flex-col items-center justify-center shrink-0 text-emerald-600/50 dark:text-orange-400/50">
+                          <Camera className="w-28 h-25" />
+
+                          <p>No image Source Found</p>
+                        </div>
                       </div>
-                      {/* Prize */}
-                      <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
-                        <Trophy className="w-3.5 h-3.5" />
-                        <span>{prize}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* SLIDING STEPPED FOLDER TAB (GPU transform instead of height reflow for smooth slide) */}
+                <div className="absolute inset-x-0 top-[104px] h-[520px] z-20 will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-y-[96px]">
+                  <SteppedTabShape />
+
+                  {/* Stepped Shelf Header: Big Index on Left Tab + Arrow on Right Shelf */}
+                  <div className="relative z-10 px-6 pt-2 flex items-start justify-between">
+                    <div className="text-5xl font-bold tracking-tight text-slate-900 dark:text-white select-none leading-none pt-1 transition-colors duration-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                      {cardNum}
+                    </div>
+                    <div className="pt-[60px] pr-1">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-900 dark:text-white transition-all duration-300 ease-out group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
+                        <ArrowUpRight className="w-5 h-5 stroke-[2.25]" />
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+
+                {/* ANCHORED BOTTOM CONTENT AREA (Always readable, cleanly aligned, 1-line truncated heading) */}
+                <div className="relative z-30 h-full flex flex-col justify-end px-6 pb-6 pointer-events-none">
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      {/* Clean Metadata Line: Event Type + Format */}
+                      <div className="flex items-center justify-between gap-2 text-[11px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                        <span className="truncate">{typeInfo.label}</span>
+                        <span className="inline-flex items-center gap-1 text-slate-500 dark:text-zinc-400 shrink-0 normal-case">
+                          {isVirtualOnly ? (
+                            <Monitor className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <MapPin className="w-3 h-3 text-emerald-500" />
+                          )}
+                          <span>{modeLabel}</span>
+                        </span>
+                      </div>
+
+                      {/* Event Title — strictly single-line truncated for uniform rhythm */}
+                      <h3
+                        title={event.EventName}
+                        className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300 truncate leading-snug"
+                      >
+                        {event.EventName}
+                      </h3>
+
+                      {/* Concise Description — clamped to 2 lines */}
+                      {event.Description ? (
+                        <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 line-clamp-2 leading-relaxed min-h-[2.45rem]">
+                          {event.Description}
+                        </p>
+                      ) : (
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-500 line-clamp-2 leading-relaxed min-h-[2.45rem]">
+                          {event.Location ? `Hosted at ${event.Location}` : 'View schedule and participation guidelines.'}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Bottom Telemetry Row: Smooth GPU-friendly expand on hover */}
+                    <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]">
+                      <div className="overflow-hidden">
+                        <div className="pt-3 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs font-mono opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
+                          <div className="flex items-center gap-1.5 text-slate-600 dark:text-zinc-300 truncate">
+                            <Calendar className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            <span>{formatDateRange(event.StartDate, event.EndDate)}</span>
+                          </div>
+                          {prize ? (
+                            <div className="flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                              <Trophy className="w-3.5 h-3.5" />
+                              <span>{prize}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-500 dark:text-zinc-400 shrink-0">
+                              {event.EventStatus || 'Upcoming'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.article>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

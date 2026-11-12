@@ -5,13 +5,11 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import HeroSection from '../../../components/ui/HeroSection';
 import FeaturedHackathonsSection from '../components/home/FeaturedHackathonsSection';
 import HowItWorksSection from '../components/home/HowItWorksSection';
-import TechTracksBentoSection from '../components/home/TechTracksBentoSection';
 import LogisticsAutomationSection from '../components/home/LogisticsAutomationSection';
 import PlatformStatsSection from '../components/home/PlatformStatsSection';
 import OrganizerCtaSection from '../components/home/OrganizerCtaSection';
 import HomeFaqSection from '../components/home/HomeFaqSection';
 import PlatformTestimonialsSection from '../components/home/PlatformTestimonialsSection';
-import ParallaxStoryBackdrop from '../components/home/ParallaxStoryBackdrop';
 gsap.registerPlugin(ScrollTrigger);
 // HomePage Continuous storytelling landing page powered by Lenis smooth scrolling
 export default function HomePage() {
@@ -44,7 +42,7 @@ export default function HomePage() {
   return (
     <div className="relative bg-white dark:bg-black text-slate-900 dark:text-white transition-colors duration-300 selection:bg-emerald-500 selection:text-white overflow-hidden">
       {/* GSAP ScrollTrigger Parallax Ambient Depth Backdrop */}
-      <ParallaxStoryBackdrop />
+      {/* <ParallaxStoryBackdrop /> */}
       {/* 1. The Vision & Real-time Platform Scale */}
       <HeroSection />
       {/* 2. The Arena: Live & Upcoming Hackathons with Staggered ScrollReveal */}
