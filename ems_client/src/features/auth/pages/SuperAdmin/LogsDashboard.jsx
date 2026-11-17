@@ -1,24 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Terminal,
-  RefreshCw,
-  Download,
-  Search,
-  X,
-  ShieldAlert,
-  AlertTriangle,
-  Info,
-  Clock,
-  Copy,
-  Check,
-  Activity,
-  Layers,
-  CheckCircle,
-  Eye,
-  SlidersHorizontal,
-  Server
-} from 'lucide-react';
+import { Terminal, RefreshCw, Download, Search, X, ShieldAlert, AlertTriangle, Info, Clock, Copy, Check, Activity, Layers, CheckCircle } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import Pagination from '../../../../components/Molecules/Pagination';
 

@@ -1,22 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Building2,
-  GraduationCap,
-  Mail,
-  Plus,
-  Phone,
-  X,
-  Users,
-  Edit3,
-  Trash2,
-  Camera,
-  Upload,
-  ShieldCheck,
-  UserCheck,
-  Award
-} from "lucide-react";
+import { Building2, GraduationCap, Mail, Plus, Phone, X, Users, Edit3, Trash2, Camera, Upload, UserCheck } from "lucide-react";
 import useToast from '../../../../Hooks/useToast';
 const PRESET_ROLES = [
   "Faculty Convener",

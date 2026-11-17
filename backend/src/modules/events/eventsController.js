@@ -2,6 +2,7 @@ const eventsService = require('./eventsService');
 const { saveBase64File } = require('../../middleware/multer');
 const { broadcastEvent } = require('../../config/websocket');
 const { recordMutation } = require('../security/auditService');
+const { sanitizeEventForTrack, normalizeParticipationMode } = require('../../utils/modeHelper');
 const processPosters = (posters) => {
     if (!posters) return [];
     let list = [];
@@ -241,9 +242,20 @@ const getEventById = (req, res) => {
                 cachedEvents[idx] = { ...cachedEvents[idx], ...ev };
             }
         }
+        const requestedTrack = req.query.track ? normalizeParticipationMode(req.query.track) : null;
+        let finalEvent = ev;
+        if (requestedTrack) {
+            finalEvent = sanitizeEventForTrack(ev, requestedTrack);
+            if (Array.isArray(finalEvent.Themes)) {
+                finalEvent.Themes = finalEvent.Themes.filter(t => {
+                    const tTrack = (t.Track || 'General').toLowerCase();
+                    return tTrack === requestedTrack.toLowerCase() || tTrack === 'general';
+                });
+            }
+        }
         return res.status(200).json({
             message: 'Event fetched successfully',
-            event: ev
+            event: finalEvent
         });
     });
 };

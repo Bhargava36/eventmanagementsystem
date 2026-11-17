@@ -9,10 +9,10 @@ const { verifyCaptcha } = require("../../utils/captchaService");
 const { initiateLogin2FA } = require("../security/twoFactorService");
 const registerAdmin = (req, res) => {
     const { AdminName, Email, Password, Mobile, EventId } = req.body;
-    if (!AdminName || !Email || !EventId) {
-        return res.status(400).json({ message: "AdminName, Email and EventId are required" });
+    if (!AdminName || !Email) {
+        return res.status(400).json({ message: "AdminName and Email are required" });
     }
-    adminService.createAdmin(AdminName, Email, Password, Mobile, EventId, (err, result) => {
+    adminService.createAdmin(AdminName, Email, Password, Mobile, EventId || null, (err, result) => {
         if (err) {
             const statusCode = err.statusCode || 400;
             return res.status(statusCode).json({
@@ -172,6 +172,22 @@ const getAllAdmin = (req, res) => {
         return res.status(200).json({
             message: "Admins fetched successfully",
             events: result
+        });
+    });
+};
+const searchAdmins = (req, res) => {
+    const queryTerm = req.query.query || req.query.q || '';
+    const eventId = req.query.eventId || null;
+    adminService.searchAdmins(queryTerm, eventId, (err, admins) => {
+        if (err) {
+            return res.status(500).json({
+                message: "Failed to search admins",
+                error: err.message
+            });
+        }
+        return res.status(200).json({
+            message: "Admins searched successfully",
+            admins: admins || []
         });
     });
 };
@@ -350,6 +366,7 @@ module.exports = {
     registerAdmin,
     loginAdminController,
     getAllAdmin,
+    searchAdmins,
     getAdminById,
     getAdminByEventId,
     assignEventToAdmin,

@@ -1,40 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Trophy,
-  Award,
-  Medal,
-  Users,
-  CheckCircle2,
-  Clock,
-  Search,
-  Filter,
-  Download,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  Building2,
-  User,
-  Star,
-  FileText,
-  AlertCircle,
-  HelpCircle,
-  MapPin,
-  Laptop,
-  Check,
-  TrendingUp,
-  UserCheck,
-  UserX,
-  MessageSquare,
-  Layers,
-  ChevronRight,
-  ClipboardList,
-  Globe,
-  Lock,
-  Unlock,
-  Edit3
-} from 'lucide-react';
+import { Trophy, Award, Users, CheckCircle2, Clock, Search, Filter, Download, RefreshCw, ChevronDown, ChevronUp, Building2, User, UserCheck, ClipboardList, Globe, Lock, Unlock, Edit3 } from 'lucide-react';
 import { getTrackVisibility, isSoloTeamSize } from '../../../../lib/utils';
 import useTheme from '../../../../Hooks/useTheme';
 import useToast from '../../../../Hooks/useToast';
@@ -821,7 +788,7 @@ function AdminResultsPage({ track = 'Physical' }) {
             <div className="py-12 flex flex-col items-center justify-center text-slate-500 dark:text-gray-400 gap-3">
               <div
                 className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
-                style={{ borderColor: theme.border, borderTopColor: 'transparent' }}
+                style={{ borderRightColor: theme.border, borderBottomColor: theme.border, borderLeftColor: theme.border, borderTopColor: 'transparent' }}
               />
               <p className="text-xs">Loading evaluation results...</p>
             </div>

@@ -1,16 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  UserCheck,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Calendar,
-  Layers,
-  RefreshCw,
-  AlertCircle,
-  ShieldCheck,
-  Info
-} from 'lucide-react';
+import { UserCheck, CheckCircle2, XCircle, Clock, Calendar, RefreshCw, AlertCircle, Info } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 export default function ParticipantAttendanceView({
   eventId,

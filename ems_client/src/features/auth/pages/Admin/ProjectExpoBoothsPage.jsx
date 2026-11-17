@@ -5,25 +5,7 @@ import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
 import AppConfirmModal from '../../../../components/Molecules/AppConfirmModal';
 import Pagination from '../../../../components/Molecules/Pagination';
-import {
-  Building2,
-  Plus,
-  Search,
-  CheckCircle2,
-  Loader2,
-  Printer,
-  Trash2,
-  X,
-  MapPin,
-  Layers,
-  LayoutGrid,
-  List,
-  Users,
-  Sparkles,
-  AlertCircle,
-  FileText,
-  UserCheck
-} from 'lucide-react';
+import { Building2, Plus, Search, CheckCircle2, Loader2, Printer, Trash2, X, MapPin, LayoutGrid, List, Users, AlertCircle } from 'lucide-react';
 
 export default function ProjectExpoBoothsPage() {
   const toast = useToast();

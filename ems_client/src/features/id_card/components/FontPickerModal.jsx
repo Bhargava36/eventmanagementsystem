@@ -1,17 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-  X,
-  Search,
-  Type,
-  Check,
-  SlidersHorizontal,
-  Flame,
-  Crown,
-  Laptop,
-  PenTool,
-  Zap,
-  Tag
-} from 'lucide-react';
+import { X, Search, Type, Check } from 'lucide-react';
 import {
   FONTS_CATALOG,
   FONT_CATEGORIES,

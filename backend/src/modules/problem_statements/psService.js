@@ -2,30 +2,61 @@ const db = require('../../config/db');
 // ========================
 // ADMIN: CRUD Themes for an Event
 // ========================
-const getAllThemes = (eventId, callback) => {
-    const query = `
-        SELECT et.*,
-               COUNT(eps.Id) AS StatementCount
-        FROM event_themes et
-        LEFT JOIN event_problem_statements eps ON eps.EventId = et.EventId AND LOWER(eps.Theme) = LOWER(et.ThemeName)
-        WHERE et.EventId = ?
-        GROUP BY et.Id
-        ORDER BY et.DisplayOrder ASC, et.Id ASC
-    `;
-    db.query(query, [eventId], callback);
+const getAllThemes = (eventId, trackOrCallback, callbackArg) => {
+    const callback = typeof trackOrCallback === 'function' ? trackOrCallback : callbackArg;
+    const track = typeof trackOrCallback === 'string' ? trackOrCallback.trim() : null;
+
+    let query;
+    let params;
+
+    if (track && track.toLowerCase() !== 'all') {
+        const normalizedTrack = String(track).toLowerCase() === 'physical' ? 'Physical' : 'Virtual';
+        query = `
+            SELECT et.*,
+                   COUNT(eps.Id) AS StatementCount
+            FROM event_themes et
+            LEFT JOIN event_problem_statements eps ON eps.EventId = et.EventId 
+                AND LOWER(eps.Theme) = LOWER(et.ThemeName)
+                AND eps.Track = ?
+            WHERE et.EventId = ? 
+              AND et.Track = ?
+            GROUP BY et.Id
+            ORDER BY et.DisplayOrder ASC, et.Id ASC
+        `;
+        params = [normalizedTrack, eventId, normalizedTrack];
+    } else {
+        query = `
+            SELECT et.*,
+                   COUNT(eps.Id) AS StatementCount
+            FROM event_themes et
+            LEFT JOIN event_problem_statements eps ON eps.EventId = et.EventId AND LOWER(eps.Theme) = LOWER(et.ThemeName)
+            WHERE et.EventId = ?
+            GROUP BY et.Id
+            ORDER BY et.DisplayOrder ASC, et.Id ASC
+        `;
+        params = [eventId];
+    }
+    db.query(query, params, callback);
 };
 const createTheme = (eventId, data, callback) => {
-    const { ThemeName, Description, DisplayOrder, ImageUrl } = data;
-    const query = `INSERT INTO event_themes (EventId, ThemeName, Description, DisplayOrder, ImageUrl) VALUES (?, ?, ?, ?, ?)`;
-    db.query(query, [eventId, ThemeName, Description || '', DisplayOrder || 0, ImageUrl || null], (err, result) => {
+    const { ThemeName, Description, DisplayOrder, ImageUrl, Track } = data;
+    const trackVal = String(Track || '').toLowerCase() === 'physical' ? 'Physical' : 'Virtual';
+    const query = `INSERT INTO event_themes (EventId, ThemeName, Description, DisplayOrder, ImageUrl, Track) VALUES (?, ?, ?, ?, ?, ?)`;
+    db.query(query, [eventId, ThemeName, Description || '', DisplayOrder || 0, ImageUrl || null, trackVal], (err, result) => {
         if (err) return callback(err);
         callback(null, { id: result.insertId, message: 'Theme created successfully' });
     });
 };
 const updateTheme = (id, data, callback) => {
-    const { ThemeName, Description, DisplayOrder, ImageUrl } = data;
-    const query = `UPDATE event_themes SET ThemeName = ?, Description = ?, DisplayOrder = ?, ImageUrl = ? WHERE Id = ?`;
-    db.query(query, [ThemeName, Description || '', DisplayOrder || 0, ImageUrl || null, id], callback);
+    const { ThemeName, Description, DisplayOrder, ImageUrl, Track } = data;
+    if (Track !== undefined) {
+        const trackVal = String(Track || '').toLowerCase() === 'physical' ? 'Physical' : 'Virtual';
+        const query = `UPDATE event_themes SET ThemeName = ?, Description = ?, DisplayOrder = ?, ImageUrl = ?, Track = ? WHERE Id = ?`;
+        db.query(query, [ThemeName, Description || '', DisplayOrder || 0, ImageUrl || null, trackVal, id], callback);
+    } else {
+        const query = `UPDATE event_themes SET ThemeName = ?, Description = ?, DisplayOrder = ?, ImageUrl = ? WHERE Id = ?`;
+        db.query(query, [ThemeName, Description || '', DisplayOrder || 0, ImageUrl || null, id], callback);
+    }
 };
 const deleteTheme = (id, callback) => {
     db.query(`DELETE FROM event_themes WHERE Id = ?`, [id], callback);
@@ -33,37 +64,70 @@ const deleteTheme = (id, callback) => {
 // ========================
 // ADMIN: CRUD Problem Statements for an Event
 // ========================
-const getAllByEvent = (eventId, callback) => {
-    const query = `
-        SELECT eps.*,
-               COUNT(pss.Id) AS SelectedTeams
-        FROM event_problem_statements eps
-        LEFT JOIN problem_statement_selections pss ON pss.ProblemStatementId = eps.Id
-        WHERE eps.EventId = ?
-        GROUP BY eps.Id
-        ORDER BY eps.DisplayOrder ASC, eps.Id ASC
-    `;
-    db.query(query, [eventId], callback);
+const getAllByEvent = (eventId, trackOrCallback, callbackArg) => {
+    const callback = typeof trackOrCallback === 'function' ? trackOrCallback : callbackArg;
+    const track = typeof trackOrCallback === 'string' ? trackOrCallback.trim() : null;
+
+    let query;
+    let params;
+
+    if (track && track.toLowerCase() !== 'all') {
+        const normalizedTrack = String(track).toLowerCase() === 'physical' ? 'Physical' : 'Virtual';
+        query = `
+            SELECT eps.*,
+                   COUNT(pss.Id) AS SelectedTeams
+            FROM event_problem_statements eps
+            LEFT JOIN problem_statement_selections pss ON pss.ProblemStatementId = eps.Id
+            WHERE eps.EventId = ?
+              AND eps.Track = ?
+            GROUP BY eps.Id
+            ORDER BY eps.DisplayOrder ASC, eps.Id ASC
+        `;
+        params = [eventId, normalizedTrack];
+    } else {
+        query = `
+            SELECT eps.*,
+                   COUNT(pss.Id) AS SelectedTeams
+            FROM event_problem_statements eps
+            LEFT JOIN problem_statement_selections pss ON pss.ProblemStatementId = eps.Id
+            WHERE eps.EventId = ?
+            GROUP BY eps.Id
+            ORDER BY eps.DisplayOrder ASC, eps.Id ASC
+        `;
+        params = [eventId];
+    }
+    db.query(query, params, callback);
 };
 const createProblemStatement = (eventId, data, callback) => {
-    const { ProblemCode, Title, Description, Category, Theme, MaxTeams, DisplayOrder } = data;
+    const { ProblemCode, Title, Description, Category, Theme, MaxTeams, DisplayOrder, Track } = data;
+    const trackVal = String(Track || '').toLowerCase() === 'physical' ? 'Physical' : 'Virtual';
     const query = `
-        INSERT INTO event_problem_statements (EventId, ProblemCode, Title, Description, Category, Theme, MaxTeams, DisplayOrder)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO event_problem_statements (EventId, ProblemCode, Title, Description, Category, Theme, MaxTeams, DisplayOrder, Track)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    db.query(query, [eventId, ProblemCode, Title, Description || null, Category || null, Theme || null, MaxTeams || 5, DisplayOrder || 0], (err, result) => {
+    db.query(query, [eventId, ProblemCode, Title, Description || null, Category || null, Theme || null, MaxTeams || 5, DisplayOrder || 0, trackVal], (err, result) => {
         if (err) return callback(err);
         callback(null, { id: result.insertId, message: 'Problem statement created successfully' });
     });
 };
 const updateProblemStatement = (id, data, callback) => {
-    const { ProblemCode, Title, Description, Category, Theme, MaxTeams, DisplayOrder } = data;
-    const query = `
-        UPDATE event_problem_statements
-        SET ProblemCode = ?, Title = ?, Description = ?, Category = ?, Theme = ?, MaxTeams = ?, DisplayOrder = ?
-        WHERE Id = ?
-    `;
-    db.query(query, [ProblemCode, Title, Description || null, Category || null, Theme || null, MaxTeams || 5, DisplayOrder || 0, id], callback);
+    const { ProblemCode, Title, Description, Category, Theme, MaxTeams, DisplayOrder, Track } = data;
+    if (Track !== undefined) {
+        const trackVal = String(Track || '').toLowerCase() === 'physical' ? 'Physical' : 'Virtual';
+        const query = `
+            UPDATE event_problem_statements
+            SET ProblemCode = ?, Title = ?, Description = ?, Category = ?, Theme = ?, MaxTeams = ?, DisplayOrder = ?, Track = ?
+            WHERE Id = ?
+        `;
+        db.query(query, [ProblemCode, Title, Description || null, Category || null, Theme || null, MaxTeams || 5, DisplayOrder || 0, trackVal, id], callback);
+    } else {
+        const query = `
+            UPDATE event_problem_statements
+            SET ProblemCode = ?, Title = ?, Description = ?, Category = ?, Theme = ?, MaxTeams = ?, DisplayOrder = ?
+            WHERE Id = ?
+        `;
+        db.query(query, [ProblemCode, Title, Description || null, Category || null, Theme || null, MaxTeams || 5, DisplayOrder || 0, id], callback);
+    }
 };
 const deleteProblemStatement = (id, callback) => {
     db.query(`DELETE FROM event_problem_statements WHERE Id = ?`, [id], callback);
@@ -85,7 +149,7 @@ const setSelectionDeadline = (eventId, deadline, callback) => {
     if (deadline) {
         const d = new Date(deadline);
         if (!isNaN(d.getTime())) {
-            mysqlVal = d.toISOString().slice(0, 19).replace('T', ' ');
+            mysqlVal = d;
         }
     }
     db.query(`UPDATE events SET PSSelectionDeadline = ? WHERE Id = ?`, [mysqlVal, eventId], callback);
@@ -95,7 +159,7 @@ const setPhysicalSelectionDeadline = (eventId, deadline, callback) => {
     if (deadline) {
         const d = new Date(deadline);
         if (!isNaN(d.getTime())) {
-            mysqlVal = d.toISOString().slice(0, 19).replace('T', ' ');
+            mysqlVal = d;
         }
     }
     db.query(`UPDATE events SET PhysicalPSSelectionDeadline = ? WHERE Id = ?`, [mysqlVal, eventId], callback);
@@ -114,7 +178,22 @@ const getPublishStatus = (eventId, callback) => {
         [eventId],
         (err, rows) => {
             if (err) return callback(err);
-            callback(null, rows[0] || {});
+            const status = rows[0] || {};
+            const toIso = (val) => {
+                if (!val) return null;
+                if (val instanceof Date) return val.toISOString();
+                const s = String(val).trim();
+                if (s.endsWith('Z')) return s;
+                if (s.includes('T')) return s + 'Z';
+                return s.replace(' ', 'T') + 'Z';
+            };
+            if (status.PSSelectionDeadline) {
+                status.PSSelectionDeadline = toIso(status.PSSelectionDeadline);
+            }
+            if (status.PhysicalPSSelectionDeadline) {
+                status.PhysicalPSSelectionDeadline = toIso(status.PhysicalPSSelectionDeadline);
+            }
+            callback(null, status);
         }
     );
 };
@@ -142,20 +221,21 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
                  WHERE rt.Id = ?`,
                 [teamId],
                 (tErr, tRows) => {
+                    const isAdmin = userRole && String(userRole).toLowerCase() === 'admin';
                     const isPhysicalTeam = tRows && tRows.length > 0 && String(tRows[0].ParticipationMode || '').toLowerCase() === 'physical';
                     const isPhysicalOnlyEvent = String(ev.HackathonMode || '').toLowerCase() === 'physical';
                     // For physical team/event: check PhysicalPSPublished (or fallback to ProblemStatementsPublished)
                     const isPublished = (isPhysicalTeam || isPhysicalOnlyEvent)
                         ? (Boolean(ev.PhysicalPSPublished) || Boolean(ev.ProblemStatementsPublished))
                         : Boolean(ev.ProblemStatementsPublished);
-                    if (!isPublished) {
+                    if (!isAdmin && !isPublished) {
                         return callback({ status: 400, message: 'Problem statements are not published yet by organizers.' });
                     }
                     // 2. Check deadline with timezone-safe UTC normalization
                     const activeDeadline = (isPhysicalTeam || isPhysicalOnlyEvent)
                         ? (ev.PhysicalPSSelectionDeadline || ev.PSSelectionDeadline)
                         : ev.PSSelectionDeadline;
-                    if (activeDeadline) {
+                    if (!isAdmin && activeDeadline) {
                         let deadlineMs = 0;
                         if (activeDeadline instanceof Date) {
                             deadlineMs = activeDeadline.getTime();
@@ -241,10 +321,12 @@ const selectProblemStatement = (eventId, teamId, problemStatementId, userId = nu
                 (selErr, selRows) => {
                     if (selErr) return callback(selErr);
                     if (selRows && selRows.length > 0) {
-                        return callback({
-                            status: 400,
-                            message: 'A problem statement has already been selected and locked. Only an event admin can modify or reassign your selection.'
-                        });
+                        // If the team has already selected this exact statement, return success
+                        if (Number(selRows[0].ProblemStatementId) === Number(problemStatementId)) {
+                            return callback(null, { message: 'Problem statement is already selected for your team.' });
+                        }
+                        // Team is switching to a different statement.
+                        // Since deadline has not expired (validated above in step 2), allow changing selection.
                     }
                     proceedWithSelection();
                 }
@@ -311,14 +393,24 @@ const getTeamSelection = (eventId, teamId, callback) => {
 // ========================
 // ADMIN: Auto-assign remaining teams
 // ========================
-const autoAssignRemainingTeams = (eventId, callback) => {
+const autoAssignRemainingTeams = (eventId, trackOrCallback, maybeCallback) => {
+    const callback = typeof trackOrCallback === 'function' ? trackOrCallback : maybeCallback;
+    const track = typeof trackOrCallback === 'string' ? trackOrCallback.toLowerCase().trim() : null;
+
+    let modeCondition = `(er.ParticipationMode IS NULL OR LOWER(er.ParticipationMode) IN ('virtual', 'physical', 'both', 'hybrid'))`;
+    if (track === 'physical') {
+        modeCondition = `(LOWER(er.ParticipationMode) = 'physical' OR LOWER(er.ParticipationMode) = 'both' OR LOWER(er.ParticipationMode) = 'hybrid')`;
+    } else if (track === 'virtual') {
+        modeCondition = `(er.ParticipationMode IS NULL OR LOWER(er.ParticipationMode) = 'virtual' OR LOWER(er.ParticipationMode) = 'both' OR LOWER(er.ParticipationMode) = 'hybrid')`;
+    }
+
     // 1. Get all teams for this event that haven't selected a PS yet
     const unselectedTeamsQuery = `
         SELECT t.Id AS TeamId, t.TeamName
         FROM registered_teams t
         LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
         WHERE t.EventId = ?
-          AND (er.ParticipationMode IS NULL OR LOWER(er.ParticipationMode) = 'virtual' OR LOWER(er.ParticipationMode) = 'both')
+          AND ${modeCondition}
           AND t.Id NOT IN (SELECT pss.TeamId FROM problem_statement_selections pss WHERE pss.EventId = ?)
     `;
     db.query(unselectedTeamsQuery, [eventId, eventId], (err, unselectedTeams) => {
@@ -429,31 +521,57 @@ const getParticipantStatementByTeam = (eventId, teamId, callback) => {
     });
 };
 const upsertParticipantStatement = (eventId, teamId, data, userId = null, callback = () => {}) => {
-    const { ThemeName, Category, Title, Description, TechStack } = data;
+    const { ThemeName, Category, Title, Description, TechStack, DocumentUrl, DocumentName } = data;
     if (!Title || !Title.trim()) {
         return callback({ status: 400, message: 'Problem Statement Title is required.' });
     }
     const query = `
         INSERT INTO participant_problem_statements
-            (EventId, TeamId, ThemeName, Category, Title, Description, TechStack, SubmittedByUserId, Status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Approved')
+            (EventId, TeamId, ThemeName, Category, Title, Description, TechStack, DocumentUrl, DocumentName, SubmittedByUserId, Status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Approved')
         ON DUPLICATE KEY UPDATE
             ThemeName = VALUES(ThemeName),
             Category = VALUES(Category),
             Title = VALUES(Title),
             Description = VALUES(Description),
             TechStack = VALUES(TechStack),
+            DocumentUrl = VALUES(DocumentUrl),
+            DocumentName = VALUES(DocumentName),
             SubmittedByUserId = COALESCE(VALUES(SubmittedByUserId), SubmittedByUserId),
             UpdatedAt = CURRENT_TIMESTAMP
     `;
     db.query(
         query,
-        [eventId, teamId, ThemeName || null, Category || 'Software', Title.trim(), Description ? Description.trim() : null, TechStack ? TechStack.trim() : null, userId || null],
+        [
+            eventId,
+            teamId,
+            ThemeName || null,
+            Category || 'Software',
+            Title.trim(),
+            Description ? Description.trim() : null,
+            TechStack ? TechStack.trim() : null,
+            DocumentUrl || null,
+            DocumentName || null,
+            userId || null
+        ],
         (err, result) => {
             if (err) return callback(err);
-            callback(null, { message: 'Problem statement saved successfully.', id: result.insertId || null });
+            callback(null, {
+                message: 'Problem statement saved successfully.',
+                id: result.insertId || null,
+                documentUrl: DocumentUrl || null,
+                documentName: DocumentName || null
+            });
         }
     );
+};
+const updatePhysicalPSMode = (eventId, mode, callback = () => {}) => {
+    const validModes = ['organizer_provided', 'participant_defined'];
+    const chosenMode = validModes.includes(mode) ? mode : 'organizer_provided';
+    db.query(`UPDATE events SET PhysicalPSMode = ? WHERE Id = ?`, [chosenMode, eventId], (err, result) => {
+        if (err) return callback(err);
+        callback(null, { mode: chosenMode });
+    });
 };
 const updateParticipantStatementStatus = (id, data, callback) => {
     const { Status, AdminRemarks } = data;
@@ -490,5 +608,6 @@ module.exports = {
     getParticipantStatementsByEvent,
     getParticipantStatementByTeam,
     upsertParticipantStatement,
-    updateParticipantStatementStatus
+    updateParticipantStatementStatus,
+    updatePhysicalPSMode
 };

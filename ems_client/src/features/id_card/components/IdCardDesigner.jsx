@@ -1,61 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { API_BASE_URL } from '@/lib/api';
-import {
-  IdCard,
-  Save,
-  Undo2,
-  Redo2,
-  Copy,
-  Trash2,
-  Type,
-  Square,
-  Circle,
-  Minus,
-  Image as ImageIcon,
-  QrCode,
-  LayoutGrid,
-  Download,
-  Eye,
-  EyeOff,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Shield,
-  Upload,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-  Plus,
-  Palette,
-  Check,
-  X,
-  Layers,
-  SlidersHorizontal,
-  Flame,
-  FileImage,
-  Lock,
-  Unlock,
-  Ratio,
-  Move,
-  Users,
-  Hash,
-  MapPin,
-  Target,
-  Code2,
-  Building2,
-  Award,
-  Calendar
-} from 'lucide-react';
+import { IdCard, Save, Undo2, Redo2, Copy, Trash2, Type, Square, Circle, Minus, Image as ImageIcon, QrCode, LayoutGrid, Download, Eye, EyeOff, ZoomIn, ZoomOut, Maximize2, Shield, Upload, ChevronLeft, ChevronRight, RefreshCw, Plus, Palette, Check, X, Layers, Flame, FileImage, Lock, Unlock, Ratio, Move, Users, Hash, MapPin, Target, Code2, Building2, Award } from 'lucide-react';
 import { renderCardSide } from '../services/idCardRenderer';
 import BulkGenerationModal from './BulkGenerationModal';
 import FontPickerModal from './FontPickerModal';
 import FigmaFontPicker from './FigmaFontPicker';
 import ThemeToggle from '@/components/Organisms/ThemeToggler';
-import {
-  FONTS_CATALOG,
-  FONT_CATEGORIES,
-  loadGoogleFontDynamically
-} from '../constants/fontsCatalog';
+import { FONTS_CATALOG, loadGoogleFontDynamically } from '../constants/fontsCatalog';
 const FONT_OPTIONS = FONTS_CATALOG;
 export const CARD_SIZES = [
   {

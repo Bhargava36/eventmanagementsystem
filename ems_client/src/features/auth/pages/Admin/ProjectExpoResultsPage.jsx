@@ -5,33 +5,7 @@ import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
 import AppConfirmModal from '../../../../components/Molecules/AppConfirmModal';
 import Pagination from '../../../../components/Molecules/Pagination';
-import {
-  Trophy,
-  Award,
-  Search,
-  CheckCircle2,
-  Users,
-  Building2,
-  Printer,
-  Loader2,
-  AlertTriangle,
-  X,
-  Medal,
-  ChevronDown,
-  ChevronUp,
-  Layers,
-  Send,
-  Eye,
-  EyeOff,
-  RefreshCw,
-  Sparkles,
-  Download,
-  Share2,
-  Clock,
-  ShieldCheck,
-  Check,
-  Lock
-} from 'lucide-react';
+import { Trophy, Award, Search, CheckCircle2, AlertTriangle, X, Medal, ChevronDown, ChevronUp, Layers, EyeOff, RefreshCw, Sparkles, Share2, Clock, Check, Lock } from 'lucide-react';
 
 export default function ProjectExpoResultsPage() {
   const toast = useToast();
@@ -411,7 +385,6 @@ export default function ProjectExpoResultsPage() {
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-emerald-500' : ''}`} />
             </button>
 
-            
             {isOverallPublished && (
               <button
                 type="button"
@@ -1169,7 +1142,7 @@ export default function ProjectExpoResultsPage() {
                           >
                             {/* Rank */}
                             <td className="py-4 px-4 text-center font-mono font-bold text-xs text-gray-500">
-                              {rankNum === 1 ? '🥇' : rankNum === 2 ? '🥈' : rankNum === 3 ? '🥉' : `#${rankNum}`}
+                              {rankNum === 1 ? '1st' : rankNum === 2 ? '2nd' : rankNum === 3 ? '3rd' : `#${rankNum}`}
                             </td>
 
                             {/* Exhibiting Team & Stall */}

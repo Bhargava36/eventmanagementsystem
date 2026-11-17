@@ -3,24 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  CalendarDays,
-  Mic,
-  Clock,
-  MapPin,
-  Plus,
-  Trash2,
-  Edit2,
-  ExternalLink,
-  Globe,
-  Building,
-  GraduationCap,
-  Save,
-  X,
-  AlertCircle,
-  CheckCircle2,
-  ChevronRight
-} from 'lucide-react';
+import { CalendarDays, Mic, Clock, MapPin, Plus, Trash2, Edit2, Globe, GraduationCap, Save, X } from 'lucide-react';
 export default function AlumniAgendaPage() {
   const navigate = useNavigate();
   const toast = useToast();

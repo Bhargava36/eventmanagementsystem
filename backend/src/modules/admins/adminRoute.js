@@ -8,6 +8,7 @@ router.post('/login', adminController.loginAdminController);
 router.post('/assign-event', adminController.assignEventToAdmin);
 router.post('/switch-event', adminController.switchEvent);
 router.delete('/:AdminId/event/:EventId', adminController.removeAdminFromEvent);
+router.get('/search', adminController.searchAdmins);
 router.get('/', adminController.getAllAdmin);
 router.get('/event/:EventId', adminController.getAdminByEventId);
 router.get('/:id', adminController.getAdminById);

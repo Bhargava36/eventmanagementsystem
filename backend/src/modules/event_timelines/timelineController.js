@@ -1,10 +1,11 @@
 const timelineService = require("./timelineService");
 const getTimelinesByEvent = (req, res) => {
     const eventId = req.params.eventId;
+    const track = req.query.track || null;
     if (!eventId) {
         return res.status(400).json({ message: "Event ID is required" });
     }
-    timelineService.getTimelinesByEvent(eventId, (err, timelines) => {
+    timelineService.getTimelinesByEvent(eventId, track, (err, timelines) => {
         if (err) {
             return res.status(500).json({ message: err.message });
         }

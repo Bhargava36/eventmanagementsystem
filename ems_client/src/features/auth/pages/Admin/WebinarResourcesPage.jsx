@@ -2,22 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  FileText,
-  Video,
-  Link as LinkIcon,
-  Plus,
-  Trash2,
-  ExternalLink,
-  Copy,
-  Check,
-  RefreshCw,
-  Search,
-  Radio,
-  Tv,
-  Presentation,
-  X
-} from 'lucide-react';
+import { FileText, Video, Link as LinkIcon, Plus, Trash2, ExternalLink, Copy, Check, RefreshCw, Search, Presentation, X } from 'lucide-react';
 const WEBINAR_RESOURCE_TYPES = [
   'Keynote Slide Deck (PDF / PPTX)',
   'Full Session Video Recording',

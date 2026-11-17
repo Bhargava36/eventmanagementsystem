@@ -1,20 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {
-  FileText,
-  ShieldAlert,
-  HeartHandshake,
-  Utensils,
-  BedDouble,
-  Award,
-  ArrowLeft,
-  Clock,
-  Mail,
-  CheckCircle2,
-  AlertOctagon,
-  Users
-} from 'lucide-react';
+import { FileText, ShieldAlert, HeartHandshake, Utensils, BedDouble, Award, ArrowLeft, Clock, AlertOctagon } from 'lucide-react';
 export default function PoliciesPage() {
   const lastUpdated = "October 26, 2026";
   const policies = [

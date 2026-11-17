@@ -2,56 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from '@/lib/api';
 import { motion } from "framer-motion";
-import {
-    Users,
-    UsersRound,
-    CalendarDays,
-    Clock,
-    Trophy,
-    AlertCircle,
-    Activity,
-    ClipboardList,
-    Plus,
-    X,
-    Trash2,
-    MapPin,
-    Timer,
-    CheckCircle2,
-    UserPlus,
-    FileText,
-    Globe,
-    Building2,
-    Layers,
-    Save,
-    Edit3,
-    Medal,
-    BookOpen,
-    GraduationCap,
-    CalendarCheck,
-    Presentation,
-    Video,
-    Radio,
-    Mic
-} from "lucide-react";
+import { Users, UsersRound, CalendarDays, Clock, Trophy, AlertCircle, Activity, ClipboardList, Plus, X, Trash2, MapPin, Timer, CheckCircle2, UserPlus, FileText, Globe, Building2, Save, Edit3, Medal, BookOpen, GraduationCap, CalendarCheck, Presentation, Video, Radio, Mic } from "lucide-react";
 import PrizePodiumStage from "../../../../components/Molecules/PrizePodiumStage";
-import { getTrackVisibility, getEventTypeInfo, isSoloTeamSize } from "../../../../lib/utils";
-function formatDate(date) {
-    if (!date) return "Not available";
-    return new Date(date).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-    });
-}
-function formatTime(date) {
-    if (!date) return "";
-    return new Date(date).toLocaleString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit"
-    });
-}
+import { getTrackVisibility, getEventTypeInfo, isSoloTeamSize, formatDate, formatTime } from "../../../../lib/utils";
+
 function AdminDashboard() {
     const navigate = useNavigate();
     const admin = JSON.parse(localStorage.getItem("admin") || "null");

@@ -1,24 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  ShieldAlert,
-  ShieldCheck,
-  AlertTriangle,
-  Lock,
-  Unlock,
-  Laptop,
-  Smartphone,
-  Tablet,
-  RefreshCw,
-  Search,
-  Filter,
-  CheckCircle,
-  XCircle,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  LogOut
-} from 'lucide-react';
+import { ShieldAlert, ShieldCheck, AlertTriangle, Lock, Unlock, Laptop, Smartphone, Tablet, RefreshCw, Search, Filter, CheckCircle, XCircle, Clock, X, LogOut } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
 import Pagination from '../../../../components/Molecules/Pagination';

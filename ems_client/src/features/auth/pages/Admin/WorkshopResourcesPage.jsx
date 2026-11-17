@@ -2,21 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  FileText,
-  FolderGit2,
-  Video,
-  Link as LinkIcon,
-  Plus,
-  Trash2,
-  ExternalLink,
-  Copy,
-  Check,
-  RefreshCw,
-  Search,
-  BookOpen,
-  X
-} from 'lucide-react';
+import { FileText, FolderGit2, Video, Plus, Trash2, ExternalLink, Copy, Check, RefreshCw, Search, BookOpen, X } from 'lucide-react';
 export default function WorkshopResourcesPage() {
   const toast = useToast();
   const admin = useMemo(() => {

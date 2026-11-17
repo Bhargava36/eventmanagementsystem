@@ -3,26 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  Building2,
-  Users,
-  Mic,
-  CalendarDays,
-  QrCode,
-  Send,
-  Camera,
-  CheckCircle2,
-  Clock,
-  ShieldCheck,
-  Save,
-  UserCheck,
-  HeartHandshake,
-  DollarSign,
-  Shirt,
-  MapPin,
-  ArrowRight,
-  Plus
-} from 'lucide-react';
+import { Building2, Users, CalendarDays, QrCode, Send, Camera, CheckCircle2, Clock, Save, UserCheck, HeartHandshake, DollarSign, Shirt, MapPin, ArrowRight, Plus } from 'lucide-react';
 const PRESET_BATCHES = [
   '2010', '2011', '2012', '2013', '2014', '2015',
   '2016', '2017', '2018', '2019', '2020', '2021',
@@ -327,7 +308,7 @@ export default function AlumniOverviewPage() {
                     }`}
                   >
                     Class of {batch}
-                    {isSelected && ' ✓'}
+                    {isSelected && ' '}
                   </button>
                 );
               })}

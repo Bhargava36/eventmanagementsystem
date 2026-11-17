@@ -19,7 +19,7 @@ const getTransporter = () => {
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
     if (!user || !pass) {
-        console.warn('⚠️ [SMTP Mailer] SMTP_USER or SMTP_PASS not set in .env. Emails will be logged to console.');
+        console.warn('[SMTP Mailer] SMTP_USER or SMTP_PASS not set in .env. Emails will be logged to console.');
     }
     const isGmail = host === 'smtp.gmail.com' || (user && user.endsWith('@gmail.com'));
     if (isGmail && user && pass) {
@@ -98,9 +98,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
     </body>
     </html>
     `;
-    console.log(`\n======================================================`);
-    console.log(`📧 [SMTP OTP DISPATCH] To: ${toEmail} | Code: ${otpCode}`);
-    console.log(`======================================================\n`);
+    console.log(`[SMTP OTP DISPATCH] To: ${toEmail} | Code: ${otpCode}`);
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
     if (!user || !pass) {
@@ -335,7 +333,7 @@ const sendEventBroadcastEmail = async ({
     </body>
     </html>
     `;
-    console.log(`📢 [BROADCAST EMAIL] To: ${toEmail} | Subject: "${subject}" [${category}]`);
+    console.log(`[BROADCAST EMAIL] To: ${toEmail} | Subject: "${subject}" [${category}]`);
     const user = process.env.SMTP_USER || process.env.EMAIL_USER;
     const pass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
     if (!user || !pass) {

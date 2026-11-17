@@ -1,18 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  MessageSquare,
-  ThumbsUp,
-  Send,
-  HelpCircle,
-  CheckCircle2,
-  Pin,
-  User,
-  Clock,
-  Filter,
-  Mic,
-  Share2
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { MessageSquare, ThumbsUp, Send, HelpCircle, CheckCircle2, Pin, Filter, Mic } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../../Hooks/useToast';
 export default function WebinarLiveQA({ eventId, user, speakers = [] }) {

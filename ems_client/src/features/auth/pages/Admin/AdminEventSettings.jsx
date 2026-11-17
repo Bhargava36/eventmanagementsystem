@@ -1,53 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Sliders,
-  Settings,
-  CheckCircle2,
-  AlertCircle,
-  Users,
-  Globe,
-  MapPin,
-  Calendar,
-  Clock,
-  Save,
-  RefreshCw,
-  Lock,
-  Unlock,
-  ShieldCheck,
-  Video,
-  Info,
-  ChevronRight,
-  Plus,
-  Trash2,
-  Edit2,
-  X,
-  Milestone,
-  Layers,
-  FileText,
-  Award,
-  Camera,
-  Building2,
-  User,
-  QrCode,
-  CreditCard,
-  IndianRupee,
-  Upload,
-  Loader2,
-  BedDouble,
-  Utensils,
-  Target,
-  Check,
-  Lightbulb,
-  Timer,
-  Eye,
-  EyeOff,
-  Palette,
-  Code,
-  Radio,
-  ExternalLink
-} from 'lucide-react';
+import { Sliders, Settings, CheckCircle2, AlertCircle, Users, Globe, MapPin, Calendar, Clock, Save, RefreshCw, Lock, Unlock, ShieldCheck, Video, Info, Plus, Trash2, Edit2, X, Milestone, Layers, FileText, Award, Camera, Building2, User, QrCode, CreditCard, IndianRupee, Upload, Loader2, BedDouble, Utensils, Target, Check, Lightbulb, Timer, Eye, EyeOff, Palette, Code, Radio, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';
 import useAuth from '../../../../Hooks/useAuth';
@@ -632,6 +586,40 @@ export default function AdminEventSettings() {
       toast.error('No event selected');
       return;
     }
+    if (key === 'FoodAndAccommodationEnabled') {
+      const currentVal = (settingsForm.AccommodationEnabled === 1 || settingsForm.FoodEnabled === 1) ? 1 : 0;
+      const newVal = currentVal === 1 ? 0 : 1;
+      setSettingsForm((prev) => ({
+        ...prev,
+        AccommodationEnabled: newVal,
+        FoodEnabled: newVal
+      }));
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/events/${targetEventId}/settings`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ AccommodationEnabled: newVal, FoodEnabled: newVal })
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || 'Failed to update facilities status');
+        }
+        const resData = await res.json();
+        if (resData.event) {
+          setEventData(resData.event);
+        }
+        toast.success(`Food & Accommodation ${newVal === 1 ? 'enabled' : 'disabled'}.`);
+      } catch (err) {
+        console.error(err);
+        setSettingsForm((prev) => ({
+          ...prev,
+          AccommodationEnabled: currentVal,
+          FoodEnabled: currentVal
+        }));
+        toast.error(err.message || 'Error updating facilities status');
+      }
+      return;
+    }
     const currentVal = settingsForm[key];
     const newVal = currentVal === 1 ? 0 : 1;
     // Immediately update local state
@@ -684,6 +672,30 @@ export default function AdminEventSettings() {
         [key]: currentVal
       }));
       toast.error(err.message || 'Error updating registration status');
+    }
+  };
+  const handleSwitchPhysicalPSMode = async (mode) => {
+    const targetEventId = selectedEventId ? Number(selectedEventId) : (adminEventId ? Number(adminEventId) : null);
+    if (!targetEventId) {
+      toast.error('Please select an event first');
+      return;
+    }
+    setSettingsForm((prev) => ({ ...prev, PhysicalPSMode: mode }));
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${targetEventId}/physical-mode`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to update problem statement format');
+      toast.success(
+        mode === 'organizer_provided'
+          ? 'Physical Track set to Organizer-Provided Challenges'
+          : 'Physical Track set to Participant-Submitted (Open Innovation)'
+      );
+    } catch (err) {
+      toast.error(err.message || 'Failed to update format');
     }
   };
   const handleInputChange = (e) => {
@@ -3833,7 +3845,7 @@ export default function AdminEventSettings() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <button
                             type="button"
-                            onClick={() => setSettingsForm((prev) => ({ ...prev, PhysicalPSMode: 'organizer_provided' }))}
+                            onClick={() => handleSwitchPhysicalPSMode('organizer_provided')}
                             className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
                               settingsForm.PhysicalPSMode === 'organizer_provided'
                                 ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-200 font-bold'
@@ -3853,7 +3865,7 @@ export default function AdminEventSettings() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setSettingsForm((prev) => ({ ...prev, PhysicalPSMode: 'participant_defined' }))}
+                            onClick={() => handleSwitchPhysicalPSMode('participant_defined')}
                             className={`p-3.5 rounded-2xl border text-left transition cursor-pointer ${
                               settingsForm.PhysicalPSMode === 'participant_defined'
                                 ? 'border-blue-600 bg-blue-50/50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-200 font-bold'
@@ -3900,7 +3912,7 @@ export default function AdminEventSettings() {
                                     : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
                                 }`}
                               >
-                                {settingsForm.PhysicalPSPublished === 1 ? 'Close & Unpublish Statements' : '🚀 Publish Statements Now at Event'}
+                                {settingsForm.PhysicalPSPublished === 1 ? 'Close & Unpublish Statements' : 'Publish Statements Now at Event'}
                               </button>
                             </div>
                             {/* Selection Deadline & Max Teams Row */}
@@ -3977,21 +3989,15 @@ export default function AdminEventSettings() {
                         Enable or disable hostel accommodation requests, meal token distribution, and ID card generation for on-campus participants.
                       </p>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-3 pt-1">
-                      {[
-                        ['AccommodationEnabled', 'Accommodation & Stay', 'Enables lodging requests and room allocations'],
-                        ['FoodEnabled', 'Food & Meal Selection', 'Enables meal token requests (Tiffin, Lunch, Dinner)'],
-                        ['IDCardEnabled', 'ID Card Generation', 'Allows approved participants to generate badges']
-                      ].map(([key, label, desc]) => {
-                        const enabled = settingsForm[key] === 1;
+                    <div className="grid gap-4 md:grid-cols-2 pt-1">
+                      {/* Unified Food & Accommodation Toggle */}
+                      {(() => {
+                        const enabled = settingsForm.AccommodationEnabled === 1 || settingsForm.FoodEnabled === 1;
                         return (
-                          <div
-                            key={key}
-                            className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-4"
-                          >
+                          <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-4">
                             <div>
-                              <p className="text-xs font-bold text-slate-900 dark:text-white">{label}</p>
-                              <p className="text-[11px] text-slate-400 mt-0.5">{desc}</p>
+                              <p className="text-xs font-bold text-slate-900 dark:text-white">Food &amp; Accommodation (Stay &amp; Meals)</p>
+                              <p className="text-[11px] text-slate-400 mt-0.5">Enables combined lodging requests, room allocations, and dining meal tokens</p>
                               <span className={`inline-block mt-2 text-[11px] font-bold ${
                                 enabled
                                   ? 'text-emerald-600 dark:text-emerald-400'
@@ -4004,8 +4010,8 @@ export default function AdminEventSettings() {
                               type="button"
                               role="switch"
                               aria-checked={enabled}
-                              aria-label={`Toggle ${label}`}
-                              onClick={() => handleToggle(key)}
+                              aria-label="Toggle Food & Accommodation"
+                              onClick={() => handleToggle('FoodAndAccommodationEnabled')}
                               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                                 enabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-zinc-800'
                               }`}
@@ -4019,9 +4025,46 @@ export default function AdminEventSettings() {
                             </button>
                           </div>
                         );
-                      })}
+                      })()}
+
+                      {/* ID Card Generation Toggle */}
+                      {(() => {
+                        const enabled = settingsForm.IDCardEnabled === 1;
+                        return (
+                          <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black p-4">
+                            <div>
+                              <p className="text-xs font-bold text-slate-900 dark:text-white">ID Card Generation</p>
+                              <p className="text-[11px] text-slate-400 mt-0.5">Allows approved participants to generate badges</p>
+                              <span className={`inline-block mt-2 text-[11px] font-bold ${
+                                enabled
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-slate-400 dark:text-zinc-500'
+                              }`}>
+                                • {enabled ? 'Enabled' : 'Disabled'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={enabled}
+                              aria-label="Toggle ID Card Generation"
+                              onClick={() => handleToggle('IDCardEnabled')}
+                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                enabled ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-zinc-800'
+                              }`}
+                            >
+                              <span
+                                aria-hidden="true"
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                  enabled ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
-                    {/* Facility Pricing & Payment Configuration (Shown when Food or Accommodation is enabled) */}
+                    {/* Facility Pricing & Payment Configuration (Shown when Food & Accommodation is enabled) */}
                     {(settingsForm.AccommodationEnabled === 1 || settingsForm.FoodEnabled === 1) && (
                       <div className="mt-4 pt-5 border-t border-slate-200/80 dark:border-zinc-800 space-y-5">
                         <div className="flex items-center justify-between">
@@ -4034,56 +4077,16 @@ export default function AdminEventSettings() {
                                 Food &amp; Accommodation Pricing &amp; Admin Payment Setup
                               </h4>
                               <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-                                Configure rates per person (per night / food included) and your payment collection details.
+                                Configure the single combined rate per person (including full stay &amp; food) and payment collection details.
                               </p>
                             </div>
                           </div>
                         </div>
-                        {/* Pricing Inputs */}
-                        <div className="grid gap-4 sm:grid-cols-3">
-                          {settingsForm.AccommodationEnabled === 1 && (
-                            <div className="space-y-1.5 p-3.5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800">
-                              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300">
-                                Accommodation Fee (₹ / person / night)
-                              </label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₹</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  name="AccommodationFee"
-                                  value={settingsForm.AccommodationFee}
-                                  onChange={handleInputChange}
-                                  placeholder="0.00"
-                                  className="w-full pl-7 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500"
-                                />
-                              </div>
-                              <p className="text-[10px] text-slate-400">Hostel room fee per night per attendee</p>
-                            </div>
-                          )}
-                          {settingsForm.FoodEnabled === 1 && (
-                            <div className="space-y-1.5 p-3.5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800">
-                              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300">
-                                Food &amp; Meals Fee (₹ / person / day)
-                              </label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₹</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  name="FoodFee"
-                                  value={settingsForm.FoodFee}
-                                  onChange={handleInputChange}
-                                  placeholder="0.00"
-                                  className="w-full pl-7 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white outline-none focus:border-emerald-500"
-                                />
-                              </div>
-                              <p className="text-[10px] text-slate-400">Daily food tokens package fee</p>
-                            </div>
-                          )}
+                        {/* Single Unified Pricing Input */}
+                        <div className="grid gap-4 sm:grid-cols-2">
                           <div className="space-y-1.5 p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/20">
                             <label className="block text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                              Total Package Fee (₹ / person)
+                              Food &amp; Accommodation Fee (₹ / person)
                             </label>
                             <div className="relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-emerald-600 dark:text-emerald-400">₹</span>
@@ -4092,16 +4095,24 @@ export default function AdminEventSettings() {
                                 min="0"
                                 name="FacilitiesPackageFee"
                                 value={
-                                  settingsForm.FacilitiesPackageFee !== undefined && settingsForm.FacilitiesPackageFee !== null && settingsForm.FacilitiesPackageFee !== 0
+                                  settingsForm.FacilitiesPackageFee !== undefined && settingsForm.FacilitiesPackageFee !== null && settingsForm.FacilitiesPackageFee !== ''
                                     ? settingsForm.FacilitiesPackageFee
-                                    : ((Number(settingsForm.AccommodationFee) || 0) + (Number(settingsForm.FoodFee) || 0))
+                                    : (((Number(settingsForm.AccommodationFee) || 0) + (Number(settingsForm.FoodFee) || 0)) || '')
                                 }
-                                onChange={handleInputChange}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSettingsForm((prev) => ({
+                                    ...prev,
+                                    FacilitiesPackageFee: val,
+                                    AccommodationFee: val,
+                                    FoodFee: 0
+                                  }));
+                                }}
                                 placeholder="0.00"
                                 className="w-full pl-7 pr-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-500/30 text-xs font-bold text-slate-900 dark:text-white outline-none focus:border-emerald-500"
                               />
                             </div>
-                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Total payable per member for full stay &amp; food</p>
+                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400">Single unified fee per attendee covering hostel stay and all dining meals</p>
                           </div>
                         </div>
                         {/* Admin Payment Collection Info */}

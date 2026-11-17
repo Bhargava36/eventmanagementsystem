@@ -1,21 +1,5 @@
 import React from 'react';
-import {
-  Layers,
-  Cpu,
-  Globe,
-  Radio,
-  ShieldCheck,
-  HeartPulse,
-  Coins,
-  Smartphone,
-  Zap,
-  Compass,
-  Code2,
-  Database,
-  Terminal,
-  Activity,
-  Bot
-} from 'lucide-react';
+import { Layers, Cpu, Globe, Radio, ShieldCheck, HeartPulse, Coins, Smartphone, Zap, Compass, Code2, Database } from 'lucide-react';
 // Intelligent icon resolver based on theme name / keywords.
 export const getThemeIcon = (name = '', desc = '') => {
   const text = `${name} ${desc}`.toLowerCase();

@@ -1,35 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { useParams, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import useTheme from '../../../Hooks/useTheme';
 import { getEventTheme, isSoloTeamSize } from '../../../lib/utils';
-import {
-  Users,
-  Award,
-  Calendar,
-  MapPin,
-  CheckCircle2,
-  Check,
-  Printer,
-  ExternalLink,
-  ShieldCheck,
-  Building2,
-  Cpu,
-  FileText,
-  AlertCircle,
-  ArrowLeft,
-  ChevronDown,
-  ChevronUp,
-  Trophy,
-  QrCode,
-  Tag,
-  Share2,
-  Mail,
-  Phone,
-  Crown
-} from 'lucide-react';
+import { Users, Award, Calendar, MapPin, CheckCircle2, Check, ShieldCheck, Building2, Cpu, FileText, AlertCircle, ArrowLeft, ChevronDown, ChevronUp, Trophy, QrCode, Tag, Share2, Mail, Phone, Crown } from 'lucide-react';
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {

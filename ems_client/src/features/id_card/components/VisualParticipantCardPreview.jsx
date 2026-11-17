@@ -1,13 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Download,
-  FileText,
-  Printer,
-  CheckCircle2,
-  X,
-  ShieldCheck,
-  RefreshCw
-} from 'lucide-react';
+import { Download, FileText, Printer, X, RefreshCw } from 'lucide-react';
 import { renderCardSideCanvas } from '../services/idCardRenderer';
 import {
   downloadSingleCardImage,

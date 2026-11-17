@@ -1,25 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  Building2,
-  Users,
-  Mic,
-  CalendarDays,
-  CalendarCheck,
-  QrCode,
-  FileText,
-  CheckCircle2,
-  ArrowRight,
-  RefreshCw,
-  MapPin,
-  Clock,
-  Sparkles,
-  ShieldCheck,
-  Save
-} from 'lucide-react';
+import { Building2, Users, Mic, CalendarDays, CalendarCheck, FileText, CheckCircle2, ArrowRight, RefreshCw, MapPin, Save } from 'lucide-react';
 export default function SeminarOverviewPage() {
   const navigate = useNavigate();
   const toast = useToast();

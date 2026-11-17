@@ -2,26 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  Calendar,
-  Clock,
-  Plus,
-  Trash2,
-  Edit2,
-  ExternalLink,
-  Video,
-  Radio,
-  User,
-  CheckCircle2,
-  RefreshCw,
-  Building,
-  ChevronRight,
-  X,
-  Presentation,
-  Link as LinkIcon,
-  Mic,
-  Tv
-} from 'lucide-react';
+import { Calendar, Clock, Plus, Trash2, Edit2, ExternalLink, Video, Radio, RefreshCw, X, Presentation, Link as LinkIcon, Mic } from 'lucide-react';
 export default function WebinarAgendaPage() {
   const toast = useToast();
   const admin = useMemo(() => {

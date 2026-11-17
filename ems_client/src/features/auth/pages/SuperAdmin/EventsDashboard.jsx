@@ -1,33 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
-import {
-  Calendar,
-  CheckCircle2,
-  Radio,
-  Clock,
-  Plus,
-  Eye,
-  ChevronDown,
-  X,
-  UploadCloud,
-  Image as ImageIcon,
-  Trash2,
-  Globe,
-  MapPin,
-  Layers,
-  Users,
-  User,
-  Trophy,
-  Palette,
-  Loader2,
-  Search,
-  Filter,
-  RotateCcw,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight
-} from 'lucide-react';
+import { Calendar, CheckCircle2, Radio, Clock, Plus, Eye, ChevronDown, X, UploadCloud, Trash2, Globe, MapPin, Layers, Users, User, Trophy, Palette, Loader2, Search, Filter, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import React, { useState, useEffect, useMemo } from 'react';
 import useToast from '../../../../Hooks/useToast';

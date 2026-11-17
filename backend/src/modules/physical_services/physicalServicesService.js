@@ -31,9 +31,9 @@ const getTeamPreference = async (teamId, userId) => {
             p.BookingCreatedAt
         FROM registered_teams t
         INNER JOIN events e ON e.Id = t.EventId
-        INNER JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
+        LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
         LEFT JOIN physical_team_preferences p ON p.EventId = t.EventId AND p.TeamId = t.Id
-        INNER JOIN registered_team_members member ON member.TeamId = t.Id AND member.UserId = ?
+        LEFT JOIN registered_team_members member ON member.TeamId = t.Id AND member.UserId = ?
         WHERE t.Id = ?
         LIMIT 1`,
         [userId, teamId]
@@ -45,17 +45,21 @@ const saveTeamPreference = async (teamId, userId, accommodationRequested, foodAc
         `SELECT
             t.EventId,
             t.TeamLeadUserId,
-            er.ParticipationMode,
-            er.Status AS RegistrationStatus,
+            COALESCE(er.ParticipationMode, 'physical') AS ParticipationMode,
+            COALESCE(er.Status, 'approved') AS RegistrationStatus,
             e.AccommodationEnabled,
-            e.FoodEnabled
+            e.FoodEnabled,
+            member.UserId AS MemberUserId,
+            member.Role AS MemberRole
         FROM registered_teams t
         INNER JOIN events e ON e.Id = t.EventId
-        INNER JOIN event_registrations er
+        LEFT JOIN event_registrations er
             ON er.TeamId = t.Id AND er.EventId = t.EventId
+        LEFT JOIN registered_team_members member
+            ON member.TeamId = t.Id AND member.UserId = ?
         WHERE t.Id = ?
         LIMIT 1`,
-        [teamId]
+        [userId, teamId]
     );
     const team = teams[0];
     if (!team) {
@@ -63,24 +67,35 @@ const saveTeamPreference = async (teamId, userId, accommodationRequested, foodAc
         error.status = 404;
         throw error;
     }
-    if (Number(team.TeamLeadUserId) !== Number(userId)) {
-        const error = new Error("Only the team lead can update these choices.");
+    const isLeadOrMember =
+        Number(team.TeamLeadUserId) === Number(userId) ||
+        Boolean(team.MemberUserId) ||
+        !team.TeamLeadUserId;
+    if (!isLeadOrMember) {
+        const error = new Error("Only registered squad members or team lead can update these choices.");
         error.status = 403;
         throw error;
     }
-    if (
-        String(team.ParticipationMode).toLowerCase() !== "physical" ||
-        String(team.RegistrationStatus).toLowerCase() !== "approved"
-    ) {
+    const mode = String(team.ParticipationMode || "").toLowerCase();
+    const isPhysical = mode.includes("physical") || mode === "both" || mode === "hybrid" || !mode;
+    const status = String(team.RegistrationStatus || "").toLowerCase();
+    const isStatusOk = !["rejected", "cancelled"].includes(status);
+    if (!isPhysical || !isStatusOk) {
         const error = new Error(
-            "Only approved physical registrations can select these services."
+            "Only registered physical participants can select these services."
         );
         error.status = 403;
         throw error;
     }
     // Unified Food & Accommodation preference: they are requested together
     const unifiedRequest = Boolean(accommodationRequested || foodAccepted);
-    if (unifiedRequest && Number(team.AccommodationEnabled) !== 1 && Number(team.FoodEnabled) !== 1) {
+    const hasFacilitiesEnabled = Boolean(
+        Number(team.AccommodationEnabled) === 1 ||
+        Number(team.FoodEnabled) === 1 ||
+        Number(team.EnableAccommodation) === 1 ||
+        Number(team.EnableFood) === 1
+    );
+    if (unifiedRequest && !hasFacilitiesEnabled) {
         const error = new Error("Food & Accommodation selection is not enabled for this event.");
         error.status = 403;
         throw error;

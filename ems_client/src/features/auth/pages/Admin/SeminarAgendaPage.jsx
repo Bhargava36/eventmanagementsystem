@@ -2,26 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  CalendarDays,
-  Calendar,
-  Clock,
-  Plus,
-  Trash2,
-  Edit2,
-  RefreshCw,
-  Building2,
-  User,
-  X,
-  MapPin,
-  Mic,
-  FileText,
-  ExternalLink,
-  Search,
-  Layers,
-  Award,
-  Sparkles
-} from 'lucide-react';
+import { CalendarDays, Calendar, Clock, Plus, Trash2, Edit2, RefreshCw, X, MapPin, Mic, FileText, ExternalLink, Search } from 'lucide-react';
 export default function SeminarAgendaPage() {
   const toast = useToast();
   const admin = useMemo(() => {

@@ -35,7 +35,8 @@ const deleteSpeaker = (req, res) => {
 // --- Sessions / Agenda ---
 const getSessions = (req, res) => {
     const { eventId } = req.params;
-    seminarServices.getSessions(eventId, (err, results) => {
+    const track = req.query.track || null;
+    seminarServices.getSessions(eventId, track, (err, results) => {
         if (err) return res.status(500).json({ message: 'Error fetching seminar agenda', error: err.message });
         res.status(200).json({ sessions: results || [] });
     });
@@ -106,7 +107,8 @@ const issueCertificate = (req, res) => {
 // --- Resources ---
 const getResources = (req, res) => {
     const { eventId } = req.params;
-    seminarServices.getResources(eventId, (err, results) => {
+    const track = req.query.track || null;
+    seminarServices.getResources(eventId, track, (err, results) => {
         if (err) return res.status(500).json({ message: 'Error fetching resources', error: err.message });
         res.status(200).json({ resources: results || [] });
     });

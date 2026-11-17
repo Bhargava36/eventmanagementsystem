@@ -110,7 +110,7 @@ const UserSidebarContent = ({
     <aside
       className={`relative ${
         isMobile ? 'w-[280px]' : collapsed ? 'w-[80px]' : 'w-[280px]'
-      } h-screen max-h-screen z-20 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
+      } h-screen max-h-screen z-20 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-3 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
     >
       {!isMobile && (
         <button
@@ -197,7 +197,7 @@ const UserSidebarContent = ({
                 {isCurrentActive && (
                   <motion.span
                     layoutId={isMobile ? 'user-tab-mobile' : 'user-tab-desktop'}
-                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-xl shadow-md z-0"
+                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-3xl  shadow-md z-0"
                     transition={{
                       type: 'spring',
                       stiffness: 350,

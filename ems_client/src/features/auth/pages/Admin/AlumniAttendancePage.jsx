@@ -3,25 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
 import { Html5Qrcode } from 'html5-qrcode';
-import {
-  QrCode,
-  Camera,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Search,
-  Users,
-  Utensils,
-  RefreshCw,
-  X,
-  Volume2,
-  VolumeX,
-  ShieldCheck,
-  Building,
-  GraduationCap,
-  HeartHandshake,
-  AlertCircle
-} from 'lucide-react';
+import { QrCode, Camera, CheckCircle2, XCircle, Clock, Search, Utensils, X, Volume2, VolumeX } from 'lucide-react';
 function playSuccessChime() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -467,7 +449,7 @@ export default function AlumniAttendancePage() {
                           <td className="p-4">
                             {isFoodClaimed ? (
                               <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                                • Claimed ✓
+                                • Claimed 
                               </span>
                             ) : (
                               <span className="text-slate-400 text-xs">• Unclaimed</span>

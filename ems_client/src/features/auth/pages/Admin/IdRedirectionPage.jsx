@@ -2,29 +2,10 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { API_BASE_URL } from '@/lib/api';
 import VisualParticipantCardPreview from "@/features/id_card/components/VisualParticipantCardPreview";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  IdCard,
-  ArrowLeft,
-  ArrowRight,
-  Users,
-  CheckCircle2,
-  Clock,
-  Search,
-  MapPin,
-  CalendarDays,
-  Eye,
-  X,
-  RefreshCw,
-  LogIn,
-  LogOut,
-  Scan,
-  ShieldCheck,
-  UserCheck,
-  RotateCcw,
-  Palette,
-} from "lucide-react";
+import { IdCard, ArrowLeft, Users, CheckCircle2, Clock, Search, MapPin, CalendarDays, Eye, RefreshCw, LogIn, LogOut, Scan, ShieldCheck, RotateCcw, Palette } from "lucide-react";
 import IdCardDesigner from "@/features/id_card/components/IdCardDesigner";
 import BulkGenerationModal from "@/features/id_card/components/BulkGenerationModal";
+import { formatDate, formatTime } from '@/lib/utils';
 const getAssignedEventId = () => {
   try {
     return String(JSON.parse(localStorage.getItem("admin") || "null")?.EventId || "");
@@ -74,28 +55,6 @@ const isGenerated = (participant) => {
   const cardId = getCardId(participant);
   const status = participant?.IdCardGenerated ?? participant?.idCardGenerated;
   return Boolean(cardId) || status === true || status === 1 || status === "1";
-};
-const formatDate = (value) => {
-  if (!value) return "Date not available";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return String(value);
-  }
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
-const formatTime = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
 };
 export default function IdRedirectionPage() {
   const navigate = useNavigate();

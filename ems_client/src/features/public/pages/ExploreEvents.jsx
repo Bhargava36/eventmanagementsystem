@@ -5,30 +5,8 @@ import { motion } from 'framer-motion';
 import WaveDots from '../../../components/Atoms/WaveDots';
 import useTheme from '../../../Hooks/useTheme';
 import ByteEmptyState from '../../../components/Molecules/ByteEmptyState';
-import {
-  Search,
-  Filter,
-  Calendar,
-  MapPin,
-  Users,
-  Trophy,
-  Eye,
-  ArrowRight,
-  Clock,
-  CheckCircle2,
-  Monitor,
-  Building2,
-  Tag,
-  X,
-  RefreshCw,
-  SlidersHorizontal,
-  AlertCircle,
-  Radio,
-  Layers,
-  Camera,
-  Image as ImageIcon
-} from 'lucide-react';
-import { getEventTypeInfo } from '../../../lib/utils';
+import { Search, Filter, Calendar, MapPin, Users, Trophy, Eye, ArrowRight, Clock, CheckCircle2, Monitor, Building2, X, RefreshCw, SlidersHorizontal, AlertCircle, Radio, Layers, Camera } from 'lucide-react';
+import { getEventTypeInfo, formatDate } from '../../../lib/utils';
 export const resolveEventMode = (ev) => {
   const raw = String(ev?.HackathonMode || '').trim().toLowerCase();
   // 1. Explicit HackathonMode from DB takes highest priority
@@ -179,20 +157,6 @@ function ExploreEvents() {
     const ongoing = events.filter((e) => (e.EventStatus || '').toLowerCase() === 'ongoing').length;
     return { total, virtual, physical, virtualAndPhysical, hybrid, ongoing };
   }, [events]);
-  const formatDate = (dateString) => {
-    if (!dateString) return 'TBA';
-    try {
-      const d = new Date(dateString);
-      if (isNaN(d.getTime())) return dateString;
-      return d.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-    } catch {
-      return dateString;
-    }
-  };
   const getEventPosterUrl = (posters) => {
     if (!posters) return null;
     let url = null;

@@ -1,63 +1,11 @@
-import {
-    ArrowLeft,
-    Users,
-    User,
-    UserCheck,
-    Trophy,
-    CalendarDays,
-    MapPin,
-    Building2,
-    Crown,
-    Mail,
-    ExternalLink,
-    BedDouble,
-    Utensils,
-    Save,
-    Award,
-    CheckCircle2,
-    Clock,
-    ChevronDown,
-    ChevronUp,
-    ShieldCheck,
-    Layers,
-    FileText,
-    QrCode,
-    Share2,
-    Copy,
-    Check,
-    Download,
-    Maximize2,
-    X,
-    CreditCard,
-    IndianRupee,
-    Upload,
-    AlertCircle,
-    Eye,
-    FileCheck,
-    Radio,
-    Video,
-    ArrowRight,
-    Code2,
-    Target,
-    GraduationCap,
-    BookOpen,
-    Laptop,
-    Presentation,
-    Mic,
-    MessageSquare,
-    CalendarPlus,
-    HelpCircle,
-    Send,
-    ThumbsUp,
-    Bell
-} from "lucide-react";
+import { ArrowLeft, Users, User, UserCheck, Trophy, CalendarDays, MapPin, Building2, Crown, Mail, ExternalLink, BedDouble, Utensils, Save, Award, Clock, ChevronDown, ChevronUp, Layers, FileText, QrCode, Copy, Check, Download, Maximize2, X, CreditCard, Upload, AlertCircle, Eye, Radio, Video, ArrowRight, Target, GraduationCap, BookOpen, Presentation, Mic, MessageSquare, CalendarPlus, HelpCircle, ArrowLeftRight } from "lucide-react";
 import { API_BASE_URL } from '@/lib/api';
 import { QRCodeSVG } from "qrcode.react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import useAuth from '../../../../Hooks/useAuth';
 import { useNavigate, useParams } from "react-router-dom";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { getEventTheme, getEventTypeInfo, isSoloTeamSize } from "../../../../lib/utils";
+import { getEventTheme, getEventTypeInfo, isSoloTeamSize, formatDate, resolveParticipantTrack } from "../../../../lib/utils";
 import useTheme from "../../../../Hooks/useTheme";
 import PhysicalHackathonThemesSection from "../../../../components/Molecules/PhysicalHackathonThemesSection";
 import PhysicalTeamPSActionCard from "../../../../components/Molecules/PhysicalTeamPSActionCard";
@@ -67,15 +15,9 @@ import SeminarDelegatePassCard from './components/SeminarDelegatePassCard';
 import AlumniDigitalPassCard from './components/AlumniDigitalPassCard';
 import ProjectExpoParticipantCard from './components/ProjectExpoParticipantCard';
 import ParticipantAttendanceView from './components/ParticipantAttendanceView';
+import EnlargedQrPassModal from './components/EnlargedQrPassModal';
+import DocumentPreviewModal from './components/DocumentPreviewModal';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../../../../lib/calendarUtils';
-function formatDate(date) {
-    if (!date) return "Not available";
-    return new Date(date).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-    });
-}
 function getInitial(name) {
     if (!name) return "?";
     return name.trim().charAt(0).toUpperCase();
@@ -152,6 +94,7 @@ function TeamInfo() {
     const [organizerStatements, setOrganizerStatements] = useState([]);
     const [participantStatement, setParticipantStatement] = useState(null);
     const [selectedStatement, setSelectedStatement] = useState(null);
+    const [eventPublishStatus, setEventPublishStatus] = useState(null);
     // Workshop Learning Hub state
     const [workshopSessions, setWorkshopSessions] = useState([]);
     const [workshopResources, setWorkshopResources] = useState([]);
@@ -249,16 +192,37 @@ function TeamInfo() {
             setCurrentUserId(userId);
             setError("");
             const targetTeam = data.team;
-            const isApprovedPhysical =
-                String(targetTeam.ParticipationMode || "").toLowerCase() === "physical" &&
-                String(targetTeam.RegistrationStatus || "").toLowerCase() === "approved";
+            const mode = String(targetTeam.ParticipationMode || targetTeam.HackathonMode || "").trim().toLowerCase();
+            const isPhysical = mode.includes("physical") || mode === "both" || mode === "hybrid" || String(targetTeam.HackathonMode || "").toLowerCase() === "physical" || !mode;
+            const regStatus = String(targetTeam.RegistrationStatus || "approved").trim().toLowerCase();
+            const isApprovedPhysical = isPhysical && !["rejected", "cancelled"].includes(regStatus);
             const isIndividualEvent = Boolean(
                 isSoloTeamSize(targetTeam.TeamSize) ||
                 isSoloTeamSize(targetTeam.EventTeamSize) ||
                 String(targetTeam.TeamName || "").toLowerCase().includes("(individual)")
             );
-            const isViewerLead = Number(targetTeam.TeamLeadUserId) === Number(userId);
-            const canViewServices = isViewerLead || (isIndividualEvent && (isViewerLead || (data.members || []).some(m => Number(m.UserId) === Number(userId))));
+            const isViewerLead = Number(targetTeam.TeamLeadUserId) === Number(userId) ||
+                                 (data.members || []).some(m => Number(m.UserId) === Number(userId) && String(m.Role || '').toLowerCase().includes('lead'));
+            const isMember = (data.members || []).some(m => Number(m.UserId) === Number(userId));
+            const canViewServices = isViewerLead || isMember || !userId || isIndividualEvent;
+
+            // Immediate fallback initialization from targetTeam event data
+            const initialAcc = Boolean(Number(targetTeam.AccommodationEnabled ?? targetTeam.accommodationEnabled ?? 0) === 1);
+            const initialFood = Boolean(Number(targetTeam.FoodEnabled ?? targetTeam.foodEnabled ?? 0) === 1);
+            if (initialAcc || initialFood) {
+                setServiceAvailability(prev => ({
+                    ...prev,
+                    accommodationEnabled: initialAcc,
+                    foodEnabled: initialFood,
+                    accommodationFee: Number(targetTeam.AccommodationFee || 0),
+                    foodFee: Number(targetTeam.FoodFee || 0),
+                    facilitiesPackageFee: Number(targetTeam.FacilitiesPackageFee || 0),
+                    adminUpiId: targetTeam.AdminUpiId || '',
+                    adminPaymentQr: targetTeam.AdminPaymentQr || '',
+                    adminPaymentInstructions: targetTeam.AdminPaymentInstructions || ''
+                }));
+            }
+
             // Fetch physical choices if applicable
             if (isApprovedPhysical && canViewServices && targetTeam.EventId) {
                 setServiceLoading(true);
@@ -271,14 +235,14 @@ function TeamInfo() {
                         const pref = servicesData.preference;
                         const ev = servicesData.event || {};
                         setServiceAvailability({
-                            accommodationEnabled: Boolean(ev.accommodationEnabled),
-                            foodEnabled: Boolean(ev.foodEnabled),
-                            accommodationFee: Number(ev.accommodationFee || 0),
-                            foodFee: Number(ev.foodFee || 0),
-                            facilitiesPackageFee: Number(ev.facilitiesPackageFee || 0),
-                            adminUpiId: ev.adminUpiId || '',
-                            adminPaymentQr: ev.adminPaymentQr || '',
-                            adminPaymentInstructions: ev.adminPaymentInstructions || ''
+                            accommodationEnabled: ev.accommodationEnabled != null ? Boolean(ev.accommodationEnabled) : initialAcc,
+                            foodEnabled: ev.foodEnabled != null ? Boolean(ev.foodEnabled) : initialFood,
+                            accommodationFee: Number(ev.accommodationFee ?? targetTeam.AccommodationFee ?? 0),
+                            foodFee: Number(ev.foodFee ?? targetTeam.FoodFee ?? 0),
+                            facilitiesPackageFee: Number(ev.facilitiesPackageFee ?? targetTeam.FacilitiesPackageFee ?? 0),
+                            adminUpiId: ev.adminUpiId || targetTeam.AdminUpiId || '',
+                            adminPaymentQr: ev.adminPaymentQr || targetTeam.AdminPaymentQr || '',
+                            adminPaymentInstructions: ev.adminPaymentInstructions || targetTeam.AdminPaymentInstructions || ''
                         });
                         setServicePreferences({
                             accommodationRequested: Boolean(pref.accommodationRequested),
@@ -332,12 +296,19 @@ function TeamInfo() {
             if (targetTeam.EventId && String(targetTeam.EventType || '').toLowerCase() === 'hackathon') {
                 try {
                     setLoadingPs(true);
-                    const [themesRes, statementsRes, partRes, selRes] = await Promise.all([
-                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/themes`),
-                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}`),
+                    const participantTrack = resolveParticipantTrack(targetTeam, targetTeam);
+                    const trackParam = targetTeam.isMultiModeEvent ? `?track=${participantTrack}` : '';
+                    const [themesRes, statementsRes, partRes, selRes, pubStatusRes] = await Promise.all([
+                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/themes${trackParam}`),
+                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}${trackParam}`),
                         fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/team/${teamId}/participant-statement`),
-                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/team/${teamId}`)
+                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/team/${teamId}`),
+                        fetch(`${API_BASE_URL}/api/problem-statements/event/${targetTeam.EventId}/publish-status`)
                     ]);
+                    if (pubStatusRes && pubStatusRes.ok) {
+                        const pubData = await pubStatusRes.json();
+                        setEventPublishStatus(pubData);
+                    }
                     if (themesRes.ok) {
                         const themesData = await themesRes.json();
                         setEventThemes(themesData.themes || []);
@@ -484,7 +455,15 @@ function TeamInfo() {
             if (reconnectTimer) clearTimeout(reconnectTimer);
             if (socket) {
                 socket.onclose = null;
-                socket.close();
+                socket.onerror = null;
+                socket.onmessage = null;
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.close();
+                } else if (socket.readyState === WebSocket.CONNECTING) {
+                    socket.onopen = () => {
+                        try { socket.close(); } catch {}
+                    };
+                }
             }
         };
     }, [teamData?.team?.EventId, fetchTeamInfo]);
@@ -578,16 +557,22 @@ function TeamInfo() {
     }, [team, isDark]);
     const eventObj = useMemo(() => {
         if (!team?.EventId) return null;
+        const isPhysicalPSPub = eventPublishStatus?.PhysicalPSPublished ?? team.PhysicalPSPublished;
+        const isProblemStatementsPub = eventPublishStatus?.ProblemStatementsPublished ?? team.ProblemStatementsPublished;
+        const physicalDeadline = eventPublishStatus?.PhysicalPSSelectionDeadline ?? team.PhysicalPSSelectionDeadline;
+        const psDeadline = eventPublishStatus?.PSSelectionDeadline ?? team.PSSelectionDeadline;
+        const psMode = eventPublishStatus?.PhysicalPSMode || team.PhysicalPSMode || 'organizer_provided';
+
         return {
             Id: team.EventId,
             EventType: team.EventType,
-            PhysicalPSMode: team.PhysicalPSMode || 'organizer_provided',
-            PhysicalPSPublished: team.PhysicalPSPublished,
-            PhysicalPSSelectionDeadline: team.PhysicalPSSelectionDeadline,
-            ProblemStatementsPublished: team.ProblemStatementsPublished,
-            PSSelectionDeadline: team.PSSelectionDeadline
+            PhysicalPSMode: psMode,
+            PhysicalPSPublished: isPhysicalPSPub,
+            PhysicalPSSelectionDeadline: physicalDeadline,
+            ProblemStatementsPublished: isProblemStatementsPub,
+            PSSelectionDeadline: psDeadline
         };
-    }, [team]);
+    }, [team, eventPublishStatus]);
     const isIndividual = Boolean(
         isSoloTeamSize(team?.TeamSize) ||
         isSoloTeamSize(team?.EventTeamSize) ||
@@ -604,11 +589,14 @@ function TeamInfo() {
     const qrPassValue = isSessionBased
         ? `${publicTeamUrl}?attendee=${team?.TeamId || teamId}&user=${currentUserId || team?.TeamLeadUserId || ''}&type=${isWebinar ? 'webinar' : 'workshop'}`
         : publicTeamUrl;
-    const isApprovedPhysical =
-        String(team?.ParticipationMode || "").toLowerCase() === "physical" &&
-        String(team?.RegistrationStatus || "").toLowerCase() === "approved";
-    const isLeadViewer = Number(team?.TeamLeadUserId) === Number(currentUserId);
-    const canAccessServices = isLeadViewer || (isIndividual && (isLeadViewer || members.some(m => Number(m.UserId) === Number(currentUserId))));
+    const teamMode = String(team?.ParticipationMode || team?.HackathonMode || "").trim().toLowerCase();
+    const isPhysicalTeam = teamMode.includes("physical") || teamMode === "both" || teamMode === "hybrid" || String(team?.HackathonMode || "").toLowerCase() === "physical" || !teamMode;
+    const teamRegStatus = String(team?.RegistrationStatus || "approved").trim().toLowerCase();
+    const isApprovedPhysical = isPhysicalTeam && !["rejected", "cancelled"].includes(teamRegStatus);
+    const isLeadViewer = Number(team?.TeamLeadUserId) === Number(currentUserId) ||
+        members.some(m => Number(m.UserId) === Number(currentUserId) && String(m.Role || '').toLowerCase().includes('lead'));
+    const isTeamMember = members.some(m => Number(m.UserId) === Number(currentUserId));
+    const canAccessServices = isLeadViewer || isTeamMember || isIndividual;
     // Clean display name
     const primaryMember = members[0] || {};
     const displayName = isIndividual
@@ -624,7 +612,7 @@ function TeamInfo() {
             <div className="min-h-screen w-full bg-slate-50 dark:bg-black text-slate-900 dark:text-white flex flex-col items-center justify-center gap-3 transition-colors duration-300">
                 <div
                     className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-                    style={{ borderColor: theme.border, borderTopColor: 'transparent' }}
+                    style={{ borderRightColor: theme.border, borderBottomColor: theme.border, borderLeftColor: theme.border, borderTopColor: 'transparent' }}
                 />
                 <p className="text-xs text-slate-500 dark:text-gray-400">Loading dashboard details...</p>
             </div>
@@ -651,7 +639,26 @@ function TeamInfo() {
     const hasPublishedRounds = publishedRounds.length > 0;
     const isOverallPublished = resultsData?.isOverallPublished && resultsData?.overallRank;
     const isVirtualEventLive = String(team?.VirtualStatus || '').toUpperCase() === 'LIVE';
-    const isVirtualTrack = String(team?.ParticipationMode || '').toLowerCase() === 'virtual' || String(team?.HackathonMode || '').toLowerCase() === 'virtual';
+    const isEventLive = String(team?.EventStatus || '').toUpperCase() === 'LIVE' || String(eventObj?.EventStatus || '').toUpperCase() === 'LIVE';
+    const participationModeLower = String(team?.ParticipationMode || '').toLowerCase();
+    const isVirtualTrack = participationModeLower === 'virtual' || (participationModeLower === '' && String(team?.HackathonMode || '').toLowerCase() === 'virtual');
+    const isPhysicalTrack = participationModeLower === 'physical' || (participationModeLower === '' && String(team?.HackathonMode || '').toLowerCase() === 'physical');
+    const psDeadline = team?.PSSelectionDeadline || eventObj?.PSSelectionDeadline;
+    let isPsDeadlinePassed = false;
+    if (psDeadline) {
+        let deadlineMs = 0;
+        if (psDeadline instanceof Date) {
+            deadlineMs = psDeadline.getTime();
+        } else {
+            const s = String(psDeadline).trim();
+            const normalized = s.includes('T') ? (s.endsWith('Z') ? s : s + 'Z') : s.replace(' ', 'T') + 'Z';
+            deadlineMs = new Date(normalized).getTime();
+            if (!isNaN(deadlineMs)) deadlineMs = new Date(s).getTime();
+        }
+        if (!isNaN(deadlineMs) && Date.now() > deadlineMs) {
+            isPsDeadlinePassed = true;
+        }
+    }
     return (
         <div className="min-h-screen w-full bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6 font-sans transition-colors duration-300">
             {/* ── TOP NAV BAR ── */}
@@ -679,8 +686,8 @@ function TeamInfo() {
                 </div>
                 {/* Event Action Buttons */}
                 <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Go to Virtual Event Page Button */}
-                    {team.EventId && (isVirtualEventLive || isVirtualTrack) && (
+                    {/* Go to Virtual Event Page Button (strictly for virtual track participants) */}
+                    {team.EventId && isVirtualTrack && (
                         <button
                             type="button"
                             onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
@@ -720,8 +727,8 @@ function TeamInfo() {
                     )}
                 </div>
             </div>
-            {/* Live Virtual Event Alert Banner */}
-            {isVirtualEventLive && team.EventId && (
+            {/* Live Virtual Event Alert Banner (exclusively for Virtual Track participants) */}
+            {isVirtualTrack && isVirtualEventLive && team.EventId && (
                 <div className="rounded-3xl border border-emerald-500/40 bg-zinc-950 p-5 sm:p-6 shadow-xl shadow-emerald-950/30 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
                         <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
@@ -781,6 +788,43 @@ function TeamInfo() {
                             </div>
                         </div>
                     )}
+                </div>
+            )}
+            {/* Live Physical Campus Alert Banner (exclusively for Physical Track participants) */}
+            {isPhysicalTrack && isEventLive && team.EventId && (
+                <div className="rounded-3xl border border-blue-500/40 bg-zinc-950 p-5 sm:p-6 shadow-xl shadow-blue-950/30 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                        <div className="p-3 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/30 shrink-0">
+                            <Building2 className="w-6 h-6 animate-pulse" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider border bg-blue-500/20 text-blue-300 border-blue-500/30">
+                                    ON-CAMPUS EVENT IS LIVE
+                                </span>
+                                <span className="text-xs text-zinc-400 font-medium">{team.EventName}</span>
+                            </div>
+                            <h3 className="text-base sm:text-lg font-black text-white mt-1">
+                                Campus Venue Check-In is Active!
+                            </h3>
+                            <p className="text-xs text-slate-300 leading-relaxed mt-0.5 max-w-2xl">
+                                Welcome to the campus venue. Head over to the registration desk with your verified scannable team pass to complete check-in and access your workspace.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const qrEl = document.getElementById('team-qr-code-section');
+                                if (qrEl) qrEl.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-2xl text-white font-black text-xs sm:text-sm tracking-wide bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/30 hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
+                        >
+                            <QrCode className="w-4 h-4" />
+                            <span>View Scannable Pass</span>
+                        </button>
+                    </div>
                 </div>
             )}
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -850,6 +894,16 @@ function TeamInfo() {
                                     <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isWebinar ? "bg-emerald-500" : "bg-emerald-500"}`} />
                                     {isWebinar ? "Confirmed Delegate Seat" : isWorkshop ? "Confirmed Seat" : (team.RegistrationStatus || "Approved")}
                                 </span>
+                                {members.some(m => m.IsAllocated || m.RoomNumber) && (
+                                    <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
+                                        <BedDouble className="w-3.5 h-3.5" />
+                                        <span>
+                                            {members.filter(m => m.IsAllocated || m.RoomNumber).length === 1
+                                                ? `Room ${members.find(m => m.IsAllocated || m.RoomNumber).RoomNumber}`
+                                                : `Rooms: ${[...new Set(members.map(m => m.RoomNumber).filter(Boolean))].join(', ')}`}
+                                        </span>
+                                    </span>
+                                )}
                                 {isSessionBased && (
                                     <button
                                         type="button"
@@ -1037,37 +1091,190 @@ function TeamInfo() {
             {/* ══════════════════════════════════════════════════════════════ */}
             {String(team.EventType || '').toLowerCase() === 'hackathon' && eventObj && (
                 <div className="space-y-6">
-                    {/* Team Problem Statement Action Card (Selection & Submission in-place) */}
-                    <PhysicalTeamPSActionCard
-                        event={eventObj}
-                        eventTheme={theme}
-                        registeredTeam={{
-                            TeamId: team.Id || teamId,
-                            Id: team.Id || teamId,
-                            TeamName: team.TeamName
-                        }}
-                        isRegistered={true}
-                        participantStatement={participantStatement}
-                        onParticipantStatementSaved={(updated) => {
-                            setParticipantStatement(updated);
-                            fetchTeamInfo();
-                        }}
-                        organizerStatements={organizerStatements}
-                        selectedStatement={selectedStatement}
-                        onSelectOrganizerStatement={(locked) => {
-                            setSelectedStatement(locked);
-                            fetchTeamInfo();
-                        }}
-                        themes={eventThemes}
-                    />
-                    {/* Innovation Themes Display (Photo/Icon, Title, Description) */}
-                    <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-4">
-                        <PhysicalHackathonThemesSection
-                            themes={eventThemes}
-                            event={eventObj}
-                            eventTheme={theme}
-                        />
-                    </div>
+                    {isVirtualTrack ? (
+                        /* ── VIRTUAL TRACK: PROBLEM STATEMENT & HUB ── */
+                        <div className="space-y-6">
+                            {/* Problem Statement Status Card */}
+                            <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-zinc-800/80 pb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                                            <Target className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                <span>Virtual Track Problem Statement</span>
+                                                {selectedStatement && (
+                                                    <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                                        Locked
+                                                    </span>
+                                                )}
+                                            </h3>
+                                            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                                                Official challenge statement assigned for your team in the virtual hackathon.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {team.EventId && (
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
+                                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition cursor-pointer shrink-0"
+                                        >
+                                            <Radio className="w-3.5 h-3.5" />
+                                            <span>Open Virtual Event Hub</span>
+                                            <ArrowRight className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {selectedStatement ? (
+                                    /* Selected Problem Statement Content */
+                                    <div className="p-5 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 space-y-3">
+                                        <div className="flex items-center justify-between flex-wrap gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs border border-emerald-500/20">
+                                                    {selectedStatement.ProblemCode || 'PS'}
+                                                </span>
+                                                {selectedStatement.Category && (
+                                                    <span className="px-2.5 py-0.5 rounded-lg bg-slate-200/80 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-semibold text-[11px]">
+                                                        {selectedStatement.Category}
+                                                    </span>
+                                                )}
+                                                {selectedStatement.Theme && (
+                                                    <span className="px-2.5 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold text-[11px] border border-emerald-500/20">
+                                                        Track: {selectedStatement.Theme}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {!isPsDeadlinePassed && team.EventId && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/30 hover:border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-xs transition cursor-pointer"
+                                                >
+                                                    <ArrowLeftRight className="w-3.5 h-3.5" />
+                                                    <span>Change Problem Statement</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                        <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                                            {selectedStatement.ProblemTitle || selectedStatement.Title}
+                                        </h4>
+                                        {selectedStatement.Description && (
+                                            <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+                                                {selectedStatement.Description}
+                                            </p>
+                                        )}
+                                        <div className="pt-2 border-t border-slate-200 dark:border-zinc-800/80 text-[11px] text-slate-500 dark:text-zinc-400">
+                                            {isPsDeadlinePassed
+                                                ? 'Selection window closed. Your problem statement is final.'
+                                                : 'Selection timer is active. You can switch to any other challenge before the timer ends.'}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* No Problem Statement Selected Yet */
+                                    <div className="p-5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="flex items-start gap-3">
+                                            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                            <div>
+                                                <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                                                    Problem Statement Not Selected Yet
+                                                </h4>
+                                                <p className="text-xs text-slate-600 dark:text-zinc-300 mt-0.5">
+                                                    {Boolean(team.ProblemStatementsPublished || eventObj.ProblemStatementsPublished)
+                                                        ? 'Problem statements are published and open for selection. Head to the Virtual Event Hub to choose and lock in your challenge.'
+                                                        : 'Problem statements will be unlocked by organizers during the virtual event kickoff.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {Boolean(team.ProblemStatementsPublished || eventObj.ProblemStatementsPublished) && team.EventId && (
+                                            <button
+                                                type="button"
+                                                onClick={() => navigate(`/user/events/${team.EventId}/virtual`)}
+                                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition cursor-pointer shrink-0"
+                                            >
+                                                <span>Select in Virtual Hub</span>
+                                                <ArrowRight className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Hackathon Themes Section for Virtual Track */}
+                            {eventThemes && eventThemes.length > 0 && (
+                                <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-4">
+                                    <div className="border-b border-slate-100 dark:border-zinc-800/80 pb-3">
+                                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-gray-400 flex items-center gap-2">
+                                            <Layers className="w-4 h-4 text-emerald-500" />
+                                            Hackathon Themes
+                                        </h3>
+                                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                                            Official innovation domains published for this hackathon.
+                                        </p>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {eventThemes.map((th, idx) => (
+                                            <div
+                                                key={th.Id || idx}
+                                                className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/80 space-y-1.5"
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                        {th.ThemeName}
+                                                    </h4>
+                                                    <span className="text-[10px] font-mono font-bold text-slate-400 shrink-0">
+                                                        #{idx + 1}
+                                                    </span>
+                                                </div>
+                                                {th.Description && (
+                                                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                                                        {th.Description}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        /* ── PHYSICAL TRACK: PROBLEM STATEMENT & THEMES ── */
+                        <div className="space-y-6">
+                            {/* Team Problem Statement Action Card (Selection & Submission in-place) */}
+                            <PhysicalTeamPSActionCard
+                                event={eventObj}
+                                eventTheme={theme}
+                                registeredTeam={{
+                                    TeamId: team.Id || teamId,
+                                    Id: team.Id || teamId,
+                                    TeamName: team.TeamName
+                                }}
+                                isRegistered={true}
+                                participantStatement={participantStatement}
+                                onParticipantStatementSaved={(updated) => {
+                                    setParticipantStatement(updated);
+                                    fetchTeamInfo();
+                                }}
+                                organizerStatements={organizerStatements}
+                                selectedStatement={selectedStatement}
+                                onSelectOrganizerStatement={(locked) => {
+                                    setSelectedStatement(locked);
+                                    fetchTeamInfo();
+                                }}
+                                themes={eventThemes}
+                            />
+                            {/* Innovation Themes Display (Photo/Icon, Title, Description) */}
+                            <div className="rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 sm:p-7 shadow-sm dark:shadow-xl space-y-4">
+                                <PhysicalHackathonThemesSection
+                                    themes={eventThemes}
+                                    event={eventObj}
+                                    eventTheme={theme}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
             {/* ══════════════════════════════════════════════════════════════ */}
@@ -1304,9 +1511,9 @@ function TeamInfo() {
                         <div className="space-y-4">
                             {workshopResources.length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                    {workshopResources.map((res) => (
+                                    {workshopResources.map((res, rIdx) => (
                                         <div
-                                            key={res.Id}
+                                            key={res.Id || res.id || `res-${rIdx}`}
                                             className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-900/40 flex items-start justify-between gap-3 hover:border-emerald-500/30 transition-all"
                                         >
                                             <div className="flex items-start gap-3">
@@ -1516,11 +1723,11 @@ function TeamInfo() {
                                             </div>
                                             <h3 className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
                                                 {resultsData.overallRank === 1
-                                                    ? "1st Place Winner 🏆"
+                                                    ? "1st Place Winner"
                                                     : resultsData.overallRank === 2
-                                                        ? "2nd Place Runner Up 🥈"
+                                                        ? "2nd Place Runner Up"
                                                         : resultsData.overallRank === 3
-                                                            ? "3rd Place Podium Finish 🥉"
+                                                            ? "3rd Place Podium Finish"
                                                             : `Rank #${resultsData.overallRank} Overall`}
                                             </h3>
                                             <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
@@ -1538,11 +1745,11 @@ function TeamInfo() {
                             )}
                             {/* Published Rounds Scorecards */}
                             <div className="space-y-4">
-                                {publishedRounds.map((round) => {
+                                {publishedRounds.map((round, rIdx) => {
                                     const isExpanded = expandedRoundId === round.roundId;
                                     return (
                                         <div
-                                            key={round.roundId}
+                                            key={round.roundId || round.RoundId || round.id || `round-${rIdx}`}
                                             className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-900/60 overflow-hidden transition-all shadow-sm"
                                         >
                                             {/* Round Header */}
@@ -1604,7 +1811,7 @@ function TeamInfo() {
                                                                 const hasScore = q.marksAwarded !== undefined && q.marksAwarded !== null;
                                                                 return (
                                                                     <div
-                                                                        key={q.Id}
+                                                                        key={q.Id || q.id || q.QuestionId || `q-${round.roundId || 0}-${qIdx}`}
                                                                         className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800/70 bg-white dark:bg-zinc-900/40 hover:bg-slate-50 dark:hover:bg-zinc-900/70 transition-colors flex items-center justify-between gap-3 shadow-xs"
                                                                     >
                                                                         <div className="flex items-center gap-2.5 min-w-0">
@@ -1703,11 +1910,12 @@ function TeamInfo() {
                         </span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {members.map(member => {
+                        {members.map((member, idx) => {
                             const isLead = isTeamLead(member.Role);
+                            const memberKey = member.UserId || member.userId || member.Id || member.id || member.Email || member.email || `mem-${idx}`;
                             return (
                                 <div
-                                    key={member.UserId}
+                                    key={memberKey}
                                     className="p-4 rounded-xl border border-slate-200/80 dark:border-zinc-800/80 bg-slate-50 dark:bg-zinc-900/60 flex items-start gap-3.5 hover:border-slate-300 dark:hover:border-zinc-700 transition-colors shadow-xs"
                                 >
                                     <div
@@ -1760,6 +1968,26 @@ function TeamInfo() {
                                                 <span className="truncate">{member.College || "Institution"}</span>
                                             </span>
                                         </div>
+                                        {Boolean(member.IsAllocated || member.RoomNumber) ? (
+                                            <div className="mt-2 pt-2 border-t border-slate-200 dark:border-zinc-800/60 flex items-center justify-between gap-1.5">
+                                                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                                                    <BedDouble className="w-3.5 h-3.5 shrink-0" />
+                                                    <span className="truncate">
+                                                        Room {member.RoomNumber} {member.BlockName ? `• ${member.BlockName}` : ''}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                                                    Allocated
+                                                </span>
+                                            </div>
+                                        ) : (bookingDetails.submitted && bookingDetails.bookingStatus === 'Approved') ? (
+                                            <div className="mt-2 pt-2 border-t border-slate-200 dark:border-zinc-800/60 flex items-center justify-between gap-1.5">
+                                                <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 truncate font-medium">
+                                                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                                                    <span className="truncate">Room Allocation Pending</span>
+                                                </div>
+                                            </div>
+                                        ) : null}
                                     </div>
                                 </div>
                             );
@@ -1800,10 +2028,12 @@ function TeamInfo() {
                             </div>
                             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/80">
                                 <span className="text-[11px] font-medium text-slate-500 dark:text-gray-400 uppercase">Venue &amp; Mode</span>
-                                <p className="text-sm font-bold text-slate-900 dark:text-white mt-1 truncate" title={team.Location}>
-                                    {team.Location || "Campus Block"}
+                                <p className="text-sm font-bold text-slate-900 dark:text-white mt-1 truncate" title={isVirtualTrack ? (team.VirtualMeetUrl || "Online") : team.Location}>
+                                    {isVirtualTrack ? (team.VirtualMeetUrl ? "Google Meet (Online)" : "Online / Virtual") : (team.Location || "Campus Block")}
                                 </p>
-                                <p className="text-xs text-slate-400 dark:text-gray-500">{team.ParticipationMode || "Physical"} Track</p>
+                                <p className={`text-xs ${isVirtualTrack ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-slate-400 dark:text-gray-500'}`}>
+                                    {isVirtualTrack ? "Virtual Track" : `${team.ParticipationMode || "Physical"} Track`}
+                                </p>
                             </div>
                             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/80">
                                 <span className="text-[11px] font-medium text-slate-500 dark:text-gray-400 uppercase">Event Type</span>
@@ -1890,7 +2120,7 @@ function TeamInfo() {
                                                                 ? 'Your payment has been accepted by the admin. Your team is officially eligible for hostel room allocation and meal coupon tokens.'
                                                                 : bookingDetails.bookingStatus === 'Rejected'
                                                                     ? `Admin remarks: ${bookingDetails.adminRemarks || 'Payment reference could not be verified. Please check details and re-submit.'}`
-                                                                    : 'Your payment reference and proof have been submitted. Once the organizers verify and accept your payment, your squad will become eligible for room allocation and food tokens.'}
+                                                                    : 'Your payment reference and proof have been submitted. Once the organizers verify and accept your payment, your team will become eligible for room allocation and food tokens.'}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1924,6 +2154,58 @@ function TeamInfo() {
                                                         )}
                                                     </div>
                                                 </div>
+                                                {/* ALLOCATED HOSTEL ROOMS & STAY DETAILS */}
+                                                {members.some((m) => m.IsAllocated || m.RoomNumber) ? (
+                                                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <h5 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                                                                <BedDouble className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                                                <span>Allocated Hostel &amp; Stay Arrangements</span>
+                                                            </h5>
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                                                                Confirmed &amp; Allocated
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                            {members.filter((m) => m.IsAllocated || m.RoomNumber).map((m, idx) => (
+                                                                <div
+                                                                    key={m.UserId || idx}
+                                                                    className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-500/30 flex items-center justify-between gap-3 shadow-2xs"
+                                                                >
+                                                                    <div className="min-w-0">
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                                                {m.UserName || 'Participant'}
+                                                                            </span>
+                                                                            {isTeamLead(m.Role) && (
+                                                                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                                                    Lead
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                                                                            {m.BlockName ? `${m.BlockName} • ` : ''}{m.BlockGender || m.Gender || 'Hostel'}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="text-right shrink-0">
+                                                                        <span className="text-[10px] font-bold uppercase text-slate-400">Assigned Room</span>
+                                                                        <p className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                                                                            Room {m.RoomNumber}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ) : bookingDetails.bookingStatus === 'Approved' ? (
+                                                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2.5">
+                                                        <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                                                        <div>
+                                                            <span className="font-bold">Hostel Room Allocation in Progress: </span>
+                                                            <span>Your facility booking is verified and approved. Organizers will allocate your room numbers shortly.</span>
+                                                        </div>
+                                                    </div>
+                                                ) : null}
                                                 {bookingDetails.bookingStatus !== 'Approved' && (
                                                     <div className="pt-1">
                                                         <button
@@ -1940,27 +2222,74 @@ function TeamInfo() {
                                         ) : (
                                             /* Not Submitted: Clean Action Card with Rates & Book Button */
                                             <div className="space-y-4">
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                                    {serviceAvailability.accommodationEnabled && (
-                                                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
-                                                            <span className="text-[10px] uppercase font-bold text-slate-400">Hostel Fee</span>
-                                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
-                                                                ₹{accFee} <span className="text-[10px] font-normal text-slate-400">/ person / night</span>
+                                                {members.some((m) => m.IsAllocated || m.RoomNumber) && (
+                                                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <h5 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                                                                <BedDouble className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                                                <span>Allocated Hostel &amp; Stay Arrangements</span>
+                                                            </h5>
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">
+                                                                Confirmed &amp; Allocated
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                            {members.filter((m) => m.IsAllocated || m.RoomNumber).map((m, idx) => (
+                                                                <div
+                                                                    key={m.UserId || idx}
+                                                                    className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-500/30 flex items-center justify-between gap-3 shadow-2xs"
+                                                                >
+                                                                    <div className="min-w-0">
+                                                                        <div className="flex items-center gap-1.5">
+                                                                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                                                {m.UserName || 'Participant'}
+                                                                            </span>
+                                                                            {isTeamLead(m.Role) && (
+                                                                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                                                                    Lead
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                                                                            {m.BlockName ? `${m.BlockName} • ` : ''}{m.BlockGender || m.Gender || 'Hostel'}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="text-right shrink-0">
+                                                                        <span className="text-[10px] font-bold uppercase text-slate-400">Assigned Room</span>
+                                                                        <p className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                                                                            Room {m.RoomNumber}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 flex flex-col justify-between">
+                                                        <div>
+                                                            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                                                                Food &amp; Accommodation Package
+                                                            </span>
+                                                            <p className="text-base font-black text-slate-900 dark:text-white mt-0.5">
+                                                                ₹{perPerson} <span className="text-xs font-normal text-slate-400">/ person</span>
                                                             </p>
                                                         </div>
-                                                    )}
-                                                    {serviceAvailability.foodEnabled && (
-                                                        <div className="p-3 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
-                                                            <span className="text-[10px] uppercase font-bold text-slate-400">Food Pass</span>
-                                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
-                                                                ₹{fdFee} <span className="text-[10px] font-normal text-slate-400">/ person</span>
+                                                        <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
+                                                            Unified package covering hostel accommodation and dining meal tokens for the event.
+                                                        </p>
+                                                    </div>
+                                                    <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 flex flex-col justify-between">
+                                                        <div>
+                                                            <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">
+                                                                Total Payable {memberCount > 1 ? `(${memberCount} Members)` : `(1 Participant)`}
+                                                            </span>
+                                                            <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                                                ₹{dynamicTotal}
                                                             </p>
                                                         </div>
-                                                    )}
-                                                    <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 col-span-2 sm:col-span-1">
-                                                        <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Total ({memberCount} Squad)</span>
-                                                        <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
-                                                            ₹{dynamicTotal}
+                                                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 font-medium">
+                                                            {memberCount > 1 ? `₹${perPerson} / person × ${memberCount} members` : `Unified package for 1 participant`}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1974,7 +2303,7 @@ function TeamInfo() {
                                                         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
                                                     >
                                                         <BedDouble className="w-4 h-4" />
-                                                        <span>Book Facilities (Pay ₹{dynamicTotal})</span>
+                                                        <span>Book Food &amp; Accommodation (Pay ₹{dynamicTotal})</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -1998,10 +2327,10 @@ function TeamInfo() {
                                                         </div>
                                                         <div>
                                                             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                                                                Book Campus Facilities (Hostel &amp; Meals)
+                                                                Book Food &amp; Accommodation (Hostel &amp; Meals)
                                                             </h3>
                                                             <p className="text-xs text-slate-500 dark:text-gray-400">
-                                                                {isIndividual ? "Individual participant booking" : `Squad booking for all ${memberCount} members`}
+                                                                {isIndividual ? "Individual participant booking" : `Team booking for ${memberCount} member${memberCount > 1 ? 's' : ''}`}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -2014,25 +2343,17 @@ function TeamInfo() {
                                                     </button>
                                                 </div>
                                                 {/* Pricing Summary */}
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                                                    {serviceAvailability.accommodationEnabled && (
-                                                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
-                                                            <span className="text-[10px] uppercase font-bold text-slate-400">Hostel Fee</span>
-                                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
-                                                                ₹{accFee} <span className="text-[10px] font-normal text-slate-400">/ night</span>
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                    {serviceAvailability.foodEnabled && (
-                                                        <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
-                                                            <span className="text-[10px] uppercase font-bold text-slate-400">Food Pass</span>
-                                                            <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
-                                                                ₹{fdFee} <span className="text-[10px] font-normal text-slate-400">/ person</span>
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 col-span-2 sm:col-span-1">
-                                                        <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Total Payable</span>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
+                                                        <span className="text-[10px] uppercase font-bold text-slate-400">Package Rate</span>
+                                                        <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                                                            ₹{perPerson} <span className="text-[10px] font-normal text-slate-400">/ person (Stay &amp; Food)</span>
+                                                        </p>
+                                                    </div>
+                                                    <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40">
+                                                        <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">
+                                                            Total Payable {memberCount > 1 ? `(${memberCount} Members)` : `(1 Participant)`}
+                                                        </span>
                                                         <p className="text-base font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
                                                             ₹{dynamicTotal}
                                                         </p>
@@ -2210,119 +2531,26 @@ function TeamInfo() {
                 </div>
             </div>
             {/* QR Enlarge Modal */}
-            {qrModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-                    <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-2xl border border-slate-200 dark:border-zinc-800 flex flex-col items-center text-center space-y-4">
-                        <button
-                            type="button"
-                            onClick={() => setQrModalOpen(false)}
-                            className="absolute top-4 right-4 p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                        <div className="space-y-1 pt-2">
-                            <span
-                                className="inline-block px-3 py-1 rounded-xl text-[11px] font-extrabold uppercase tracking-wider border"
-                                style={{
-                                    backgroundColor: theme.badgeBg,
-                                    borderColor: theme.badgeBorder,
-                                    color: theme.badgeText
-                                }}
-                            >
-                                {isWebinar ? "Official Webinar Pass" : isWorkshop ? "Official Workshop Pass" : "Official Team Pass"}
-                            </span>
-                            <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                                {displayName}
-                            </h3>
-                            <p className="text-xs text-slate-500 dark:text-gray-400">
-                                {isWebinar ? `Delegate #${team.TeamId} • ${team.EventName}` : isWorkshop ? `Attendee #${team.TeamId} • ${team.EventName}` : `Team #${team.TeamId} • ${team.EventName}`}
-                            </p>
-                        </div>
-                        <div
-                            ref={qrSvgRef}
-                            className="p-5 bg-white rounded-2xl border-2 border-slate-200 shadow-inner flex flex-col items-center"
-                        >
-                            <QRCodeSVG
-                                value={qrPassValue}
-                                size={220}
-                                level="H"
-                                includeMargin={true}
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500 dark:text-gray-400">
-                            Scan with camera to view public verification and scorecard.
-                        </p>
-                        <div className="w-full flex items-center gap-2 pt-2">
-                            <button
-                                type="button"
-                                onClick={handleDownloadQr}
-                                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-gray-200 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-1.5"
-                            >
-                                <Download className="w-4 h-4" />
-                                <span>Save Image</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleCopyPublicUrl}
-                                className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 flex items-center justify-center gap-1.5"
-                                style={{ backgroundColor: theme.buttonBg }}
-                            >
-                                {copiedLink ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                <span>{copiedLink ? "Copied!" : "Copy URL"}</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <EnlargedQrPassModal
+                isOpen={qrModalOpen}
+                onClose={() => setQrModalOpen(false)}
+                theme={theme}
+                isWebinar={isWebinar}
+                isWorkshop={isWorkshop}
+                displayName={displayName}
+                team={team}
+                qrPassValue={qrPassValue}
+                qrSvgRef={qrSvgRef}
+                onDownloadQr={handleDownloadQr}
+                onCopyPublicUrl={handleCopyPublicUrl}
+                copiedLink={copiedLink}
+            />
+
             {/* Receipt / QR Preview Modal */}
-            {receiptModalUrl && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-                    onClick={() => setReceiptModalUrl(null)}
-                >
-                    <div
-                        className="relative max-w-2xl max-h-[90vh] bg-white dark:bg-zinc-900 rounded-3xl p-4 shadow-2xl border border-slate-200 dark:border-zinc-800 overflow-hidden flex flex-col items-center"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <button
-                            type="button"
-                            onClick={() => setReceiptModalUrl(null)}
-                            className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-200 transition cursor-pointer z-10"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                        <div className="w-full text-center pb-3 border-b border-slate-100 dark:border-zinc-800 mb-3">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">Document Preview</h4>
-                        </div>
-                        <div className="overflow-auto max-h-[75vh] w-full flex items-center justify-center p-2">
-                            {receiptModalUrl.toLowerCase().endsWith('.pdf') ? (
-                                <iframe
-                                    src={receiptModalUrl}
-                                    className="w-full h-[65vh] rounded-xl"
-                                    title="Receipt PDF"
-                                />
-                            ) : (
-                                <img
-                                    src={receiptModalUrl}
-                                    alt="Payment Receipt"
-                                    className="max-w-full max-h-[70vh] object-contain rounded-xl"
-                                />
-                            )}
-                        </div>
-                        <div className="pt-3">
-                            <a
-                                href={receiptModalUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
-                            >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                                <span>Open Full Document in New Tab</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <DocumentPreviewModal
+                url={receiptModalUrl}
+                onClose={() => setReceiptModalUrl(null)}
+            />
             {!isSeminar && !isWebinar && !isAlumni && !isProjectExpo && (
                 <motion.section {...fadeUp(0.16)}>
                     <UnifiedEventFeedbackCard

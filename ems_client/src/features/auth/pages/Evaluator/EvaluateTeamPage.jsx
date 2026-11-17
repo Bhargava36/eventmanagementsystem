@@ -1,34 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ArrowLeft,
-  Award,
-  Trophy,
-  CheckCircle2,
-  Clock,
-  Save,
-  Building2,
-  User,
-  Users,
-  FileText,
-  AlertCircle,
-  HelpCircle,
-  Check,
-  MapPin,
-  Laptop,
-  ChevronRight,
-  ShieldCheck,
-  MessageSquare,
-  Lock,
-  Unlock,
-  Edit3,
-  FolderGit2,
-  Globe,
-  ExternalLink,
-  Code2
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Save, Building2, User, FileText, AlertCircle, Check, MapPin, ChevronRight, MessageSquare, Lock, Edit3, FolderGit2, Globe, ExternalLink, Code2 } from 'lucide-react';
 import useAuth from '../../../../Hooks/useAuth';
 import useTheme from '../../../../Hooks/useTheme';
 import useToast from '../../../../Hooks/useToast';
@@ -300,7 +274,7 @@ function EvaluateTeamPage() {
       <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white flex flex-col items-center justify-center gap-3">
         <div
           className="w-10 h-10 border-3 border-t-transparent rounded-full animate-spin"
-          style={{ borderColor: theme.border, borderTopColor: 'transparent' }}
+          style={{ borderRightColor: theme.border, borderBottomColor: theme.border, borderLeftColor: theme.border, borderTopColor: 'transparent' }}
         />
         <p className="text-xs text-slate-500 dark:text-gray-400 font-medium">Loading evaluation sheet...</p>
       </div>

@@ -1,17 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import {
-  Star,
-  Send,
-  CheckCircle2,
-  MessageSquare,
-  Edit3,
-  Calendar,
-  ThumbsUp,
-  User as UserIcon,
-  Filter,
-  Check
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Star, Send, CheckCircle2, MessageSquare, Edit3, Calendar, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
 import useToast from '../../../../../Hooks/useToast';
 import { API_BASE_URL } from '@/lib/api';
 const RATING_LABELS = {

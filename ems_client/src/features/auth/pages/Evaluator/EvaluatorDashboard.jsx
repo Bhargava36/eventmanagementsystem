@@ -1,28 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion } from 'framer-motion';
-import {
-  Award,
-  Trophy,
-  Users,
-  CheckCircle2,
-  Clock,
-  Search,
-  LogOut,
-  ChevronRight,
-  FileText,
-  AlertCircle,
-  Laptop,
-  MapPin,
-  Building2,
-  User,
-  Check,
-  RefreshCw,
-  Star,
-  Lock,
-  Unlock,
-  Edit3
-} from 'lucide-react';
+import { Award, Trophy, Users, CheckCircle2, Clock, Search, LogOut, ChevronRight, FileText, AlertCircle, Laptop, MapPin, Building2, User, Check, RefreshCw, Lock, Edit3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../../../../Hooks/useAuth';
 import useTheme from '../../../../Hooks/useTheme';
@@ -456,7 +435,7 @@ function EvaluatorDashboard() {
             <div className="flex items-center gap-3 py-4 text-xs text-slate-500 dark:text-gray-400">
               <div
                 className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin"
-                style={{ borderColor: theme.border, borderTopColor: 'transparent' }}
+                style={{ borderRightColor: theme.border, borderBottomColor: theme.border, borderLeftColor: theme.border, borderTopColor: 'transparent' }}
               />
               Loading rounds...
             </div>
@@ -646,7 +625,7 @@ function EvaluatorDashboard() {
             <div className="py-12 flex flex-col items-center justify-center text-slate-500 dark:text-gray-400 gap-3">
               <div
                 className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
-                style={{ borderColor: theme.border, borderTopColor: 'transparent' }}
+                style={{ borderRightColor: theme.border, borderBottomColor: theme.border, borderLeftColor: theme.border, borderTopColor: 'transparent' }}
               />
               <p className="text-xs font-medium">Loading registered teams...</p>
             </div>

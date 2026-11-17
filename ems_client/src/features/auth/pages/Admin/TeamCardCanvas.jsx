@@ -154,7 +154,7 @@ export default function TeamCardCanvas({ team, event, eventId: propEventId }) {
       ctx.fillStyle = "#FBBF24";
       ctx.textAlign = "center";
       ctx.font = "bold 18px Arial";
-      ctx.fillText("🏛", BASE_W - 66, 68);
+      ctx.fillText("", BASE_W - 66, 68);
       ctx.textAlign = "start";
       // Horizontal Header Divider in event theme color gradient
       const divGrad = ctx.createLinearGradient(48, 114, BASE_W - 48, 114);
@@ -212,7 +212,7 @@ export default function TeamCardCanvas({ team, event, eventId: propEventId }) {
       ctx.save();
       ctx.textAlign = "center";
       ctx.font = "46px Arial";
-      ctx.fillText("👨‍🚀", mascotBoxX + 70, 204);
+      ctx.fillText("‍", mascotBoxX + 70, 204);
       drawText("HACKER PASS", mascotBoxX + 70, 228, "bold 9px Arial", primaryColor, 120);
       ctx.restore();
       // 4. TEAM MEMBERS CARDS (Horizontal Cards)
@@ -279,7 +279,7 @@ export default function TeamCardCanvas({ team, event, eventId: propEventId }) {
         );
         // Member Role
         drawText(
-          isLead ? "★ Team Lead" : "Team Member",
+          isLead ? " Team Lead" : "Team Member",
           centerX,
           avatarY + avatarSize + 39,
           "bold 11px Arial",

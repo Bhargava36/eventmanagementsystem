@@ -1,30 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  Utensils,
-  ArrowLeft,
-  ArrowRight,
-  Users,
-  CheckCircle2,
-  Clock,
-  Search,
-  MoreVertical,
-  MapPin,
-  CalendarDays,
-  Sun,
-  Moon,
-  Info,
-  Ticket,
-  ChevronLeft,
-  ChevronRight,
-  Leaf,
-  Drumstick,
-  Check,
-  QrCode,
-  ShieldCheck,
-  AlertTriangle,
-  RefreshCw
-} from 'lucide-react';
+import { Utensils, ArrowLeft, Users, CheckCircle2, Clock, Search, MoreVertical, MapPin, CalendarDays, Sun, Moon, Ticket, Leaf, Drumstick, Check, QrCode, AlertTriangle, RefreshCw } from 'lucide-react';
 import useToast from '../../../../Hooks/useToast';
 import { API_BASE_URL } from '@/lib/api';
 function FoodRedirectionPage() {
@@ -273,7 +249,7 @@ function FoodRedirectionPage() {
                   </p>
                   {verifiedToken.IsRedeemed && (
                     <p className="text-[11px] text-rose-600 dark:text-rose-400 font-bold pt-1">
-                      ⚠️ This coupon was already marked redeemed on {new Date(verifiedToken.RedeemedAt).toLocaleString()}. Do NOT issue duplicate meals.
+                      This coupon was already marked redeemed on {new Date(verifiedToken.RedeemedAt).toLocaleString()}. Do NOT issue duplicate meals.
                     </p>
                   )}
                 </div>

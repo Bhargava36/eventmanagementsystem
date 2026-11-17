@@ -205,7 +205,7 @@ export default function ParticipantIdCanvas({
       ctx.fillStyle = "#FBBF24";
       ctx.textAlign = "center";
       ctx.font = "bold 15px Arial";
-      ctx.fillText("🏛", BASE_W - 59, 58);
+      ctx.fillText("", BASE_W - 59, 58);
       // Top Center/Left: Event Name and Season in Event Theme Color
       ctx.save();
       ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.8)`;

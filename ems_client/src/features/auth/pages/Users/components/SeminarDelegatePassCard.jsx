@@ -1,29 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../../Hooks/useToast';
 import UnifiedEventFeedbackCard from './UnifiedEventFeedbackCard';
-import {
-  QrCode,
-  CheckCircle2,
-  Clock,
-  Download,
-  Star,
-  Send,
-  Calendar,
-  MapPin,
-  ExternalLink,
-  FileText,
-  ShieldCheck,
-  CalendarDays,
-  Mic,
-  MessageSquare,
-  Building2,
-  User,
-  GraduationCap,
-  Info
-} from 'lucide-react';
+import { CheckCircle2, Clock, Download, Calendar, MapPin, ExternalLink, FileText, ShieldCheck, CalendarDays, Mic, MessageSquare, Info } from 'lucide-react';
 export default function SeminarDelegatePassCard({ eventId, user, team }) {
   const toast = useToast();
   const [eventData, setEventData] = useState(null);

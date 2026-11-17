@@ -13,8 +13,10 @@ import {
   ExternalLink,
   AlertCircle,
   RefreshCw,
+  Monitor,
+  Building2,
 } from 'lucide-react';
-import { isSoloTeamSize } from '../../../../lib/utils';
+import { isSoloTeamSize, isMultiModeEvent, resolveParticipantTrack, formatDate } from '../../../../lib/utils';
 /* ── dot-pulse keyframes ── */
 const DotStyle = () => (
   <style>{`
@@ -76,18 +78,6 @@ export default function MyTeams() {
       setError(err.message || 'Failed to load teams');
     } finally {
       setLoading(false);
-    }
-  };
-  const fmt = (dateStr) => {
-    if (!dateStr) return '—';
-    try {
-      return new Date(dateStr).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-    } catch {
-      return dateStr;
     }
   };
   return (
@@ -158,6 +148,8 @@ export default function MyTeams() {
                 Number(team.TeamSize) === 1
               );
               const isLead = !isIndividual && (team.Role || '').toLowerCase().includes('lead');
+              const resolvedTrack = resolveParticipantTrack(team, team);
+              const isMultiMode = team.isMultiModeEvent || isMultiModeEvent(team);
               return (
                 <motion.div
                   key={team.TeamId || idx}
@@ -169,12 +161,12 @@ export default function MyTeams() {
                 >
                   {/* Card top */}
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${
                         isIndividual
                           ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                           : isLead
-                            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                            ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                             : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
                       }`}>
                         {isIndividual ? (
@@ -186,9 +178,22 @@ export default function MyTeams() {
                         )}
                         {isIndividual ? (String(team.EventType || '').toLowerCase().includes('webinar') ? 'Webinar Delegate' : 'Individual Attendee') : isLead ? 'Team Lead' : 'Team Member'}
                       </span>
-                      {team.RegistrationStatus && (
-                        <StatusBadge status={team.RegistrationStatus} />
+                      
+                      {isMultiMode && (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${
+                            resolvedTrack === 'Virtual'
+                              ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                              : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                          }`}
+                        >
+                          {resolvedTrack === 'Virtual' ? <Monitor className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
+                          <span>{resolvedTrack} Track</span>
+                        </span>
                       )}
+                      {/* {team.RegistrationStatus && (
+                        <StatusBadge status={team.RegistrationStatus} />
+                      )} */}
                     </div>
                     <CardDots />
                   </div>
@@ -223,7 +228,7 @@ export default function MyTeams() {
                       <div className="col-span-2 flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-slate-600 dark:text-zinc-400">
                         <Calendar className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                         <span className="font-medium truncate">
-                          {fmt(team.StartDate)} {team.EndDate ? `– ${fmt(team.EndDate)}` : ''}
+                          {formatDate(team.StartDate)} {team.EndDate ? `– ${formatDate(team.EndDate)}` : ''}
                         </span>
                       </div>
                     )}
@@ -234,7 +239,11 @@ export default function MyTeams() {
                       onClick={() => navigate(`/user/teamInfo/${team.TeamId}`)}
                       className="flex-1 py-2 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors"
                     >
-                      {String(team.EventType || '').toLowerCase().includes('webinar') ? 'Delegate Pass' : isIndividual ? 'Pass & Details' : 'Team Dashboard'} <ArrowRight className="h-3.5 w-3.5" />
+                      {String(team.EventType || '').toLowerCase().includes('webinar')
+                        ? (resolvedTrack === 'Virtual' ? 'Webinar Live Stream' : 'Delegate Pass')
+                        : isIndividual
+                        ? (resolvedTrack === 'Virtual' ? 'Virtual Workspace' : 'Campus Pass & Details')
+                        : (resolvedTrack === 'Virtual' ? 'Virtual Workspace' : 'Team Dashboard')} <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                     {team.EventId && (
                       <button

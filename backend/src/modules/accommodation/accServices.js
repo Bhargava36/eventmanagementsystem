@@ -211,10 +211,14 @@ const getAllRooms = async (eventIdOrCallback, maybeCallback) => {
             roomAssignments.push(assignment);
             assignmentsByRoom.set(assignment.RoomId, roomAssignments);
         });
-        const result = rooms.map((room) => ({
-            ...room,
-            participants: assignmentsByRoom.get(room.Id) || []
-        }));
+        const result = rooms.map((room) => {
+            const roomParticipants = assignmentsByRoom.get(room.Id) || [];
+            return {
+                ...room,
+                Occupied: roomParticipants.length,
+                participants: roomParticipants
+            };
+        });
         if (typeof callback === "function") {
             return callback(null, result);
         }
@@ -259,6 +263,7 @@ const getRoomById = (id, callback) => {
             }
             callback(null, {
                 ...result[0],
+                Occupied: (assignments || []).length,
                 participants: assignments
             });
         });

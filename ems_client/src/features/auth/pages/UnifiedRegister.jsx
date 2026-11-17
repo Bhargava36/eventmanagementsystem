@@ -258,13 +258,7 @@ function UnifiedRegister({ role: propRole }) {
     }
     return "";
   };
-  const getEventIdError = () => {
-    if (activeRole === "admin") {
-      const val = formData.EventId.trim();
-      if (!val) return "Assigned Event ID is required";
-    }
-    return "";
-  };
+  const getEventIdError = () => "";
   const userNameError = getUserNameError();
   const emailError = getEmailError();
   const phoneError = getPhoneError();
@@ -317,7 +311,6 @@ function UnifiedRegister({ role: propRole }) {
       confirmPassword: true,
       Phone: true,
       College: true,
-      EventId: true,
     });
     const hasAnyError =
       userNameError ||
@@ -325,8 +318,7 @@ function UnifiedRegister({ role: propRole }) {
       phoneError ||
       passwordError ||
       confirmPasswordError ||
-      collegeError ||
-      eventIdError;
+      collegeError;
     if (hasAnyError) {
       triggerShake();
       const firstError =
@@ -335,8 +327,7 @@ function UnifiedRegister({ role: propRole }) {
         phoneError ||
         passwordError ||
         confirmPasswordError ||
-        collegeError ||
-        eventIdError;
+        collegeError;
       setError(firstError);
       toast.error(firstError);
       return;
@@ -357,7 +348,6 @@ function UnifiedRegister({ role: propRole }) {
           Email: formData.Email.trim(),
           Password: formData.Password,
           Mobile: formData.Mobile.trim() || formData.PhoneNumber.trim(),
-          EventId: formData.EventId.trim() || "1",
         };
       } else {
         payload = {
@@ -863,75 +853,6 @@ function UnifiedRegister({ role: propRole }) {
                   >
                     City / Location
                   </label>
-                </div>
-              )}
-              {activeRole === "admin" && (
-                <div className="relative w-full">
-                  <CalendarDays
-                    className={`absolute left-0 top-3 w-5 h-5 pointer-events-none transition-colors duration-200 ${
-                      showEventIdError
-                        ? "text-rose-500"
-                        : isEventIdValid
-                        ? "text-emerald-500"
-                        : "text-emerald-700 dark:text-emerald-400"
-                    }`}
-                  />
-                  <input
-                    type="text"
-                    id="reg_eventId"
-                    name="EventId"
-                    placeholder=""
-                    autoComplete="off"
-                    value={formData.EventId}
-                    onBlur={() => handleBlur("EventId")}
-                    onChange={handleChange}
-                    className={`w-full border-0 border-b-2 bg-transparent pl-8 pr-8 py-2 text-black dark:text-white focus:outline-none transition duration-200 text-sm ${
-                      showEventIdError
-                        ? "border-rose-500 focus:border-rose-500"
-                        : isEventIdValid
-                        ? "border-emerald-500 focus:border-emerald-500"
-                        : "border-gray-300 dark:border-gray-600 focus:border-emerald-500"
-                    }`}
-                  />
-                  <label
-                    htmlFor="reg_eventId"
-                    className={`absolute left-8 transition-all duration-200 pointer-events-none select-none ${
-                      formData.EventId
-                        ? `-top-4 text-xs font-semibold ${
-                            showEventIdError
-                              ? "text-rose-500"
-                              : isEventIdValid
-                              ? "text-emerald-600 dark:text-emerald-400"
-                              : "text-emerald-700 dark:text-emerald-400"
-                          }`
-                        : "top-2 text-sm text-gray-500 dark:text-gray-400"
-                    }`}
-                  >
-                    Assigned Event ID
-                  </label>
-                  {isEventIdValid && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="absolute right-1 top-3 text-emerald-500"
-                    >
-                      <Check className="w-4 h-4" />
-                    </motion.div>
-                  )}
-                  <AnimatePresence>
-                    {showEventIdError && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4, height: 0 }}
-                        animate={{ opacity: 1, y: 0, height: "auto" }}
-                        exit={{ opacity: 0, y: -4, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="flex items-center gap-1.5 text-rose-500 text-xs mt-1.5 font-medium"
-                      >
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                        <span>{eventIdError}</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
               )}
               <div className="relative w-full">

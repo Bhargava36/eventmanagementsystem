@@ -1,30 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import { QRCodeSVG } from 'qrcode.react';
 import useToast from '../../../../../Hooks/useToast';
-import {
-  QrCode,
-  Calendar,
-  MapPin,
-  Clock,
-  Download,
-  Building,
-  GraduationCap,
-  Users,
-  Utensils,
-  CalendarDays,
-  Mic,
-  Camera,
-  CheckCircle2,
-  ExternalLink,
-  Globe,
-  HeartHandshake,
-  Shirt,
-  Heart,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react';
+import { QrCode, Calendar, MapPin, Clock, Download, Building, GraduationCap, CalendarDays, Mic, Camera, CheckCircle2, Globe, HeartHandshake, Shirt, Heart } from 'lucide-react';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../../../../../lib/calendarUtils';
 import UnifiedEventFeedbackCard from './UnifiedEventFeedbackCard';
 export default function AlumniDigitalPassCard({ eventId, user, team }) {

@@ -2,17 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  Camera,
-  Plus,
-  Trash2,
-  GraduationCap,
-  Image as ImageIcon,
-  X,
-  ExternalLink,
-  Heart,
-  Eye
-} from 'lucide-react';
+import { Camera, Plus, Trash2, X, Eye } from 'lucide-react';
 export default function AlumniMemoriesPage() {
   const toast = useToast();
   const admin = useMemo(() => {

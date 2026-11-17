@@ -1,21 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Mail,
-  KeyRound,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowLeft,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-  ShieldCheck,
-  Loader2,
-  Check,
-  Send,
-} from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle2, AlertCircle, RefreshCw, ShieldCheck, Loader2, Check, Send } from "lucide-react";
 import WaveBackground from "../../../components/Molecules/WaveBackground";
 import { API_BASE_URL } from "@/lib/api";
 import useToast from "../../../Hooks/useToast";

@@ -8,7 +8,7 @@ const formatPayload = (platform, eventName, payload) => {
             avatar_url: 'https://cdn-icons-png.flaticon.com/512/906/906343.png',
             embeds: [
                 {
-                    title: `🔔 Event Alert: ${eventName}`,
+                    title: `Event Alert: ${eventName}`,
                     description: payload?.message || `Triggered by AYOJAN Event Management System`,
                     color: 0x10b981, // Emerald brand color
                     fields: Object.entries(payload?.details || payload || {}).slice(0, 8).map(([key, value]) => ({
@@ -32,7 +32,7 @@ const formatPayload = (platform, eventName, payload) => {
                     type: 'header',
                     text: {
                         type: 'plain_text',
-                        text: `🔔 Event Alert: ${eventName}`,
+                        text: `Event Alert: ${eventName}`,
                         emoji: true
                     }
                 },

@@ -5,23 +5,8 @@ import { motion } from 'framer-motion';
 import useAuth from '../../../../Hooks/useAuth';
 import ByteEmptyState from '../../../../components/Molecules/ByteEmptyState';
 import UserPlatformFeedbackCard from './components/UserPlatformFeedbackCard';
-import {
-  Calendar,
-  Users,
-  Trophy,
-  ArrowRight,
-  Crown,
-  ChevronRight,
-  ExternalLink,
-  Clock,
-  GraduationCap,
-  ScrollText,
-  Award,
-  Radio,
-  Presentation,
-  Video
-} from 'lucide-react';
-import { isSoloTeamSize, getEventTypeInfo } from '../../../../lib/utils';
+import { Calendar, Users, Trophy, ArrowRight, Crown, ChevronRight, ExternalLink, Clock, GraduationCap, ScrollText, Award, Radio, Monitor, Building2 } from 'lucide-react';
+import { getEventTypeInfo, isMultiModeEvent, resolveParticipantTrack, formatDate } from '../../../../lib/utils';
 /* ── dot-pulse keyframes ── */
 const DotStyle = () => (
   <style>{`
@@ -80,11 +65,6 @@ export default function UserDashboard() {
       }
     } catch { /* silent */ }
     finally { setLoading(false); }
-  };
-  const fmt = (dateStr) => {
-    if (!dateStr) return '—';
-    try { return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }); }
-    catch { return dateStr; }
   };
   const openEventsCount = useMemo(() =>
     events.filter(e => {
@@ -190,6 +170,8 @@ export default function UserDashboard() {
                 const isWorkshop = typeInfo.isWorkshop;
                 const isWebinar = typeInfo.isWebinar;
                 const eventTypeBadge = rawType || 'Hackathon';
+                const resolvedTrack = resolveParticipantTrack(team, matchedEvent);
+                const isMultiMode = team.isMultiModeEvent || isMultiModeEvent(matchedEvent);
                 return (
                   <motion.div
                     key={team.TeamId || idx}
@@ -200,7 +182,7 @@ export default function UserDashboard() {
                     className="bg-white dark:bg-zinc-950 rounded-3xl border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 p-5"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <StatusBadge status={team.RegistrationStatus ?? ''} />
                         {/* Event Type Badge - Rectangular, no pill */}
                         <span
@@ -208,6 +190,32 @@ export default function UserDashboard() {
                         >
                           {eventTypeBadge}
                         </span>
+                        {/* Dynamic Track Badge */}
+                        {isMultiMode && (
+                          <span
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 ${
+                              resolvedTrack === 'Virtual'
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-600 border-emerald-500/30'
+                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                            }`}
+                          >
+                            {resolvedTrack === 'Virtual' ? <Monitor className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
+                            <span>{resolvedTrack} Track</span>
+                          </span>
+                        )}
+                        {/* Dynamic Track Badge */}
+                        {isMultiMode && (
+                          <span
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1 ${
+                              resolvedTrack === 'Virtual'
+                                ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30'
+                                : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
+                            }`}
+                          >
+                            {resolvedTrack === 'Virtual' ? <Monitor className="h-3 w-3" /> : <Building2 className="h-3 w-3" />}
+                            <span>{resolvedTrack} Track</span>
+                          </span>
+                        )}
                       </div>
                       <CardDots />
                     </div>
@@ -240,7 +248,7 @@ export default function UserDashboard() {
                     {(team.StartDate || team.EndDate) && (
                       <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200/80 dark:border-zinc-800/80 text-xs text-slate-600 dark:text-zinc-400">
                         <Calendar className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                        <span className="font-medium font-mono text-[11px]">{fmt(team.StartDate)} – {fmt(team.EndDate)}</span>
+                        <span className="font-medium font-mono text-[11px]">{formatDate(team.StartDate)} – {formatDate(team.EndDate)}</span>
                       </div>
                     )}
                     <div className="flex items-center gap-2 pt-1 mt-auto border-t border-slate-100 dark:border-zinc-800">
@@ -249,7 +257,13 @@ export default function UserDashboard() {
                         onClick={() => navigate(`/user/teamInfo/${team.TeamId}`)}
                         className="flex-1 py-2 px-3 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer bg-emerald-600 hover:bg-emerald-500"
                       >
-                        <span>{isWebinar ? 'Webinar Hub' : isWorkshop ? 'Workshop Hub' : 'Team Workspace'}</span>
+                        <span>
+                          {isWebinar
+                            ? (resolvedTrack === 'Virtual' ? 'Webinar Live Stream' : 'Webinar Hub')
+                            : isWorkshop
+                            ? (resolvedTrack === 'Virtual' ? 'Virtual Workshop Lab' : 'Workshop Pass')
+                            : (resolvedTrack === 'Virtual' ? 'Virtual Workspace' : 'Team Workspace')}
+                        </span>
                         <ArrowRight className="h-3.5 w-3.5" />
                       </button>
                       <button

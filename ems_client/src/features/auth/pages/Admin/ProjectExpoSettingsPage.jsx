@@ -1,24 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  Sliders,
-  CheckCircle2,
-  Calendar,
-  Users,
-  Building2,
-  FileText,
-  Save,
-  Loader2,
-  Layers,
-  Clock,
-  Plus,
-  Trash2,
-  RefreshCw,
-  Award
-} from 'lucide-react';
+import { Users, Building2, Save, Loader2, Layers, Plus, Trash2 } from 'lucide-react';
 const LIFECYCLE_STEPS = [
   { id: 'DRAFT', label: 'Draft' },
   { id: 'CONFIGURATION', label: 'Configured' },

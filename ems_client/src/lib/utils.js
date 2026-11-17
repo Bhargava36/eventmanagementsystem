@@ -148,6 +148,41 @@ export function getTrackVisibility(mode, location = '', eventType = '') {
     showPhysical: isBoth || isPhysical,
   };
 }
+export function normalizeParticipationMode(mode, location = '') {
+  const norm = normalizeHackathonMode(mode, location);
+  if (norm === 'virtual') return 'Virtual';
+  if (norm === 'physical') return 'Physical';
+  if (norm === 'both') return 'Both';
+  return 'Physical';
+}
+export function isMultiModeEvent(event) {
+  if (!event) return false;
+  const mode = normalizeHackathonMode(event.HackathonMode || event.ParticipationMode || '', event.Location || '');
+  if (mode === 'both') return true;
+  const hasVirtual = Boolean(event.VirtualStartDate || event.VirtualRegistrationStart || event.VirtualMeetUrl);
+  const hasPhysical = Boolean(event.PhysicalStartDate || event.PhysicalRegistrationStart || event.PhysicalFacilities);
+  return hasVirtual && hasPhysical;
+}
+export function resolveParticipantTrack(team, event = null) {
+  if (!team) {
+    if (event) {
+      const evMode = normalizeHackathonMode(event.HackathonMode || event.ParticipationMode || '', event.Location || '');
+      return evMode === 'both' ? 'Physical' : (evMode === 'virtual' ? 'Virtual' : 'Physical');
+    }
+    return 'Physical';
+  }
+  const raw = team.ParticipationMode || team.Track || team.HackathonMode || '';
+  if (raw) {
+    const norm = normalizeHackathonMode(raw);
+    if (norm === 'virtual') return 'Virtual';
+    if (norm === 'physical') return 'Physical';
+  }
+  if (event && !isMultiModeEvent(event)) {
+    const evMode = normalizeHackathonMode(event.HackathonMode || '', event.Location || '');
+    return evMode === 'virtual' ? 'Virtual' : 'Physical';
+  }
+  return 'Physical';
+}
 export function isSoloTeamSize(teamSize) {
   if (!teamSize) return false;
   const str = String(teamSize).trim().toLowerCase();
@@ -332,4 +367,59 @@ export function validateEventDates({
     return `${prefix}Registration Start Date must be before Event Start Date.`;
   }
   return null;
+}
+
+/**
+ * Standardized Date Formatter across all EMS client views
+ */
+export function formatDate(dateStr, locale = 'en-GB', fallback = '—') {
+  if (!dateStr) return fallback;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString(locale, {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  } catch {
+    return String(dateStr || fallback);
+  }
+}
+
+/**
+ * Standardized Time Formatter across all EMS client views
+ */
+export function formatTime(dateStr, fallback = '—') {
+  if (!dateStr) return fallback;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return String(dateStr || fallback);
+  }
+}
+
+/**
+ * Safely extracts stored token from localStorage
+ */
+export function getStoredAuthToken() {
+  try {
+    return localStorage.getItem('token') || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Safely extracts stored user payload from localStorage
+ */
+export function getStoredUser() {
+  try {
+    const raw = localStorage.getItem('user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }

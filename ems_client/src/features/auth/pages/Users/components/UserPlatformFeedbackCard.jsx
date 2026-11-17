@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Send, CheckCircle2, MessageSquare, Laptop, ThumbsUp } from 'lucide-react';
+import { Star, Send, CheckCircle2, Laptop } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 export default function UserPlatformFeedbackCard({ user }) {

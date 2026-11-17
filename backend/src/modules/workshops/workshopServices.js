@@ -1,6 +1,7 @@
 const db = require('../../config/db');
-// Sessions
-const getSessions = (eventId, callback) => {
+// Sessions (optional track filter for multi-mode workshops)
+const getSessions = (eventId, trackOrCallback, callbackArg) => {
+    const callback = typeof trackOrCallback === 'function' ? trackOrCallback : callbackArg;
     const query = `
         SELECT * FROM workshop_sessions
         WHERE EventId = ?
@@ -91,8 +92,9 @@ const deleteSession = (sessionId, callback) => {
         return callback(null, result);
     });
 };
-// Resources
-const getResources = (eventId, callback) => {
+// Resources (optional track filter for multi-mode workshops)
+const getResources = (eventId, trackOrCallback, callbackArg) => {
+    const callback = typeof trackOrCallback === 'function' ? trackOrCallback : callbackArg;
     const query = `
         SELECT * FROM workshop_resources
         WHERE EventId = ?

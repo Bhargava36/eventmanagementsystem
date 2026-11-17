@@ -28,6 +28,7 @@ import WaveBackground from "../../../components/Molecules/WaveBackground";
 import { motion, AnimatePresence } from "framer-motion";
 import useAuth from "../../../Hooks/useAuth";
 import useToast from "../../../Hooks/useToast";
+import useTheme from "../../../Hooks/useTheme";
 const logoElement = (
   <div className="relative w-5 h-5 flex items-center justify-center">
     <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -294,6 +295,8 @@ function UnifiedLogin({ role: propRole }) {
   const location = useLocation();
   const { login } = useAuth();
   const toast = useToast();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const activeRole = getActiveRole(location.pathname, propRole);
   const config = ROLE_CONFIGS[activeRole];
   const [email, setEmail] = useState("");
@@ -329,10 +332,11 @@ function UnifiedLogin({ role: propRole }) {
   const [maskedEmail, setMaskedEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [verifying2fa, setVerifying2fa] = useState(false);
-  const fetchCaptcha = async () => {
+  const fetchCaptcha = async (forcedTheme) => {
     try {
       setCaptchaLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/security/captcha`);
+      const activeTheme = forcedTheme || theme || (document.documentElement.classList.contains("dark") ? "dark" : "light");
+      const res = await fetch(`${API_BASE_URL}/api/security/captcha?theme=${encodeURIComponent(activeTheme)}`);
       const data = await res.json();
       if (res.ok && data.success) {
         setCaptchaId(data.captchaId);
@@ -346,8 +350,8 @@ function UnifiedLogin({ role: propRole }) {
     }
   };
   useEffect(() => {
-    fetchCaptcha();
-  }, [activeRole]);
+    fetchCaptcha(theme);
+  }, [theme, activeRole]);
   const [eventsList, setEventsList] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   useEffect(() => {
@@ -945,7 +949,7 @@ function UnifiedLogin({ role: propRole }) {
                 </span>
                 <button
                   type="button"
-                  onClick={fetchCaptcha}
+                  onClick={() => fetchCaptcha()}
                   disabled={captchaLoading}
                   className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 font-medium cursor-pointer transition-colors"
                   title="Generate a new challenge"
@@ -956,10 +960,14 @@ function UnifiedLogin({ role: propRole }) {
               </div>
               {/* The Distorted Anti-Bot CAPTCHA Canvas */}
               <div
-                className="w-full rounded-xl overflow-hidden border border-emerald-500/30 dark:border-emerald-500/40 bg-black/60 shadow-md cursor-pointer hover:border-emerald-500 transition-all select-none group relative"
-                onClick={fetchCaptcha}
+                className="w-full rounded-xl overflow-hidden border border-gray-200 dark:border-emerald-500/40 bg-slate-50 dark:bg-black/60 shadow-sm dark:shadow-md cursor-pointer hover:border-emerald-500 dark:hover:border-emerald-400 transition-all select-none group relative"
+                onClick={() => fetchCaptcha()}
                 title="Click image to reload new challenge"
-                dangerouslySetInnerHTML={{ __html: captchaSvg || '<div class="w-full h-[60px] bg-zinc-900 rounded-xl animate-pulse"/>' }}
+                dangerouslySetInnerHTML={{
+                  __html: captchaSvg || (isDark
+                    ? '<div class="w-full h-[60px] bg-zinc-900 rounded-xl animate-pulse"/>'
+                    : '<div class="w-full h-[60px] bg-slate-100 rounded-xl animate-pulse"/>')
+                }}
               />
             </div>
             {/* Seamless Underline Input matching Email & Password Fields */}
@@ -1035,21 +1043,21 @@ function UnifiedLogin({ role: propRole }) {
                 </Link>
               </p>
             )}
-            <div className="flex items-center my-6">
+            {/* <div className="flex items-center my-6">
               <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
               <span className="mx-4 text-gray-400 text-xs uppercase tracking-wider">
                 or
               </span>
               <div className="flex-grow border-t border-gray-200 dark:border-white/10"></div>
-            </div>
-            <button
+            </div> */}
+            {/* <button
               type="button"
               onClick={handleGoogleSignIn}
               className="w-full bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 text-gray-800 dark:text-gray-200 font-medium py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800 transition duration-300 flex items-center justify-center gap-2 text-sm shadow-sm cursor-pointer"
             >
               <FcGoogle className="w-5 h-5" />
               Sign in with Google
-            </button>
+            </button> */}
             {config.alternateLink && (
               <div className="text-center mt-4">
                 <Link

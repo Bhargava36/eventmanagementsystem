@@ -76,8 +76,9 @@ const deleteSpeaker = (speakerId, callback) => {
         return callback(null, result);
     });
 };
-// --- Sessions / Agenda ---
-const getSessions = (eventId, callback) => {
+// --- Sessions / Agenda (optional track filter for multi-mode seminars) ---
+const getSessions = (eventId, trackOrCallback, callbackArg) => {
+    const callback = typeof trackOrCallback === 'function' ? trackOrCallback : callbackArg;
     const query = `
         SELECT * FROM seminar_sessions
         WHERE EventId = ?
@@ -244,7 +245,9 @@ const issueCertificate = ({ eventId, userId }, callback) => {
     });
 };
 // --- Resources ---
-const getResources = (eventId, callback) => {
+// Resources (optional track filter for multi-mode seminars)
+const getResources = (eventId, trackOrCallback, callbackArg) => {
+    const callback = typeof trackOrCallback === 'function' ? trackOrCallback : callbackArg;
     const query = `
         SELECT * FROM seminar_resources
         WHERE EventId = ?

@@ -3,49 +3,14 @@ import { API_BASE_URL } from '@/lib/api';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import useTheme from '../../../Hooks/useTheme';
-import { getEventTheme, getEventTypeInfo, isSoloTeamSize } from '../../../lib/utils';
+import { getEventTheme, getEventTypeInfo, formatDate } from '../../../lib/utils';
 import FlipCountdown from '../../../components/Molecules/FlipCountdown';
 import TrackTimelineSection from '../../../components/Molecules/TrackTimelineSection';
 import EventMediaSlider from '../../../components/Molecules/EventMediaSlider';
 import EventGallerySection from '../../../components/Molecules/EventGallerySection';
 import EventSponsorsSection from '../../../components/Molecules/EventSponsorsSection';
 import PhysicalHackathonThemesSection from '../../../components/Molecules/PhysicalHackathonThemesSection';
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  MapPin,
-  Users,
-  Trophy,
-  Award,
-  Medal,
-  CheckCircle2,
-  Share2,
-  Copy,
-  Check,
-  Monitor,
-  Building2,
-  Globe,
-  Tag,
-  AlertCircle,
-  RefreshCw,
-  Mail,
-  Phone,
-  FileText,
-  ShieldCheck,
-  ExternalLink,
-  ChevronRight,
-  Layers,
-  Radio,
-  Info,
-  BookOpen,
-  GraduationCap,
-  Laptop,
-  Video,
-  Presentation,
-  Mic,
-  CalendarPlus
-} from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, Users, Trophy, Award, Medal, CheckCircle2, Share2, Check, Monitor, Building2, Globe, Tag, AlertCircle, RefreshCw, FileText, ShieldCheck, ChevronRight, Layers, Radio, Info, BookOpen, GraduationCap, Laptop, Presentation, Mic, CalendarPlus } from 'lucide-react';
 import { buildGoogleCalendarUrl } from '../../../lib/calendarUtils';
 function PrizePodiumStage({
   firstAmount,
@@ -498,20 +463,6 @@ function PublicEventDetails() {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
     } catch {
-    }
-  };
-  const formatDate = (dateString) => {
-    if (!dateString) return 'TBA';
-    try {
-      const d = new Date(dateString);
-      if (isNaN(d.getTime())) return dateString;
-      return d.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
-    } catch {
-      return dateString;
     }
   };
   const getPoster = () => {

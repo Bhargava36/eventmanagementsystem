@@ -1,12 +1,29 @@
 const db = require("../../config/db");
-const getTimelinesByEvent = (eventId, callback) => {
-    const query = `
+const getTimelinesByEvent = (eventId, trackOrCallback, callbackArg) => {
+    let track = null;
+    let callback = null;
+    if (typeof trackOrCallback === 'function') {
+        callback = trackOrCallback;
+    } else {
+        track = trackOrCallback;
+        callback = callbackArg;
+    }
+
+    let query = `
         SELECT Id, EventId, Track, TimelineDate, Heading, Description, OrderIndex, CreatedAt, UpdatedAt
         FROM event_timelines
         WHERE EventId = ?
-        ORDER BY Track ASC, OrderIndex ASC, Id ASC
     `;
-    db.query(query, [eventId], (err, results) => {
+    const params = [eventId];
+
+    if (track && track.toLowerCase() !== 'all') {
+        query += ` AND (LOWER(Track) = LOWER(?) OR Track = 'General')`;
+        params.push(track);
+    }
+
+    query += ` ORDER BY Track ASC, OrderIndex ASC, Id ASC`;
+
+    db.query(query, params, (err, results) => {
         if (err) {
             return callback(err, null);
         }

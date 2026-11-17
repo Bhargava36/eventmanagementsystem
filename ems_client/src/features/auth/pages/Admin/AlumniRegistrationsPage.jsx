@@ -3,27 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
 import { QRCodeSVG } from 'qrcode.react';
-import {
-  Users,
-  Search,
-  Download,
-  Filter,
-  CheckCircle2,
-  Clock,
-  ExternalLink,
-  Globe,
-  MapPin,
-  Building,
-  GraduationCap,
-  QrCode,
-  HeartHandshake,
-  UserCheck,
-  X,
-  FileSpreadsheet,
-  RefreshCw,
-  Phone,
-  Mail
-} from 'lucide-react';
+import { Users, Search, Download, Filter, CheckCircle2, Clock, MapPin, Building, QrCode, X, FileSpreadsheet, RefreshCw, Mail } from 'lucide-react';
+import { downloadRegistrationsWorkbook } from '../../../../lib/excelExport';
 export default function AlumniRegistrationsPage() {
   const toast = useToast();
   const admin = useMemo(() => {
@@ -137,6 +118,63 @@ export default function AlumniRegistrationsPage() {
     document.body.removeChild(link);
     toast.success('Alumni directory downloaded');
   };
+
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const handleExportExcel = async () => {
+    if (registrations.length === 0) {
+      toast.info('No registrations to export');
+      return;
+    }
+    try {
+      setIsExportingExcel(true);
+      const alumniMembers = filteredList.map((r, idx) => ({
+        MemberRecordId: idx + 1,
+        TeamId: r.TeamId || idx + 1,
+        TeamName: r.CurrentCompany ? `${r.CurrentCompany} (Batch ${r.GraduationYear || 'N/A'})` : `Batch ${r.GraduationYear || 'N/A'}`,
+        ParticipationMode: 'Physical',
+        Role: r.Designation || 'Alumnus',
+        IsLeader: false,
+        Name: r.UserName || 'Alumnus',
+        Email: r.Email || '',
+        Mobile: r.Mobile || '',
+        Gender: r.Gender || 'Not Specified',
+        College: r.College || admin?.College || 'AYOJAN Alumni',
+        State: r.City || r.State || '',
+        RegistrationDate: r.CreatedAt,
+        ProblemTitle: r.CurrentCompany ? `${r.Designation || 'Alumnus'} at ${r.CurrentCompany}` : 'Alumnus',
+        AccommodationRequested: (Number(r.GuestCount) || 0) > 0,
+        FoodAccepted: !!r.FoodTokenScanned
+      }));
+
+      await downloadRegistrationsWorkbook({
+        event: {
+          Id: eventId,
+          EventName: admin?.EventName || 'AYOJAN Alumni Grand Reunion',
+          EventType: 'Alumni Meet',
+          HackathonMode: 'Physical',
+          Location: admin?.Location || 'Campus Alumni Grounds'
+        },
+        teams: [],
+        members: alumniMembers,
+        summary: {
+          totalTeams: registrations.length,
+          totalMembers: registrations.length + totalGuests,
+          virtualTeams: 0,
+          physicalTeams: registrations.length,
+          virtualMembers: 0,
+          physicalMembers: registrations.length + totalGuests
+        },
+        filterMode: 'all',
+        customFilename: `AYOJAN_Alumni_Directory_Event_${eventId}.xlsx`
+      });
+      toast.success('Alumni Excel directory downloaded successfully!');
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to export Excel directory');
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
   const handleOpenDetail = (alumnus) => {
     setActiveAlumnus(alumnus);
     setDetailModalOpen(true);
@@ -169,6 +207,16 @@ export default function AlumniRegistrationsPage() {
             title="Refresh Roster"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            type="button"
+            disabled={isExportingExcel || registrations.length === 0}
+            onClick={handleExportExcel}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            title="Download complete Alumni Directory as styled Excel spreadsheet"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>{isExportingExcel ? 'Exporting...' : 'Export Excel (.xlsx)'}</span>
           </button>
           <button
             onClick={handleExportCSV}
@@ -376,7 +424,7 @@ export default function AlumniRegistrationsPage() {
                       <td className="p-4">
                         {isFoodScanned ? (
                           <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                            • Claimed ✓
+                            • Claimed 
                           </span>
                         ) : (
                           <span className="text-gray-400 dark:text-zinc-600 text-xs">• Unclaimed</span>
@@ -477,7 +525,7 @@ export default function AlumniRegistrationsPage() {
                 <div className="flex justify-between py-1">
                   <span className="text-gray-500 dark:text-zinc-400">Banquet Token</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {activeAlumnus.FoodTokenScanned ? 'Claimed ✓' : 'Unclaimed'}
+                    {activeAlumnus.FoodTokenScanned ? 'Claimed ' : 'Unclaimed'}
                   </span>
                 </div>
               </div>

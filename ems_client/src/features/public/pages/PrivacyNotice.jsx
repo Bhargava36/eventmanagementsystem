@@ -1,18 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {
-  ShieldCheck,
-  Lock,
-  Eye,
-  Database,
-  KeyRound,
-  UserCheck,
-  ArrowLeft,
-  Clock,
-  Mail,
-  CheckCircle2
-} from 'lucide-react';
+import { ShieldCheck, Lock, Eye, Database, KeyRound, UserCheck, ArrowLeft, Clock } from 'lucide-react';
 export default function PrivacyNotice() {
   const lastUpdated = "October 26, 2026";
   const privacySections = [

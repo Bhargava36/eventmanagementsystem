@@ -544,7 +544,11 @@ const migrationQueries = [
         FOREIGN KEY (TeamId) REFERENCES registered_teams(Id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `ALTER TABLE participant_problem_statements ADD COLUMN IF NOT EXISTS Category VARCHAR(50) NOT NULL DEFAULT 'Software'`,
+    `ALTER TABLE participant_problem_statements ADD COLUMN IF NOT EXISTS DocumentUrl VARCHAR(500) NULL`,
+    `ALTER TABLE participant_problem_statements ADD COLUMN IF NOT EXISTS DocumentName VARCHAR(255) NULL`,
     `ALTER TABLE event_problem_statements ADD COLUMN IF NOT EXISTS Category VARCHAR(50) NOT NULL DEFAULT 'Software'`,
+    `ALTER TABLE event_themes ADD COLUMN IF NOT EXISTS Track ENUM('Physical', 'Virtual') NOT NULL DEFAULT 'Virtual'`,
+    `ALTER TABLE event_problem_statements ADD COLUMN IF NOT EXISTS Track ENUM('Physical', 'Virtual') NOT NULL DEFAULT 'Virtual'`,
     `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS VerificationToken VARCHAR(100) UNIQUE DEFAULT NULL`,
     `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS TemplateId INT DEFAULT NULL`,
     `ALTER TABLE participant_id_cards ADD COLUMN IF NOT EXISTS FrontImageUrl VARCHAR(500) DEFAULT NULL`,

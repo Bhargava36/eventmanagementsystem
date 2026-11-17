@@ -4,34 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../../Hooks/useToast';
 import UnifiedEventFeedbackCard from './UnifiedEventFeedbackCard';
-import {
-  QrCode,
-  Building2,
-  Calendar,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  FileText,
-  FolderGit2,
-  Globe,
-  Upload,
-  Trophy,
-  Award,
-  Download,
-  ExternalLink,
-  Edit2,
-  Loader2,
-  Info,
-  Check,
-  Copy,
-  Layers,
-  Sparkles,
-  ChevronDown,
-  ChevronUp,
-  Star,
-  ShieldCheck,
-  X
-} from 'lucide-react';
+import { QrCode, Building2, Clock, CheckCircle2, FileText, FolderGit2, Globe, Trophy, Award, ExternalLink, Edit2, Loader2, Info, Check, Copy, Layers, X } from 'lucide-react';
 export default function ProjectExpoParticipantCard({ eventId, team, user }) {
   const toast = useToast();
   const teamId = team?.Id || team?.id || team?.TeamId;
@@ -358,7 +331,7 @@ export default function ProjectExpoParticipantCard({ eventId, team, user }) {
                 </div>
               ) : (
                 <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-50/20 dark:bg-amber-950/20 text-xs text-amber-700 dark:text-amber-300">
-                  ⚠️ Stall allocation is currently in progress. Your stall number will appear here once allocated by event organizers.
+                  Stall allocation is currently in progress. Your stall number will appear here once allocated by event organizers.
                 </div>
               )}
               {/* Presentation Demo Slot */}
@@ -551,7 +524,7 @@ export default function ProjectExpoParticipantCard({ eventId, team, user }) {
             )}
           </div>
 
-          {/* Sub-Tabs: All Stages | Round 1 | Round 2 | ... | 🏆 Overall 3 Event Prizes */}
+          {/* Sub-Tabs: All Stages | Round 1 | Round 2 | ... |  Overall 3 Event Prizes */}
           {(publishedRounds.length > 0 || isOverallPublished) && (
             <div className="relative pt-2">
               <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200 dark:bg-zinc-800 pointer-events-none z-0" />
@@ -663,7 +636,7 @@ export default function ProjectExpoParticipantCard({ eventId, team, user }) {
                       }`}
                     >
                       <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                      <span>3 Event Prizes &amp; Standing 🏆</span>
+                      <span>3 Event Prizes &amp; Standing </span>
                     </span>
                   </button>
                 )}
@@ -938,7 +911,7 @@ export default function ProjectExpoParticipantCard({ eventId, team, user }) {
                           Official Exhibition Honors
                         </span>
                         <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-                          {teamWinnerRecord.Category} 🏆
+                          {teamWinnerRecord.Category} 
                         </h3>
                       </div>
                     </div>
@@ -983,11 +956,11 @@ export default function ProjectExpoParticipantCard({ eventId, team, user }) {
                     </div>
                     <h4 className="text-base font-bold text-gray-900 dark:text-white mt-0.5">
                       {publishedEvaluation?.overallRank === 1 || teamWinnerRecord?.RankPosition === 1
-                        ? '1st Place Champion 🏆'
+                        ? '1st Place Champion '
                         : publishedEvaluation?.overallRank === 2 || teamWinnerRecord?.RankPosition === 2
-                        ? '2nd Place Runner-Up 🥈'
+                        ? '2nd Place Runner-Up 2nd'
                         : publishedEvaluation?.overallRank === 3 || teamWinnerRecord?.RankPosition === 3
-                        ? '3rd Place Podium Finish 🥉'
+                        ? '3rd Place Podium Finish 3rd'
                         : `Overall Rank #${publishedEvaluation?.overallRank || 1}`}
                     </h4>
                     <p className="text-xs text-gray-500 dark:text-zinc-400">

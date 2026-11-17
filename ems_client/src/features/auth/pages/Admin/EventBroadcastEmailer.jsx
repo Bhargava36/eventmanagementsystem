@@ -1,21 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Send,
-  Mail,
-  Users,
-  CheckCircle2,
-  Clock,
-  History,
-  ShieldCheck,
-  RefreshCw,
-  Eye,
-  Megaphone,
-  Radio,
-  FileText,
-  UserCheck,
-  GraduationCap,
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { Send, Users, CheckCircle2, Clock, History, ShieldCheck, RefreshCw, Eye, Radio, UserCheck, GraduationCap } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api";
 import useToast from "../../../../Hooks/useToast";
 import { getEventTypeInfo } from "../../../../lib/utils";

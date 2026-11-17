@@ -2,7 +2,8 @@ const webinarServices = require('./webinarServices');
 // Sessions
 const getSessions = (req, res) => {
     const { eventId } = req.params;
-    webinarServices.getSessions(eventId, (err, results) => {
+    const track = req.query.track || null;
+    webinarServices.getSessions(eventId, track, (err, results) => {
         if (err) return res.status(500).json({ message: 'Error fetching webinar sessions', error: err.message });
         res.status(200).json({ sessions: results || [] });
     });
@@ -35,7 +36,8 @@ const deleteSession = (req, res) => {
 // Resources
 const getResources = (req, res) => {
     const { eventId } = req.params;
-    webinarServices.getResources(eventId, (err, results) => {
+    const track = req.query.track || null;
+    webinarServices.getResources(eventId, track, (err, results) => {
         if (err) return res.status(500).json({ message: 'Error fetching webinar resources', error: err.message });
         res.status(200).json({ resources: results || [] });
     });

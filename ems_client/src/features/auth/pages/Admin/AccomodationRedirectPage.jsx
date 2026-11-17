@@ -2,40 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  BedDouble,
-  ArrowLeft,
-  ArrowRight,
-  Users,
-  Clock,
-  Mars,
-  Venus,
-  Search,
-  Eye,
-  Edit2,
-  Plus,
-  X,
-  MapPin,
-  CalendarDays,
-  Save,
-  Trash2,
-  UserPlus,
-  CheckCircle,
-  Building2,
-  Layers,
-  Utensils,
-  ShieldAlert,
-  UserMinus,
-  RefreshCw,
-  CreditCard,
-  FileText,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  IndianRupee,
-  ExternalLink,
-  Check,
-} from 'lucide-react';
+import { BedDouble, ArrowLeft, ArrowRight, Users, Clock, Mars, Venus, Search, Eye, Edit2, Plus, X, MapPin, CalendarDays, Save, Trash2, UserPlus, CheckCircle, Building2, Utensils, ShieldAlert, UserMinus, RefreshCw, CreditCard, CheckCircle2, XCircle, ExternalLink, Check } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
 function AccomodationRedirectPage() {
   const navigate = useNavigate();
   const { eventId: routeEventId } = useParams();
@@ -114,8 +82,9 @@ function AccomodationRedirectPage() {
   const getRoomNumber = (room) => room.room_num ?? 'N/A';
   const getCapacity = (room) => Number(room.Capacity ?? room.capacity ?? 0);
   const getOccupiedCount = (room) => {
-    if (room.Occupied != null) return Number(room.Occupied);
+    if (!room) return 0;
     if (Array.isArray(room.participants)) return room.participants.length;
+    if (room.Occupied != null) return Number(room.Occupied);
     return 0;
   };
   const getRoomGender = (room) => String(room.BlockGender || room.Gender || room.gender || '').trim();
@@ -141,16 +110,6 @@ function AccomodationRedirectPage() {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
-    });
-  };
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    const parsed = new Date(date);
-    if (Number.isNaN(parsed.getTime())) return String(date);
-    return parsed.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
     });
   };
   // Fetch all Accommodation Data

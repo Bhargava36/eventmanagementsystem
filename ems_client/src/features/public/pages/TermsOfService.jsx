@@ -1,18 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import {
-  FileText,
-  Shield,
-  Scale,
-  Users,
-  Award,
-  ArrowLeft,
-  CheckCircle2,
-  Clock,
-  Mail,
-  Layers
-} from 'lucide-react';
+import { Shield, Scale, Users, Award, ArrowLeft, CheckCircle2, Clock, Mail, Layers } from 'lucide-react';
 export default function TermsOfService() {
   const lastUpdated = "October 26, 2026";
   const sections = [

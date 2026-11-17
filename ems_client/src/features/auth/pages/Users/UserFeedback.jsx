@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, MessageSquare, Send, Star, Award } from 'lucide-react';
+import { Calendar, Send, Star, Award } from 'lucide-react';
 import { apiUrl } from '../../../../lib/api';
 export default function UserFeedback() {
   const [formData, setFormData] = useState({

@@ -2,14 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Camera,
-  Plus,
-  Trash2,
-  UploadCloud,
-  X,
-  Image as ImageIcon,
-} from 'lucide-react';
+import { Camera, Plus, Trash2, UploadCloud, X } from 'lucide-react';
 import useToast from '../../Hooks/useToast';
 export default function EventGalleryManager({ eventId }) {
   const toast = useToast();

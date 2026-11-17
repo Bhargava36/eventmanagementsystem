@@ -1,31 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  Shield,
-  Crown,
-  Building,
-  User,
-  Key,
-  Mail,
-  Copy,
-  Check,
-  ExternalLink,
-  Zap,
-  Search,
-  RefreshCw,
-  Eye,
-  EyeOff,
-  Calendar,
-  MapPin,
-  Lock,
-  ArrowRight,
-  Info,
-  SlidersHorizontal,
-  PlusCircle,
-  AlertTriangle,
-  Award,
-} from 'lucide-react';
+import { Shield, Crown, Building, User, Mail, Copy, Check, ExternalLink, Zap, Search, RefreshCw, Eye, EyeOff, Lock, ArrowRight, Info, Award } from 'lucide-react';
 import useAuth from '../../../Hooks/useAuth';
 import useTheme from '../../../Hooks/useTheme';
 import useToast from '../../../Hooks/useToast';
@@ -307,7 +283,7 @@ export default function TestCredentialsPage() {
                   : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
               }`}
             >
-              👑 Super Admin ({counts.super_admin})
+              Super Admin ({counts.super_admin})
             </button>
             <button
               onClick={() => setSelectedRole('admin')}
@@ -317,7 +293,7 @@ export default function TestCredentialsPage() {
                   : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
               }`}
             >
-              🏢 Organizers ({counts.admin})
+              Organizers ({counts.admin})
             </button>
             <button
               onClick={() => setSelectedRole('user')}
@@ -327,7 +303,7 @@ export default function TestCredentialsPage() {
                   : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
               }`}
             >
-              🎓 Participants ({counts.user})
+              Participants ({counts.user})
             </button>
             <button
               onClick={() => setSelectedRole('evaluator')}
@@ -337,7 +313,7 @@ export default function TestCredentialsPage() {
                   : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
               }`}
             >
-              ⚖️ Evaluators ({counts.evaluator})
+              Evaluators ({counts.evaluator})
             </button>
           </div>
           {/* Search Box */}
@@ -356,7 +332,7 @@ export default function TestCredentialsPage() {
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs sm:text-sm">
           <Info className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
           <p>
-            <strong>Note for Organizer Login:</strong> The organizer login portal at <code>/admin/login</code> requires <strong>Email</strong>, <strong>Password</strong>, and the <strong>Assigned Event Name</strong> (shown on the cards below). Alternatively, click <strong>"⚡ 1-Click Auto Login"</strong> to bypass manual form entry instantly!
+            <strong>Note for Organizer Login:</strong> The organizer login portal at <code>/admin/login</code> requires <strong>Email</strong>, <strong>Password</strong>, and the <strong>Assigned Event Name</strong> (shown on the cards below). Alternatively, click <strong>"1-Click Auto Login"</strong> to bypass manual form entry instantly!
           </p>
         </div>
         {/* Accounts Grid */}
@@ -426,12 +402,12 @@ export default function TestCredentialsPage() {
                       </div>
                       {isEvaluator && (acc.RoleDisplay || acc.EvaluatorRole) && (
                         <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 block mt-0.5">
-                          ⚖️ {acc.RoleDisplay || acc.EvaluatorRole}
+                          {acc.RoleDisplay || acc.EvaluatorRole}
                         </span>
                       )}
                       {acc.Mobile && (
                         <span className="text-xs text-slate-500 dark:text-zinc-400 block mt-0.5">
-                          📞 {acc.Mobile}
+                          {acc.Mobile}
                         </span>
                       )}
                     </div>
@@ -547,12 +523,12 @@ export default function TestCredentialsPage() {
                         </div>
                         {acc.EventLocation && (
                           <span className="text-[11px] text-slate-600 dark:text-zinc-400 block">
-                            📍 {acc.EventLocation} {acc.Track ? `• ${acc.Track} Track` : acc.HackathonMode ? `(${acc.HackathonMode})` : ''}
+                            {acc.EventLocation} {acc.Track ? `• ${acc.Track} Track` : acc.HackathonMode ? `(${acc.HackathonMode})` : ''}
                           </span>
                         )}
                         {isEvaluator && acc.College && (
                           <span className="text-[11px] text-slate-600 dark:text-zinc-400 block">
-                            🏛️ {acc.College}
+                            {acc.College}
                           </span>
                         )}
                       </div>
@@ -560,8 +536,8 @@ export default function TestCredentialsPage() {
                     {/* Additional User Info (For Participants) */}
                     {isParticipant && acc.College && (
                       <div className="text-xs text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
-                        <span>🎓 {acc.College}</span>
-                        {acc.Location && <span>• 📍 {acc.Location}</span>}
+                        <span>{acc.College}</span>
+                        {acc.Location && <span>• {acc.Location}</span>}
                       </div>
                     )}
                   </div>
@@ -580,7 +556,7 @@ export default function TestCredentialsPage() {
                       }`}
                     >
                       <Zap className={`w-4 h-4 ${loggingInId === acc.Id ? 'animate-bounce' : ''}`} />
-                      <span>{loggingInId === acc.Id ? 'Authenticating...' : '⚡ 1-Click Auto Login'}</span>
+                      <span>{loggingInId === acc.Id ? 'Authenticating...' : '1-Click Auto Login'}</span>
                     </button>
                     {/* Open Login Portal Link */}
                     <Link

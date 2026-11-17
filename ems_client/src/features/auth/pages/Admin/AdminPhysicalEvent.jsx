@@ -3,41 +3,16 @@ import { API_BASE_URL } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Tent,
-  CalendarDays,
-  MapPin,
-  Users,
-  BedDouble,
-  Utensils,
-  IdCard,
-  Settings,
-  Eye,
-  ArrowRight,
-  Search,
-  CheckCircle2,
-  Clock,
-  RefreshCw,
-  SlidersHorizontal,
-  ExternalLink,
-  ShieldCheck,
-  AlertCircle,
-  Building,
-  Check,
-  Lightbulb,
-  Plus,
-  Trash2,
-  Edit2,
-  X,
-  Save,
-  FileText,
-  Target,
-  Code,
-  Filter,
-  Layers,
-  Palette
+  Tent, CalendarDays, MapPin, Users, BedDouble, Utensils, IdCard, Settings, Eye,
+  ArrowRight, Search, CheckCircle2, Clock, RefreshCw, Lightbulb, Plus, Trash2,
+  Edit2, X, Save, FileText, Target, Code, Layers, Palette, FileSpreadsheet,
+  Timer, Shuffle, ChevronDown, ChevronUp, Settings2, ListChecks, UploadCloud,
+  Download, AlertCircle, AlertTriangle, Check, Lock, ExternalLink, Paperclip
 } from 'lucide-react';
+import useToast from '../../../../Hooks/useToast';
 import { getThemeIcon } from '@/components/Molecules/PhysicalHackathonThemesSection';
-import { isSoloTeamSize } from '@/lib/utils';
+import { isSoloTeamSize, formatDate } from '@/lib/utils';
+import { downloadRegistrationsWorkbook, downloadPSTemplateWorkbook, parsePSTemplateFile } from '@/lib/excelExport';
 const readApiResponse = async (response, fallbackMessage) => {
   const body = await response.text();
   let data = {};
@@ -87,12 +62,13 @@ const StatusIcon = ({ status, className }) =>
     : <CheckCircle2 className={className} />;
 function AdminPhysicalEvent() {
   const navigate = useNavigate();
+  const toast = useToast();
   const admin = JSON.parse(localStorage.getItem('admin') || 'null');
   const eventId = admin?.EventId;
   const [eventDetails, setEventDetails] = useState(null);
   const [eventLoading, setEventLoading] = useState(true);
   const [eventError, setEventError] = useState('');
-  const [activeTab, setActiveTab] = useState('teams'); // 'teams' | 'accommodation' | 'food' | 'id-cards' | 'controls'
+  const [activeTab, setActiveTab] = useState('teams'); // 'teams' | 'themes' | 'statements' | 'selections' | 'publish' | 'accommodation' | 'id-cards' | 'controls'
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -128,10 +104,110 @@ function AdminPhysicalEvent() {
   const [participantStatements, setParticipantStatements] = useState([]);
   const [physicalPSMode, setPhysicalPSMode] = useState('organizer_provided');
   const [statementSelections, setStatementSelections] = useState([]);
+
+  // Publish Status & Selection Timer
+  const [publishStatus, setPublishStatus] = useState({
+    ThemePublished: 0,
+    ProblemStatementsPublished: 0,
+    PhysicalPSPublished: 0,
+    PhysicalPSSelectionDeadline: null,
+    PSSelectionDeadline: null,
+    PhysicalPSMaxTeamsPerStatement: 5,
+    PSMaxTeamsPerStatement: 5
+  });
+  const themePublished = Boolean(publishStatus?.ThemePublished);
+  const psPublished = Boolean(
+    publishStatus?.PhysicalPSPublished ?? publishStatus?.ProblemStatementsPublished
+  );
+  const [deadlineMinutes, setDeadlineMinutes] = useState(15);
+  const [adminTimerLeft, setAdminTimerLeft] = useState(null);
+
+  // Selections View State
+  const [selectionsViewMode, setSelectionsViewMode] = useState('teams'); // 'teams' | 'statements'
+  const [selectionsTeamFilter, setSelectionsTeamFilter] = useState('all'); // 'all' | 'selected' | 'pending'
+  const [selectionsSearch, setSelectionsSearch] = useState('');
+  const [expandedPsSelections, setExpandedPsSelections] = useState({});
+  const [autoAssigning, setAutoAssigning] = useState(false);
+
+  // Statements Search & Filters
+  const [statementSearch, setStatementSearch] = useState('');
+  const [statementThemeFilter, setStatementThemeFilter] = useState('ALL');
+
+  // Excel Bulk Import Modal State
+  const [showExcelModal, setShowExcelModal] = useState(false);
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelPreview, setExcelPreview] = useState(null);
+  const [parsingExcel, setParsingExcel] = useState(false);
+  const [importingExcel, setImportingExcel] = useState(false);
+
+  // Live countdown timer for physical PS selection
+  const activeDeadlineVal = publishStatus?.PhysicalPSSelectionDeadline || publishStatus?.PSSelectionDeadline;
+  useEffect(() => {
+    if (!activeDeadlineVal) {
+      setAdminTimerLeft(null);
+      return;
+    }
+    let targetDate = NaN;
+    if (typeof activeDeadlineVal === 'number') {
+      targetDate = activeDeadlineVal;
+    } else if (activeDeadlineVal instanceof Date) {
+      targetDate = activeDeadlineVal.getTime();
+    } else {
+      const s = String(activeDeadlineVal).trim();
+      const d1 = new Date(s);
+      if (!isNaN(d1.getTime())) {
+        targetDate = d1.getTime();
+      } else {
+        const d2 = new Date(s.replace(' ', 'T') + 'Z');
+        if (!isNaN(d2.getTime())) targetDate = d2.getTime();
+      }
+    }
+    if (isNaN(targetDate)) {
+      setAdminTimerLeft(null);
+      return;
+    }
+    const updateTimer = () => {
+      const now = Date.now();
+      const diff = targetDate - now;
+      if (diff <= 0) {
+        setAdminTimerLeft({ expired: true, hours: 0, minutes: 0, seconds: 0 });
+      } else {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setAdminTimerLeft({ expired: false, hours, minutes, seconds });
+      }
+    };
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [activeDeadlineVal]);
+
+  // Selections data memos
+  const selectedTeamIds = useMemo(() => {
+    return new Set(statementSelections.map((s) => Number(s.TeamId)));
+  }, [statementSelections]);
+
+  const teamSelectionMap = useMemo(() => {
+    const map = new Map();
+    statementSelections.forEach((s) => {
+      map.set(Number(s.TeamId), s);
+    });
+    return map;
+  }, [statementSelections]);
+
+  const unselectedTeamsList = useMemo(() => {
+    return teams.filter((t) => !selectedTeamIds.has(Number(t.TeamId ?? t.Id)));
+  }, [teams, selectedTeamIds]);
+
+  const selectedTeamsList = useMemo(() => {
+    return teams.filter((t) => selectedTeamIds.has(Number(t.TeamId ?? t.Id)));
+  }, [teams, selectedTeamIds]);
+
   // Theme Form Modal
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [editingThemeId, setEditingThemeId] = useState(null);
-  const [themeForm, setThemeForm] = useState({ ThemeName: '', Description: '', DisplayOrder: 0, ImageUrl: '' });
+  const [themeForm, setThemeForm] = useState({ ThemeName: '', Description: '', DisplayOrder: 0, ImageUrl: '', Track: 'Physical' });
   const [themeSaving, setThemeSaving] = useState(false);
   // Problem Statement Form Modal (for Organizer-Provided mode)
   const [showStatementModal, setShowStatementModal] = useState(false);
@@ -142,7 +218,8 @@ function AdminPhysicalEvent() {
     Description: '',
     Theme: '',
     Category: 'Software',
-    MaxTeams: 5
+    MaxTeams: 5,
+    Track: 'Physical'
   });
   const [statementSaving, setStatementSaving] = useState(false);
   // Filters
@@ -181,6 +258,41 @@ function AdminPhysicalEvent() {
   const handleSettingsRedirect = () => {
     navigate('/admin/settings');
   };
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const handleExportPhysicalExcel = async () => {
+    try {
+      setIsExportingExcel(true);
+      let exportData = null;
+      if (eventId) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/teams/event/${eventId}/export-details`);
+          if (res.ok) {
+            exportData = await res.json();
+          }
+        } catch (e) {
+          console.warn('Backend export-details fetch failed:', e);
+        }
+      }
+
+      await downloadRegistrationsWorkbook({
+        event: exportData?.event || eventDetails || {
+          Id: eventId,
+          EventName: eventDetails?.EventName || 'AYOJAN Event',
+          EventType: eventDetails?.EventType || 'Hackathon',
+          HackathonMode: eventDetails?.HackathonMode || 'Physical',
+          Location: eventDetails?.Location || 'AYOJAN Hub Campus'
+        },
+        teams: (exportData?.teams && exportData.teams.length > 0) ? exportData.teams : teams,
+        members: exportData?.members || [],
+        summary: exportData?.summary || null,
+        filterMode: 'physical'
+      });
+    } catch (err) {
+      console.error('Failed to export Physical Track Excel:', err);
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
   useEffect(() => {
     const fetchEventDetails = async () => {
       if (!eventId) {
@@ -218,15 +330,18 @@ function AdminPhysicalEvent() {
   useEffect(() => {
     if (eventDetails?.PhysicalPSMode) {
       setPhysicalPSMode(eventDetails.PhysicalPSMode);
+      if (eventDetails.PhysicalPSMode !== 'organizer_provided' && activeTab === 'selections') {
+        setActiveTab('statements');
+      }
     }
-  }, [eventDetails?.PhysicalPSMode]);
+  }, [eventDetails?.PhysicalPSMode, activeTab]);
   const fetchThemesAndStatements = async () => {
     if (!eventId) return;
     try {
       setThemesLoading(true);
       const [tRes, osRes, psRes, pubRes, selRes] = await Promise.allSettled([
-        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/themes`),
-        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}`),
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/themes?track=Physical`),
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}?track=Physical`),
         fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/participant-statements`),
         fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/publish-status`),
         fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/selections`)
@@ -247,11 +362,256 @@ function AdminPhysicalEvent() {
         const selData = await selRes.value.json();
         setStatementSelections(selData.selections || []);
       }
+      if (pubRes.status === 'fulfilled' && pubRes.value.ok) {
+        const pubData = await pubRes.value.json();
+        setPublishStatus(pubData || {});
+        const activeDl = pubData.PhysicalPSSelectionDeadline || pubData.PSSelectionDeadline;
+        if (activeDl) {
+          const diffMs = new Date(activeDl).getTime() - Date.now();
+          if (diffMs > 0) {
+            setDeadlineMinutes(Math.max(1, Math.round(diffMs / 60000)));
+          }
+        }
+      }
     } catch (e) {
       console.error('Failed to load themes/statements:', e);
     } finally {
       setThemesLoading(false);
     }
+  };
+
+  const handlePublishTheme = async (publish) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/publish-theme`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ published: publish })
+      });
+      if (!res.ok) throw new Error('Failed to update theme status');
+      setPublishStatus(prev => ({ ...prev, ThemePublished: publish ? 1 : 0 }));
+      toast.success(publish ? 'Themes published to participants!' : 'Themes unpublished (draft)!');
+      fetchThemesAndStatements();
+    } catch (err) {
+      toast.error(err.message || 'Failed to update theme status');
+    }
+  };
+
+  const handlePublishPS = async (publish) => {
+    try {
+      const [pRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/publish-physical-statements`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ published: publish })
+        }),
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/publish-statements`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ published: publish })
+        })
+      ]);
+      if (!pRes.ok) throw new Error('Failed to update problem statements status');
+      setPublishStatus(prev => ({
+        ...prev,
+        PhysicalPSPublished: publish ? 1 : 0,
+        ProblemStatementsPublished: publish ? 1 : 0
+      }));
+      toast.success(publish ? 'Problem statements published and open for selection!' : 'Problem statements unpublished (draft)!');
+      fetchThemesAndStatements();
+    } catch (err) {
+      toast.error(err.message || 'Failed to update statement publishing status');
+    }
+  };
+
+  const handleSetDeadlineByMinutes = async (mins) => {
+    if (!eventId) return;
+    const minutesToUse = Number(mins !== undefined ? mins : deadlineMinutes);
+    if (!minutesToUse || minutesToUse <= 0) {
+      toast.error('Please enter a valid number of minutes (e.g. 15)');
+      return;
+    }
+    try {
+      const targetTimeMs = Date.now() + minutesToUse * 60 * 1000;
+      const targetDate = new Date(targetTimeMs);
+      const isoDeadline = targetDate.toISOString();
+
+      setAdminTimerLeft({
+        expired: false,
+        hours: Math.floor(minutesToUse / 60),
+        minutes: minutesToUse % 60,
+        seconds: 0
+      });
+      setPublishStatus(prev => ({
+        ...prev,
+        PhysicalPSSelectionDeadline: isoDeadline,
+        PSSelectionDeadline: isoDeadline
+      }));
+
+      await Promise.all([
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/physical-selection-deadline`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deadline: isoDeadline })
+        }),
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/selection-deadline`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deadline: isoDeadline })
+        })
+      ]);
+      toast.success(`Selection timer started for ${minutesToUse} minutes!`);
+      fetchThemesAndStatements();
+    } catch (err) {
+      toast.error('Failed to set deadline timer');
+    }
+  };
+
+  const handleClearDeadline = async () => {
+    if (!eventId) return;
+    try {
+      setAdminTimerLeft(null);
+      setPublishStatus(prev => ({
+        ...prev,
+        PhysicalPSSelectionDeadline: null,
+        PSSelectionDeadline: null
+      }));
+      await Promise.all([
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/physical-selection-deadline`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deadline: null })
+        }),
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/selection-deadline`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deadline: null })
+        })
+      ]);
+      toast.success('Selection timer cleared');
+      fetchThemesAndStatements();
+    } catch (err) {
+      toast.error('Failed to clear selection timer');
+    }
+  };
+
+  const handleAutoAssign = async () => {
+    if (!window.confirm('Auto-assign problem statements to all unselected physical teams?')) return;
+    try {
+      setAutoAssigning(true);
+      const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/auto-assign?track=physical`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Auto-assignment failed');
+      toast.success(data.message || `Auto-assigned ${data.assigned} teams`);
+      fetchThemesAndStatements();
+    } catch (err) {
+      toast.error(err.message || 'Auto-assignment failed');
+    } finally {
+      setAutoAssigning(false);
+    }
+  };
+
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadPSTemplateWorkbook({ eventName: eventName || 'Physical Hackathon' });
+      toast.success('Excel template downloaded successfully');
+    } catch (err) {
+      toast.error('Failed to download template: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  const handleExcelFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setExcelFile(file);
+    setParsingExcel(true);
+    setExcelPreview(null);
+    try {
+      const parsed = await parsePSTemplateFile(file);
+      setExcelPreview(parsed);
+      if (!parsed.valid) {
+        toast.error(parsed.errors?.[0] || 'Invalid file format');
+      } else {
+        toast.success(`Workbook parsed: ${parsed.themes.length} themes, ${parsed.problemStatements.length} statements found`);
+      }
+    } catch (err) {
+      toast.error(err.message || 'Failed to parse Excel file');
+      setExcelPreview(null);
+    } finally {
+      setParsingExcel(false);
+    }
+  };
+
+  const handleConfirmExcelImport = async () => {
+    if (!excelPreview || !eventId) return;
+    setImportingExcel(true);
+    try {
+      const existingThemesMap = new Map();
+      themes.forEach(t => {
+        if (t.ThemeName) existingThemesMap.set(t.ThemeName.toLowerCase().trim(), t);
+      });
+
+      for (const t of excelPreview.themes) {
+        const lowerName = String(t.ThemeName || '').toLowerCase().trim();
+        if (lowerName && !existingThemesMap.has(lowerName)) {
+          try {
+            const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}/themes`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ThemeName: t.ThemeName,
+                Description: t.Description || '',
+                DisplayOrder: Number(t.DisplayOrder) || 1,
+                Track: 'Physical'
+              })
+            });
+            if (res.ok) {
+              existingThemesMap.set(lowerName, t);
+            }
+          } catch (e) {
+            console.error('Failed to import theme:', t.ThemeName, e);
+          }
+        }
+      }
+
+      for (const ps of excelPreview.problemStatements) {
+        try {
+          await fetch(`${API_BASE_URL}/api/problem-statements/event/${eventId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ProblemCode: ps.ProblemCode,
+              Title: ps.Title,
+              Description: ps.Description || '',
+              Category: ps.Category || 'Software',
+              Theme: ps.Theme || '',
+              MaxTeams: Number(ps.MaxTeams) || 5,
+              Track: 'Physical'
+            })
+          });
+        } catch (e) {
+          console.error('Failed to import problem statement:', ps.ProblemCode, e);
+        }
+      }
+
+      toast.success('Excel data imported successfully!');
+      setShowExcelModal(false);
+      setExcelFile(null);
+      setExcelPreview(null);
+      fetchThemesAndStatements();
+    } catch (err) {
+      toast.error(err.message || 'Failed to import Excel data');
+    } finally {
+      setImportingExcel(false);
+    }
+  };
+
+  const toggleExpandPs = (psId) => {
+    setExpandedPsSelections(prev => ({
+      ...prev,
+      [psId]: !prev[psId]
+    }));
   };
   useEffect(() => {
     if (eventId && (eventDetails?.EventType || '').toLowerCase() === 'hackathon') {
@@ -273,7 +633,7 @@ function AdminPhysicalEvent() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(themeForm)
+        body: JSON.stringify({ ...themeForm, Track: themeForm.Track || 'Physical' })
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -281,7 +641,7 @@ function AdminPhysicalEvent() {
       }
       setShowThemeModal(false);
       setEditingThemeId(null);
-      setThemeForm({ ThemeName: '', Description: '', DisplayOrder: 0, ImageUrl: '' });
+      setThemeForm({ ThemeName: '', Description: '', DisplayOrder: 0, ImageUrl: '', Track: 'Physical' });
       fetchThemesAndStatements();
     } catch (err) {
       alert(err.message || 'Failed to save theme');
@@ -316,7 +676,7 @@ function AdminPhysicalEvent() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(statementForm)
+        body: JSON.stringify({ ...statementForm, Track: statementForm.Track || 'Physical' })
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -324,7 +684,7 @@ function AdminPhysicalEvent() {
       }
       setShowStatementModal(false);
       setEditingStatementId(null);
-      setStatementForm({ ProblemCode: '', Title: '', Description: '', Theme: '', Category: 'Software', MaxTeams: 5 });
+      setStatementForm({ ProblemCode: '', Title: '', Description: '', Theme: '', Category: 'Software', MaxTeams: 5, Track: 'Physical' });
       fetchThemesAndStatements();
     } catch (err) {
       alert(err.message || 'Failed to save problem statement');
@@ -391,19 +751,6 @@ function AdminPhysicalEvent() {
     eventDetails?.EventLocation ??
     eventDetails?.eventLocation ??
     'Location unavailable';
-  const formatDate = (value) => {
-    if (!value) return 'Not specified';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return String(value);
-    }
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'UTC'
-    });
-  };
   const fetchTeams = async () => {
     if (!eventId) {
       setError('No event assigned to this admin.');
@@ -808,30 +1155,46 @@ function AdminPhysicalEvent() {
                   label: `Registered Teams (${teams.length})`,
                   icon: Users,
                 },
+                ...((eventDetails?.EventType || '').toLowerCase() === 'hackathon'
+                  ? [
+                      {
+                        id: 'themes',
+                        label: `Themes (${themes.length})`,
+                        icon: Layers,
+                      },
+                      {
+                        id: 'statements',
+                        label: physicalPSMode === 'organizer_provided'
+                          ? `Problem Statements (${organizerStatements.length})`
+                          : `Participant Proposals (${participantStatements.length})`,
+                        icon: FileText,
+                      },
+                      ...(physicalPSMode === 'organizer_provided'
+                        ? [
+                            {
+                              id: 'selections',
+                              label: `Team Selections (${statementSelections.length}/${teams.length})`,
+                              icon: ListChecks,
+                            },
+                          ]
+                        : []),
+                      {
+                        id: 'publish',
+                        label: 'Publish & Deadlines',
+                        icon: Settings2,
+                      },
+                    ]
+                  : []),
                 {
                   id: 'accommodation',
                   label: `Accommodation (${accommodationChoiceCounts.teams})`,
                   icon: BedDouble,
                 },
                 {
-                  id: 'food',
-                  label: `Food Distribution (${foodCounts.participants} Meals)`,
-                  icon: Utensils,
-                },
-                {
                   id: 'id-cards',
                   label: `ID Card Studio (${idCardCounts.generated}/${idCardCounts.total})`,
                   icon: IdCard,
                 },
-                ...((eventDetails?.EventType || '').toLowerCase() === 'hackathon'
-                  ? [
-                      {
-                        id: 'themes-challenges',
-                        label: `Themes & Challenges (${themes.length})`,
-                        icon: Lightbulb,
-                      },
-                    ]
-                  : []),
                 {
                   id: 'controls',
                   label: 'Event Controls',
@@ -926,6 +1289,16 @@ function AdminPhysicalEvent() {
                     : `${filteredTeams.length} matching physical team(s)`}
                 </span>
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={isExportingExcel || loading}
+                    onClick={handleExportPhysicalExcel}
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
+                    title="Download Physical Track Registrations with all member details as styled Excel"
+                  >
+                    <FileSpreadsheet className="h-3.5 w-3.5" />
+                    <span>{isExportingExcel ? 'Exporting...' : 'Export Physical Excel (.xlsx)'}</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => navigate(`/admin/team-card-designer?eventId=${encodeURIComponent(eventId)}`)}
@@ -1250,129 +1623,6 @@ function AdminPhysicalEvent() {
               </div>
             </motion.div>
           )}
-          {/* TAB 3: FOOD MANAGEMENT */}
-          {activeTab === 'food' && (
-            <motion.div
-              key="tab-food"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
-            >
-              {/* Header bar with action */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-zinc-800/80">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                    <Utensils className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                      Food & Meal Token Management
-                    </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
-                      Handle breakfast, lunch, and dinner meal distribution and token scanning for teams.
-                    </p>
-                  </div>
-                </div>
-                {/* Unused template component */}
-              </div>
-              {/* KPI Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black">
-                  <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Opted-In Participants</p>
-                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-                    {serviceCountsLoading ? '—' : foodCounts.participants}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Headcount needing meals</p>
-                </div>
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black">
-                  <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Opted-In Teams</p>
-                  <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-                    {serviceCountsLoading ? '—' : foodCounts.teams}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Registered physical teams</p>
-                </div>
-                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-5 shadow-xs dark:border-zinc-800/80 dark:bg-black">
-                  <p className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Meal Tokens Issued</p>
-                  <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
-                    {serviceCountsLoading ? '—' : foodCounts.tokens}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Breakfast, Lunch & Dinner</p>
-                </div>
-              </div>
-              {/* Teams Opted into Food Table */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-black space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-                  <div className="flex items-center gap-2.5">
-                    <Utensils className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      Teams Opted into Food ({teams.filter((t) => isEnabled(teamServicePreferences[String(t.TeamId ?? t.TeamID ?? t.Id ?? t.id)]?.FoodAccepted)).length})
-                    </h3>
-                  </div>
-                  <span className="text-xs text-slate-500">Only teams that marked "Yes" for food</span>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:border-zinc-800/60">
-                        <th className="px-4 py-3">Team Name</th>
-                        <th className="px-4 py-3">Team Lead</th>
-                        <th className="px-4 py-3">College</th>
-                        <th className="px-4 py-3 text-center">Members</th>
-                        <th className="px-4 py-3">Status</th>
-                        <th className="px-4 py-3 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/40">
-                      {teams.filter((t) => isEnabled(teamServicePreferences[String(t.TeamId ?? t.TeamID ?? t.Id ?? t.id)]?.FoodAccepted)).length === 0 ? (
-                        <tr>
-                          <td colSpan="6" className="py-8 text-center text-slate-500 text-xs">
-                            No physical teams have opted into food yet.
-                          </td>
-                        </tr>
-                      ) : (
-                        teams
-                          .filter((t) => isEnabled(teamServicePreferences[String(t.TeamId ?? t.TeamID ?? t.Id ?? t.id)]?.FoodAccepted))
-                          .map((team, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-zinc-900/30">
-                              <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-white">
-                                {getTeamName(team)}
-                              </td>
-                              <td className="px-4 py-3.5 text-xs text-slate-600 dark:text-zinc-300">
-                                {team.LeaderName || team.TeamLeadName || team.leadName || '—'}
-                              </td>
-                              <td className="px-4 py-3.5 text-xs text-slate-500 dark:text-zinc-400">
-                                {getCollege(team)}
-                              </td>
-                              <td className="px-4 py-3.5 text-center text-xs font-semibold text-slate-800 dark:text-zinc-200">
-                                {getMemberCount(team)}
-                              </td>
-                              <td className="px-4 py-3.5">
-                                <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Accepted
-                                </span>
-                              </td>
-                              <td className="px-4 py-3.5 text-right">
-                                <button
-                                  type="button"
-                                  onClick={handleFoodRedirect}
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-black px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:border-emerald-500 hover:text-emerald-600"
-                                >
-                                  <span>Tokens</span>
-                                  <ArrowRight className="h-3 w-3" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </motion.div>
-          )}
           {/* TAB 4: ID CARDS GENERATION STUDIO */}
           {activeTab === 'id-cards' && (
             <motion.div
@@ -1564,10 +1814,10 @@ function AdminPhysicalEvent() {
               </div>
             </motion.div>
           )}
-          {/* TAB: HACKATHON THEMES & PROBLEM STATEMENTS */}
-          {activeTab === 'themes-challenges' && (
+          {/* TAB 2: INNOVATION THEMES */}
+          {(activeTab === 'themes' || activeTab === 'themes-challenges') && (
             <motion.div
-              key="tab-themes-challenges"
+              key="tab-themes"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -1578,13 +1828,17 @@ function AdminPhysicalEvent() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-zinc-800/80">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
-                    <Lightbulb className="h-6 w-6" />
+                    <Layers className="h-6 w-6" />
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <span>Physical Hackathon Themes & Challenges</span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        Shown in Advance
+                      <span>Physical Hackathon Themes</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${
+                        themePublished
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                          : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400 border-slate-300 dark:border-zinc-700'
+                      }`}>
+                        {themePublished ? 'Published to Participants' : 'Draft (Unpublished)'}
                       </span>
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
@@ -1597,7 +1851,7 @@ function AdminPhysicalEvent() {
                     type="button"
                     onClick={() => {
                       setEditingThemeId(null);
-                      setThemeForm({ ThemeName: '', Description: '', DisplayOrder: themes.length + 1 });
+                      setThemeForm({ ThemeName: '', Description: '', DisplayOrder: themes.length + 1, ImageUrl: '', Track: 'Physical' });
                       setShowThemeModal(true);
                     }}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition cursor-pointer"
@@ -1605,215 +1859,186 @@ function AdminPhysicalEvent() {
                     <Plus className="h-3.5 w-3.5" />
                     <span>Add New Theme</span>
                   </button>
-                  {physicalPSMode === 'organizer_provided' && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingStatementId(null);
-                        setStatementForm({
-                          ProblemCode: `PS-${String(organizerStatements.length + 1).padStart(2, '0')}`,
-                          Title: '',
-                          Description: '',
-                          Theme: themes[0]?.ThemeName || '',
-                          MaxTeams: 5
-                        });
-                        setShowStatementModal(true);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-black font-bold text-xs shadow-xs transition cursor-pointer"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>Add Problem Statement</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('publish')}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-bold text-xs shadow-xs transition cursor-pointer"
+                  >
+                    <Settings2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Publish Settings &rarr;</span>
+                  </button>
                 </div>
               </div>
-              {/* Active Format Info Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
-                <div className="flex items-center gap-2.5">
-                  {physicalPSMode === 'participant_defined' ? (
-                    <span className="px-3 py-1 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-500/20 flex items-center gap-1.5">
-                      <Target className="h-3.5 w-3.5" />
-                      Active Mode: Open Innovation (Participant-Submitted)
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 flex items-center gap-1.5">
-                      <FileText className="h-3.5 w-3.5" />
-                      Active Mode: Organizer-Provided Challenges
-                    </span>
-                  )}
-                  <span className="text-xs text-slate-500 dark:text-zinc-400 hidden sm:inline">
-                    {physicalPSMode === 'participant_defined'
-                      ? 'Participants submit their own problem statements under themes'
-                      : 'Participants select from organizer-defined challenge statements'}
-                  </span>
+
+              {/* Themes Grid */}
+              {themesLoading ? (
+                <div className="py-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin text-emerald-600" />
+                  <span>Loading themes...</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => navigate('/admin/settings')}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer self-start sm:self-auto"
-                >
-                  <Settings className="h-3.5 w-3.5" />
-                  <span>Configure Settings in Event Settings &rarr;</span>
-                </button>
-              </div>
-              {/* ── THEMES SECTION ── */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-                  <div className="flex items-center gap-2.5">
-                    <Layers className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    <div>
-                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                        Innovation Themes ({themes.length})
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        Published domains shown on the Event Details & Event Redirect pages
-                      </p>
-                    </div>
-                  </div>
+              ) : themes.length === 0 ? (
+                <div className="p-12 rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3">
+                  <Lightbulb className="h-10 w-10 mx-auto text-slate-400" />
+                  <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300">No innovation themes created yet</p>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
+                    Themes provide tracks and domains under which problem statements are organized for physical hackathon participants.
+                  </p>
                   <button
                     type="button"
                     onClick={() => {
                       setEditingThemeId(null);
-                      setThemeForm({ ThemeName: '', Description: '', DisplayOrder: themes.length + 1 });
+                      setThemeForm({ ThemeName: '', Description: '', DisplayOrder: 1, ImageUrl: '', Track: 'Physical' });
                       setShowThemeModal(true);
                     }}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 text-white font-bold text-xs"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    <span>Add Theme</span>
+                    <span>Create First Theme</span>
                   </button>
                 </div>
-                {themesLoading ? (
-                  <div className="py-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                    <RefreshCw className="h-4 w-4 animate-spin text-emerald-600" />
-                    <span>Loading themes...</span>
-                  </div>
-                ) : themes.length === 0 ? (
-                  <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3">
-                    <Lightbulb className="h-8 w-8 mx-auto text-slate-400" />
-                    <p className="text-xs text-slate-500 dark:text-zinc-400">
-                      No innovation themes created yet. Themes will be shown beforehand to participants on the detailed event page and eventredirectpage.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingThemeId(null);
-                        setThemeForm({ ThemeName: '', Description: '', DisplayOrder: 1 });
-                        setShowThemeModal(true);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 text-white font-bold text-xs"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>Create First Theme</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {themes.map((theme, idx) => {
-                      const statementCount = organizerStatements.filter(
-                        (s) => (s.Theme || '').trim().toLowerCase() === theme.ThemeName.trim().toLowerCase()
-                      ).length;
-                      const submissionCount = participantStatements.filter(
-                        (p) => (p.ThemeName || '').trim().toLowerCase() === theme.ThemeName.trim().toLowerCase()
-                      ).length;
-                      const IconComponent = getThemeIcon(theme.ThemeName, theme.Description);
-                      const hasImage = Boolean(theme.ImageUrl && theme.ImageUrl.trim());
-                      return (
-                        <div
-                          key={theme.Id || theme.id || theme.ThemeName || index}
-                          className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/60 dark:bg-black space-y-3 flex flex-col justify-between hover:border-emerald-500/40 transition overflow-hidden"
-                        >
-                          <div className="space-y-2.5">
-                            {hasImage && (
-                              <div className="w-full h-24 rounded-xl overflow-hidden mb-2 border border-slate-200 dark:border-zinc-800 bg-zinc-900">
-                                <img src={theme.ImageUrl} alt={theme.ThemeName} className="w-full h-full object-cover" />
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
-                                  <IconComponent className="h-4 w-4" />
-                                </div>
-                                <span className="font-mono text-xs font-semibold text-slate-400 dark:text-zinc-500 tracking-wider">
-                                  #{String(idx + 1).padStart(2, '0')}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingThemeId(theme.Id);
-                                    setThemeForm({
-                                      ThemeName: theme.ThemeName,
-                                      Description: theme.Description || '',
-                                      DisplayOrder: theme.DisplayOrder || 0,
-                                      ImageUrl: theme.ImageUrl || ''
-                                    });
-                                    setShowThemeModal(true);
-                                  }}
-                                  className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 transition cursor-pointer"
-                                  title="Edit Theme"
-                                >
-                                  <Edit2 className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteTheme(theme.Id)}
-                                  className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
-                                  title="Delete Theme"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                              {theme.ThemeName}
-                            </h4>
-                            <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2">
-                              {theme.Description || 'No description provided.'}
-                            </p>
-                          </div>
-                          <div className="pt-2 border-t border-slate-200/60 dark:border-zinc-800 flex items-center justify-between text-[11px] font-semibold text-slate-400">
-                            <span>Order #{theme.DisplayOrder || idx + 1}</span>
-                            <span>
-                              {physicalPSMode === 'organizer_provided'
-                                ? `${statementCount} Challenges`
-                                : `${submissionCount} Submissions`}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-              {/* ── PROBLEM STATEMENTS / SUBMISSIONS VIEW (DYNAMIC) ── */}
-              {physicalPSMode === 'organizer_provided' ? (
-                /* ORGANIZER-PROVIDED PROBLEM STATEMENTS */
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
-                    <div className="flex items-center gap-2.5">
-                      <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                      <div>
-                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                          Organizer Problem Statements ({organizerStatements.length})
-                        </h3>
-                        <p className="text-xs text-slate-500">
-                          Predefined challenges available for teams to choose from
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <select
-                        value={statementCategoryFilter}
-                        onChange={(e) => setStatementCategoryFilter(e.target.value)}
-                        className="px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none cursor-pointer"
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {themes.map((theme, idx) => {
+                    const statementCount = organizerStatements.filter(
+                      (s) => (s.Theme || '').trim().toLowerCase() === (theme.ThemeName || '').trim().toLowerCase()
+                    ).length;
+                    const submissionCount = participantStatements.filter(
+                      (p) => (p.ThemeName || '').trim().toLowerCase() === (theme.ThemeName || '').trim().toLowerCase()
+                    ).length;
+                    const IconComponent = getThemeIcon(theme.ThemeName, theme.Description);
+                    const hasImage = Boolean(theme.ImageUrl && theme.ImageUrl.trim());
+                    return (
+                      <div
+                        key={theme.Id || theme.id || theme.ThemeName || idx}
+                        className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/60 dark:bg-black space-y-3 flex flex-col justify-between hover:border-emerald-500/40 transition overflow-hidden shadow-xs"
                       >
-                        <option value="ALL">All Domains</option>
-                        <option value="Software">Software</option>
-                        <option value="Hardware">Hardware</option>
-                        <option value="Both">Both (Hybrid)</option>
-                      </select>
+                        <div className="space-y-3">
+                          {hasImage && (
+                            <div className="w-full h-28 rounded-xl overflow-hidden mb-2 border border-slate-200 dark:border-zinc-800 bg-zinc-900">
+                              <img src={theme.ImageUrl} alt={theme.ThemeName} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
+                                <IconComponent className="h-4 w-4" />
+                              </div>
+                              <span className="font-mono text-xs font-semibold text-slate-400 dark:text-zinc-500 tracking-wider">
+                                #{String(idx + 1).padStart(2, '0')}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-[10px] font-bold uppercase tracking-wider">
+                                {theme.Track || 'Physical'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingThemeId(theme.Id);
+                                  setThemeForm({
+                                    ThemeName: theme.ThemeName,
+                                    Description: theme.Description || '',
+                                    DisplayOrder: theme.DisplayOrder || 0,
+                                    ImageUrl: theme.ImageUrl || '',
+                                    Track: theme.Track || 'Physical'
+                                  });
+                                  setShowThemeModal(true);
+                                }}
+                                className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 transition cursor-pointer"
+                                title="Edit Theme"
+                              >
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTheme(theme.Id)}
+                                className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
+                                title="Delete Theme"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                            {theme.ThemeName}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-3">
+                            {theme.Description || 'No description provided.'}
+                          </p>
+                        </div>
+                        <div className="pt-3 border-t border-slate-200/60 dark:border-zinc-800 flex items-center justify-between text-[11px] font-semibold text-slate-400">
+                          <span>Order #{theme.DisplayOrder || idx + 1}</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                            {physicalPSMode === 'organizer_provided'
+                              ? `${statementCount} Challenges`
+                              : `${submissionCount} Submissions`}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* TAB 3: PROBLEM STATEMENTS */}
+          {activeTab === 'statements' && (
+            <motion.div
+              key="tab-statements"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-zinc-800/80">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>Physical Problem Statements</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${
+                        psPublished
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                          : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400 border-slate-300 dark:border-zinc-700'
+                      }`}>
+                        {psPublished ? 'Published & Open' : 'Draft (Unpublished)'}
+                      </span>
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
+                      {physicalPSMode === 'organizer_provided'
+                        ? 'Challenges defined by organizers for physical hackathon teams to select.'
+                        : 'Review and approve problem statements submitted by participant teams.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {physicalPSMode === 'organizer_provided' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleDownloadTemplate}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-bold text-xs shadow-xs transition cursor-pointer"
+                        title="Download sample Excel template with Themes and Problem Statements"
+                      >
+                        <Download className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Download Template (.xlsx)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowExcelModal(true)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-bold text-xs shadow-xs transition cursor-pointer"
+                        title="Upload pre-filled Excel spreadsheet"
+                      >
+                        <UploadCloud className="h-3.5 w-3.5" />
+                        <span>Import Excel</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
@@ -1824,96 +2049,385 @@ function AdminPhysicalEvent() {
                             Description: '',
                             Theme: themes[0]?.ThemeName || '',
                             Category: 'Software',
-                            MaxTeams: 5
+                            MaxTeams: 5,
+                            Track: 'Physical'
                           });
                           setShowStatementModal(true);
                         }}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         <span>Add Statement</span>
                       </button>
-                    </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Submission Format Info (Configured exclusively in Event Settings) */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800">
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                    physicalPSMode === 'organizer_provided'
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                      : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                  }`}>
+                    {physicalPSMode === 'organizer_provided' ? <FileText className="h-4 w-4" /> : <Target className="h-4 w-4" />}
                   </div>
-                  {organizerStatements.length === 0 ? (
-                    <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-2">
-                      <FileText className="h-8 w-8 mx-auto text-slate-400" />
-                      <p className="text-xs text-slate-500 dark:text-zinc-400">
-                        No problem statements added yet. Add challenges under your themes for physical teams.
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
+                        Challenge Format: {physicalPSMode === 'organizer_provided' ? 'Organizer-Provided Challenges' : 'Participant-Submitted (Open Innovation)'}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border ${
+                        physicalPSMode === 'organizer_provided'
+                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                          : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                      }`}>
+                        {physicalPSMode === 'organizer_provided' ? 'Organizer Challenges' : 'Participant Submitted'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                      {physicalPSMode === 'organizer_provided'
+                        ? 'Teams select from available statements up to capacity limits'
+                        : 'Participants propose their own challenge statement and proposal document under registered themes'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate(`/admin/events/${eventId}/settings`)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-xs font-bold text-slate-700 dark:text-zinc-300 transition cursor-pointer self-start sm:self-auto shrink-0 shadow-2xs"
+                >
+                  <Settings className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Configure Format in Event Settings &rarr;</span>
+                </button>
+              </div>
+
+              {/* Quick Publishing & Live Timer Bar (for Organizer Provided) */}
+              {physicalPSMode === 'organizer_provided' && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                      psPublished
+                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                        : 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                    }`}>
+                      {psPublished ? <CheckCircle2 className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                          {psPublished ? 'Problem Statements Published & Open' : 'Problem Statements Locked (Draft Mode)'}
+                        </h4>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border ${
+                          psPublished
+                            ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                            : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400 border-slate-300 dark:border-zinc-700'
+                        }`}>
+                          {psPublished ? 'Visible to Teams' : 'Hidden from Teams'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                        {psPublished
+                          ? (adminTimerLeft && !adminTimerLeft.expired
+                              ? `Active selection countdown: ${String(adminTimerLeft.hours).padStart(2, '0')}:${String(adminTimerLeft.minutes).padStart(2, '0')}:${String(adminTimerLeft.seconds).padStart(2, '0')} remaining`
+                              : 'Teams can browse and lock in their problem statement.')
+                          : 'Participants can view innovation themes in advance; statements unlock when published or timer finishes.'}
                       </p>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {organizerStatements
-                        .filter((ps) => {
-                          if (statementCategoryFilter !== 'ALL' && (ps.Category || 'Software').toLowerCase() !== statementCategoryFilter.toLowerCase()) return false;
-                          return true;
-                        })
-                        .map((ps) => {
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap self-start md:self-auto">
+                    {/* Quick timer controls */}
+                    <div className="flex items-center gap-1 bg-slate-100 dark:bg-zinc-900 p-1 rounded-xl">
+                      <span className="text-[10px] font-bold text-slate-400 px-1.5 flex items-center gap-1">
+                        <Timer className="h-3 w-3" />
+                        <span>Timer:</span>
+                      </span>
+                      {[15, 30, 45].map((mins) => (
+                        <button
+                          key={mins}
+                          type="button"
+                          onClick={() => handleSetDeadlineByMinutes(mins)}
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:text-emerald-500 transition cursor-pointer"
+                        >
+                          +{mins}m
+                        </button>
+                      ))}
+                      {adminTimerLeft && (
+                        <button
+                          type="button"
+                          onClick={handleClearDeadline}
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handlePublishPS(!psPublished)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs ${
+                        psPublished
+                          ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 dark:text-rose-400 border border-rose-200 dark:border-rose-900/30'
+                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                      }`}
+                    >
+                      {psPublished ? 'Unpublish Statements' : 'Publish & Unlock Now'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Search & Filters */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={statementSearch}
+                    onChange={(e) => setStatementSearch(e.target.value)}
+                    placeholder="Search problem statements or code..."
+                    className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <select
+                    value={statementCategoryFilter}
+                    onChange={(e) => setStatementCategoryFilter(e.target.value)}
+                    className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none cursor-pointer"
+                  >
+                    <option value="ALL">All Domains</option>
+                    <option value="Software">Software</option>
+                    <option value="Hardware">Hardware</option>
+                    <option value="Both">Both (Hybrid)</option>
+                  </select>
+                  <select
+                    value={statementThemeFilter}
+                    onChange={(e) => setStatementThemeFilter(e.target.value)}
+                    className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-700 dark:text-zinc-300 focus:outline-none cursor-pointer"
+                  >
+                    <option value="ALL">All Themes</option>
+                    {themes.map((t, idx) => (
+                      <option key={t.Id || t.id || t.ThemeName || idx} value={t.ThemeName}>{t.ThemeName}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* STATEMENTS LIST */}
+              {physicalPSMode === 'organizer_provided' ? (
+                organizerStatements.length === 0 ? (
+                  <div className="p-12 rounded-3xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-3">
+                    <FileText className="h-10 w-10 mx-auto text-slate-400" />
+                    <p className="text-sm font-semibold text-slate-700 dark:text-zinc-300">No problem statements created yet</p>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-md mx-auto">
+                      Add individual challenge statements or import in bulk using our Excel spreadsheet template.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingStatementId(null);
+                          setStatementForm({
+                            ProblemCode: 'PS-01',
+                            Title: '',
+                            Description: '',
+                            Theme: themes[0]?.ThemeName || '',
+                            Category: 'Software',
+                            MaxTeams: 5,
+                            Track: 'Physical'
+                          });
+                          setShowStatementModal(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-700 text-white font-bold text-xs"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Add Statement</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowExcelModal(true)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-bold text-xs"
+                      >
+                        <UploadCloud className="h-3.5 w-3.5" />
+                        <span>Import Excel</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {organizerStatements
+                      .filter((ps) => {
+                        if (statementCategoryFilter !== 'ALL' && (ps.Category || 'Software').toLowerCase() !== statementCategoryFilter.toLowerCase()) return false;
+                        if (statementThemeFilter !== 'ALL' && (ps.Theme || '').trim().toLowerCase() !== statementThemeFilter.trim().toLowerCase()) return false;
+                        if (statementSearch) {
+                          const q = statementSearch.toLowerCase();
+                          const matchCode = (ps.ProblemCode || '').toLowerCase().includes(q);
+                          const matchTitle = (ps.Title || '').toLowerCase().includes(q);
+                          const matchDesc = (ps.Description || '').toLowerCase().includes(q);
+                          if (!matchCode && !matchTitle && !matchDesc) return false;
+                        }
+                        return true;
+                      })
+                      .map((ps, idx) => {
                         const assignedSelections = statementSelections.filter(
                           (s) => Number(s.ProblemStatementId) === Number(ps.Id)
                         );
-                        const isFull = assignedSelections.length >= (ps.MaxTeams || 5);
+                        const maxTeams = Number(ps.MaxTeams) || 5;
+                        const isFull = assignedSelections.length >= maxTeams;
+                        const pct = Math.min(100, Math.round((assignedSelections.length / maxTeams) * 100));
+
                         return (
-                        <div
-                          key={ps.Id || ps.id || ps.ProblemCode || index}
-                          className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-2"
-                        >
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10">
-                                {ps.ProblemCode}
-                              </span>
-                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                                (ps.Category || '').toLowerCase() === 'hardware'
-                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                                  : (ps.Category || '').toLowerCase() === 'both'
-                                  ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
-                                  : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                              }`}>
-                                {ps.Category || 'Software'}
-                              </span>
-                              {ps.Theme && (
-                                <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 px-2 py-0.5 rounded-md bg-slate-200 dark:bg-zinc-800">
-                                  {ps.Theme}
+                          <div
+                            key={ps.Id || ps.id || ps.ProblemCode || idx}
+                            className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black space-y-3 shadow-xs hover:border-emerald-500/30 transition"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                                  {ps.ProblemCode}
                                 </span>
-                              )}
-                              <span className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${
-                                isFull
-                                  ? 'bg-rose-500/10 text-rose-600'
-                                  : 'bg-emerald-500/10 text-emerald-600'
-                              }`}>
-                                {assignedSelections.length} / {ps.MaxTeams || 5} Teams Selected
-                              </span>
+                                <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold border ${
+                                  (ps.Category || '').toLowerCase() === 'hardware'
+                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                    : (ps.Category || '').toLowerCase() === 'both'
+                                    ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                                    : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                                }`}>
+                                  {ps.Category || 'Software'}
+                                </span>
+                                {ps.Theme && (
+                                  <span className="text-[11px] font-semibold text-slate-600 dark:text-zinc-300 px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800">
+                                    {ps.Theme}
+                                  </span>
+                                )}
+                                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300">
+                                  {ps.Track || 'Physical'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-right">
+                                  <span className={`text-xs font-bold ${
+                                    isFull ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400'
+                                  }`}>
+                                    {assignedSelections.length} / {maxTeams} Teams
+                                  </span>
+                                  <div className="w-24 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full mt-1 overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full ${isFull ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1 pl-2 border-l border-slate-200 dark:border-zinc-800">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingStatementId(ps.Id);
+                                      setStatementForm({
+                                        ProblemCode: ps.ProblemCode,
+                                        Title: ps.Title,
+                                        Description: ps.Description || '',
+                                        Theme: ps.Theme || '',
+                                        Category: ps.Category || 'Software',
+                                        MaxTeams: ps.MaxTeams || 5,
+                                        Track: ps.Track || 'Physical'
+                                      });
+                                      setShowStatementModal(true);
+                                    }}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                                    title="Edit Statement"
+                                  >
+                                    <Edit2 className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteStatement(ps.Id)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
+                                    title="Delete Statement"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingStatementId(ps.Id);
-                                  setStatementForm({
-                                    ProblemCode: ps.ProblemCode,
-                                    Title: ps.Title,
-                                    Description: ps.Description || '',
-                                    Theme: ps.Theme || '',
-                                    Category: ps.Category || 'Software',
-                                    MaxTeams: ps.MaxTeams || 5
-                                  });
-                                  setShowStatementModal(true);
-                                }}
-                                className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-zinc-800 transition cursor-pointer"
-                              >
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteStatement(ps.Id)}
-                                className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                              {ps.Title}
+                            </h4>
+                            {ps.Description && (
+                              <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
+                                {ps.Description}
+                              </p>
+                            )}
                           </div>
+                        );
+                      })}
+                  </div>
+                )
+              ) : (
+                /* Participant Proposals */
+                <div className="space-y-3">
+                  {participantStatements
+                    .filter((ps) => {
+                      if (participantThemeFilter !== 'ALL' && (ps.ThemeName || '').toLowerCase() !== participantThemeFilter.toLowerCase()) return false;
+                      if (participantCategoryFilter !== 'ALL' && (ps.Category || 'Software').toLowerCase() !== participantCategoryFilter.toLowerCase()) return false;
+                      if (participantStatusFilter !== 'ALL' && (ps.Status || '').toLowerCase() !== participantStatusFilter.toLowerCase()) return false;
+                      if (searchPSSubmissions) {
+                        const query = searchPSSubmissions.toLowerCase();
+                        const matchTitle = (ps.Title || '').toLowerCase().includes(query);
+                        const matchTeam = (ps.TeamName || '').toLowerCase().includes(query);
+                        const matchDesc = (ps.Description || '').toLowerCase().includes(query);
+                        if (!matchTitle && !matchTeam && !matchDesc) return false;
+                      }
+                      return true;
+                    })
+                    .map((ps, idx) => (
+                      <div
+                        key={ps.Id || ps.id || idx}
+                        className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black space-y-3 shadow-xs"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div>
+                            <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                              {ps.TeamName}
+                            </span>
+                            {ps.College && (
+                              <span className="text-xs text-slate-500 ml-2">({ps.College})</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                              {ps.ThemeName || 'General Innovation'}
+                            </span>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                              (ps.Category || '').toLowerCase() === 'hardware'
+                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                : (ps.Category || '').toLowerCase() === 'both'
+                                ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
+                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                            }`}>
+                              {ps.Category === 'Both' ? 'Hardware & Software' : (ps.Category || 'Software')}
+                            </span>
+                            <select
+                              value={ps.Status || 'Approved'}
+                              onChange={(e) => handleUpdateParticipantStatus(ps.Id, e.target.value)}
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border focus:outline-none cursor-pointer ${
+                                ps.Status === 'Needs_Revision'
+                                  ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                                  : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                              }`}
+                            >
+                              <option value="Approved">Approved</option>
+                              <option value="Pending">Pending</option>
+                              <option value="Needs_Revision">Needs Revision</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
                           <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                             {ps.Title}
                           </h4>
@@ -1923,159 +2437,688 @@ function AdminPhysicalEvent() {
                             </p>
                           )}
                         </div>
-                      );
-                    })}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* PARTICIPANT-SUBMITTED PROBLEM STATEMENTS */
-                <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-950 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
-                    <div className="flex items-center gap-2.5">
-                      <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <div>
-                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                          Participant-Submitted Problem Statements ({participantStatements.length})
-                        </h3>
-                        <p className="text-xs text-slate-500">
-                          Custom innovation ideas and problem statements submitted by teams
-                        </p>
-                      </div>
-                    </div>
-                    {/* Filters */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <input
-                        type="text"
-                        value={searchPSSubmissions}
-                        onChange={(e) => setSearchPSSubmissions(e.target.value)}
-                        placeholder="Search team or statement..."
-                        className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
-                      />
-                      <select
-                        value={participantThemeFilter}
-                        onChange={(e) => setParticipantThemeFilter(e.target.value)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none cursor-pointer"
-                      >
-                        <option value="ALL">All Themes</option>
-                        {themes.map((t, idx) => (
-                          <option key={t.Id || t.id || t.ThemeName || idx} value={t.ThemeName}>{t.ThemeName}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={participantCategoryFilter}
-                        onChange={(e) => setParticipantCategoryFilter(e.target.value)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none cursor-pointer"
-                      >
-                        <option value="ALL">All Domains (Software & Hardware)</option>
-                        <option value="Software">Software</option>
-                        <option value="Hardware">Hardware</option>
-                        <option value="Both">Both (Hybrid)</option>
-                      </select>
-                      <select
-                        value={participantStatusFilter}
-                        onChange={(e) => setParticipantStatusFilter(e.target.value)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-medium text-slate-800 dark:text-zinc-200 focus:outline-none cursor-pointer"
-                      >
-                        <option value="ALL">All Status</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Needs_Revision">Needs Revision</option>
-                      </select>
-                    </div>
-                  </div>
-                  {participantStatements.length === 0 ? (
-                    <div className="p-8 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 text-center space-y-2">
-                      <Target className="h-8 w-8 mx-auto text-slate-400" />
-                      <p className="text-xs text-slate-500 dark:text-zinc-400">
-                        No teams have submitted their problem statements yet. Once participants submit from their event page, they will appear here.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {participantStatements
-                        .filter((ps) => {
-                          if (participantThemeFilter !== 'ALL' && (ps.ThemeName || '').toLowerCase() !== participantThemeFilter.toLowerCase()) return false;
-                          if (participantCategoryFilter !== 'ALL' && (ps.Category || 'Software').toLowerCase() !== participantCategoryFilter.toLowerCase()) return false;
-                          if (participantStatusFilter !== 'ALL' && (ps.Status || '').toLowerCase() !== participantStatusFilter.toLowerCase()) return false;
-                          if (searchPSSubmissions) {
-                            const query = searchPSSubmissions.toLowerCase();
-                            const matchTitle = (ps.Title || '').toLowerCase().includes(query);
-                            const matchTeam = (ps.TeamName || '').toLowerCase().includes(query);
-                            const matchDesc = (ps.Description || '').toLowerCase().includes(query);
-                            if (!matchTitle && !matchTeam && !matchDesc) return false;
-                          }
-                          return true;
-                        })
-                        .map((ps, idx) => (
-                          <div
-                            key={ps.Id || ps.id || idx}
-                            className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-black space-y-3"
-                          >
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                              <div>
-                                <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                                  {ps.TeamName}
-                                </span>
-                                {ps.College && (
-                                  <span className="text-xs text-slate-500 ml-2">({ps.College})</span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                                  {ps.ThemeName || 'General Innovation'}
-                                </span>
-                                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                                  (ps.Category || '').toLowerCase() === 'hardware'
-                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                                    : (ps.Category || '').toLowerCase() === 'both'
-                                    ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20'
-                                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                                }`}>
-                                  {ps.Category === 'Both' ? 'Hardware & Software' : (ps.Category || 'Software')}
-                                </span>
-                                <select
-                                  value={ps.Status || 'Approved'}
-                                  onChange={(e) => handleUpdateParticipantStatus(ps.Id, e.target.value)}
-                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border focus:outline-none cursor-pointer ${
-                                    ps.Status === 'Needs_Revision'
-                                      ? 'bg-amber-500/10 text-amber-600 border-amber-500/30'
-                                      : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
-                                  }`}
-                                >
-                                  <option value="Approved">Approved</option>
-                                  <option value="Pending">Pending</option>
-                                  <option value="Needs_Revision">Needs Revision</option>
-                                </select>
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                                {ps.Title}
-                              </h4>
-                              {ps.Description && (
-                                <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
-                                  {ps.Description}
-                                </p>
-                              )}
-                            </div>
-                            <div className="pt-2 border-t border-slate-200/60 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
-                              {ps.TechStack && (
-                                <div className="flex items-center gap-1.5 font-medium">
-                                  <Code className="h-3.5 w-3.5 text-slate-400" />
-                                  <span>Stack: {ps.TechStack}</span>
-                                </div>
-                              )}
-                              <span>Lead: {ps.TeamLeadName || ps.TeamLeadEmail || 'N/A'}</span>
-                            </div>
+
+                        {/* Uploaded Document / Presentation */}
+                        {ps.DocumentUrl && (
+                          <div className="pt-2 flex items-center gap-2">
+                            <a
+                              href={ps.DocumentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-xs font-bold text-slate-800 dark:text-zinc-200 transition"
+                            >
+                              <FileText className="h-3.5 w-3.5 text-emerald-500" />
+                              <span className="truncate max-w-[280px]">
+                                {ps.DocumentName || 'View Proposal Document / Presentation'}
+                              </span>
+                              <ExternalLink className="h-3 w-3 text-slate-400" />
+                            </a>
                           </div>
-                        ))}
-                    </div>
-                  )}
+                        )}
+
+                        {/* Admin Remarks / Feedback */}
+                        {ps.AdminRemarks && (
+                          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 dark:text-amber-300">
+                            <strong>Feedback:</strong> {ps.AdminRemarks}
+                          </div>
+                        )}
+
+                        <div className="pt-2 border-t border-slate-200/60 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+                          {ps.TechStack && (
+                            <div className="flex items-center gap-1.5 font-medium">
+                              <Code className="h-3.5 w-3.5 text-slate-400" />
+                              <span>Stack: {ps.TechStack}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const input = window.prompt('Enter feedback remarks for this team:', ps.AdminRemarks || '');
+                                if (input !== null) {
+                                  handleUpdateParticipantStatus(ps.Id, ps.Status || 'Approved', input);
+                                }
+                              }}
+                              className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                            >
+                              {ps.AdminRemarks ? 'Edit Remarks' : 'Add Feedback Remarks'}
+                            </button>
+                            <span>Lead: {ps.TeamLeadName || ps.TeamLeadEmail || 'N/A'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                 </div>
               )}
             </motion.div>
           )}
+
+          {/* TAB 4: TEAM SELECTIONS */}
+          {activeTab === 'selections' && physicalPSMode === 'organizer_provided' && (
+            <motion.div
+              key="tab-selections"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-zinc-800/80">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                    <ListChecks className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                      Physical Team Selections & Assignments
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
+                      {selectedTeamsList.length} Selected • {unselectedTeamsList.length} Pending • {teams.length} Total Physical Teams
+                    </p>
+                  </div>
+                </div>
+
+                {/* View Switcher Pill & Auto-Assign */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setSelectionsViewMode('teams')}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                        selectionsViewMode === 'teams'
+                          ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 font-bold shadow-xs'
+                          : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>By Teams</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectionsViewMode('statements')}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                        selectionsViewMode === 'statements'
+                          ? 'bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 font-bold shadow-xs'
+                          : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      <Target className="w-3.5 h-3.5" />
+                      <span>By Problem Statement</span>
+                    </button>
+                  </div>
+
+                  {unselectedTeamsList.length > 0 && (
+                    <button
+                      type="button"
+                      disabled={autoAssigning}
+                      onClick={handleAutoAssign}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs transition cursor-pointer disabled:opacity-50"
+                    >
+                      {autoAssigning ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Shuffle className="h-3.5 w-3.5" />}
+                      <span>Auto-Assign {unselectedTeamsList.length} Pending Teams</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* VIEW 1: BY TEAMS */}
+              {selectionsViewMode === 'teams' ? (
+                <div className="space-y-4">
+                  {/* Sub-filters & Search */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setSelectionsTeamFilter('all')}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                          selectionsTeamFilter === 'all'
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-black border-slate-900 dark:border-white'
+                            : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
+                        }`}
+                      >
+                        <span>All Teams</span>
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                          {teams.length}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectionsTeamFilter('selected')}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                          selectionsTeamFilter === 'selected'
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
+                        }`}
+                      >
+                        <span>Selected Teams</span>
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white">
+                          {selectedTeamsList.length}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectionsTeamFilter('pending')}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                          selectionsTeamFilter === 'pending'
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'
+                            : 'bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400'
+                        }`}
+                      >
+                        <span>Pending Teams</span>
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white">
+                          {unselectedTeamsList.length}
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="relative w-full sm:w-72">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <input
+                        type="text"
+                        value={selectionsSearch}
+                        onChange={(e) => setSelectionsSearch(e.target.value)}
+                        placeholder="Search teams or leads..."
+                        className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Teams Selection List */}
+                  <div className="space-y-3">
+                    {teams
+                      .filter((team) => {
+                        const teamId = Number(team.TeamId ?? team.Id);
+                        const isSelected = selectedTeamIds.has(teamId);
+                        if (selectionsTeamFilter === 'selected' && !isSelected) return false;
+                        if (selectionsTeamFilter === 'pending' && isSelected) return false;
+                        if (selectionsSearch) {
+                          const q = selectionsSearch.toLowerCase();
+                          const matchName = String(team.TeamName || '').toLowerCase().includes(q);
+                          const matchLead = String(team.LeadName || team.TeamLeadName || '').toLowerCase().includes(q);
+                          const matchCollege = String(team.College || '').toLowerCase().includes(q);
+                          if (!matchName && !matchLead && !matchCollege) return false;
+                        }
+                        return true;
+                      })
+                      .map((team, idx) => {
+                        const teamId = Number(team.TeamId ?? team.Id);
+                        const sel = teamSelectionMap.get(teamId);
+                        const hasSelected = Boolean(sel);
+
+                        return (
+                          <div
+                            key={teamId || idx}
+                            className={`p-4 sm:p-5 rounded-2xl border transition ${
+                              hasSelected
+                                ? 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-black'
+                                : 'border-amber-200 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-950/10'
+                            }`}
+                          >
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs ${
+                                  avatarColors[idx % avatarColors.length]
+                                }`}>
+                                  {getInitials(team.TeamName)}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                      {getTeamName(team)}
+                                    </h4>
+                                    <span className="text-[11px] font-mono text-slate-400">
+                                      #{teamId}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
+                                    Lead: {team.TeamLeadName || team.LeadName || team.TeamLeadEmail || 'N/A'} • {getCollege(team)}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div>
+                                {hasSelected ? (
+                                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400">
+                                        {sel.ProblemCode}
+                                      </span>
+                                      <span className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-xs">
+                                        {sel.ProblemTitle}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-zinc-400">
+                                      {sel.Theme && <span>Theme: {sel.Theme}</span>}
+                                      {sel.Category && <span>• {sel.Category}</span>}
+                                      {sel.SelectedAt && <span>• Selected: {formatDate(sel.SelectedAt)}</span>}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-bold">
+                                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                                    <span>Selection Pending - No challenge selected yet</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              ) : (
+                /* VIEW 2: BY PROBLEM STATEMENT */
+                <div className="space-y-3">
+                  {organizerStatements.map((ps, idx) => {
+                    const assigned = statementSelections.filter(
+                      (s) => Number(s.ProblemStatementId) === Number(ps.Id)
+                    );
+                    const isExpanded = Boolean(expandedPsSelections[ps.Id]);
+                    const maxTeams = Number(ps.MaxTeams) || 5;
+                    const isFull = assigned.length >= maxTeams;
+
+                    return (
+                      <div
+                        key={ps.Id || idx}
+                        className="rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black overflow-hidden shadow-xs"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleExpandPs(ps.Id)}
+                          className="w-full p-4 sm:p-5 flex items-center justify-between gap-4 text-left hover:bg-slate-50 dark:hover:bg-zinc-900/40 transition cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="font-mono text-xs font-black text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 shrink-0">
+                              {ps.ProblemCode}
+                            </span>
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                {ps.Title}
+                              </h4>
+                              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5 truncate">
+                                Theme: {ps.Theme || 'General'} • {ps.Category || 'Software'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className={`px-2.5 py-1 rounded-xl text-xs font-bold border ${
+                              isFull
+                                ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                            }`}>
+                              {assigned.length} / {maxTeams} Teams
+                            </span>
+                            <div className="p-1 rounded-lg text-slate-400">
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </div>
+                          </div>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 space-y-2">
+                            {assigned.length === 0 ? (
+                              <p className="text-xs text-slate-400 italic">No teams have selected this challenge yet.</p>
+                            ) : (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {assigned.map((sel, sIdx) => {
+                                  const matchingTeam = teams.find(t => Number(t.TeamId ?? t.Id) === Number(sel.TeamId));
+                                  return (
+                                    <div
+                                      key={sel.Id || sIdx}
+                                      className="p-3 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black space-y-1"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <h5 className="text-xs font-bold text-slate-900 dark:text-white">
+                                          {matchingTeam ? getTeamName(matchingTeam) : `Team #${sel.TeamId}`}
+                                        </h5>
+                                        <span className="font-mono text-[10px] text-slate-400">
+                                          #{sel.TeamId}
+                                        </span>
+                                      </div>
+                                      <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                                        Lead: {matchingTeam?.TeamLeadName || matchingTeam?.LeadName || 'N/A'} • {matchingTeam ? getCollege(matchingTeam) : ''}
+                                      </p>
+                                      {sel.SelectedAt && (
+                                        <p className="text-[10px] text-slate-400">
+                                          Selected: {formatDate(sel.SelectedAt)}
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* TAB 5: PUBLISH & DEADLINES */}
+          {activeTab === 'publish' && (
+            <motion.div
+              key="tab-publish"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-zinc-800/80">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-400">
+                    <Settings2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                      Physical Hackathon Publishing & Deadlines
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 mt-0.5">
+                      {physicalPSMode === 'organizer_provided'
+                        ? 'Control visibility of themes and challenge statements, and run the live selection timer.'
+                        : 'Control visibility of innovation themes for participant custom problem statement proposals.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Overview Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black space-y-1">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Innovation Themes</span>
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className={`w-2.5 h-2.5 rounded-full ${themePublished ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-zinc-700'}`} />
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      {themePublished ? 'Published to Participants' : 'Draft Mode'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">{themes.length} Themes configured</p>
+                </div>
+
+                {physicalPSMode === 'organizer_provided' ? (
+                  <>
+                    <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black space-y-1">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Problem Statements</span>
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className={`w-2.5 h-2.5 rounded-full ${psPublished ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-zinc-700'}`} />
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                          {psPublished ? 'Published & Open' : 'Draft / Closed'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{organizerStatements.length} Challenges available</p>
+                    </div>
+
+                    <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black space-y-1">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Selection Timer</span>
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className={`w-2.5 h-2.5 rounded-full ${
+                          adminTimerLeft && !adminTimerLeft.expired ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-zinc-700'
+                        }`} />
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                          {adminTimerLeft && !adminTimerLeft.expired
+                            ? `${String(adminTimerLeft.hours).padStart(2, '0')}:${String(adminTimerLeft.minutes).padStart(2, '0')}:${String(adminTimerLeft.seconds).padStart(2, '0')} Left`
+                            : adminTimerLeft?.expired
+                            ? 'Selection Closed'
+                            : 'No Active Timer'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {unselectedTeamsList.length} of {teams.length} teams pending selection
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black space-y-1">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Participant Proposals</span>
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className={`w-2.5 h-2.5 rounded-full ${participantStatements.length > 0 ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-zinc-700'}`} />
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                          {participantStatements.length} Submitted
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {participantStatements.length} of {teams.length} teams submitted proposals
+                      </p>
+                    </div>
+
+                    <div className="p-5 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black space-y-1">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Approved Proposals</span>
+                      <div className="flex items-center gap-2 pt-1">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-white">
+                          {participantStatements.filter(p => (p.Status || '').toLowerCase() === 'approved').length} Approved
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {participantStatements.filter(p => (p.Status || '').toLowerCase() === 'pending').length} pending review
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Action Cards */}
+              <div className="space-y-4">
+                {/* 1. Theme Publishing Card */}
+                <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Layers className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                        Innovation Themes Visibility
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-xl">
+                      {physicalPSMode === 'organizer_provided'
+                        ? 'Make themes visible on the public event page and participant dashboard in advance so participants can prepare domain ideas.'
+                        : 'Make innovation themes visible so participant teams can choose a theme and submit their custom problem statements and proposals.'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handlePublishTheme(!themePublished)}
+                    className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 shadow-xs ${
+                      themePublished
+                        ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 dark:text-rose-400'
+                        : 'bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white'
+                    }`}
+                  >
+                    {themePublished ? 'Unpublish Themes (Keep Draft)' : 'Publish Themes to Participants'}
+                  </button>
+                </div>
+
+                {physicalPSMode === 'organizer_provided' ? (
+                  <>
+                    {/* 2. Problem Statements Publishing Card */}
+                    <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                            Problem Statements & Selection Window
+                          </h4>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-xl">
+                          Publish challenge statements so registered teams can review and lock in their preferred problem statement.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handlePublishPS(!psPublished)}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer shrink-0 shadow-xs ${
+                          psPublished
+                            ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 dark:text-rose-400'
+                            : 'bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white'
+                        }`}
+                      >
+                        {psPublished ? 'Close & Unpublish Statements' : 'Publish Statements & Open Selection'}
+                      </button>
+                    </div>
+
+                    {/* 3. Selection Deadline Timer Card */}
+                    <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black space-y-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Timer className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                            Live Selection Deadline Timer
+                          </h4>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400">
+                          Set a live countdown timer during the opening ceremony. The timer is displayed live to teams on their dashboard.
+                        </p>
+                      </div>
+
+                      {/* Timer display if running */}
+                      {adminTimerLeft && !adminTimerLeft.expired && (
+                        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between flex-wrap gap-3">
+                          <div className="flex items-center gap-3">
+                            <Clock className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-spin" />
+                            <div>
+                              <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                                Selection Window Open & Running
+                              </p>
+                              <p className="font-mono text-xl font-black text-emerald-600 dark:text-emerald-400">
+                                {String(adminTimerLeft.hours).padStart(2, '0')}:{String(adminTimerLeft.minutes).padStart(2, '0')}:{String(adminTimerLeft.seconds).padStart(2, '0')}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleClearDeadline}
+                            className="px-3.5 py-1.5 rounded-xl border border-rose-500/30 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 font-bold text-xs transition cursor-pointer"
+                          >
+                            Clear Timer
+                          </button>
+                        </div>
+                      )}
+
+                      {/* If timer expired and teams unselected */}
+                      {adminTimerLeft?.expired && unselectedTeamsList.length > 0 && (
+                        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-between flex-wrap gap-3">
+                          <div>
+                            <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Selection Window Closed</p>
+                            <p className="text-xs text-amber-600 dark:text-amber-400">
+                              {unselectedTeamsList.length} teams have not selected a problem statement yet.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={autoAssigning}
+                            onClick={handleAutoAssign}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
+                          >
+                            {autoAssigning ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Shuffle className="h-3 w-3" />}
+                            <span>Auto-Assign Remaining {unselectedTeamsList.length} Teams</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Quick Presets */}
+                      <div className="space-y-2">
+                        <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">Quick Timer Presets:</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {[5, 10, 15, 20, 30, 45, 60].map((mins) => (
+                            <button
+                              key={mins}
+                              type="button"
+                              onClick={() => {
+                                setDeadlineMinutes(mins);
+                                handleSetDeadlineByMinutes(mins);
+                              }}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                                deadlineMinutes === mins
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-700 hover:border-emerald-500/50'
+                              }`}
+                            >
+                              {mins} Min
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Custom minutes input & Start */}
+                      <div className="flex items-center gap-3 pt-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max="180"
+                            value={deadlineMinutes}
+                            onChange={(e) => setDeadlineMinutes(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-24 px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs font-bold text-center text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
+                          />
+                          <span className="text-xs font-semibold text-slate-500">Minutes</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleSetDeadlineByMinutes(deadlineMinutes)}
+                          className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                        >
+                          Start Timer ({deadlineMinutes} Min)
+                        </button>
+                        {activeDeadlineVal && (
+                          <button
+                            type="button"
+                            onClick={handleClearDeadline}
+                            className="px-3.5 py-2 rounded-xl border border-rose-500/30 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-bold text-xs transition cursor-pointer"
+                          >
+                            Clear Timer
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  /* Participant-Submitted Information Card */
+                  <div className="p-6 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                            Participant-Submitted Track Active
+                          </h4>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400 max-w-xl">
+                          In this mode, registered teams draft and submit their own custom challenge proposals under the published Innovation Themes. Organizer challenge statement publishing and live selection countdown timers are not required.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('statements')}
+                        className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs transition cursor-pointer shrink-0 shadow-xs inline-flex items-center gap-2"
+                      >
+                        <span>Review Proposals ({participantStatements.length})</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
+                      <span>Challenge submission format can be configured in Event Settings.</span>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/admin/events/${eventId}/settings`)}
+                        className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <span>Go to Event Settings</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {/* THEME FORM MODAL */}
           <AnimatePresence>
             {showThemeModal && (
@@ -2111,16 +3154,31 @@ function AdminPhysicalEvent() {
                         className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
                       />
                     </div>
-                    <div>
-                      <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
-                        Display Order
-                      </label>
-                      <input
-                        type="number"
-                        value={themeForm.DisplayOrder}
-                        onChange={(e) => setThemeForm(prev => ({ ...prev, DisplayOrder: parseInt(e.target.value) || 0 }))}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                          Track
+                        </label>
+                        <select
+                          value={themeForm.Track || 'Physical'}
+                          onChange={(e) => setThemeForm(prev => ({ ...prev, Track: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none font-bold"
+                        >
+                          <option value="Physical">Physical</option>
+                          <option value="Virtual">Virtual</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                          Display Order
+                        </label>
+                        <input
+                          type="number"
+                          value={themeForm.DisplayOrder}
+                          onChange={(e) => setThemeForm(prev => ({ ...prev, DisplayOrder: parseInt(e.target.value) || 0 }))}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none"
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
@@ -2191,7 +3249,7 @@ function AdminPhysicalEvent() {
                     </button>
                   </div>
                   <form onSubmit={handleSaveStatement} className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                       <div>
                         <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                           Problem Code *
@@ -2231,6 +3289,19 @@ function AdminPhysicalEvent() {
                           {themes.map((t, idx) => (
                             <option key={t.Id || t.id || t.ThemeName || idx} value={t.ThemeName}>{t.ThemeName}</option>
                           ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                          Track
+                        </label>
+                        <select
+                          value={statementForm.Track || 'Physical'}
+                          onChange={(e) => setStatementForm(prev => ({ ...prev, Track: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer font-bold"
+                        >
+                          <option value="Physical">Physical</option>
+                          <option value="Virtual">Virtual</option>
                         </select>
                       </div>
                     </div>
@@ -2279,6 +3350,149 @@ function AdminPhysicalEvent() {
               </div>
             )}
           </AnimatePresence>
+          {/* EXCEL BULK IMPORT MODAL */}
+          <AnimatePresence>
+            {showExcelModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="w-full max-w-2xl rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+                >
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <FileSpreadsheet className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                          Import Problem Statements from Excel
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-zinc-400">
+                          Upload a spreadsheet (.xlsx, .xls, .csv) with Themes & Problem Statements sheets.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowExcelModal(false);
+                        setExcelFile(null);
+                        setExcelPreview(null);
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {/* Drag-and-drop file upload */}
+                  <div className="relative border-2 border-dashed border-slate-300 dark:border-zinc-700 hover:border-emerald-500 rounded-2xl p-6 text-center cursor-pointer transition">
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      onChange={handleExcelFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                    <div className="space-y-2 pointer-events-none">
+                      <UploadCloud className="h-8 w-8 mx-auto text-emerald-600 dark:text-emerald-400" />
+                      <p className="text-sm font-bold text-slate-800 dark:text-zinc-200">
+                        {excelFile ? excelFile.name : 'Click to browse or drag and drop spreadsheet here'}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        Supports standard Excel template format (.xlsx, .xls, .csv)
+                      </p>
+                    </div>
+                  </div>
+
+                  {parsingExcel && (
+                    <div className="py-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                      <RefreshCw className="h-4 w-4 animate-spin text-emerald-600" />
+                      <span>Parsing workbook sheets...</span>
+                    </div>
+                  )}
+
+                  {excelPreview && (
+                    <div className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/40 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                          Ready to Import
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            {excelPreview.themes?.length || 0} Themes
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            {excelPreview.problemStatements?.length || 0} Statements
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Preview Table */}
+                      <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-50 dark:bg-zinc-900 text-slate-500 uppercase text-[10px] font-bold sticky top-0">
+                            <tr>
+                              <th className="py-2 px-3">Code</th>
+                              <th className="py-2 px-3">Title</th>
+                              <th className="py-2 px-3">Theme</th>
+                              <th className="py-2 px-3 text-center">Max Teams</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-zinc-800">
+                            {(excelPreview.problemStatements || []).slice(0, 10).map((ps, idx) => (
+                              <tr key={idx}>
+                                <td className="py-1.5 px-3 font-mono font-bold text-emerald-600 dark:text-emerald-400 text-[11px]">{ps.ProblemCode}</td>
+                                <td className="py-1.5 px-3 truncate max-w-xs">{ps.Title}</td>
+                                <td className="py-1.5 px-3 text-slate-500 text-[11px]">{ps.Theme}</td>
+                                <td className="py-1.5 px-3 text-center font-bold text-[11px]">{ps.MaxTeams}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2">
+                    <button
+                      type="button"
+                      onClick={handleDownloadTemplate}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>Download Sample Template</span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowExcelModal(false);
+                          setExcelFile(null);
+                          setExcelPreview(null);
+                        }}
+                        className="px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-slate-600 dark:text-zinc-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={importingExcel || !excelPreview || !excelPreview.valid}
+                        onClick={handleConfirmExcelImport}
+                        className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white font-bold text-xs shadow-xs disabled:opacity-50 cursor-pointer"
+                      >
+                        {importingExcel ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                        <span>{importingExcel ? 'Importing Data...' : 'Confirm & Import'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           {/* TAB 5: EVENT CONTROLS */}
           {activeTab === 'controls' && (
             <motion.div

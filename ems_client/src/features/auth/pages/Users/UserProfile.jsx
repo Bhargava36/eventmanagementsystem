@@ -1,31 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { API_BASE_URL } from '@/lib/api';
-import {
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  User,
-  GraduationCap,
-  Globe,
-  Shield,
-  CheckCircle2,
-  Pencil,
-  BadgeCheck,
-  CircleUserRound,
-  VenusAndMars,
-  Building2,
-  Trophy,
-  Users,
-  Compass,
-  ArrowRight,
-  X,
-  Save,
-  Check,
-  Code,
-  Camera,
-  Loader2
-} from 'lucide-react';
+import { Mail, Phone, MapPin, Calendar, User, GraduationCap, Globe, Shield, CheckCircle2, Pencil, VenusAndMars, Building2, Trophy, Users, ArrowRight, X, Save, Code, Camera, Loader2 } from 'lucide-react';
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import useToast from '../../../../Hooks/useToast';

@@ -3,35 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Html5Qrcode } from 'html5-qrcode';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  Users,
-  CheckCircle2,
-  XCircle,
-  Download,
-  Search,
-  RefreshCw,
-  Clock,
-  Building,
-  Mail,
-  Phone,
-  GraduationCap,
-  CalendarCheck,
-  QrCode,
-  Camera,
-  X,
-  Volume2,
-  Check,
-  RotateCcw,
-  Sun,
-  Moon,
-  Calendar,
-  Grid,
-  Award,
-  CheckCheck,
-  Plus,
-  BarChart3,
-  UserX
-} from 'lucide-react';
+import { Users, CheckCircle2, XCircle, Download, Search, RefreshCw, Clock, Building, Mail, Phone, GraduationCap, QrCode, Camera, X, Check, RotateCcw, Sun, Moon, Calendar, Grid, Award, CheckCheck, Plus, UserX } from 'lucide-react';
 // Web Audio API beep for instant physical check-in audio feedback
 function playCheckInSound() {
   try {

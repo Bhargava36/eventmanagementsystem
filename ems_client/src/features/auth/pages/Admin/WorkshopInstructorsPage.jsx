@@ -2,25 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  GraduationCap,
-  Plus,
-  Mail,
-  Phone,
-  Building,
-  UserCheck,
-  Edit3,
-  Trash2,
-  X,
-  Upload,
-  Camera,
-  Search,
-  RefreshCw,
-  Users,
-  Award,
-  BookOpen,
-  Briefcase
-} from 'lucide-react';
+import { GraduationCap, Plus, Mail, Phone, Building, Edit3, Trash2, X, Upload, Camera, Search, RefreshCw } from 'lucide-react';
 const WORKSHOP_ROLES = [
   'Lead Instructor',
   'Co-Instructor',

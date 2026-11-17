@@ -2,34 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-    ArrowLeft,
-    Copy,
-    Calendar,
-    Users,
-    Lightbulb,
-    Building,
-    Mail,
-    UserCheck,
-    Layers,
-    Check,
-    BedDouble,
-    Utensils,
-    Download,
-    Printer,
-    IdCard,
-    X,
-    Eye,
-    ExternalLink,
-    Palette,
-    Video,
-    Radio,
-    FileText,
-    CalendarCheck,
-    Presentation,
-    ShieldCheck,
-    Clock,
-} from 'lucide-react';
+import { ArrowLeft, Copy, Calendar, Users, Lightbulb, Building, Mail, UserCheck, Layers, Check, BedDouble, Utensils, Download, IdCard, X, Palette, Video, Radio, FileText, CalendarCheck, Presentation, ShieldCheck } from 'lucide-react';
 import { getEventTypeInfo, isSoloTeamSize } from '@/lib/utils';
 import TeamCardCanvas from './TeamCardCanvas';
 import ParticipantIdCanvas from './ParticipantIdCanvas';

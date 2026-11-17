@@ -1,4 +1,5 @@
 const db = require('../../config/db');
+const { isMultiModeEvent, resolveParticipantTrack } = require('../../utils/modeHelper');
 const createTeam = (TeamName, TeamLeadEmail, TeamSize, EventId, MemberEmails, ParticipationModeOrCallback, leadPhotoOrCallback, callbackArg) => {
     let ParticipationMode = null;
     let leadPhoto = null;
@@ -288,6 +289,10 @@ const getTeamById = (id, callback) => {
             e.HackathonMode, e.Facilities, e.Requirements, e.TeamSize AS EventTeamSize,
             e.PhysicalResultsPublished, e.VirtualResultsPublished,
             e.IdCardBackground, e.TeamCardBackground,
+            e.AccommodationEnabled, e.FoodEnabled, e.AccommodationFee, e.FoodFee, e.FacilitiesPackageFee,
+            e.AdminUpiId, e.AdminPaymentQr, e.AdminPaymentInstructions,
+            e.PhysicalPSMode, e.PhysicalPSPublished, e.PhysicalPSSelectionDeadline, e.PhysicalPSMaxTeamsPerStatement,
+            e.ProblemStatementsPublished, e.PSSelectionDeadline,
             er.ParticipationMode, er.Status AS RegistrationStatus
         FROM registered_teams t
         LEFT JOIN events e ON t.EventId = e.Id
@@ -463,6 +468,8 @@ const getMyTeams = (userId, callback) => {
                     registered_teams.State,
                     events.EventName,
                     events.EventType,
+                    events.HackathonMode,
+                    events.Location,
                     events.StartDate,
                     events.EndDate,
                     events.TeamSize AS EventTeamSize,
@@ -486,6 +493,20 @@ const getMyTeams = (userId, callback) => {
             db.query(query, params, (err, result) => {
                 if (err) {
                     return callback(err, null);
+                }
+                if (Array.isArray(result)) {
+                    result.forEach(row => {
+                        const multiMode = isMultiModeEvent(row);
+                        const track = resolveParticipantTrack(row, row);
+                        row.isMultiModeEvent = multiMode;
+                        row.ParticipationMode = track;
+                        if (multiMode && track !== 'Virtual') {
+                            row.VirtualStatus = 'NOT_APPLICABLE';
+                            row.VirtualMeetUrl = null;
+                            row.VirtualStartDate = null;
+                            row.VirtualEndDate = null;
+                        }
+                    });
                 }
                 callback(null, result);
             });
@@ -538,6 +559,17 @@ const getTeamInfo = (teamId, userId, callback) => {
                     return callback(null, null);
                 }
                 const team = result[0];
+                const participantTrack = resolveParticipantTrack(team, team);
+                const multiMode = isMultiModeEvent(team);
+                team.isMultiModeEvent = multiMode;
+                team.ParticipantTrack = participantTrack;
+                team.ParticipationMode = participantTrack;
+                if (multiMode && participantTrack !== 'Virtual') {
+                    team.VirtualStatus = 'NOT_APPLICABLE';
+                    team.VirtualMeetUrl = null;
+                    team.VirtualStartDate = null;
+                    team.VirtualEndDate = null;
+                }
                 if (typeof team.Posters === "string") {
                     try {
                         const parsedPosters = JSON.parse(team.Posters);
@@ -612,6 +644,217 @@ const getTeamInfo = (teamId, userId, callback) => {
         });
     });
 };
+const getExportDetailsByEvent = (EventId, callback) => {
+    const eventQuery = `
+        SELECT 
+            Id, EventName, Description, Facilities, Requirements, TeamSize,
+            StartDate, EndDate, RegistrationStart, RegistrationEnd, Location,
+            EventType, EventStatus, HackathonMode,
+            VirtualStartDate, VirtualEndDate, PhysicalStartDate, PhysicalEndDate,
+            AccommodationEnabled, FoodEnabled, IDCardEnabled
+        FROM events
+        WHERE Id = ?
+        LIMIT 1
+    `;
+    db.query(eventQuery, [EventId], (err, eventRows) => {
+        if (err) {
+            return callback(err, null);
+        }
+        const eventData = eventRows?.[0] || null;
+
+        const detailsQuery = `
+            SELECT
+                t.Id AS TeamId,
+                t.TeamName,
+                t.TeamLeadUserId,
+                t.TeamSize AS ConfiguredTeamSize,
+                t.College AS TeamCollege,
+                t.State AS TeamState,
+                t.CreatedAt AS TeamCreatedAt,
+                t.GraduationYear,
+                t.CurrentCompany,
+                t.Designation,
+                t.City AS TeamCity,
+                t.LinkedinUrl,
+                t.GuestCount,
+                t.GuestNames,
+                t.RsvpStatus,
+                t.GateCheckInStatus,
+                t.FoodTokenScanned,
+                er.ParticipationMode,
+                er.Status AS RegistrationStatus,
+                er.CreatedAt AS RegistrationDate,
+                er.Id AS RegistrationId,
+                lead.UserName AS LeaderName,
+                lead.Email AS LeaderEmail,
+                lead.Mobile AS LeaderMobile,
+                lead.College AS LeaderCollege,
+                lead.State AS LeaderState,
+                tm.Id AS MemberRecordId,
+                tm.UserId AS MemberUserId,
+                tm.Role AS MemberRole,
+                COALESCE(NULLIF(tm.Gender, ''), u.Gender, lead.Gender, 'Not Specified') AS MemberGender,
+                COALESCE(NULLIF(tm.MemberName, ''), u.UserName, lead.UserName, 'Member') AS MemberName,
+                COALESCE(NULLIF(tm.MemberEmail, ''), u.Email, lead.Email, '') AS MemberEmail,
+                COALESCE(NULLIF(tm.MemberCollege, ''), u.College, t.College, '') AS MemberCollege,
+                COALESCE(NULLIF(tm.MemberState, ''), u.State, t.State, '') AS MemberState,
+                COALESCE(NULLIF(u.Mobile, ''), lead.Mobile, '') AS MemberMobile,
+                pref.AccommodationRequested,
+                pref.FoodAccepted,
+                pref.BookingStatus AS PreferenceStatus,
+                COALESCE(eps.ProblemTitle, pps.Title, '') AS ProblemTitle,
+                COALESCE(eps.Theme, pps.ThemeName, '') AS ProblemTheme
+            FROM registered_teams t
+            LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
+            LEFT JOIN users lead ON t.TeamLeadUserId = lead.Id
+            LEFT JOIN registered_team_members tm ON tm.TeamId = t.Id
+            LEFT JOIN users u ON tm.UserId = u.Id
+            LEFT JOIN physical_team_preferences pref ON pref.TeamId = t.Id AND pref.EventId = t.EventId
+            LEFT JOIN problem_statement_selections pss ON pss.TeamId = t.Id AND pss.EventId = t.EventId
+            LEFT JOIN event_problem_statements eps ON pss.ProblemStatementId = eps.Id
+            LEFT JOIN participant_problem_statements pps ON pps.TeamId = t.Id AND pps.EventId = t.EventId
+            WHERE t.EventId = ?
+            ORDER BY t.Id DESC, CASE WHEN LOWER(COALESCE(tm.Role, '')) IN ('teamlead', 'leader') THEN 1 ELSE 2 END, tm.Id ASC
+        `;
+
+        db.query(detailsQuery, [EventId], (dErr, rows) => {
+            if (dErr) {
+                return callback(dErr, null);
+            }
+
+            const teamMap = new Map();
+            const allMembersList = [];
+
+            (rows || []).forEach((row) => {
+                if (!teamMap.has(row.TeamId)) {
+                    teamMap.set(row.TeamId, {
+                        Id: row.TeamId,
+                        TeamId: row.TeamId,
+                        TeamName: row.TeamName || 'Unnamed Team',
+                        TeamLeadUserId: row.TeamLeadUserId,
+                        ConfiguredTeamSize: row.ConfiguredTeamSize,
+                        College: row.TeamCollege || row.LeaderCollege || '',
+                        State: row.TeamState || row.LeaderState || '',
+                        CreatedAt: row.TeamCreatedAt,
+                        ParticipationMode: row.ParticipationMode || 'physical',
+                        RegistrationStatus: row.RegistrationStatus || 'Confirmed',
+                        RegistrationDate: row.RegistrationDate || row.TeamCreatedAt,
+                        RegistrationId: row.RegistrationId,
+                        LeaderName: row.LeaderName || '',
+                        LeaderEmail: row.LeaderEmail || '',
+                        LeaderMobile: row.LeaderMobile || '',
+                        ProblemTitle: row.ProblemTitle || '',
+                        ProblemTheme: row.ProblemTheme || '',
+                        AccommodationRequested: !!row.AccommodationRequested,
+                        FoodAccepted: !!row.FoodAccepted,
+                        PreferenceStatus: row.PreferenceStatus || '',
+                        GraduationYear: row.GraduationYear,
+                        CurrentCompany: row.CurrentCompany,
+                        Designation: row.Designation,
+                        TeamCity: row.TeamCity,
+                        GuestCount: row.GuestCount,
+                        GuestNames: row.GuestNames,
+                        RsvpStatus: row.RsvpStatus,
+                        GateCheckInStatus: row.GateCheckInStatus,
+                        FoodTokenScanned: row.FoodTokenScanned,
+                        members: []
+                    });
+                }
+
+                const teamObj = teamMap.get(row.TeamId);
+                const roleLower = String(row.MemberRole || '').toLowerCase();
+                const isLead = roleLower === 'teamlead' || roleLower === 'leader' || (row.MemberUserId && row.MemberUserId === row.TeamLeadUserId);
+
+                const memberItem = {
+                    MemberRecordId: row.MemberRecordId || null,
+                    UserId: row.MemberUserId || null,
+                    Role: isLead ? 'Team Leader' : (row.MemberRole || 'Team Member'),
+                    IsLeader: isLead,
+                    Name: row.MemberName || (isLead ? row.LeaderName : 'Member'),
+                    Email: row.MemberEmail || (isLead ? row.LeaderEmail : ''),
+                    Mobile: row.MemberMobile || (isLead ? row.LeaderMobile : ''),
+                    Gender: row.MemberGender || 'Not Specified',
+                    College: row.MemberCollege || row.TeamCollege || '',
+                    State: row.MemberState || row.TeamState || '',
+                    TeamId: row.TeamId,
+                    TeamName: row.TeamName,
+                    ParticipationMode: row.ParticipationMode || 'physical',
+                    RegistrationDate: row.RegistrationDate || row.TeamCreatedAt,
+                    ProblemTitle: row.ProblemTitle || '',
+                    AccommodationRequested: !!row.AccommodationRequested,
+                    FoodAccepted: !!row.FoodAccepted
+                };
+
+                const alreadyAdded = teamObj.members.some(m =>
+                    (m.MemberRecordId && memberItem.MemberRecordId && m.MemberRecordId === memberItem.MemberRecordId) ||
+                    (m.Email && memberItem.Email && m.Email.toLowerCase() === memberItem.Email.toLowerCase())
+                );
+
+                if (!alreadyAdded) {
+                    teamObj.members.push(memberItem);
+                    allMembersList.push(memberItem);
+                }
+            });
+
+            for (const team of teamMap.values()) {
+                if (team.members.length === 0) {
+                    const fallbackLead = {
+                        MemberRecordId: null,
+                        UserId: team.TeamLeadUserId || null,
+                        Role: 'Team Leader',
+                        IsLeader: true,
+                        Name: team.LeaderName || 'Leader',
+                        Email: team.LeaderEmail || '',
+                        Mobile: team.LeaderMobile || '',
+                        Gender: 'Not Specified',
+                        College: team.College || '',
+                        State: team.State || '',
+                        TeamId: team.Id,
+                        TeamName: team.TeamName,
+                        ParticipationMode: team.ParticipationMode,
+                        RegistrationDate: team.RegistrationDate,
+                        ProblemTitle: team.ProblemTitle,
+                        AccommodationRequested: team.AccommodationRequested,
+                        FoodAccepted: team.FoodAccepted
+                    };
+                    team.members.push(fallbackLead);
+                    allMembersList.push(fallbackLead);
+                }
+            }
+
+            const teamsList = Array.from(teamMap.values());
+            const virtualTeams = teamsList.filter(t => {
+                const m = String(t.ParticipationMode || '').toLowerCase();
+                return m.includes('virtual') || m === 'both' || m === 'hybrid';
+            });
+            const physicalTeams = teamsList.filter(t => {
+                const m = String(t.ParticipationMode || '').toLowerCase();
+                return m.includes('physical') || m === 'both' || m === 'hybrid';
+            });
+
+            return callback(null, {
+                event: eventData,
+                summary: {
+                    totalTeams: teamsList.length,
+                    totalMembers: allMembersList.length,
+                    virtualTeams: virtualTeams.length,
+                    physicalTeams: physicalTeams.length,
+                    virtualMembers: allMembersList.filter(m => {
+                        const mode = String(m.ParticipationMode || '').toLowerCase();
+                        return mode.includes('virtual') || mode === 'both' || mode === 'hybrid';
+                    }).length,
+                    physicalMembers: allMembersList.filter(m => {
+                        const mode = String(m.ParticipationMode || '').toLowerCase();
+                        return mode.includes('physical') || mode === 'both' || mode === 'hybrid';
+                    }).length
+                },
+                teams: teamsList,
+                members: allMembersList
+            });
+        });
+    });
+};
+
 const getTeamsByEvent = (EventId, callback) => {
     const query = `
         SELECT
@@ -734,5 +977,6 @@ module.exports = {
     getPublicTeamInfo,
     getTeamCountByEvent,
     getTeamsByEvent,
+    getExportDetailsByEvent,
     updateTeamById
 };

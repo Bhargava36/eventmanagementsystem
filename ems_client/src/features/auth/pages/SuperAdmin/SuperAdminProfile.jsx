@@ -1,30 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Mail,
-  Phone,
-  Calendar,
-  Globe,
-  Shield,
-  Pencil,
-  BadgeCheck,
-  Crown,
-  User,
-  Users,
-  CalendarDays,
-  ChevronRight,
-  X,
-  Save,
-  Activity,
-  Layers,
-  Bell,
-  MessageSquare,
-  ArrowRight,
-  ShieldCheck,
-  Camera,
-  Loader2
-} from 'lucide-react';
+import { Mail, Phone, Globe, Shield, Pencil, BadgeCheck, Crown, User, Users, CalendarDays, ChevronRight, X, Save, Activity, Layers, Bell, MessageSquare, ArrowRight, ShieldCheck, Camera, Loader2 } from 'lucide-react';
 import WaveDots from '../../../../components/Atoms/WaveDots';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';

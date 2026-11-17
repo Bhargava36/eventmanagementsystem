@@ -303,6 +303,26 @@ const updateTeams = (req, res) => {
         }
     );
 };
+const getExportDetailsByEvent = (req, res) => {
+    const EventId = req.params.eventId;
+    if (!EventId) {
+        return res.status(400).json({ message: "Event ID is required" });
+    }
+    teamsService.getExportDetailsByEvent(EventId, (err, result) => {
+        if (err) {
+            console.error('Export details error:', err);
+            return res.status(500).json({
+                message: "Failed to fetch event registration export details",
+                error: err.message
+            });
+        }
+        return res.status(200).json({
+            message: "Export details fetched successfully",
+            ...result
+        });
+    });
+};
+
 const getTeamsByEvent = (req, res) => {
     const EventId = req.params.eventId;
     teamsService.getTeamsByEvent(EventId, (err, result) => {
@@ -363,5 +383,6 @@ module.exports = {
     getPublicTeamInfo,
     getTeamCountByEvent,
     updateTeams,
-    getTeamsByEvent
+    getTeamsByEvent,
+    getExportDetailsByEvent
 };

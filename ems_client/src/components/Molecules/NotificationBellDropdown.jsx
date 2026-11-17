@@ -1,23 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import {
-  Bell,
-  Check,
-  CheckCheck,
-  Trash2,
-  ExternalLink,
-  Users,
-  Trophy,
-  Mail,
-  AlertCircle,
-  Megaphone,
-  X,
-  Radio,
-  ArrowUpRight,
-  ShieldCheck,
-  Zap
-} from 'lucide-react';
+import { Bell, CheckCheck, Trash2, Users, Trophy, Mail, AlertCircle, Megaphone, X, ArrowUpRight, Zap } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import useAuth from '../../Hooks/useAuth';
 export default function NotificationBellDropdown({

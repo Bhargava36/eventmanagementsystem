@@ -1,23 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  MessageSquare,
-  ThumbsUp,
-  Pin,
-  CheckCircle2,
-  Trash2,
-  RefreshCw,
-  Search,
-  X,
-  Send,
-  User,
-  Clock,
-  Mic,
-  SlidersHorizontal,
-  AlertCircle,
-  HelpCircle,
-  Radio
-} from 'lucide-react';
+import { MessageSquare, ThumbsUp, Pin, CheckCircle2, Trash2, RefreshCw, Search, X, Send, Clock, SlidersHorizontal, HelpCircle } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import useAuth from '../../../../Hooks/useAuth';
 import useToast from '../../../../Hooks/useToast';

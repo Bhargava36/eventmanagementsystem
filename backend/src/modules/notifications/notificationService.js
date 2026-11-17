@@ -134,7 +134,7 @@ const seedInitialNotificationsIfEmpty = () => {
         if (err || !res || res[0].count > 0) return;
         const starters = [
             {
-                title: 'Welcome to AYOJAN! 🚀',
+                title: 'Welcome to AYOJAN! ',
                 message: 'Your high-throughput event management account is active. Explore flagship hackathons and workshops.',
                 type: 'WELCOME',
                 linkUrl: '/user/competitions'

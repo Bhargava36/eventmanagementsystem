@@ -1,40 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Users,
-  MapPin,
-  Plus,
-  ArrowRight,
-  ClipboardList,
-  CheckCircle2,
-  Clock,
-  Ban,
-  Search,
-  Pencil,
-  Eye,
-  EyeOff,
-  FileQuestion,
-  Monitor,
-  Laptop,
-  Save,
-  X,
-  Mail,
-  LockKeyhole,
-  Building2,
-  Trash2,
-  Copy,
-  Check,
-  KeyRound,
-  Award,
-  HelpCircle,
-  RefreshCw,
-  AlertCircle,
-  ShieldCheck,
-  UserCheck,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react';
+import { Users, MapPin, Plus, ArrowRight, ClipboardList, CheckCircle2, Ban, Search, Pencil, Eye, EyeOff, FileQuestion, Monitor, Save, X, Mail, LockKeyhole, Building2, Trash2, Copy, Check, KeyRound, Award, RefreshCw, AlertCircle, ShieldCheck, UserCheck, ChevronDown } from 'lucide-react';
 import { getTrackVisibility, isSoloTeamSize } from '../../../../lib/utils';
 function Evaluators() {
   const storedAdmin = useMemo(() => {
@@ -1164,7 +1131,7 @@ function Evaluators() {
                 )}
               </div>
               <div className="rounded-xl bg-slate-50 dark:bg-zinc-900/60 p-3 text-xs text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-zinc-800/80">
-                🔒 Evaluator will have access strictly restricted to <strong>{storedAdmin?.EventName || `Event #${eventId}`}</strong>.
+                Evaluator will have access strictly restricted to <strong>{storedAdmin?.EventName || `Event #${eventId}`}</strong>.
               </div>
               <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 dark:border-zinc-800 sm:flex-row sm:justify-end">
                 <button

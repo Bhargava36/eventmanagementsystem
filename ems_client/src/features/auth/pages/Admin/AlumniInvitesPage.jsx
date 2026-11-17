@@ -1,22 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  Send,
-  Mail,
-  MessageCircle,
-  Copy,
-  Check,
-  Users,
-  Eye,
-  Calendar,
-  MapPin,
-  Clock,
-  ExternalLink,
-  CheckCircle2,
-  AlertCircle
-} from 'lucide-react';
+import { Send, Mail, MessageCircle, Copy, Check, Eye, Calendar, MapPin, Clock, CheckCircle2 } from 'lucide-react';
 export default function AlumniInvitesPage() {
   const toast = useToast();
   const admin = useMemo(() => {
@@ -77,7 +63,7 @@ export default function AlumniInvitesPage() {
     const date = eventData?.StartDate ? new Date(eventData.StartDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Upcoming';
     const venue = config?.VenueHall || eventData?.Location || 'Main Campus Auditorium & Lawns';
     const rsvpLink = window.location.origin ? `${window.location.origin}/event/${eventId}` : 'https://college.edu/alumni';
-    return `🎓 *Official Invitation: ${eventName}* 🎓\n\nDear Alumnus,\n\nWe cordially invite you to return to your alma mater for the Grand Alumni Homecoming & Gala Reunion!\n\n📅 *Date:* ${date}\n📍 *Venue:* ${venue}\n👔 *Dress Code:* ${config?.DressCode || 'Smart Casual / Festive'}\n\n${customMessage}\n\n👉 *RSVP & Digital Pass:* ${rsvpLink}\n\nWe cannot wait to welcome you back home! 🥂`;
+    return `*Official Invitation: ${eventName}* \n\nDear Alumnus,\n\nWe cordially invite you to return to your alma mater for the Grand Alumni Homecoming & Gala Reunion!\n\n*Date:* ${date}\n*Venue:* ${venue}\n*Dress Code:* ${config?.DressCode || 'Smart Casual / Festive'}\n\n${customMessage}\n\n*RSVP & Digital Pass:* ${rsvpLink}\n\nWe cannot wait to welcome you back home! `;
   }, [eventData, config, eventId, customMessage]);
   const handleCopyWhatsApp = () => {
     navigator.clipboard.writeText(whatsappText);

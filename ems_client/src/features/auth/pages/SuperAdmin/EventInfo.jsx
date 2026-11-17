@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '../../../../components/Organisms/Footer';
@@ -32,7 +32,10 @@ import {
     Globe,
     Radio,
     Trophy,
-    Loader2
+    Loader2,
+    AlertTriangle,
+    UserCheck,
+    ShieldCheck
 } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import useToast from '../../../../Hooks/useToast';
@@ -59,6 +62,11 @@ function EventInfo() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [existingAdminUser, setExistingAdminUser] = useState(null);
     const [checkingEmail, setCheckingEmail] = useState(false);
+    const [adminSuggestions, setAdminSuggestions] = useState([]);
+    const [showAdminSuggestions, setShowAdminSuggestions] = useState(false);
+    const [isSearchingAdmins, setIsSearchingAdmins] = useState(false);
+    const [participantError, setParticipantError] = useState(null);
+    const adminDropdownRef = useRef(null);
     const [adminForm, setAdminForm] = useState({
         AdminName: '',
         Email: '',
@@ -125,6 +133,15 @@ function EventInfo() {
         }, 3500);
         return () => clearInterval(timer);
     }, [event?.Posters, isEditing, isPaused]);
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (adminDropdownRef.current && !adminDropdownRef.current.contains(e.target)) {
+                setShowAdminSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
     const fetchEventById = async (isBackground = false) => {
         try {
             if (!isBackground) setLoading(true);
@@ -208,10 +225,49 @@ function EventInfo() {
             setAdminLoading(false);
         }
     };
+    const fetchAdminSuggestions = async (searchTerm = '') => {
+        try {
+            setIsSearchingAdmins(true);
+            const queryParam = encodeURIComponent((searchTerm || '').trim());
+            const res = await fetch(`${API_BASE_URL}/api/admin/search?query=${queryParam}&eventId=${id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setAdminSuggestions(data.admins || []);
+            } else {
+                setAdminSuggestions([]);
+            }
+        } catch (err) {
+            console.error('Admin search error:', err);
+            setAdminSuggestions([]);
+        } finally {
+            setIsSearchingAdmins(false);
+        }
+    };
+
+    const handleSelectAdminSuggestion = (suggestedAdmin) => {
+        const isAssigned = suggestedAdmin.isAssignedToThisEvent || admins.some(a => Number(a.Id) === Number(suggestedAdmin.Id));
+        if (isAssigned) {
+            toast.error(`${suggestedAdmin.UserName || suggestedAdmin.AdminName} is already assigned to this event.`);
+            return;
+        }
+        setAdminForm((prev) => ({
+            ...prev,
+            Email: suggestedAdmin.Email,
+            AdminName: suggestedAdmin.UserName || suggestedAdmin.AdminName || prev.AdminName,
+            Mobile: suggestedAdmin.Mobile || prev.Mobile || '',
+            Password: ''
+        }));
+        setExistingAdminUser(suggestedAdmin);
+        setParticipantError(null);
+        setShowAdminSuggestions(false);
+        toast.success(`Admin selected: ${suggestedAdmin.UserName || suggestedAdmin.AdminName}`);
+    };
+
     const checkUserByEmail = async (emailToSearch) => {
         const trimmed = (emailToSearch || '').trim().toLowerCase();
         if (!trimmed || !trimmed.includes('@') || !trimmed.includes('.')) {
             setExistingAdminUser(null);
+            setParticipantError(null);
             return;
         }
         try {
@@ -220,29 +276,85 @@ function EventInfo() {
             if (res.ok) {
                 const data = await res.json();
                 if (data.user) {
-                    setExistingAdminUser(data.user);
+                    const foundUser = data.user;
+                    const isRoleAdmin = foundUser.RoleName === 'admin' || foundUser.RoleId === 2;
+
+                    // If user is a participant or non-admin, strictly forbid assigning as admin
+                    if (!isRoleAdmin) {
+                        setExistingAdminUser(null);
+                        const roleLabel = foundUser.RoleName === 'user' ? 'participant' : foundUser.RoleName;
+                        setParticipantError(`This email belongs to a registered ${roleLabel} and cannot be assigned as an event admin.`);
+                        return;
+                    }
+
+                    // User is an admin: check if already assigned to this event
+                    const isAlreadyAssigned = admins.some(
+                        (a) => Number(a.Id) === Number(foundUser.Id) || (a.Email && a.Email.toLowerCase() === trimmed)
+                    );
+                    if (isAlreadyAssigned) {
+                        setExistingAdminUser(null);
+                        setParticipantError('This admin is already assigned to this event.');
+                        return;
+                    }
+
+                    setParticipantError(null);
+                    setExistingAdminUser(foundUser);
                     setAdminForm((prev) => ({
                         ...prev,
-                        AdminName: data.user.UserName || prev.AdminName,
-                        Mobile: data.user.Mobile || prev.Mobile || '',
+                        AdminName: foundUser.UserName || prev.AdminName,
+                        Mobile: foundUser.Mobile || prev.Mobile || '',
                     }));
-                    toast.success(`Existing user found: ${data.user.UserName}! Details auto-populated.`);
                     return;
                 }
             }
+            // User does not exist in the database -> New admin account to be created
             setExistingAdminUser(null);
+            setParticipantError(null);
         } catch (err) {
             console.error('Email lookup error:', err);
             setExistingAdminUser(null);
+            setParticipantError(null);
         } finally {
             setCheckingEmail(false);
         }
     };
+
+    const openCreateAdminModal = () => {
+        if (admins.length >= maxAdmins) {
+            toast.error(`Admin quota reached (${admins.length}/${maxAdmins}). This event is configured for a maximum of ${maxAdmins} admins.`);
+            return;
+        }
+        setAdminForm({
+            AdminName: '',
+            Email: '',
+            Password: '',
+            Mobile: ''
+        });
+        setExistingAdminUser(null);
+        setParticipantError(null);
+        setShowAdminSuggestions(false);
+        fetchAdminSuggestions('');
+        setShowAdminModal(true);
+    };
+
     const maxAdmins = Number(formData.MaxAdmins || event?.MaxAdmins || 5);
     const handleCreateAdmin = async (e) => {
         e.preventDefault();
         if (admins.length >= maxAdmins) {
             toast.error(`Admin quota reached. This event is configured for a maximum of ${maxAdmins} admins only.`);
+            return;
+        }
+        if (participantError) {
+            toast.error(participantError);
+            return;
+        }
+        const trimmedEmail = (adminForm.Email || '').trim().toLowerCase();
+        if (!trimmedEmail) {
+            toast.error('Email address is required.');
+            return;
+        }
+        if (admins.some((a) => (a.Email && a.Email.toLowerCase() === trimmedEmail))) {
+            toast.error('This admin is already assigned to this event.');
             return;
         }
         if (!existingAdminUser && !adminForm.Password) {
@@ -253,7 +365,7 @@ function EventInfo() {
             setAdminSaving(true);
             const payload = {
                 AdminName: adminForm.AdminName,
-                Email: adminForm.Email,
+                Email: trimmedEmail,
                 Mobile: adminForm.Mobile,
                 EventId: Number(id)
             };
@@ -276,7 +388,7 @@ function EventInfo() {
                     data.message || 'Admin creation failed'
                 );
             }
-            toast.success(existingAdminUser ? 'Existing user assigned as Admin for this event!' : 'Admin created and assigned successfully!');
+            toast.success(existingAdminUser ? 'Existing admin assigned to this event successfully!' : 'Admin created and assigned successfully!');
             setAdminForm({
                 AdminName: '',
                 Email: '',
@@ -284,6 +396,8 @@ function EventInfo() {
                 Mobile: ''
             });
             setExistingAdminUser(null);
+            setParticipantError(null);
+            setShowAdminSuggestions(false);
             setShowAdminModal(false);
             await fetchAdmins();
         } catch (error) {
@@ -358,6 +472,15 @@ function EventInfo() {
         }));
         if (name === 'Email') {
             const trimmed = value.trim().toLowerCase();
+            setParticipantError(null);
+
+            // Fetch autocomplete suggestions as admin types
+            clearTimeout(window._adminSearchDebounce);
+            window._adminSearchDebounce = setTimeout(() => {
+                fetchAdminSuggestions(value);
+                setShowAdminSuggestions(true);
+            }, 200);
+
             if (trimmed.includes('@') && trimmed.includes('.')) {
                 clearTimeout(window._adminEmailDebounce);
                 window._adminEmailDebounce = setTimeout(() => {
@@ -754,13 +877,7 @@ function EventInfo() {
                     <motion.button
                         whileHover={{ scale: admins.length >= maxAdmins ? 1 : 1.02 }}
                         whileTap={{ scale: admins.length >= maxAdmins ? 1 : 0.98 }}
-                        onClick={() => {
-                            if (admins.length >= maxAdmins) {
-                                toast.error(`Admin quota reached (${admins.length}/${maxAdmins}). This event is configured for a maximum of ${maxAdmins} admins.`);
-                                return;
-                            }
-                            setShowAdminModal(true);
-                        }}
+                        onClick={openCreateAdminModal}
                         className={`w-full sm:w-auto flex items-center justify-center gap-2 border px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                             admins.length >= maxAdmins
                                 ? 'border-gray-300 dark:border-gray-800 text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-900 cursor-not-allowed opacity-80'
@@ -1870,13 +1987,13 @@ function EventInfo() {
                                                     </p>
                                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                         {event.VirtualStartDate ? new Date(event.VirtualStartDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : '-'}
-                                                        {' ➔ '}
+                                                        {'  '}
                                                         {event.VirtualEndDate ? new Date(event.VirtualEndDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : '-'}
                                                     </p>
                                                     {(event.VirtualRegistrationStart || event.VirtualRegistrationEnd) && (
                                                         <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">
                                                             Reg: {event.VirtualRegistrationStart ? new Date(event.VirtualRegistrationStart).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : '-'}
-                                                            {' ➔ '}
+                                                            {'  '}
                                                             {event.VirtualRegistrationEnd ? new Date(event.VirtualRegistrationEnd).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : '-'}
                                                         </p>
                                                     )}
@@ -1892,13 +2009,13 @@ function EventInfo() {
                                                     </p>
                                                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                                                         {event.PhysicalStartDate ? new Date(event.PhysicalStartDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : '-'}
-                                                        {' ➔ '}
+                                                        {'  '}
                                                         {event.PhysicalEndDate ? new Date(event.PhysicalEndDate).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : '-'}
                                                     </p>
                                                     {(event.PhysicalRegistrationStart || event.PhysicalRegistrationEnd) && (
                                                         <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">
                                                             Reg: {event.PhysicalRegistrationStart ? new Date(event.PhysicalRegistrationStart).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : '-'}
-                                                            {' ➔ '}
+                                                            {'  '}
                                                             {event.PhysicalRegistrationEnd ? new Date(event.PhysicalRegistrationEnd).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}) : '-'}
                                                         </p>
                                                     )}
@@ -2542,7 +2659,7 @@ function EventInfo() {
                                 {admins.length < maxAdmins ? (
                                     <button
                                         type="button"
-                                        onClick={() => setShowAdminModal(true)}
+                                        onClick={openCreateAdminModal}
                                         className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 flex items-center gap-1 cursor-pointer transition-colors"
                                     >
                                         <Plus className="w-3.5 h-3.5" />
@@ -2770,7 +2887,7 @@ function EventInfo() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 15 }}
                             transition={{ duration: 0.25, ease: 'easeOut' }}
-                            className="relative w-full max-w-lg bg-white dark:bg-black rounded-2xl p-6 sm:p-7 border border-gray-200 dark:border-gray-800 shadow-2xl z-10 overflow-hidden my-8"
+                            className="relative w-full max-w-lg bg-white dark:bg-black rounded-2xl p-6 sm:p-7 border border-gray-200 dark:border-gray-800 shadow-2xl z-10 overflow-visible my-8"
                         >
                             <div className="flex items-center justify-between pb-4 mb-5 border-b border-gray-200 dark:border-gray-800">
                                 <div>
@@ -2796,47 +2913,162 @@ function EventInfo() {
                                 </button>
                             </div>
                             <form onSubmit={handleCreateAdmin} className="space-y-4">
-                                <div className="space-y-1.5">
+                                <div className="space-y-1.5 relative" ref={adminDropdownRef}>
                                     <div className="flex items-center justify-between">
                                         <label className="text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                                             Email Address <span className="text-rose-500">*</span>
                                         </label>
-                                        {checkingEmail && (
+                                        {checkingEmail ? (
                                             <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                                <Loader2 className="w-3 h-3 animate-spin" /> Checking account...
+                                                <Loader2 className="w-3 h-3 animate-spin" /> Verifying account...
                                             </span>
-                                        )}
+                                        ) : isSearchingAdmins ? (
+                                            <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                                <Loader2 className="w-3 h-3 animate-spin" /> Searching admins...
+                                            </span>
+                                        ) : null}
                                     </div>
                                     <div className="relative">
                                         <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                                         <input
                                             type="email"
                                             name="Email"
+                                            autoComplete="off"
+                                            data-lpignore="true"
                                             required
                                             value={adminForm.Email}
                                             onChange={handleAdminInputChange}
-                                            onBlur={() => checkUserByEmail(adminForm.Email)}
-                                            placeholder="Enter organizer email (e.g. admin@example.com)"
-                                            className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-300 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                                            onFocus={() => {
+                                                if (adminSuggestions.length > 0) {
+                                                    setShowAdminSuggestions(true);
+                                                } else {
+                                                    fetchAdminSuggestions(adminForm.Email);
+                                                    setShowAdminSuggestions(true);
+                                                }
+                                            }}
+                                            placeholder="Enter or search organizer email (e.g. admin@example.com)"
+                                            className={`w-full pl-10 pr-10 py-2.5 rounded-xl border bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white text-sm outline-none transition-all ${
+                                                participantError
+                                                    ? 'border-rose-500 ring-2 ring-rose-500/20'
+                                                    : existingAdminUser
+                                                    ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                                                    : 'border-gray-300 dark:border-gray-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20'
+                                            }`}
                                         />
-                                        {existingAdminUser && (
+                                        {isSearchingAdmins || checkingEmail ? (
+                                            <Loader2 className="w-4 h-4 animate-spin absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500" />
+                                        ) : participantError ? (
+                                            <AlertTriangle className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-rose-500" />
+                                        ) : existingAdminUser ? (
                                             <CheckCircle2 className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500" />
+                                        ) : null}
+
+                                        {/* Autocomplete Suggestions Dropdown */}
+                                        {showAdminSuggestions && adminSuggestions.length > 0 && (
+                                            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-2xl z-50 overflow-hidden max-h-60 overflow-y-auto">
+                                                <div className="px-3.5 py-2 bg-gray-50 dark:bg-neutral-950 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                                    <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                                                        <ShieldCheck className="w-3.5 h-3.5" />
+                                                        Registered Admins
+                                                    </span>
+                                                    <span className="text-[10px] font-semibold text-gray-400">
+                                                        {adminSuggestions.length} available
+                                                    </span>
+                                                </div>
+                                                <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                                                    {adminSuggestions.map((sugAdmin) => {
+                                                        const isAssigned = sugAdmin.isAssignedToThisEvent || admins.some(a => Number(a.Id) === Number(sugAdmin.Id));
+                                                        return (
+                                                            <button
+                                                                key={sugAdmin.Id}
+                                                                type="button"
+                                                                onMouseDown={(e) => {
+                                                                    e.preventDefault();
+                                                                    handleSelectAdminSuggestion(sugAdmin);
+                                                                }}
+                                                                className={`w-full px-3.5 py-2.5 flex items-center justify-between gap-3 text-left transition-colors cursor-pointer ${
+                                                                    isAssigned
+                                                                        ? 'bg-gray-50/60 dark:bg-neutral-900/40 opacity-60 hover:bg-gray-100 dark:hover:bg-neutral-800/60'
+                                                                        : 'hover:bg-emerald-50/80 dark:hover:bg-emerald-950/40'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                                    {sugAdmin.Photo ? (
+                                                                        <img
+                                                                            src={sugAdmin.Photo}
+                                                                            alt={sugAdmin.UserName}
+                                                                            className="w-7 h-7 rounded-full object-cover border border-emerald-500/30 shrink-0"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center shrink-0">
+                                                                            {(sugAdmin.UserName || sugAdmin.AdminName || 'A').slice(0, 2).toUpperCase()}
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="min-w-0">
+                                                                        <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                                                                            {sugAdmin.UserName || sugAdmin.AdminName}
+                                                                        </p>
+                                                                        <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                                                                            {sugAdmin.Email}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="shrink-0 flex items-center gap-1.5">
+                                                                    {isAssigned ? (
+                                                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500">
+                                                                            Assigned
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
+                                                                            Select Admin
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
-                                {existingAdminUser && (
-                                    <div className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2 text-xs">
-                                        <div className="flex items-center gap-2">
+
+                                {/* Participant Role Error Notice */}
+                                {participantError && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="p-3.5 rounded-xl border border-rose-500/40 bg-rose-50/90 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 flex items-start gap-2.5 text-xs shadow-sm"
+                                    >
+                                        <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                            <p className="font-bold text-rose-900 dark:text-rose-100">{participantError}</p>
+                                            <p className="text-[11px] text-rose-700/90 dark:text-rose-300/80 mt-0.5">
+                                                Registered participants cannot be assigned as event administrators. Please select a registered admin from suggestions or enter an organizer email.
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {/* Existing Admin Verified Notice */}
+                                {existingAdminUser && !participantError && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="p-3 rounded-xl border border-emerald-500/30 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2 text-xs"
+                                    >
+                                        <div className="flex items-center gap-2 min-w-0">
                                             <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                            <span>
-                                                Account found for <strong>{existingAdminUser.UserName}</strong>! Details have been auto-populated.
+                                            <span className="truncate">
+                                                Verified Admin: <strong>{existingAdminUser.UserName || existingAdminUser.AdminName}</strong> ({existingAdminUser.Email})
                                             </span>
                                         </div>
                                         <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0">
-                                            {existingAdminUser.RoleName === 'admin' ? 'Existing Admin' : 'Registered User'}
+                                            Ready to Assign
                                         </span>
-                                    </div>
+                                    </motion.div>
                                 )}
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <div className="flex items-center justify-between">
@@ -2932,13 +3164,18 @@ function EventInfo() {
                                         </button>
                                         <button
                                             type="submit"
-                                            disabled={adminSaving}
-                                            className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-60"
+                                            disabled={adminSaving || Boolean(participantError) || checkingEmail || !adminForm.Email.trim()}
+                                            className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {adminSaving ? (
                                                 <>
                                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                                    <span>Creating Admin...</span>
+                                                    <span>{existingAdminUser ? 'Assigning Admin...' : 'Creating Admin...'}</span>
+                                                </>
+                                            ) : existingAdminUser ? (
+                                                <>
+                                                    <UserCheck className="w-4 h-4" />
+                                                    <span>Assign Admin</span>
                                                 </>
                                             ) : (
                                                 <>
@@ -3178,7 +3415,7 @@ function EventInfo() {
                                     Are you sure you want to permanently delete <strong className="text-gray-900 dark:text-white font-semibold">"{event?.EventName}"</strong>?
                                 </p>
                                 <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 text-xs text-rose-700 dark:text-rose-300">
-                                    ⚠️ This action is irreversible. All registrations, tracks, schedules, and admin allocations tied to this event will be permanently deleted.
+                                    This action is irreversible. All registrations, tracks, schedules, and admin allocations tied to this event will be permanently deleted.
                                 </div>
                             </div>
                             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100 dark:border-gray-800">

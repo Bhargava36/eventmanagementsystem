@@ -2,69 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Video,
-  Radio,
-  ExternalLink,
-  Users,
-  Calendar,
-  Clock,
-  ArrowLeft,
-  RefreshCw,
-  CheckCircle2,
-  AlertCircle,
-  FileText,
-  ShieldCheck,
-  ChevronRight,
-  Code,
-  Lock,
-  Unlock,
-  Check,
-  Search,
-  Filter,
-  Layers,
-  Timer,
-  AlertTriangle,
-  Lightbulb,
-  Target,
-  Hash,
-  X,
-  FolderGit2,
-  Globe,
-  UploadCloud,
-  Send,
-  Edit3
-} from 'lucide-react';
+import { Video, ExternalLink, Users, Calendar, Clock, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle, FileText, ShieldCheck, ChevronRight, Code, Lock, Check, Search, Filter, Layers, Timer, AlertTriangle, Target, X, FolderGit2, Globe, UploadCloud, Send, Edit3, ArrowLeftRight, ShieldAlert, ArrowRight } from 'lucide-react';
 import useAuth from '../../../../Hooks/useAuth';
 import useToast from '../../../../Hooks/useToast';
-function formatDate(date) {
-  if (!date) return 'TBA';
-  try {
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return date;
-    return d.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  } catch {
-    return date;
-  }
-}
-function formatTime(date) {
-  if (!date) return '';
-  try {
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  } catch {
-    return '';
-  }
-}
+import { isMultiModeEvent, resolveParticipantTrack, formatDate, formatTime } from '../../../../lib/utils';
+import ConfirmProblemStatementModal from './components/ConfirmProblemStatementModal';
+import VirtualProjectSubmissionModal from './components/VirtualProjectSubmissionModal';
 export default function ParticipantVirtualEventPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -148,11 +91,11 @@ export default function ParticipantVirtualEventPage() {
     try {
       setRefreshing(true);
       const [evRes, timeRes, psRes, statusRes, themesRes] = await Promise.allSettled([
-        fetch(`${API_BASE_URL}/api/events/${id}`),
-        fetch(`${API_BASE_URL}/api/event_timelines/event/${id}`),
-        fetch(`${API_BASE_URL}/api/problem-statements/event/${id}`),
+        fetch(`${API_BASE_URL}/api/events/${id}?track=Virtual`),
+        fetch(`${API_BASE_URL}/api/event_timelines/event/${id}?track=Virtual`),
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${id}?track=Virtual`),
         fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/publish-status`),
-        fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/themes`)
+        fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/themes?track=Virtual`)
       ]);
       if (evRes.status === 'fulfilled' && evRes.value.ok) {
         const evData = await evRes.value.json();
@@ -303,20 +246,30 @@ export default function ParticipantVirtualEventPage() {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (socket) {
         socket.onclose = null;
-        socket.close();
+        socket.onerror = null;
+        socket.onmessage = null;
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.close();
+        } else if (socket.readyState === WebSocket.CONNECTING) {
+          socket.onopen = () => {
+            try { socket.close(); } catch {}
+          };
+        }
       }
     };
   }, [id, userId]);
   // Handle Team Selection submission
   const handleConfirmSelection = async () => {
     if (!selectedPSToConfirm || !team) return;
-    if (teamSelection?.ProblemStatementId) {
-      toast.error('A problem statement is already locked in for this event. Only an event admin can modify your selection.');
+    const isDeadlinePassed = Boolean(timeLeft && timeLeft.expired);
+    if (isDeadlinePassed) {
+      toast.error('Selection window has closed. Problem statements can no longer be modified.');
       setSelectedPSToConfirm(null);
       return;
     }
     const teamIdentifier = team.Id || team.TeamId;
     const authToken = token || localStorage.getItem('token');
+    const isSwitching = Boolean(teamSelection?.ProblemStatementId);
     try {
       setSubmittingSelection(true);
       const res = await fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/select`, {
@@ -334,7 +287,10 @@ export default function ParticipantVirtualEventPage() {
       if (!res.ok) {
         throw new Error(data.message || 'Failed to select problem statement');
       }
-      toast.success(`Successfully locked in: ${selectedPSToConfirm.ProblemCode}`);
+      toast.success(isSwitching
+        ? `Successfully changed problem statement to: ${selectedPSToConfirm.ProblemCode}`
+        : `Successfully locked in: ${selectedPSToConfirm.ProblemCode}`
+      );
       setSelectedPSToConfirm(null);
       // Reload selections and counts
       loadAll();
@@ -496,6 +452,48 @@ export default function ParticipantVirtualEventPage() {
       </div>
     );
   }
+
+  // Data isolation guard: Block physical track registrants from virtual workspace
+  const resolvedTrack = resolveParticipantTrack(team, event);
+  const isMultiMode = isMultiModeEvent(event);
+  const isPhysicalParticipant = isMultiMode && resolvedTrack !== 'Virtual';
+
+  if (!loading && team && isPhysicalParticipant) {
+    return (
+      <div className="min-h-[75vh] flex flex-col items-center justify-center p-6 text-center max-w-xl mx-auto">
+        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-5 shadow-sm">
+          <ShieldAlert className="h-8 w-8" />
+        </div>
+        <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 mb-3">
+          Physical Track Registration
+        </span>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+          Virtual Workspace Restricted
+        </h2>
+        <p className="text-sm text-slate-600 dark:text-zinc-400 leading-relaxed mb-6">
+          This virtual workspace is exclusively configured for participants enrolled in the Virtual Track.
+          Your team <span className="font-semibold text-slate-900 dark:text-white">{team.TeamName || 'Registration'}</span> is registered for the Physical On-Campus Track. Please use your Physical Track workspace for schedule, guidelines, and booth details.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate(`/user/teamInfo/${team.TeamId || team.Id}`)}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs tracking-wide shadow-sm transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Go to My Physical Event Workspace</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/user/teams')}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-700 dark:text-zinc-300 font-semibold text-xs transition cursor-pointer"
+          >
+            Back to My Teams
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-800 dark:text-zinc-100 p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Top Breadcrumb & Controls */}
@@ -520,8 +518,8 @@ export default function ParticipantVirtualEventPage() {
       {/* Hero Live Status Card */}
       <div className={`p-6 sm:p-8 rounded-3xl border transition-all ${
         isLive
-          ? 'bg-gradient-to-br from-emerald-950/40 via-zinc-950 to-slate-950 border-emerald-500/40 shadow-xl shadow-emerald-950/20'
-          : 'bg-white dark:bg-zinc-950 border-slate-200 dark:border-zinc-800 shadow-sm'
+          ? 'bg-white dark:bg-black border-emerald-500/40 shadow-sm shadow-emerald-950/20'
+          : 'bg-white dark:bg-black border-slate-200 dark:border-zinc-800 shadow-sm'
       }`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
@@ -649,7 +647,7 @@ export default function ParticipantVirtualEventPage() {
                         Locked In For {isIndividual ? displayName : `Team ${team.TeamName}`}
                       </span>
                       <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-zinc-800 text-[10px] font-bold text-slate-700 dark:text-zinc-300">
-                        {teamSelection.SelectionType === 'auto' ? '🤖 System Auto-Assigned' : '✓ Manual Selection'}
+                        {teamSelection.SelectionType === 'auto' ? 'System Auto-Assigned' : 'Manual Selection'}
                       </span>
                       {teamSelection.Theme && (
                         <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 text-[10px] font-bold">
@@ -926,17 +924,39 @@ export default function ParticipantVirtualEventPage() {
                                 <div className="w-full py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs text-center flex flex-col items-center justify-center gap-0.5">
                                   <div className="flex items-center gap-1.5">
                                     <CheckCircle2 className="h-4 w-4" />
-                                    <span>{isIndividual ? `Locked In for ${displayName}` : `Locked In for Team ${team.TeamName}`}</span>
+                                    <span>{isIndividual ? `Selected by ${displayName}` : `Selected by Team ${team.TeamName}`}</span>
                                   </div>
                                   <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-medium">
-                                    (Contact Admin to modify)
+                                    {isDeadlinePassed
+                                      ? 'Selection Window Closed • Final Lock'
+                                      : 'Active Pick • You can switch to any other statement before timer ends'}
                                   </span>
                                 </div>
                               ) : hasExistingSelection ? (
-                                <div className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500 text-xs font-semibold text-center flex items-center justify-center gap-1.5 cursor-not-allowed">
-                                  <Lock className="h-3.5 w-3.5" />
-                                  <span>Locked • Contact Admin to change</span>
-                                </div>
+                                isDeadlinePassed ? (
+                                  <div className="w-full py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500 text-xs font-semibold text-center flex items-center justify-center gap-1.5 cursor-not-allowed">
+                                    <Lock className="h-3.5 w-3.5" />
+                                    <span>Locked • Selection Window Closed</span>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedPSToConfirm(ps)}
+                                    disabled={!isIndividual && !isTeamLead}
+                                    className={`w-full py-2.5 rounded-xl font-bold text-xs tracking-wide transition flex items-center justify-center gap-2 ${
+                                      !isIndividual && !isTeamLead
+                                        ? 'bg-slate-200 dark:bg-zinc-900 text-slate-400 cursor-not-allowed'
+                                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-500/30 hover:border-emerald-500 transition cursor-pointer shadow-sm'
+                                    }`}
+                                  >
+                                    <ArrowLeftRight className="h-3.5 w-3.5" />
+                                    <span>
+                                      {!isIndividual && !isTeamLead
+                                        ? 'Leader Only: Switch Challenge'
+                                        : 'Switch to This Problem Statement'}
+                                    </span>
+                                  </button>
+                                )
                               ) : (
                                 <button
                                   type="button"
@@ -1219,7 +1239,7 @@ export default function ParticipantVirtualEventPage() {
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 space-y-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Session Status</span>
                 <p className="text-sm font-bold text-slate-900 dark:text-white">
-                  {isLive ? '🟢 Room is Currently Active' : '⚪ Waiting for Organizer Launch'}
+                  {isLive ? 'Room is Currently Active' : 'Waiting for Organizer Launch'}
                 </p>
               </div>
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 space-y-1">
@@ -1357,215 +1377,27 @@ export default function ParticipantVirtualEventPage() {
         </div>
       </div>
       {/* CONFIRMATION SELECTION MODAL */}
-      <AnimatePresence>
-        {selectedPSToConfirm && team && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 backdrop-blur-sm p-4"
-            onClick={() => setSelectedPSToConfirm(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="my-auto w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-950 border border-emerald-500/30 p-6 text-slate-900 dark:text-white shadow-2xl space-y-5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-emerald-500" />
-                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                    Confirm Problem Statement
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedPSToConfirm(null)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="space-y-3 bg-slate-50 dark:bg-zinc-900/60 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-black">
-                    {selectedPSToConfirm.ProblemCode}
-                  </span>
-                  {selectedPSToConfirm.Theme && (
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300 text-[10px] font-bold">
-                      {selectedPSToConfirm.Theme}
-                    </span>
-                  )}
-                </div>
-                <h4 className="text-base font-bold text-slate-900 dark:text-white">
-                  {selectedPSToConfirm.Title}
-                </h4>
-                <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed line-clamp-3">
-                  {selectedPSToConfirm.Description}
-                </p>
-                <div className="pt-2 border-t border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-zinc-400">
-                  <span>Selected For:</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{displayName}</span>
-                </div>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Once confirmed, this problem statement will be officially locked for {isIndividual ? 'you' : `team ${team.TeamName}`}. Only an event admin can modify your selection after confirmation.
-              </p>
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedPSToConfirm(null)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmSelection}
-                  disabled={submittingSelection}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/25 transition cursor-pointer flex items-center gap-2"
-                >
-                  {submittingSelection ? (
-                    <>
-                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      <span>Locking in...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-3.5 w-3.5" />
-                      <span>Confirm & Lock In</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <ConfirmProblemStatementModal
+        selectedPS={selectedPSToConfirm}
+        team={team}
+        displayName={displayName}
+        teamSelection={teamSelection}
+        submitting={submittingSelection}
+        onConfirm={handleConfirmSelection}
+        onClose={() => setSelectedPSToConfirm(null)}
+      />
+
       {/* PROJECT SUBMISSION MODAL */}
-      <AnimatePresence>
-        {submissionModalOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/80 backdrop-blur-sm p-4"
-            onClick={() => setSubmissionModalOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="my-auto w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-950 border border-emerald-500/30 p-6 text-slate-900 dark:text-white shadow-2xl space-y-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <UploadCloud className="h-5 w-5 text-emerald-500" />
-                  <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                    {projectSubmission ? 'Update Project Deliverables' : 'Submit Project Deliverables'}
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSubmissionModalOpen(false)}
-                  className="rounded-lg p-1.5 text-slate-400 hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <form onSubmit={handleSubmitProject} className="space-y-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
-                    GitHub / Git Repository URL
-                  </label>
-                  <div className="relative">
-                    <FolderGit2 className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                    <input
-                      type="url"
-                      placeholder="https://github.com/organization/project-name"
-                      value={submissionForm.githubRepoUrl}
-                      onChange={(e) => setSubmissionForm({ ...submissionForm, githubRepoUrl: e.target.value })}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
-                    Live Demo / Hosted Web URL
-                  </label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                    <input
-                      type="url"
-                      placeholder="https://my-virtual-hackathon-project.vercel.app"
-                      value={submissionForm.liveDemoUrl}
-                      onChange={(e) => setSubmissionForm({ ...submissionForm, liveDemoUrl: e.target.value })}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
-                    Presentation Deck / Google Drive URL
-                  </label>
-                  <div className="relative">
-                    <FileText className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                    <input
-                      type="url"
-                      placeholder="https://docs.google.com/presentation/d/..."
-                      value={submissionForm.drivePptUrl}
-                      onChange={(e) => setSubmissionForm({ ...submissionForm, drivePptUrl: e.target.value })}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
-                    Tech Stack & Tools Used
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. React, Node.js, Express, TailwindCSS, PostgreSQL"
-                    value={submissionForm.techStack}
-                    onChange={(e) => setSubmissionForm({ ...submissionForm, techStack: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 mb-1">
-                    Solution Overview / Implementation Notes
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder={isIndividual ? "Briefly describe what you built, key architectural decisions, and how it addresses the challenge..." : "Briefly describe what your team built, key architectural decisions, and how it addresses the challenge..."}
-                    value={submissionForm.description}
-                    onChange={(e) => setSubmissionForm({ ...submissionForm, description: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 focus:outline-none focus:border-emerald-500 text-slate-900 dark:text-white resize-none"
-                  />
-                </div>
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-zinc-800">
-                  <button
-                    type="button"
-                    onClick={() => setSubmissionModalOpen(false)}
-                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-zinc-800 text-xs font-bold text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submittingProject}
-                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md shadow-emerald-600/20 flex items-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {submittingProject ? (
-                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <Send className="h-3.5 w-3.5" />
-                    )}
-                    <span>{projectSubmission ? 'Update Deliverables' : 'Submit Project'}</span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      <VirtualProjectSubmissionModal
+        isOpen={submissionModalOpen}
+        onClose={() => setSubmissionModalOpen(false)}
+        onSubmit={handleSubmitProject}
+        submissionForm={submissionForm}
+        setSubmissionForm={setSubmissionForm}
+        submitting={submittingProject}
+        hasExistingSubmission={Boolean(projectSubmission)}
+        isIndividual={isIndividual}
+      />
     </div>
   );
 }

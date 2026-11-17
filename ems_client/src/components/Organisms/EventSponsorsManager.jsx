@@ -2,16 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Award,
-  Plus,
-  Trash2,
-  ExternalLink,
-  UploadCloud,
-  X,
-  Edit2,
-  Globe,
-} from 'lucide-react';
+import { Award, Plus, Trash2, ExternalLink, UploadCloud, X, Edit2 } from 'lucide-react';
 import useToast from '../../Hooks/useToast';
 const TIERS = [
   'Title Sponsor',

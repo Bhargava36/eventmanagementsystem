@@ -7,40 +7,7 @@ import NotificationBellDropdown from '../Molecules/NotificationBellDropdown';
 import useAuth from '../../Hooks/useAuth';
 import useToast from '../../Hooks/useToast';
 import { getTrackVisibility, isSoloTeamSize, getEventTypeInfo } from '../../lib/utils';
-import {
-  LayoutDashboard,
-  Users,
-  UsersRound,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  CircleUserRound,
-  PanelLeftOpen,
-  CircleX,
-  Radio,
-  Sliders,
-  Atom,
-  UserPen,
-  Trophy,
-  Send,
-  MessageCircleQuestion,
-  ChevronDown,
-  Layers,
-  Check,
-  GraduationCap,
-  Video,
-  Presentation,
-  Award,
-  BookOpen,
-  CalendarCheck,
-  CalendarDays,
-  FileText,
-  Podium,
-  Mic,
-  Building2,
-  QrCode,
-  Camera,
-} from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, ChevronLeft, ChevronRight, CircleUserRound, PanelLeftOpen, CircleX, Radio, Sliders, Trophy, Send, MessageCircleQuestion, Layers, GraduationCap, Video, Presentation, Award, BookOpen, CalendarCheck, CalendarDays, FileText, Podium, Mic, Building2, QrCode, Camera } from 'lucide-react';
 import { GiTeamIdea } from "react-icons/gi";
 import { LuClipboardCheck,LuUserCheck } from "react-icons/lu";
 const logoElement = (
@@ -664,7 +631,7 @@ const SidebarContent = ({
                 {isCurrentActive && (
                   <motion.span
                     layoutId={isMobile ? 'admin-tab-mobile' : 'admin-tab-desktop'}
-                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-xl shadow-md z-0"
+                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-3xl shadow-md z-0"
                     transition={{
                       type: 'spring',
                       stiffness: 350,

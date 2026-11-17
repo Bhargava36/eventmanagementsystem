@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  ShieldAlert,
-  ArrowRight,
-  ArrowLeft,
-  Calendar,
-  MapPin,
-  RefreshCw,
-  Sparkles,
-  Layers,
-  Lock
-} from 'lucide-react';
+import { ShieldAlert, ArrowRight, ArrowLeft, Calendar, MapPin, RefreshCw, Layers, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import { getEventTypeInfo, normalizeHackathonMode } from '@/lib/utils';

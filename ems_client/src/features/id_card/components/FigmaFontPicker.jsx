@@ -1,13 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import {
-  Search,
-  ChevronDown,
-  Check,
-  Type,
-  LayoutGrid,
-  X,
-  Layers
-} from 'lucide-react';
+import { Search, ChevronDown, Check, Type, LayoutGrid, X } from 'lucide-react';
 import {
   FONTS_CATALOG,
   FONT_CATEGORIES,

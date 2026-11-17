@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 import {
   MessageSquare,
   Star,
@@ -121,16 +122,6 @@ export default function AdminFeedback() {
       comments.toLowerCase().includes(searchText)
     );
   });
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    const parsedDate = new Date(date);
-    if (Number.isNaN(parsedDate.getTime())) return String(date);
-    return parsedDate.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
   const getInitials = (name) =>
     String(name || 'User')
       .trim()

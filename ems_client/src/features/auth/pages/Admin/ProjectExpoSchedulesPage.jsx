@@ -5,21 +5,7 @@ import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
 import AppConfirmModal from '../../../../components/Molecules/AppConfirmModal';
 import Pagination from '../../../../components/Molecules/Pagination';
-import {
-  CalendarDays,
-  Clock,
-  Plus,
-  Search,
-  Filter,
-  CheckCircle2,
-  Trash2,
-  Edit2,
-  Users,
-  Building2,
-  Loader2,
-  AlertTriangle,
-  X
-} from 'lucide-react';
+import { CalendarDays, Clock, Plus, Search, Filter, CheckCircle2, Building2, Loader2, X } from 'lucide-react';
 
 export default function ProjectExpoSchedulesPage() {
   const toast = useToast();

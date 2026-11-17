@@ -2,20 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  Mic,
-  Plus,
-  Trash2,
-  Edit2,
-  RefreshCw,
-  Building,
-  Globe,
-  X,
-  UserCheck,
-  Award,
-  Sparkles,
-  ExternalLink
-} from 'lucide-react';
+import { Mic, Plus, Trash2, Edit2, RefreshCw, Building, Globe, X } from 'lucide-react';
 export default function SeminarSpeakersPage() {
   const toast = useToast();
   const admin = useMemo(() => {

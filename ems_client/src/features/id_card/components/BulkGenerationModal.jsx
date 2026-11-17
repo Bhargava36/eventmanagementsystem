@@ -1,27 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/api';
-import {
-  X,
-  IdCard,
-  FileText,
-  Printer,
-  Archive,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-  Download,
-  Users,
-  ShieldCheck,
-  ChevronRight,
-  Eye
-} from 'lucide-react';
+import { X, IdCard, FileText, Printer, Archive, CheckCircle2, AlertCircle, RefreshCw, Download, ShieldCheck, ChevronRight } from 'lucide-react';
 import {
   generateCombinedPdf,
   generateSheetPrintPdf,
   generateZipArchive,
   downloadSingleCardImage
 } from '../services/idCardPdfGenerator';
-import { renderCardSide } from '../services/idCardRenderer';
+
 export default function BulkGenerationModal({
   isOpen,
   onClose,

@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  Calendar,
-  Clock,
-  Globe,
-  MapPin,
-  CheckCircle2,
-  BookOpen,
-  Award
-} from 'lucide-react';
+import { Calendar, Clock, Globe, MapPin, BookOpen } from 'lucide-react';
 import { getEventTypeInfo } from '../../lib/utils';
 export default function TrackTimelineSection({ trackType = 'virtual', timelines = [], eventTheme = null, eventType = '' }) {
   const isVirtual = trackType.toLowerCase() === 'virtual';

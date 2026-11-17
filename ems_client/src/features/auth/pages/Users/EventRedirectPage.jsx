@@ -12,44 +12,8 @@ import EventGallerySection from '../../../../components/Molecules/EventGallerySe
 import EventSponsorsSection from '../../../../components/Molecules/EventSponsorsSection';
 import PhysicalHackathonThemesSection from '../../../../components/Molecules/PhysicalHackathonThemesSection';
 import PhysicalTeamPSActionCard from '../../../../components/Molecules/PhysicalTeamPSActionCard';
-import { getEventTheme, getEventTypeInfo, isSoloTeamSize, parseTeamSizeOptions } from '../../../../lib/utils';
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  MapPin,
-  Users,
-  Trophy,
-  Award,
-  Medal,
-  CheckCircle2,
-  Share2,
-  Copy,
-  Check,
-  Monitor,
-  Building2,
-  Globe,
-  Tag,
-  AlertCircle,
-  RefreshCw,
-  Mail,
-  Phone,
-  FileText,
-  ShieldCheck,
-  ExternalLink,
-  ChevronRight,
-  Layers,
-  Radio,
-  Info,
-  X,
-  Lightbulb,
-  CalendarCheck,
-  ClipboardCheck,
-  Camera,
-  Upload,
-  User,
-  Loader2,
-} from 'lucide-react';
+import { getEventTheme, getEventTypeInfo, isSoloTeamSize, parseTeamSizeOptions, formatDate } from '../../../../lib/utils';
+import { ArrowLeft, Calendar, Clock, MapPin, Users, Trophy, Award, Medal, CheckCircle2, Share2, Check, Monitor, Building2, Globe, Tag, AlertCircle, RefreshCw, FileText, ShieldCheck, ChevronRight, Layers, Radio, Info, X, Camera, Upload, User, Loader2 } from 'lucide-react';
 // Prize Podium SVG (same as PublicEventDetails)
 function PrizePodiumStage({
   firstAmount, firstDesc, firstTrack,
@@ -377,13 +341,13 @@ function EventDetails() {
         setThemes(evData.event?.Themes || []);
         const isHackathonEvent = (evData.event?.EventType || '').toLowerCase() === 'hackathon';
         if (isHackathonEvent) {
-          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/themes`)
+          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/themes?track=Physical`)
             .then((r) => r.json())
             .then((tData) => {
               if (tData?.themes && tData.themes.length > 0) setThemes(tData.themes);
             })
             .catch(() => { });
-          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}`)
+          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}?track=Physical`)
             .then((r) => r.json())
             .then((psData) => {
               if (psData?.problemStatements) setOrganizerStatements(psData.problemStatements);
@@ -712,14 +676,6 @@ function EventDetails() {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
     } catch { }
-  };
-  const formatDate = (ds) => {
-    if (!ds) return 'TBA';
-    try {
-      const d = new Date(ds);
-      if (isNaN(d.getTime())) return ds;
-      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch { return ds; }
   };
   const getPoster = () => {
     if (!event || !event.Posters) return null;
@@ -2198,7 +2154,7 @@ function EventDetails() {
                       {eventTypeInfo.isAlumni && (
                         <section className="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 shadow-sm dark:border-emerald-500/20 dark:bg-black space-y-4">
                           <div className="flex items-center gap-2 border-b border-emerald-500/20 pb-3">
-                            <span className="text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">🎓 Alumni Reunion Credentials &amp; RSVP</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">Alumni Reunion Credentials &amp; RSVP</span>
                           </div>
                           <div className="grid gap-4 sm:grid-cols-2">
                             <div>

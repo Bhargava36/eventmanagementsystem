@@ -15,6 +15,7 @@ router.get('/stack/:tech', teamsController.getTeamByTech);
 router.get('/my-teams/:userId', teamsController.getMyTeams);
 router.get('/info/:teamId/:userId', teamsController.getTeamInfo);
 router.get('/public/:teamId', teamsController.getPublicTeamInfo);
+router.get('/event/:eventId/export-details', teamsController.getExportDetailsByEvent);
 router.get('/event/:eventId', teamsController.getTeamsByEvent);
 router.get('/:id', teamsController.getTeamById);
 router.put('/:id', teamsController.updateTeams);

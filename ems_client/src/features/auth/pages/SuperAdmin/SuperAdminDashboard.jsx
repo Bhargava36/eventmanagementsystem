@@ -1,17 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/api';
-import {
-  Users,
-  UsersRound,
-  Calendar,
-  ArrowRight,
-  CheckCircle2,
-  Clock,
-  CreditCard,
-  Activity,
-  UserCheck,
-  UserPlus,
-} from 'lucide-react';
+import { Users, UsersRound, Calendar, CheckCircle2, Clock, Activity, UserCheck, UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useTheme from '../../../../Hooks/useTheme';
 import SuperAdminAnalytics from './components/SuperAdminAnalytics';

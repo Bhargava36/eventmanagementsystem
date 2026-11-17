@@ -2,25 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
-import {
-  Calendar,
-  Clock,
-  Plus,
-  Trash2,
-  Edit2,
-  ExternalLink,
-  BookOpen,
-  MapPin,
-  Video,
-  User,
-  CheckCircle2,
-  RefreshCw,
-  Building,
-  Layers,
-  ChevronRight,
-  X,
-  Link as LinkIcon
-} from 'lucide-react';
+import { Calendar, Clock, Plus, Trash2, Edit2, ExternalLink, BookOpen, MapPin, Video, User, RefreshCw, X, Link as LinkIcon } from 'lucide-react';
 export default function WorkshopSessionsPage() {
   const toast = useToast();
   const admin = useMemo(() => {

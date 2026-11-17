@@ -1770,7 +1770,7 @@ const scanAttendance = (EventId, scanKey, operatorName, callback) => {
                     action: 'checked_in',
                     participantName: participant.ParticipantName,
                     teamName: participant.TeamName,
-                    message: `✅ ${participant.ParticipantName} (${participant.TeamName}) checked in successfully.`
+                    message: `${participant.ParticipantName} (${participant.TeamName}) checked in successfully.`
                 });
             });
         } else {
@@ -1780,7 +1780,7 @@ const scanAttendance = (EventId, scanKey, operatorName, callback) => {
                     action: 'checked_out',
                     participantName: participant.ParticipantName,
                     teamName: participant.TeamName,
-                    message: `👋 ${participant.ParticipantName} (${participant.TeamName}) checked out successfully.`
+                    message: `${participant.ParticipantName} (${participant.TeamName}) checked out successfully.`
                 });
             });
         }

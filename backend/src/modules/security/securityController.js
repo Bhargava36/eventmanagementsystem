@@ -10,7 +10,8 @@ const captchaService = require('../../utils/captchaService');
 // --- Captcha ---
 const getCaptcha = (req, res) => {
     try {
-        const captcha = captchaService.generateCaptcha();
+        const theme = (req.query.theme || 'dark').toLowerCase();
+        const captcha = captchaService.generateCaptcha(theme);
         return res.status(200).json({ success: true, ...captcha });
     } catch (err) {
         return res.status(500).json({ success: false, message: 'Failed to generate CAPTCHA challenge.' });

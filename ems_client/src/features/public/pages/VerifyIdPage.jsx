@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { API_BASE_URL } from '@/lib/api';
 import { useSearchParams } from "react-router-dom";
 import { BadgeCheck, CheckCircle2, CircleAlert, LoaderCircle, Clock, LogIn, LogOut, RefreshCw } from "lucide-react";
+import { formatDate } from "../../../lib/utils";
 export default function VerifyIdPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token")?.trim() || "";
@@ -237,15 +238,4 @@ function Detail({ label, value }) {
       </dd>
     </div>
   );
-}
-function formatDate(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? String(value)
-    : date.toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
 }

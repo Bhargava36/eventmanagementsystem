@@ -2,7 +2,8 @@ const workshopServices = require('./workshopServices');
 // Sessions
 const getSessions = (req, res) => {
     const { eventId } = req.params;
-    workshopServices.getSessions(eventId, (err, results) => {
+    const track = req.query.track || null;
+    workshopServices.getSessions(eventId, track, (err, results) => {
         if (err) return res.status(500).json({ message: 'Error fetching sessions', error: err.message });
         res.status(200).json({ sessions: results || [] });
     });
@@ -35,7 +36,8 @@ const deleteSession = (req, res) => {
 // Resources
 const getResources = (req, res) => {
     const { eventId } = req.params;
-    workshopServices.getResources(eventId, (err, results) => {
+    const track = req.query.track || null;
+    workshopServices.getResources(eventId, track, (err, results) => {
         if (err) return res.status(500).json({ message: 'Error fetching resources', error: err.message });
         res.status(200).json({ resources: results || [] });
     });

@@ -563,9 +563,9 @@ const deleteBooth = (boothId, req = null) => {
     });
 };
 // PRESENTATION SCHEDULES
-const getSchedules = (eventId) => {
+const getSchedules = (eventId, track = null) => {
     return new Promise((resolve, reject) => {
-        const query = `
+        let query = `
             SELECT
                 sch.*,
                 t.TeamName,

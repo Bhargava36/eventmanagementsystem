@@ -6,24 +6,7 @@ import ThemeToggle from './ThemeToggler';
 import NotificationBellDropdown from '../Molecules/NotificationBellDropdown';
 import useAuth from '../../Hooks/useAuth';
 import useToast from '../../Hooks/useToast';
-import {
-  LayoutDashboard,
-  Calendar,
-  Bell,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  MessageCircleQuestion,
-  CircleUserRound,
-  PanelLeftClose,
-  PanelLeftOpen,
-  CircleX,
-  Users,
-  ScrollText,
-  Sliders,
-  ShieldCheck,
-  Activity
-} from 'lucide-react';
+import { LayoutDashboard, Calendar, Bell, LogOut, ChevronLeft, ChevronRight, MessageCircleQuestion, CircleUserRound, PanelLeftOpen, CircleX, Users, ScrollText, Sliders, ShieldCheck, Activity } from 'lucide-react';
 const logoElement = (
     <div className="relative w-5 h-5 flex items-center justify-center">
       <span className="absolute w-1.5 h-1.5 rounded-full bg-gray-600 dark:bg-gray-200 top-0 left-1/2 transform -translate-x-1/2 opacity-80"></span>
@@ -137,7 +120,7 @@ const SidebarContent = ({
     <aside
       className={`relative ${
         isMobile ? 'w-[280px]' : collapsed ? 'w-[80px]' : 'w-[280px]'
-      } h-screen max-h-screen z-20 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-5 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
+      } h-screen max-h-screen z-20 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-3 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
     >
       {!isMobile && (
         <button
@@ -228,7 +211,7 @@ const SidebarContent = ({
                 {isCurrentActive && (
                   <motion.span
                     layoutId={isMobile ? 'superadmin-tab-mobile' : 'superadmin-tab-desktop'}
-                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-xl shadow-md z-0"
+                    className="absolute inset-0 bg-emerald-700 dark:bg-emerald-500 rounded-3xl shadow-md z-0"
                     transition={{
                       type: 'spring',
                       stiffness: 350,

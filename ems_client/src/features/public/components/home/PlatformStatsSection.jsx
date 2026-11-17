@@ -164,6 +164,7 @@ function LiveWaveTrendChart({ uid, reduceMotion }) {
           cx="340"
           cy={INITIAL_WAVE.endY}
           r="4"
+          initial={{ r: 4, opacity: 0.7 }}
           stroke="#10b981"
           strokeWidth="1.5"
           fill="none"

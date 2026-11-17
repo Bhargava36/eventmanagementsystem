@@ -152,7 +152,8 @@ const deleteBooth = async (req, res) => {
 const getSchedules = async (req, res) => {
     try {
         const { eventId } = req.params;
-        const schedules = await projectExpoService.getSchedules(eventId);
+        const track = req.query.track || null;
+        const schedules = await projectExpoService.getSchedules(eventId, track);
         return res.status(200).json({ success: true, schedules });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });

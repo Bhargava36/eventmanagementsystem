@@ -1,6 +1,7 @@
 const db = require('../../config/db');
-// Sessions (Keynotes, Panels & Virtual Broadcasts)
-const getSessions = (eventId, callback) => {
+// Sessions (Keynotes, Panels & Broadcasts - optional track filter for multi-mode events)
+const getSessions = (eventId, trackOrCallback, callbackArg) => {
+    const callback = typeof trackOrCallback === 'function' ? trackOrCallback : callbackArg;
     const query = `
         SELECT * FROM webinar_sessions
         WHERE EventId = ?
@@ -91,8 +92,9 @@ const deleteSession = (sessionId, callback) => {
         return callback(null, result);
     });
 };
-// Resources (Decks, Replay Videos, Whitepapers & Delegate Handouts)
-const getResources = (eventId, callback) => {
+// Resources (Decks, Replay Videos, Whitepapers & Delegate Handouts - optional track filter)
+const getResources = (eventId, trackOrCallback, callbackArg) => {
+    const callback = typeof trackOrCallback === 'function' ? trackOrCallback : callbackArg;
     const query = `
         SELECT * FROM webinar_resources
         WHERE EventId = ?

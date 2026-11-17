@@ -3,28 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
 import { Html5Qrcode } from 'html5-qrcode';
-import {
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Search,
-  Download,
-  QrCode,
-  RefreshCw,
-  Calendar,
-  X,
-  Camera,
-  Layers,
-  ArrowRight,
-  Radio,
-  Video,
-  Presentation,
-  ShieldCheck,
-  UserCheck,
-  Award,
-  Tv,
-  FileSpreadsheet
-} from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Search, Download, RefreshCw, Calendar, X, Camera, Layers, Radio, UserCheck } from 'lucide-react';
 function playCheckInSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();

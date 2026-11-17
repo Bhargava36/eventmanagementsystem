@@ -5,33 +5,9 @@ import { motion } from 'framer-motion';
 import WaveDots from '../../../../components/Atoms/WaveDots';
 import useTheme from '../../../../Hooks/useTheme';
 import ByteEmptyState from '../../../../components/Molecules/ByteEmptyState';
-import {
-  Search,
-  Filter,
-  Calendar,
-  MapPin,
-  Users,
-  Trophy,
-  Eye,
-  ArrowRight,
-  Clock,
-  CheckCircle2,
-  Monitor,
-  Building2,
-  Tag,
-  X,
-  RefreshCw,
-  SlidersHorizontal,
-  AlertCircle,
-  Radio,
-  Layers,
-  Camera,
-  Image as ImageIcon,
-  BookOpen,
-  Presentation,
-} from 'lucide-react';
+import { Search, Filter, Calendar, MapPin, Users, Trophy, Eye, ArrowRight, Clock, CheckCircle2, Monitor, Building2, X, RefreshCw, SlidersHorizontal, AlertCircle, Radio, Layers, Camera, BookOpen, Presentation } from 'lucide-react';
 import { resolveEventMode } from '../../../public/pages/ExploreEvents';
-import { getEventTypeInfo } from '../../../../lib/utils';
+import { getEventTypeInfo, formatDate } from '../../../../lib/utils';
 
 export default function UserCompetitions() {
   const navigate = useNavigate();
@@ -140,17 +116,6 @@ export default function UserCompetitions() {
     const ongoing = events.filter((e) => (e.EventStatus || '').toLowerCase() === 'ongoing').length;
     return { total, virtual, physical, virtualAndPhysical, hybrid, ongoing };
   }, [events]);
-
-  const formatDate = (ds) => {
-    if (!ds) return 'TBA';
-    try {
-      const d = new Date(ds);
-      if (isNaN(d.getTime())) return ds;
-      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch {
-      return ds;
-    }
-  };
 
   const getEventPosterUrl = (posters) => {
     if (!posters) return null;

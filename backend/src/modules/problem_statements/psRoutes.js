@@ -9,19 +9,22 @@ router.use(optionalAuth);
 // ========================
 // ADMIN: CRUD Themes for an Event
 // ========================
-// GET all themes for an event
+// GET all themes for an event (optional ?track=Virtual|Physical)
 router.get('/event/:eventId/themes', (req, res) => {
-    psService.getAllThemes(req.params.eventId, (err, results) => {
+    const track = req.query.track || null;
+    psService.getAllThemes(req.params.eventId, track, (err, results) => {
         if (err) return res.status(500).json({ message: 'Failed to fetch themes', error: err.message });
         res.json({ themes: results });
     });
 });
 // CREATE a theme
 router.post('/event/:eventId/themes', (req, res) => {
-    psService.createTheme(req.params.eventId, req.body, (err, result) => {
+    const trackVal = String(req.body.Track || req.query.track || 'Virtual').toLowerCase() === 'physical' ? 'Physical' : 'Virtual';
+    const payload = { ...req.body, Track: trackVal };
+    psService.createTheme(req.params.eventId, payload, (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(409).json({ message: 'A theme with this name already exists for this event.' });
+                return res.status(409).json({ message: 'A theme with this name already exists for this event track.' });
             }
             return res.status(500).json({ message: 'Failed to create theme', error: err.message });
         }
@@ -32,7 +35,7 @@ router.post('/event/:eventId/themes', (req, res) => {
             entityType: 'theme',
             entityId: result?.id,
             eventId: req.params.eventId,
-            newState: req.body,
+            newState: payload,
             req
         });
         broadcastEvent(req.params.eventId, { type: 'THEMES_UPDATED', eventId: req.params.eventId });
@@ -58,19 +61,22 @@ router.delete('/themes/:id', (req, res) => {
 // ========================
 // ADMIN: CRUD Problem Statements for an Event
 // ========================
-// GET all problem statements for an event
+// GET all problem statements for an event (optional ?track=Virtual|Physical)
 router.get('/event/:eventId', (req, res) => {
-    psService.getAllByEvent(req.params.eventId, (err, results) => {
+    const track = req.query.track || null;
+    psService.getAllByEvent(req.params.eventId, track, (err, results) => {
         if (err) return res.status(500).json({ message: 'Failed to fetch problem statements', error: err.message });
         res.json({ problemStatements: results });
     });
 });
 // CREATE a problem statement
 router.post('/event/:eventId', (req, res) => {
-    psService.createProblemStatement(req.params.eventId, req.body, (err, result) => {
+    const trackVal = String(req.body.Track || req.query.track || 'Virtual').toLowerCase() === 'physical' ? 'Physical' : 'Virtual';
+    const payload = { ...req.body, Track: trackVal };
+    psService.createProblemStatement(req.params.eventId, payload, (err, result) => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(409).json({ message: 'A problem statement with this code already exists for this event.' });
+                return res.status(409).json({ message: 'A problem statement with this code already exists for this event track.' });
             }
             return res.status(500).json({ message: 'Failed to create problem statement', error: err.message });
         }
@@ -81,7 +87,7 @@ router.post('/event/:eventId', (req, res) => {
             entityType: 'problem_statement',
             entityId: result?.id,
             eventId: req.params.eventId,
-            newState: req.body,
+            newState: payload,
             req
         });
         broadcastEvent(req.params.eventId, { type: 'STATEMENTS_UPDATED', eventId: req.params.eventId });
@@ -227,15 +233,15 @@ router.post('/event/:eventId/select', (req, res) => {
     if (!teamId || !problemStatementId) {
         return res.status(400).json({ message: 'teamId and problemStatementId are required.' });
     }
-    let userId = null;
-    let userRole = null;
+    let userId = req.user?.Id || req.user?.id || null;
+    let userRole = req.user?.role || req.user?.Role || null;
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    if ((!userId || !userRole) && authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.split(' ')[1];
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRECT || 'secret');
-            userId = decoded.Id || decoded.id;
-            userRole = decoded.role || decoded.Role;
+            userId = userId || decoded.Id || decoded.id;
+            userRole = userRole || decoded.role || decoded.Role;
         } catch (e) {
             // invalid or expired token
         }
@@ -267,7 +273,8 @@ router.get('/event/:eventId/selections', (req, res) => {
 // ADMIN: Auto-Assign Remaining Teams
 // ========================
 router.post('/event/:eventId/auto-assign', (req, res) => {
-    psService.autoAssignRemainingTeams(req.params.eventId, (err, result) => {
+    const track = req.query.track || req.body?.track || null;
+    psService.autoAssignRemainingTeams(req.params.eventId, track, (err, result) => {
         if (err) return res.status(500).json({ message: 'Auto-assignment failed', error: err.message });
         broadcastEvent(req.params.eventId, {
             type: 'AUTO_ASSIGN_COMPLETED',
@@ -326,7 +333,7 @@ router.get('/event/:eventId/team/:teamId/participant-statement', (req, res) => {
 });
 // CREATE or UPDATE a participant-submitted statement (Participant/Team Lead)
 router.post('/event/:eventId/participant-statement', (req, res) => {
-    const { teamId, ThemeName, Category, Title, Description, TechStack } = req.body;
+    const { teamId, ThemeName, Category, Title, Description, TechStack, DocumentUrl, DocumentName } = req.body;
     if (!teamId || !Title || !Title.trim()) {
         return res.status(400).json({ message: 'teamId and Title are required.' });
     }
@@ -344,7 +351,7 @@ router.post('/event/:eventId/participant-statement', (req, res) => {
     psService.upsertParticipantStatement(
         req.params.eventId,
         teamId,
-        { ThemeName, Category, Title, Description, TechStack },
+        { ThemeName, Category, Title, Description, TechStack, DocumentUrl, DocumentName },
         userId,
         (err, result) => {
             if (err) {
@@ -359,6 +366,21 @@ router.post('/event/:eventId/participant-statement', (req, res) => {
             res.json(result);
         }
     );
+});
+// UPDATE Physical Problem Statement Format Mode (Organizer Provided vs Participant Defined)
+router.put('/event/:eventId/physical-mode', (req, res) => {
+    const { mode } = req.body;
+    psService.updatePhysicalPSMode(req.params.eventId, mode, (err, result) => {
+        if (err) {
+            return res.status(500).json({ message: 'Failed to update problem statement mode', error: err.message });
+        }
+        broadcastEvent(req.params.eventId, {
+            type: 'PHYSICAL_PS_MODE_UPDATED',
+            eventId: req.params.eventId,
+            mode: result.mode
+        });
+        res.json({ message: 'Physical problem statement format updated', mode: result.mode });
+    });
 });
 // UPDATE status of participant-submitted statement (Admin approve / revision)
 router.put('/participant-statements/:id/status', (req, res) => {

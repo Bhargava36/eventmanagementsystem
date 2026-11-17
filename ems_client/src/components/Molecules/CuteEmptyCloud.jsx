@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Search, RotateCcw, Compass } from 'lucide-react';
+import { RotateCcw, Compass } from 'lucide-react';
 import useTheme from '../../Hooks/useTheme';
 function CuteEmptyCloud({ searchTerm, hasActiveFilters, onReset, onQuickSearch }) {
   const { theme } = useTheme();

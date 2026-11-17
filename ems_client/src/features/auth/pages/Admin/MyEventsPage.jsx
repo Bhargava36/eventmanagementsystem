@@ -1,29 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { API_BASE_URL } from '@/lib/api';
 import useToast from '../../../../Hooks/useToast';
 import { getEventTypeInfo } from '../../../../lib/utils';
-import {
-  Layers,
-  Calendar,
-  MapPin,
-  Plus,
-  Search,
-  CheckCircle2,
-  Clock,
-  ArrowRight,
-  ExternalLink,
-  Sliders,
-  Trophy,
-  Users,
-  ShieldCheck,
-  RefreshCw,
-  X,
-  Radio,
-  Building2,
-  Zap,
-} from 'lucide-react';
+import { Layers, Calendar, MapPin, Plus, Search, CheckCircle2, ArrowRight, Sliders, Users, ShieldCheck, RefreshCw, Radio, Zap } from 'lucide-react';
 export default function MyEventsPage() {
   const navigate = useNavigate();
   const toast = useToast();
