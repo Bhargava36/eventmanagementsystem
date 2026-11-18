@@ -42,7 +42,37 @@ const securityHeaders = require("./src/middleware/securityHeaders");
 const { globalLimiter } = require("./src/middleware/rateLimiter");
 const dbCircuitBreaker = require("./src/modules/security/dbCircuitBreaker");
 const app = express();
-app.use(cors());
+
+// Allowed origins: ems.aitamsac.in and localhosts 5173, 5174 only
+const envAllowed = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
+const defaultAllowed = [
+    'https://ayojan.aitamsac.in',
+    'http://ayojan.aitamsac.in',
+    'https://ems.aitamsac.in',
+    'http://ems.aitamsac.in',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174'
+];
+const allowedOrigins = Array.from(new Set([...defaultAllowed, ...envAllowed]));
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        } else {
+            return callback(new Error('Blocked by CORS: Unauthorized origin.'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(securityHeaders);
 app.use('/api', globalLimiter);
 app.use('/api', (req, res, next) => {
@@ -54,11 +84,14 @@ app.use('/api', (req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(auditMiddleware);
-// Serve uploaded files statically with explicit CORS (e.g. http://localhost:3000/uploads/images/...)
+// Serve uploaded files statically with explicit CORS (e.g. https://emsapi.aitamsac.in/uploads/images/...)
 app.use('/uploads', (req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
+    const origin = req.headers.origin;
+    if (!origin || allowedOrigins.includes(origin)) {
+        res.header("Access-Control-Allow-Origin", origin || "*");
+    }
     res.header("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     if (req.method === 'OPTIONS') return res.sendStatus(200);
     next();
 }, express.static(path.join(__dirname, 'uploads')));
@@ -79,9 +112,7 @@ app.use("/api/id-cards", idCardRoutes);
 app.use("/api/physical-services", physicalServicesRoutes);
 app.use("/api/sponsors", sponsorRoutes);
 app.use("/api/gallery", galleryRoutes);
-if (process.env.NODE_ENV !== 'production') {
-    app.use("/api/dev", devRoute);
-}
+app.use("/api/dev", devRoute);
 app.use("/api/evaluators", evaluatorRoutes);
 app.use("/api/problem-statements", psRoutes);
 app.use("/api/project-submissions", projectSubmissionRoutes);
@@ -99,6 +130,15 @@ app.use('/api/database-backups', backupRoute);
 app.use('/api/webhooks', webhookRoute);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/security', securityRoute);
+
+// Catch-all 404 for API routes to always return structured JSON instead of HTML
+app.use('/api', (req, res) => {
+    res.status(404).json({
+        success: false,
+        message: `API endpoint not found: ${req.method} ${req.originalUrl}`
+    });
+});
+
 const http = require('http');
 const { initWebSocket } = require('./src/config/websocket');
 const db = require('./src/config/db');

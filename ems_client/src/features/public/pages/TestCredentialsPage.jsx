@@ -13,26 +13,46 @@ export default function TestCredentialsPage() {
   const isDark = theme === 'dark';
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(null);
   const [search, setSearch] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
   const [showPasswords, setShowPasswords] = useState({});
   const [copiedField, setCopiedField] = useState(null);
   const [resettingId, setResettingId] = useState(null);
   const [loggingInId, setLoggingInId] = useState(null);
+
+  // Helper for safe JSON parsing without throwing Unexpected token < SyntaxError
+  const parseJsonSafely = async (response) => {
+    try {
+      const ct = response?.headers?.get('content-type') || '';
+      if (ct.includes('application/json')) {
+        return await response.json();
+      }
+    } catch {
+      // ignore parsing error
+    }
+    return null;
+  };
+
   // Fetch Accounts from Backend API
   const fetchAccounts = async () => {
     try {
       setLoading(true);
+      setApiError(null);
       const res = await fetch(`${API_BASE_URL}/api/dev/accounts`);
-      const data = await res.json();
-      if (res.ok && data.accounts) {
+      const data = await parseJsonSafely(res);
+      if (res.ok && data?.accounts) {
         setAccounts(data.accounts);
+        setApiError(null);
       } else {
-        throw new Error(data.message || 'Failed to fetch accounts');
+        const errorMsg = data?.message || (res.status === 404
+          ? `Test accounts endpoint is not active on ${API_BASE_URL} (restricted in production mode).`
+          : `Could not load test accounts (HTTP ${res.status}).`);
+        setApiError(errorMsg);
+        setAccounts([]);
       }
     } catch (err) {
-      console.error(err);
-      toast.error(err.message || 'Could not load test accounts from server');
+      setApiError(err.message || 'Could not connect to test accounts service');
       setAccounts([]);
     } finally {
       setLoading(false);
@@ -61,9 +81,9 @@ export default function TestCredentialsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: acc.Id, email: acc.Email, role: acc.RoleName, evaluatorId: acc.evaluatorId }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Direct login failed');
+      const data = await parseJsonSafely(res);
+      if (!res.ok || !data) {
+        throw new Error(data?.message || `Direct login failed (HTTP ${res.status})`);
       }
       // Store in localStorage matching app's UnifiedLogin pattern
       localStorage.setItem('token', data.token);
@@ -96,8 +116,8 @@ export default function TestCredentialsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: acc.Id, newPassword: 'password123', isEvaluator: acc.isEvaluator }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Reset failed');
+      const data = await parseJsonSafely(res);
+      if (!res.ok || !data) throw new Error(data?.message || `Reset failed (HTTP ${res.status})`);
       toast.success(`Password for ${acc.UserName} reset to "password123"`);
       // Update local state
       setAccounts((prev) =>
@@ -328,6 +348,20 @@ export default function TestCredentialsPage() {
             />
           </div>
         </div>
+        {/* API Error / Environment Notice */}
+        {apiError && (
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs sm:text-sm">
+            <Info className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold">Test Credentials Notice</p>
+              <p>{apiError}</p>
+              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                Connected API: <code className="bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-mono text-[10px]">{API_BASE_URL}</code>. If you are doing local testing, switch to your local backend (<code className="bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-mono text-[10px]">http://localhost:3000</code>).
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Organizer Login Helper Alert */}
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs sm:text-sm">
           <Info className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />

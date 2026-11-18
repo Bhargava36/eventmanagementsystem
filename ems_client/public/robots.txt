@@ -1,0 +1,23 @@
+# AYOJAN Platform - robots.txt
+# Domain: https://ayojan.aitamsac.in
+
+User-agent: *
+Allow: /
+Allow: /events
+Allow: /explore
+Allow: /policies
+Allow: /terms
+Allow: /privacy
+Allow: /favicon.svg
+Allow: /assets/
+
+# Disallow private dashboards and admin panels from search engine indexing
+Disallow: /admin/
+Disallow: /user/
+Disallow: /super_admin/
+Disallow: /evaluator/
+Disallow: /api/
+Disallow: /test-credentials
+
+# Sitemap
+Sitemap: https://ayojan.aitamsac.in/sitemap.xml

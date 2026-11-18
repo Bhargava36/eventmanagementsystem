@@ -212,7 +212,7 @@ export default function ParticipantVirtualEventPage() {
     let isMounted = true;
     const connectWS = () => {
       try {
-        const wsBase = (API_BASE_URL || 'http://localhost:3000').replace(/^http/, 'ws');
+        const wsBase = (API_BASE_URL || 'https://emsapi.aitamsac.in').replace(/^http/, 'ws');
         socket = new WebSocket(wsBase);
         socket.onopen = () => {
           socket.send(JSON.stringify({ type: 'JOIN_EVENT', eventId: id }));

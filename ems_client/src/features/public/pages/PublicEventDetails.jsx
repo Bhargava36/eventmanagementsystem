@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import useSEO from '../../../Hooks/useSEO';
 import { API_BASE_URL } from '@/lib/api';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -312,6 +313,67 @@ function PublicEventDetails() {
   const [activeTrackTab, setActiveTrackTab] = useState('physical');
   const [activeCountdownTrack, setActiveCountdownTrack] = useState('Virtual');
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Dynamic Event-Level On-Page SEO with Schema.org Event Rich Snippet
+  const eventPoster = useMemo(() => {
+    if (!event?.Posters) return null;
+    if (Array.isArray(event.Posters) && event.Posters.length > 0) return event.Posters[0];
+    if (typeof event.Posters === 'string') {
+      try {
+        const parsed = JSON.parse(event.Posters);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed[0];
+      } catch {
+        return event.Posters;
+      }
+    }
+    return null;
+  }, [event?.Posters]);
+
+  const eventStructuredData = useMemo(() => {
+    if (!event) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Event',
+      name: event.EventName,
+      description: event.Description || `${event.EventName} collegiate event.`,
+      startDate: event.StartDate || event.PhysicalStartDate || event.VirtualStartDate,
+      endDate: event.EndDate || event.PhysicalEndDate || event.VirtualEndDate,
+      eventStatus: 'https://schema.org/EventScheduled',
+      eventAttendanceMode: event.HackathonMode === 'Virtual'
+        ? 'https://schema.org/OnlineEventAttendanceMode'
+        : event.HackathonMode === 'Both' || event.HackathonMode === 'Hybrid'
+        ? 'https://schema.org/MixedEventAttendanceMode'
+        : 'https://schema.org/OfflineEventAttendanceMode',
+      location: {
+        '@type': 'Place',
+        name: event.Location || 'Campus Event Venue',
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: 'Tekkali',
+          addressRegion: 'Andhra Pradesh',
+          addressCountry: 'IN'
+        }
+      },
+      image: eventPoster || 'https://ayojan.aitamsac.in/assets/home/ai-cube.jpg',
+      organizer: {
+        '@type': 'Organization',
+        name: 'AYOJAN Student Activity Center',
+        url: 'https://ayojan.aitamsac.in'
+      }
+    };
+  }, [event, eventPoster]);
+
+  useSEO({
+    title: event ? event.EventName : 'Event Details',
+    description: event?.Description
+      ? event.Description.slice(0, 160).trim()
+      : 'Explore event details, timelines, prize pools, and team guidelines on AYOJAN.',
+    keywords: event ? `${event.EventName}, ${event.EventType}, collegiate hackathon, AITAM events` : undefined,
+    canonical: `https://ayojan.aitamsac.in/events/${id}`,
+    ogImage: eventPoster || undefined,
+    ogType: 'event',
+    structuredData: eventStructuredData
+  });
   useEffect(() => {
     window.scrollTo(0, 0);
     if (id) {

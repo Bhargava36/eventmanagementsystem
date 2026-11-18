@@ -12,14 +12,16 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'three': path.resolve(__dirname, './node_modules/three'),
     },
     dedupe: ['three'],
   },
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: process.env.VITE_API_URL || 'https://emsapi.aitamsac.in',
         changeOrigin: true,
+        secure: false,
       },
     },
   },

@@ -19,11 +19,15 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.2.0",
+    "multer": "^2.5.0",
     "mysql2": "^3.23.3",
     "nodemailer": "^10.2.1",
     "nodemon": "^3.1.14",
     "qrcode.react": "^4.2.0",
     "ws": "^8.22.0"
+  },
+  "overrides": {
+    "minimatch": "^11.0.1",
+    "picomatch": "^4.0.2"
   }
 }

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import useSEO from '../../../Hooks/useSEO';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -13,6 +14,13 @@ import PlatformTestimonialsSection from '../components/home/PlatformTestimonials
 gsap.registerPlugin(ScrollTrigger);
 // HomePage Continuous storytelling landing page powered by Lenis smooth scrolling
 export default function HomePage() {
+  useSEO({
+    title: 'Home',
+    description: 'AYOJAN is the collegiate event management platform. Discover hackathons, project expos, live jury evaluations, ID pass generation, and automated campus accommodation.',
+    canonical: 'https://ayojan.aitamsac.in/',
+    ogImage: 'https://ayojan.aitamsac.in/assets/home/ai-cube.jpg',
+  });
+
   // Lenis Smooth Scroll Integration with GSAP ScrollTrigger
   useEffect(() => {
     const lenis = new Lenis({

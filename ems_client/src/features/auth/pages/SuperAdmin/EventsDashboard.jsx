@@ -79,6 +79,7 @@ function EventsDashboard() {
   const [sortValue, setSortValue] = useState('Latest First');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedPresetName, setSelectedPresetName] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedMode, setSelectedMode] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import useSEO from '../../../Hooks/useSEO';
 import { API_BASE_URL } from '@/lib/api';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -46,6 +47,13 @@ export const resolveEventMode = (ev) => {
   return 'virtual';
 };
 function ExploreEvents() {
+  useSEO({
+    title: 'Explore Collegiate Events & Hackathons',
+    description: 'Browse upcoming college hackathons, technical symposiums, project expos, and workshops across campus. Register teams, view prize pools, and participate.',
+    keywords: 'college hackathons, collegiate events, technical symposium, project expo, coding competitions, AITAM events',
+    canonical: 'https://ayojan.aitamsac.in/events',
+  });
+
   const navigate = useNavigate();
   const { theme } = useTheme();
   const [events, setEvents] = useState([]);

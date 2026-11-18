@@ -43,7 +43,8 @@ const upload = multer({
     storage,
     limits: { fileSize: 25 * 1024 * 1024 } // 25MB limit
 });
-// Helper to save Base64 data string as a physical file in uploads folder. Returns the public URL (e.g. http://localhost:3000/uploads/images/filename.ext).
+const BASE_URL = (process.env.BASE_URL || 'https://emsapi.aitamsac.in').replace(/\/+$/, '');
+// Helper to save Base64 data string as a physical file in uploads folder. Returns the public URL (e.g. https://emsapi.aitamsac.in/uploads/images/filename.ext).
 const saveBase64File = (base64Str, defaultSubfolder = "images") => {
     if (!base64Str || typeof base64Str !== "string") return base64Str;
     const matches = base64Str.match(/^data:([A-Za-z0-9-+\/.]+);base64,(.+)$/);
@@ -72,7 +73,7 @@ const saveBase64File = (base64Str, defaultSubfolder = "images") => {
     const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
     const filePath = path.join(folderPath, filename);
     fs.writeFileSync(filePath, dataBuffer);
-    return `http://localhost:3000/uploads/${folder}/${filename}`;
+    return `${BASE_URL}/uploads/${folder}/${filename}`;
 };
 module.exports = {
     upload,

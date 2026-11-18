@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { upload } = require('../../middleware/multer');
+const BASE_URL = (process.env.BASE_URL || 'https://emsapi.aitamsac.in').replace(/\/+$/, '');
 // Single file upload endpoint (field: 'file')
 router.post('/single', upload.single('file'), (req, res) => {
     try {
@@ -8,7 +9,7 @@ router.post('/single', upload.single('file'), (req, res) => {
             return res.status(400).json({ message: 'No file uploaded' });
         }
         const relativePath = `/uploads/${pathRelative(req.file.destination)}/${req.file.filename}`;
-        const fileUrl = `http://localhost:3000${relativePath}`;
+        const fileUrl = `${BASE_URL}${relativePath}`;
         return res.status(200).json({
             message: 'File uploaded successfully',
             fileUrl,
@@ -27,7 +28,7 @@ router.post('/', upload.single('file'), (req, res) => {
             return res.status(400).json({ message: 'No file uploaded' });
         }
         const relativePath = `/uploads/${pathRelative(req.file.destination)}/${req.file.filename}`;
-        const fileUrl = `http://localhost:3000${relativePath}`;
+        const fileUrl = `${BASE_URL}${relativePath}`;
         return res.status(200).json({
             message: 'File uploaded successfully',
             fileUrl,
@@ -47,7 +48,7 @@ router.post('/multiple', upload.array('files', 10), (req, res) => {
         }
         const uploadedFiles = req.files.map((file) => {
             const relativePath = `/uploads/${pathRelative(file.destination)}/${file.filename}`;
-            const fileUrl = `http://localhost:3000${relativePath}`;
+            const fileUrl = `${BASE_URL}${relativePath}`;
             return {
                 url: fileUrl,
                 relativePath,

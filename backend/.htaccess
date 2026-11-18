@@ -1,0 +1,32 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Force HTTPS
+  RewriteCond %{HTTPS} off
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Serve uploaded static files directly from /uploads/ directory if file exists
+  RewriteCond %{REQUEST_URI} ^/uploads/(.*)$
+  RewriteCond %{DOCUMENT_ROOT}/uploads/$1 -f
+  RewriteRule ^uploads/(.*)$ uploads/$1 [L]
+
+  # WebSocket Proxy Support (wss:// -> ws://127.0.0.1:3000)
+  RewriteCond %{HTTP:Upgrade} =websocket [NC]
+  RewriteRule /(.*) ws://127.0.0.1:3000/$1 [P,L]
+
+  # Reverse Proxy all incoming HTTP requests to Node.js backend on port 3000
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L]
+</IfModule>
+
+# Security & CORS Headers for Static Assets & Uploads
+<IfModule mod_headers.c>
+  SetEnvIf Origin "^https?://(ayojan\.aitamsac\.in|ems\.aitamsac\.in|localhost:5173|localhost:5174)$" CORS_ALLOWED_ORIGIN=$0
+  Header always set Access-Control-Allow-Origin "%{CORS_ALLOWED_ORIGIN}e" env=CORS_ALLOWED_ORIGIN
+  Header always set Access-Control-Allow-Credentials "true"
+  Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+  Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
