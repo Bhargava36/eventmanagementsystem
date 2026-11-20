@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Award, Users, CheckCircle2, Clock, Search, Filter, Download, RefreshCw, ChevronDown, ChevronUp, Building2, User, UserCheck, ClipboardList, Globe, Lock, Unlock, Edit3 } from 'lucide-react';
+import { Trophy, Award, Users, CheckCircle2, Clock, Search, Filter, Download, RefreshCw, ChevronDown, ChevronUp, Building2, User, UserCheck, ClipboardList, Globe, Lock, Unlock, Edit3, Printer, Send, Sparkles } from 'lucide-react';
 import { getTrackVisibility, isSoloTeamSize } from '../../../../lib/utils';
 import useTheme from '../../../../Hooks/useTheme';
 import useToast from '../../../../Hooks/useToast';
+import ParticipantCertificateModal from '../../../../components/Molecules/ParticipantCertificateModal';
 function AdminResultsPage({ track = 'Physical' }) {
+  const navigate = useNavigate();
   const toast = useToast();
   const { theme: appTheme } = useTheme();
   const isDark = appTheme === 'dark';
@@ -26,6 +29,9 @@ function AdminResultsPage({ track = 'Physical' }) {
   const [expandedTeamId, setExpandedTeamId] = useState(null);
   const [publishing, setPublishing] = useState(false);
   const [updatingRound, setUpdatingRound] = useState(false);
+  const [issuingCerts, setIssuingCerts] = useState(false);
+  const [certModalOpen, setCertModalOpen] = useState(false);
+  const [previewCertData, setPreviewCertData] = useState(null);
   // Standard Admin Portal Emerald & Neutral Design System (Independent of event colors)
   const theme = useMemo(() => {
     return {
@@ -283,6 +289,59 @@ function AdminResultsPage({ track = 'Physical' }) {
       setPublishing(false);
     }
   };
+
+  // Issue & Dispatch Participation Certificates (Virtual Track)
+  const handleIssueCertificates = async (targetTeamId = null) => {
+    if (!eventId) return;
+    const evaluatedTeamsCount = (teams || []).filter((t) => (t.roundsEvaluatedCount || 0) > 0).length;
+    if (evaluatedTeamsCount === 0) {
+      toast.error('No teams have been evaluated yet. Complete jury evaluation before issuing certificates.');
+      return;
+    }
+    const confirmMsg = targetTeamId
+      ? 'Issue official verified participation certificate to this evaluated team and dispatch notification emails?'
+      : `Issue and dispatch official verified participation certificates to all ${evaluatedTeamsCount} evaluated ${track} teams?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setIssuingCerts(true);
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/event/${eventId}/issue-certificates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          track,
+          teamId: targetTeamId,
+          sendEmail: true
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to issue certificates');
+      toast.success(data.message || 'Certificates successfully issued and emailed!');
+      fetchResults();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to issue certificates');
+    } finally {
+      setIssuingCerts(false);
+    }
+  };
+
+  const handlePreviewCertificate = async (team) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/evaluators/teams/${team.Id}/certificate`);
+      const json = await res.json();
+      if (res.ok && json.data) {
+        setPreviewCertData(json.data);
+        setCertModalOpen(true);
+      } else {
+        toast.error('Failed to load certificate preview');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Error loading certificate');
+    }
+  };
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 space-y-6 font-sans transition-colors duration-300">
       {/* Header Banner */}
@@ -323,7 +382,30 @@ function AdminResultsPage({ track = 'Physical' }) {
           </div>
         </div>
         {/* Action Buttons */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => navigate(`/admin/certificate-designer?eventId=${eventId}`)}
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-amber-500/35 transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+            title="Open visual Certificate Designer to customize template"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Certificate Designer</span>
+          </button>
+          {track === 'Virtual' && (
+            <button
+              onClick={() => handleIssueCertificates()}
+              disabled={issuingCerts || (summary.totalEvaluatedTeams || 0) === 0}
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Issue and email verified participation certificates to all evaluated virtual teams"
+            >
+              <Award className="w-3.5 h-3.5" />
+              <span>
+                {issuingCerts
+                  ? 'Issuing Certificates...'
+                  : `Issue & Email Certificates (${(teams || []).filter((t) => (t.roundsEvaluatedCount || 0) > 0).length} Evaluated)`}
+              </span>
+            </button>
+          )}
           <button
             onClick={fetchResults}
             className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-gray-300 transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-200 dark:border-zinc-800 shadow-sm"
@@ -928,6 +1010,48 @@ function AdminResultsPage({ track = 'Physical' }) {
                             </div>
                           </div>
                         )}
+                        {/* Certificate Action Badge (Virtual Track) */}
+                        {track === 'Virtual' && (
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            {team.CertificateIssued ? (
+                              <button
+                                onClick={() => handlePreviewCertificate(team)}
+                                className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 transition-all flex items-center gap-1 cursor-pointer"
+                                title="Click to view/download official certificate"
+                              >
+                                <Award className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Certificate Issued</span>
+                                <span className="sm:hidden">Issued</span>
+                              </button>
+                            ) : team.roundsEvaluatedCount > 0 ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => handleIssueCertificates(team.Id)}
+                                  disabled={issuingCerts}
+                                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border border-amber-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                                  title="Issue and email certificate to this evaluated team"
+                                >
+                                  <Award className="w-3.5 h-3.5" />
+                                  <span>Issue Cert</span>
+                                </button>
+                                <button
+                                  onClick={() => handlePreviewCertificate(team)}
+                                  className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 text-slate-500 hover:text-slate-800 dark:hover:text-white transition cursor-pointer"
+                                  title="Preview Certificate Draft"
+                                >
+                                  <Printer className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span
+                                className="text-[10px] font-semibold px-2 py-1 rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border border-slate-200 dark:border-zinc-700/80"
+                                title="Team must be evaluated by jury first"
+                              >
+                                Ineligible (Pending Eval)
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {/* Expand / Collapse Chevron */}
                         <button
                           type="button"
@@ -1097,6 +1221,16 @@ function AdminResultsPage({ track = 'Physical' }) {
           )}
         </section>
       </div>
+
+      {/* Official Certificate Preview & Export Modal */}
+      <ParticipantCertificateModal
+        isOpen={certModalOpen}
+        onClose={() => {
+          setCertModalOpen(false);
+          setPreviewCertData(null);
+        }}
+        certificateData={previewCertData}
+      />
     </div>
   );
 }

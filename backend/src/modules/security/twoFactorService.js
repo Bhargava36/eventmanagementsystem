@@ -4,7 +4,7 @@ const db = require('../../config/db');
 const { sendOtpEmail } = require('../../config/mailer');
 const sessionService = require('./sessionService');
 const { recordLoginAttempt } = require('./securityAlertService');
-const JWT_SECRET = process.env.JWT_SECRECT || process.env.JWT_SECRET || 'ayojan_enterprise_secret_2026';
+const JWT_SECRET = process.env.JWT_SECRECT || process.env.JWT_SECRET || 'ems_enterprise_secret_2026';
 const OTP_EXPIRY_MINUTES = 10;
 const generateOtpCode = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();

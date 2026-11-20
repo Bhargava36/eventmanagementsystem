@@ -4,13 +4,14 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ArrowUpRight, HelpCircle, Mail } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const FAQS = [
   {
     id: "eligibility",
     num: "01",
-    q: "Who can participate in events hosted on AYOJAN?",
-    a: "AYOJAN lists hackathons, project expos, workshops, seminars, webinars, and alumni meets across on-campus, virtual, and hybrid formats. Open eligibility varies by each host chapter and is shown clearly on every public event page.",
+    q: "Who can participate in events hosted on AVISHKAAR?",
+    a: "AVISHKAAR lists hackathons, project expos, workshops, seminars, webinars, and alumni meets across on-campus, virtual, and hybrid formats. Open eligibility varies by each host chapter and is shown clearly on every public event page.",
     linkLabel: "Browse open events",
     linkHref: "/events",
   },
@@ -80,8 +81,6 @@ export default function HomeFaqSection() {
             className="lg:col-span-5 lg:sticky lg:top-28 space-y-7"
           >
             <div className="space-y-3.5">
-              
-
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-[1.12]">
                 Questions, <br />
                 <span className="font-heading italic text-emerald-600 dark:text-emerald-400">
@@ -98,7 +97,6 @@ export default function HomeFaqSection() {
             <div className="group/help rounded-[24px] border border-slate-200 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950 p-6 space-y-4 hover:border-emerald-500/60 transition-colors duration-200">
               <div className="flex items-center gap-3">
                 <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
-                  
                   <HelpCircle
                     strokeWidth={1.6}
                     className="w-4 h-4 text-emerald-600 dark:text-emerald-400"
@@ -109,7 +107,6 @@ export default function HomeFaqSection() {
                   <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
                     Need direct assistance?
                   </h3>
-                  
                 </div>
               </div>
 
@@ -119,11 +116,11 @@ export default function HomeFaqSection() {
 
               <div className="pt-2 border-t border-slate-200/80 dark:border-zinc-800/80 flex flex-wrap items-center justify-between gap-3">
                 <a
-                  href="mailto:support@ayojan.live"
+                  href="mailto:support@avishkaar.live"
                   className="inline-flex items-center gap-1.5 text-xs font-mono text-slate-700 dark:text-zinc-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
                 >
                   <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>support@ayojan.live</span>
+                  <span>support@avishkaar.live</span>
                 </a>
 
                 <Link
@@ -144,19 +141,21 @@ export default function HomeFaqSection() {
               return (
                 <motion.div
                   key={faq.id}
+                  layout="position"
                   initial={reduceMotion ? false : { opacity: 0, y: 14 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.15 }}
                   transition={{
-                    duration: 0.42,
-                    delay: reduceMotion ? 0 : idx * 0.04,
-                    ease: [0.22, 1, 0.36, 1],
+                    layout: { duration: 0.38, ease: [0.16, 1, 0.3, 1] },
+                    opacity: { duration: 0.42, delay: reduceMotion ? 0 : idx * 0.04 },
+                    y: { duration: 0.42, delay: reduceMotion ? 0 : idx * 0.04, ease: [0.22, 1, 0.36, 1] },
                   }}
-                  className={`rounded-2xl border transition-colors duration-200 ${
+                  className={cn(
+                    "rounded-2xl border transition-colors duration-300",
                     isOpen
-                      ? "border-emerald-500/60 bg-slate-50/70 dark:bg-zinc-950"
+                      ? "border-emerald-500/60 bg-slate-50/70 dark:bg-zinc-950 shadow-xs"
                       : "border-slate-200 dark:border-zinc-800 bg-white dark:bg-black hover:border-slate-300 dark:hover:border-zinc-700"
-                  }`}
+                  )}
                 >
                   <button
                     type="button"
@@ -167,40 +166,51 @@ export default function HomeFaqSection() {
                     <div className="flex items-center gap-4 min-w-0">
                       {/* Monospace Tabular Index Pill */}
                       <span
-                        className={`w-8 h-8 rounded-xl border text-[11px] font-mono font-bold flex items-center justify-center shrink-0 transition-colors duration-200 ${
+                        className={cn(
+                          "w-8 h-8 rounded-xl  text-[11px] font-mono font-bold flex items-center justify-center shrink-0 transition-colors duration-250",
                           isOpen
                             ? "border-emerald-600 bg-emerald-600 text-white"
-                            : "border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 text-slate-500 dark:text-zinc-400 group-hover:border-emerald-500/50 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
-                        }`}
+                            : "text-slate-500 dark:text-zinc-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+                        )}
                       >
                         {faq.num}
                       </span>
 
                       <h3
-                        className={`text-base sm:text-[17px] font-semibold leading-snug transition-colors ${
+                        className={cn(
+                          "text-base sm:text-[17px] font-semibold leading-snug transition-colors duration-200",
                           isOpen
                             ? "text-slate-900 dark:text-white"
                             : "text-slate-800 dark:text-zinc-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
-                        }`}
+                        )}
                       >
                         {faq.q}
                       </h3>
                     </div>
 
-                    {/* Crisp Rotating Crosshair + / - Indicator */}
+                    {/* Crisp Rotating Crosshair + / - Indicator with Spring Motion */}
                     <span
-                      className={`relative w-7 h-7 rounded-full border flex items-center justify-center shrink-0 transition-colors duration-200 ${
+                      className={cn(
+                        "relative w-7 h-7 rounded-full  flex items-center justify-center shrink-0 transition-colors duration-250",
                         isOpen
                           ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : "border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-500 dark:text-zinc-400 group-hover:border-emerald-500/60 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
-                      }`}
+                          : " bg-white dark:bg-black text-slate-500 dark:text-zinc-400 group-hover:border-emerald-500/60 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+                      )}
                       aria-hidden="true"
                     >
                       <span className="w-3 h-[1.5px] bg-current rounded-full" />
-                      <span
-                        className={`absolute w-[1.5px] h-3 bg-current rounded-full motion-safe:transition-transform motion-safe:duration-250 ${
-                          isOpen ? "rotate-90 scale-y-0" : "rotate-0 scale-y-100"
-                        }`}
+                      <motion.span
+                        animate={
+                          isOpen
+                            ? { rotate: 90, scaleY: 0, opacity: 0 }
+                            : { rotate: 0, scaleY: 1, opacity: 1 }
+                        }
+                        transition={
+                          reduceMotion
+                            ? { duration: 0 }
+                            : { type: "spring", stiffness: 350, damping: 25 }
+                        }
+                        className="absolute w-[1.5px] h-3 bg-current rounded-full origin-center"
                       />
                     </span>
                   </button>
@@ -221,10 +231,10 @@ export default function HomeFaqSection() {
                             ? { duration: 0 }
                             : {
                                 height: {
-                                  duration: 0.28,
-                                  ease: [0.22, 1, 0.36, 1],
+                                  duration: 0.38,
+                                  ease: [0.16, 1, 0.3, 1],
                                 },
-                                opacity: { duration: 0.2, delay: 0.04 },
+                                opacity: { duration: 0.28, delay: 0.04 },
                               },
                         }}
                         exit={
@@ -235,16 +245,25 @@ export default function HomeFaqSection() {
                                 opacity: 0,
                                 transition: {
                                   height: {
-                                    duration: 0.22,
-                                    ease: [0.22, 1, 0.36, 1],
+                                    duration: 0.32,
+                                    ease: [0.16, 1, 0.3, 1],
                                   },
-                                  opacity: { duration: 0.14 },
+                                  opacity: { duration: 0.2 },
                                 },
                               }
                         }
                         className="overflow-hidden"
                       >
-                        <div className="px-5 sm:px-6 pb-5 sm:pb-6 pl-[68px] sm:pl-[76px] space-y-3">
+                        <motion.div
+                          initial={reduceMotion ? false : { y: -8, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          exit={reduceMotion ? false : { y: -6, opacity: 0 }}
+                          transition={{
+                            duration: 0.32,
+                            ease: [0.16, 1, 0.3, 1],
+                          }}
+                          className="px-5 sm:px-6 pb-5 sm:pb-6 pl-[68px] sm:pl-[76px] space-y-3"
+                        >
                           <p className="text-xs sm:text-sm text-slate-600 dark:text-zinc-400 leading-relaxed font-normal">
                             {faq.a}
                           </p>
@@ -256,7 +275,7 @@ export default function HomeFaqSection() {
                             <span>{faq.linkLabel}</span>
                             <ArrowUpRight className="w-3.5 h-3.5 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover/flink:translate-x-0.5 motion-safe:group-hover/flink:-translate-y-0.5" />
                           </Link>
-                        </div>
+                        </motion.div>
                       </motion.div>
                     )}
                   </AnimatePresence>

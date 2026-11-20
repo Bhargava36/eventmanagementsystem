@@ -17,6 +17,7 @@ import ProjectExpoParticipantCard from './components/ProjectExpoParticipantCard'
 import ParticipantAttendanceView from './components/ParticipantAttendanceView';
 import EnlargedQrPassModal from './components/EnlargedQrPassModal';
 import DocumentPreviewModal from './components/DocumentPreviewModal';
+import ParticipantCertificateModal from '../../../../components/Molecules/ParticipantCertificateModal';
 import { buildGoogleCalendarUrl, downloadIcsFile } from '../../../../lib/calendarUtils';
 function getInitial(name) {
     if (!name) return "?";
@@ -87,6 +88,8 @@ function TeamInfo() {
     const [resultsData, setResultsData] = useState(null);
     const [loadingResults, setLoadingResults] = useState(false);
     const [expandedRoundId, setExpandedRoundId] = useState(null);
+    const [certModalOpen, setCertModalOpen] = useState(false);
+    const [certificateData, setCertificateData] = useState(null);
     // Problem Statement / Theme state
     const [teamProblemStatement, setTeamProblemStatement] = useState(null);
     const [loadingPs, setLoadingPs] = useState(false);
@@ -1743,6 +1746,48 @@ function TeamInfo() {
                                     </div>
                                 </div>
                             )}
+                            {/* Official Verified Participation Certificate Card */}
+                            {resultsData?.certificateIssued && (
+                                <div className="rounded-2xl p-5 border border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3.5">
+                                        <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-500 border border-amber-500/25 flex items-center justify-center shrink-0">
+                                            <Award className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                                                    Certificate of Participation Released
+                                                </h4>
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                                                    Official Verified
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 dark:text-gray-400 mt-0.5">
+                                                Your virtual evaluation has concluded. Access your official digitally signed credentials anytime.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            try {
+                                                const res = await fetch(`${API_BASE_URL}/api/evaluators/teams/${teamId}/certificate`);
+                                                const json = await res.json();
+                                                if (json.data) {
+                                                    setCertificateData(json.data);
+                                                    setCertModalOpen(true);
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                            }
+                                        }}
+                                        className="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto shrink-0"
+                                    >
+                                        <Award className="w-4 h-4" />
+                                        <span>View &amp; Download Certificate</span>
+                                    </button>
+                                </div>
+                            )}
                             {/* Published Rounds Scorecards */}
                             <div className="space-y-4">
                                 {publishedRounds.map((round, rIdx) => {
@@ -2550,6 +2595,13 @@ function TeamInfo() {
             <DocumentPreviewModal
                 url={receiptModalUrl}
                 onClose={() => setReceiptModalUrl(null)}
+            />
+
+            {/* Official Participant Certificate Modal */}
+            <ParticipantCertificateModal
+                isOpen={certModalOpen}
+                onClose={() => setCertModalOpen(false)}
+                certificateData={certificateData}
             />
             {!isSeminar && !isWebinar && !isAlumni && !isProjectExpo && (
                 <motion.section {...fadeUp(0.16)}>

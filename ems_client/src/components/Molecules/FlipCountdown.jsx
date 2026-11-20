@@ -1,55 +1,73 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-// Precision Time Segment Renders a clean, official digit card with smooth, non-blocking motion.
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Precision Time Segment with Butter-Smooth 3D Rotating Flip
 const TimeSegment = ({ value, label, isAccent = false, eventTheme = null }) => {
   const formattedVal = String(Math.max(0, value || 0)).padStart(2, '0');
-  const accentStyle = isAccent && eventTheme ? {
+
+  const accentBoxStyle = isAccent && eventTheme ? {
     backgroundColor: eventTheme.badgeBg,
     borderColor: eventTheme.badgeBorder,
-    borderWidth: 1,
   } : {};
+
   const accentTextStyle = isAccent && eventTheme ? {
     color: eventTheme.accent,
   } : {};
+
   return (
     <div
-      style={accentStyle}
-      className={`flex flex-col items-center justify-center min-w-[58px] sm:min-w-[68px] px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl border transition-colors duration-200 select-none ${
+      style={accentBoxStyle}
+      className={`flex flex-col items-center justify-center min-w-[46px] xs:min-w-[50px] sm:min-w-[58px] px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl border transition-colors duration-200 select-none ${
         isAccent
           ? eventTheme
             ? 'shadow-xs'
-            : 'bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-500/40 shadow-sm shadow-emerald-500/10'
-          : 'bg-white dark:bg-black border-slate-200/90 dark:border-zinc-800 shadow-sm'
+            : 'bg-emerald-500/10 dark:bg-emerald-950/30 border-emerald-500/30 shadow-xs'
+          : 'bg-white dark:bg-black border-slate-200/80 dark:border-zinc-800/80 shadow-xs'
       }`}
     >
-      {/* Number Display with smooth micro-nudge */}
-      <div className="h-8 sm:h-9 flex items-center justify-center overflow-hidden">
-        <motion.span
-          key={formattedVal}
-          initial={{ opacity: 0.5, y: -2 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18, ease: 'easeOut' }}
-          style={accentTextStyle}
-          className={`font-mono text-2xl sm:text-3xl font-black tracking-tight tabular-nums leading-none ${
-            isAccent
-              ? eventTheme
-                ? ''
-                : 'text-emerald-700 dark:text-emerald-400'
-              : 'text-slate-900 dark:text-white'
-          }`}
-        >
-          {formattedVal}
-        </motion.span>
+      {/* 3D Perspective Flip Stage */}
+      <div
+        className="h-6 sm:h-7 flex items-center justify-center overflow-hidden relative"
+        style={{ perspective: 400 }}
+      >
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span
+            key={formattedVal}
+            initial={{ rotateX: -75, opacity: 0, y: -8 }}
+            animate={{ rotateX: 0, opacity: 1, y: 0 }}
+            exit={{ rotateX: 75, opacity: 0, y: 8 }}
+            transition={{
+              duration: 0.42,
+              ease: [0.16, 1, 0.3, 1], // Butter-smooth fluid deceleration
+            }}
+            style={{
+              ...accentTextStyle,
+              transformOrigin: '50% 50%',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+            }}
+            className={`font-mono text-lg sm:text-xl font-bold tracking-tight tabular-nums leading-none inline-block ${
+              isAccent
+                ? eventTheme
+                  ? ''
+                  : 'text-emerald-600 dark:text-emerald-400'
+                : 'text-slate-900 dark:text-white'
+            }`}
+          >
+            {formattedVal}
+          </motion.span>
+        </AnimatePresence>
       </div>
-      {/* Segment Label */}
+
+      {/* Segment Label matching platform metadata typography */}
       <span
         style={accentTextStyle}
-        className={`text-[9px] sm:text-[10px] uppercase font-bold tracking-widest mt-1 ${
+        className={`text-[8.5px] sm:text-[9.5px] uppercase font-bold tracking-wider mt-0.5 ${
           isAccent
             ? eventTheme
               ? ''
-              : 'text-emerald-700/90 dark:text-emerald-400/90'
-            : 'text-slate-600 dark:text-zinc-300'
+              : 'text-emerald-600/90 dark:text-emerald-400/90'
+            : 'text-slate-400 dark:text-zinc-500'
         }`}
       >
         {label}
@@ -57,14 +75,16 @@ const TimeSegment = ({ value, label, isAccent = false, eventTheme = null }) => {
     </div>
   );
 };
-// Subtle Official Colon Separator
+
+// Clean Platform Colon Separator
 const ColonSeparator = () => (
-  <div className="flex flex-col items-center justify-center gap-1.5 h-12 sm:h-14 px-0.5 select-none self-center">
-    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
-    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
+  <div className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 h-6 sm:h-7 px-0.5 select-none self-center shrink-0">
+    <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
+    <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-700" />
   </div>
 );
-// Official Smooth Countdown Display Self-manages its timer so parent pages NEVER re-render on every tick.
+
+// Official Countdown Display - Matches Event Cards Glassmorphism with Smooth 3D Flip Rotation
 export default function FlipCountdown({ targetDate, timeLeft: externalTimeLeft, eventTheme = null }) {
   const [internalTimeLeft, setInternalTimeLeft] = useState({
     days: 0,
@@ -72,6 +92,7 @@ export default function FlipCountdown({ targetDate, timeLeft: externalTimeLeft, 
     minutes: 0,
     seconds: 0,
   });
+
   useEffect(() => {
     if (!targetDate) return;
     const calculate = () => {
@@ -97,9 +118,11 @@ export default function FlipCountdown({ targetDate, timeLeft: externalTimeLeft, 
     const interval = setInterval(calculate, 1000);
     return () => clearInterval(interval);
   }, [targetDate]);
+
   const tl = targetDate ? internalTimeLeft : (externalTimeLeft || internalTimeLeft);
+
   return (
-    <div className="inline-flex items-center gap-1.5 sm:gap-2.5 p-1.5 sm:p-2 rounded-2xl bg-slate-100/90 dark:bg-black border border-slate-200/90 dark:border-zinc-800 shadow-inner backdrop-blur-sm">
+    <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl bg-slate-50/80 dark:bg-zinc-950/70 border border-slate-200/80 dark:border-zinc-800/80 shadow-xs backdrop-blur-sm max-w-full">
       <TimeSegment value={tl.days} label="Days" eventTheme={eventTheme} />
       <ColonSeparator />
       <TimeSegment value={tl.hours} label="Hours" eventTheme={eventTheme} />

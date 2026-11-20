@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Layers, Cpu, Globe, Radio, ShieldCheck, HeartPulse, Coins, Smartphone, Zap, Compass, Code2, Database } from 'lucide-react';
 // Intelligent icon resolver based on theme name / keywords.
 export const getThemeIcon = (name = '', desc = '') => {
@@ -107,8 +107,31 @@ export default function PhysicalHackathonThemesSection({
   event = {},
   eventTheme = {}
 }) {
+  // Filter strictly for Physical Hackathon Themes (excluding any Virtual Track themes)
+  const physicalThemes = useMemo(() => {
+    if (!themes || !Array.isArray(themes)) return [];
+    const mode = String(event?.HackathonMode || '').toLowerCase();
+    const isDual =
+      mode === 'both' ||
+      mode === 'virtual and physical' ||
+      Boolean(event?.VirtualStartDate && event?.PhysicalStartDate);
+
+    if (isDual) {
+      return themes.filter((t) => String(t.Track || '').toLowerCase() === 'physical');
+    }
+    if (mode === 'virtual') {
+      return [];
+    }
+    const hasPhysical = themes.some((t) => String(t.Track || '').toLowerCase() === 'physical');
+    if (hasPhysical) {
+      return themes.filter((t) => String(t.Track || '').toLowerCase() === 'physical');
+    }
+    return themes.filter((t) => String(t.Track || '').toLowerCase() !== 'virtual');
+  }, [themes, event?.HackathonMode, event?.VirtualStartDate, event?.PhysicalStartDate]);
+
   const isHackathon = (event?.EventType || '').toLowerCase() === 'hackathon';
   if (!isHackathon) return null;
+
   return (
     <div className="space-y-4 pt-1">
       {/* ── SECTION HEADER (Clean layout matching Venue Specifications & Amenities) ── */}
@@ -132,15 +155,15 @@ export default function PhysicalHackathonThemesSection({
           </p>
         </div>
       </div>
-      {themes && themes.length > 0 ? (
+      {physicalThemes && physicalThemes.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-          {themes.map((theme, idx) => {
+          {physicalThemes.map((theme, idx) => {
             const IconComponent = getThemeIcon(theme.ThemeName, theme.Description);
             const hasImage = Boolean(theme.ImageUrl && theme.ImageUrl.trim());
             return (
               <div
                 key={theme.Id || idx}
-                className="group relative rounded-2xl border border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-[#111613] hover:border-emerald-500/40 dark:hover:border-emerald-500/30 transition-all duration-300 p-5 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md"
+                className="group relative rounded-2xl border border-slate-200 dark:border-zinc-800/80 hover:border-emerald-500/40 dark:hover:border-emerald-500/30 transition-all duration-300 p-5 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-md"
               >
                 <div>
                   {/* Visual: Image/Photo Banner OR Modern Icon Container */}
@@ -168,14 +191,12 @@ export default function PhysicalHackathonThemesSection({
                     <div className="flex items-start justify-between gap-3 mb-4">
                       {/* Modern Icon Box */}
                       <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-300 group-hover:scale-105"
+                        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-105"
                         style={{
-                          backgroundColor: eventTheme?.iconBg || 'rgba(16, 185, 129, 0.1)',
-                          borderColor: eventTheme?.badgeBorder || 'rgba(16, 185, 129, 0.25)',
                           color: eventTheme?.iconColor || '#10b981'
                         }}
                       >
-                        <IconComponent className="h-6 w-6" />
+                        <IconComponent className="h-6 w-6 " />
                       </div>
                       {/* Clean Typographic Track Index (NO PILL BADGE) */}
                       <span className="font-mono text-xs font-semibold text-slate-400 dark:text-zinc-600 tracking-wider pt-1">
@@ -188,7 +209,7 @@ export default function PhysicalHackathonThemesSection({
                     {theme.ThemeName}
                   </h4>
                   {/* Theme Description */}
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 leading-relaxed mt-2 line-clamp-4">
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 leading-relaxed mt-2 text-justify line-clamp-4">
                     {theme.Description || 'Explore, formulate and build novel solutions under this technical domain.'}
                   </p>
                 </div>

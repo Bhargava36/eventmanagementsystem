@@ -385,7 +385,7 @@ export default function AdminProfile() {
   };
   const currentAdmin = profile || {
     AdminName: 'Administrator',
-    Email: 'admin@ayojan.com',
+    Email: 'admin@avishkaar.com',
     Mobile: '',
     Id: 1
   };
@@ -870,7 +870,7 @@ export default function AdminProfile() {
                 </div>
                 <p className="text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-400 flex items-center justify-center sm:justify-start gap-2">
                   <ShieldCheck className="w-4 h-4" />
-                  <span>AYOJAN Operations Lead • Active Workspace Supervisor</span>
+                  <span>AVISHKAAR Operations Lead • Active Workspace Supervisor</span>
                 </p>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1 text-xs text-slate-600 dark:text-zinc-400">
                   <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-zinc-800">
@@ -1262,7 +1262,7 @@ export default function AdminProfile() {
                             value={formData.Email}
                             onChange={(e) => setFormData({ ...formData, Email: e.target.value })}
                             required
-                            placeholder="admin@ayojan.com"
+                            placeholder="admin@avishkaar.com"
                             className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-900 text-slate-900 dark:text-white text-xs outline-none focus:border-emerald-500 transition"
                           />
                         </div>
@@ -1560,7 +1560,7 @@ export default function AdminProfile() {
         </div>
         {/* Footer info */}
         <div className="text-center pt-4 pb-2 text-xs text-slate-400 dark:text-zinc-600">
-          <p>© 2026 AYOJAN Event Management System • Authorized Administrator Session</p>
+          <p>© 2026 AVISHKAAR Event Management System • Authorized Administrator Session</p>
         </div>
       </div>
     </div>

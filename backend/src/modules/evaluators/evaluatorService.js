@@ -405,6 +405,8 @@ const getTeamsForEvaluation = (eventId, track, callback) => {
             t.EventId,
             COALESCE(er.ParticipationMode, 'Physical') AS ParticipationMode,
             COALESCE(er.Status, 'approved') AS RegistrationStatus,
+            COALESCE(t.CertificateIssued, er.CertificateIssued, 0) AS CertificateIssued,
+            COALESCE(t.CertificateIssuedAt, er.CertificateIssuedAt) AS CertificateIssuedAt,
             u.UserName AS TeamLeadName,
             u.Email AS TeamLeadEmail,
             COALESCE(pes.ProjectTitle, eps.Title, pps.Title, '') AS ProblemStatementTitle,
@@ -980,6 +982,8 @@ const getTeamPublishedResults = (teamId, callback) => {
             e.TeamSize AS EventTeamSize,
             e.PhysicalResultsPublished,
             e.VirtualResultsPublished,
+            COALESCE(t.CertificateIssued, er.CertificateIssued, 0) AS CertificateIssued,
+            COALESCE(t.CertificateIssuedAt, er.CertificateIssuedAt) AS CertificateIssuedAt,
             COALESCE(er.ParticipationMode, 'Physical') AS ParticipationMode
         FROM registered_teams t
         LEFT JOIN events e ON t.EventId = e.Id
@@ -1029,7 +1033,9 @@ const getTeamPublishedResults = (teamId, callback) => {
                         overallRank: null,
                         totalPublishedScore: 0,
                         totalPublishedMaxMarks: 0,
-                        percentage: 0
+                        percentage: 0,
+                        certificateIssued: Boolean(team.CertificateIssued),
+                        certificateIssuedAt: team.CertificateIssuedAt
                     });
                 }
                 const pubRoundIds = pubRounds.map(r => r.Id);
@@ -1155,7 +1161,9 @@ const getTeamPublishedResults = (teamId, callback) => {
                                     cumulativeScore: roundedTotalScore,
                                     totalPublishedMaxMarks,
                                     maxPossibleScore: totalPublishedMaxMarks,
-                                    percentage: scorePercentage
+                                    percentage: scorePercentage,
+                                    certificateIssued: Boolean(team.CertificateIssued),
+                                    certificateIssuedAt: team.CertificateIssuedAt
                                 });
                             });
                         } else {
@@ -1172,7 +1180,9 @@ const getTeamPublishedResults = (teamId, callback) => {
                                 cumulativeScore: roundedTotalScore,
                                 totalPublishedMaxMarks,
                                 maxPossibleScore: totalPublishedMaxMarks,
-                                percentage: scorePercentage
+                                percentage: scorePercentage,
+                                certificateIssued: Boolean(team.CertificateIssued),
+                                certificateIssuedAt: team.CertificateIssuedAt
                             });
                         }
                     });
@@ -1181,6 +1191,201 @@ const getTeamPublishedResults = (teamId, callback) => {
         });
     });
 };
+const issueVirtualCertificates = ({ eventId, track = 'Virtual', teamId = null, sendEmail = true }, callback) => {
+    const cleanTrack = String(track || 'Virtual').toLowerCase() === 'physical' ? 'Physical' : 'Virtual';
+
+    // 1. Fetch Event details
+    db.query(`SELECT Id, EventName, StartDate, EndDate, VirtualStartDate, VirtualEndDate, Location, PrimaryColor FROM events WHERE Id = ?`, [eventId], (evErr, evRows) => {
+        if (evErr) return callback(evErr, null);
+        const event = evRows?.[0];
+        if (!event) return callback(new Error('Event not found'), null);
+
+        // 2. Find eligible teams: strictly ONLY teams that have been evaluated in evaluation_scores!
+        let eligibleQuery = `
+            SELECT DISTINCT
+                t.Id AS TeamId,
+                t.TeamName,
+                t.College,
+                t.State,
+                t.TeamLeadUserId,
+                u.UserName AS TeamLeadName,
+                u.Email AS TeamLeadEmail,
+                COALESCE(t.CertificateIssued, er.CertificateIssued, 0) AS CertificateIssued
+            FROM evaluation_scores es
+            INNER JOIN registered_teams t ON es.TeamId = t.Id
+            LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
+            LEFT JOIN users u ON t.TeamLeadUserId = u.Id
+            WHERE es.EventId = ? AND es.Track = ?
+        `;
+        const params = [eventId, cleanTrack];
+        if (teamId) {
+            eligibleQuery += ` AND t.Id = ?`;
+            params.push(teamId);
+        }
+
+        db.query(eligibleQuery, params, async (tErr, eligibleTeams) => {
+            if (tErr) return callback(tErr, null);
+            if (!eligibleTeams || eligibleTeams.length === 0) {
+                return callback(new Error(`No evaluated teams found for ${cleanTrack} track. Only participants with completed jury evaluation are eligible for certificates.`), null);
+            }
+
+            const teamIds = eligibleTeams.map(t => t.TeamId);
+            const placeholders = teamIds.map(() => '?').join(',');
+            const now = new Date();
+
+            // 3. Mark certificates as issued
+            db.query(`UPDATE registered_teams SET CertificateIssued = 1, CertificateIssuedAt = ? WHERE Id IN (${placeholders})`, [now, ...teamIds], () => {});
+            db.query(`UPDATE event_registrations SET CertificateIssued = 1, CertificateIssuedAt = ? WHERE EventId = ? AND TeamId IN (${placeholders})`, [now, eventId, ...teamIds], () => {});
+            db.query(`UPDATE registered_team_members SET CertificateIssued = 1, CertificateIssuedAt = ? WHERE TeamId IN (${placeholders})`, [now, ...teamIds], () => {});
+
+            // 4. Send notification emails if requested
+            if (sendEmail) {
+                const memberSql = `
+                    SELECT
+                        tm.TeamId,
+                        COALESCE(u.UserName, tm.MemberName, 'Participant') AS MemberName,
+                        COALESCE(u.Email, tm.MemberEmail) AS MemberEmail,
+                        tm.Role,
+                        t.TeamName,
+                        t.College
+                    FROM registered_team_members tm
+                    INNER JOIN registered_teams t ON tm.TeamId = t.Id
+                    LEFT JOIN users u ON tm.UserId = u.Id
+                    WHERE tm.TeamId IN (${placeholders})
+                `;
+                db.query(memberSql, teamIds, async (mErr, members) => {
+                    const recipientList = [];
+                    const seenEmails = new Set();
+
+                    eligibleTeams.forEach(t => {
+                        if (t.TeamLeadEmail && !seenEmails.has(t.TeamLeadEmail.toLowerCase().trim())) {
+                            seenEmails.add(t.TeamLeadEmail.toLowerCase().trim());
+                            recipientList.push({
+                                name: t.TeamLeadName || 'Participant',
+                                email: t.TeamLeadEmail.trim(),
+                                teamName: t.TeamName,
+                                college: t.College
+                            });
+                        }
+                    });
+
+                    (members || []).forEach(m => {
+                        if (m.MemberEmail && !seenEmails.has(m.MemberEmail.toLowerCase().trim())) {
+                            seenEmails.add(m.MemberEmail.toLowerCase().trim());
+                            recipientList.push({
+                                name: m.MemberName || 'Participant',
+                                email: m.MemberEmail.trim(),
+                                teamName: m.TeamName,
+                                college: m.College
+                            });
+                        }
+                    });
+
+                    try {
+                        const { sendEventBroadcastEmail } = require('../../config/mailer');
+                        for (const r of recipientList) {
+                            sendEventBroadcastEmail({
+                                toEmail: r.email,
+                                userName: r.name,
+                                eventName: event.EventName,
+                                category: 'Certificate',
+                                subject: `Certificate of Participation - ${event.EventName} (${cleanTrack} Track)`,
+                                message: `Dear ${r.name},\n\nCongratulations on successfully participating and demonstrating your project in the ${cleanTrack} Track of ${event.EventName}!\n\nYour evaluation by the jury panel has concluded, and your official verified Certificate of Participation has been released.\n\nTeam: ${r.teamName}\nTrack: ${cleanTrack} Hackathon Track\nInstitution: ${r.college || 'Participant Institution'}\n\nYou can access, view, and download your official high-resolution certificate directly from your participant portal.\n\nThank you for your active participation and technical innovation!\n\nBest regards,\n${event.EventName} Organizing Committee`,
+                                organizerName: `${event.EventName} Organizing Committee`
+                            }).catch(e => console.warn(`Failed sending certificate email to ${r.email}:`, e.message));
+                        }
+                    } catch (mailErr) {
+                        console.warn('Certificate email dispatch warning:', mailErr.message);
+                    }
+                });
+            }
+
+            callback(null, {
+                success: true,
+                message: `Certificates issued successfully for ${eligibleTeams.length} evaluated ${cleanTrack} team(s).`,
+                issuedCount: eligibleTeams.length,
+                eligibleTeams: eligibleTeams.map(t => ({ id: t.TeamId, name: t.TeamName, lead: t.TeamLeadName }))
+            });
+        });
+    });
+};
+
+const getTeamCertificateData = (teamId, callback) => {
+    const certificateService = require("../certificates/certificateService");
+    certificateService.getTeamCertificates(teamId, (err, data) => {
+        if (!err && data) {
+            return callback(null, data);
+        }
+        // Fallback to direct query if needed
+        const sql = `
+        SELECT
+            t.Id AS TeamId,
+            t.TeamName,
+            t.TeamSize,
+            t.College,
+            t.State,
+            t.EventId,
+            COALESCE(t.CertificateIssued, er.CertificateIssued, 0) AS CertificateIssued,
+            COALESCE(t.CertificateIssuedAt, er.CertificateIssuedAt) AS CertificateIssuedAt,
+            u.UserName AS TeamLeadName,
+            u.Email AS TeamLeadEmail,
+            e.EventName,
+            e.HackathonMode,
+            e.StartDate,
+            e.EndDate,
+            e.VirtualStartDate,
+            e.VirtualEndDate,
+            e.Location,
+            e.PrimaryColor,
+            COALESCE(er.ParticipationMode, 'Virtual') AS ParticipationMode
+        FROM registered_teams t
+        INNER JOIN events e ON t.EventId = e.Id
+        LEFT JOIN event_registrations er ON er.TeamId = t.Id AND er.EventId = t.EventId
+        LEFT JOIN users u ON t.TeamLeadUserId = u.Id
+        WHERE t.Id = ?
+        LIMIT 1
+    `;
+        db.query(sql, [teamId], (dbErr, teamRows) => {
+            if (dbErr) return callback(dbErr, null);
+            if (!teamRows || teamRows.length === 0) {
+                const notFound = new Error('Team not found');
+                notFound.status = 404;
+                return callback(notFound, null);
+            }
+            const team = teamRows[0];
+            db.query(`SELECT COUNT(*) AS scoreCount FROM evaluation_scores WHERE TeamId = ?`, [teamId], (scErr, scoreRows) => {
+                const isEvaluated = Boolean(scoreRows?.[0]?.scoreCount > 0);
+                callback(null, {
+                    eligible: isEvaluated,
+                    isEvaluated,
+                    isIssued: Boolean(team.CertificateIssued),
+                    certificateIssued: Boolean(team.CertificateIssued),
+                    certificateIssuedAt: team.CertificateIssuedAt,
+                    team: {
+                        id: team.TeamId,
+                        teamName: team.TeamName,
+                        college: team.College,
+                        state: team.State,
+                        track: team.ParticipationMode || 'Virtual',
+                        teamLeadName: team.TeamLeadName,
+                        teamLeadEmail: team.TeamLeadEmail
+                    },
+                    event: {
+                        id: team.EventId,
+                        eventName: team.EventName,
+                        hackathonMode: team.HackathonMode,
+                        startDate: team.VirtualStartDate || team.StartDate,
+                        endDate: team.VirtualEndDate || team.EndDate,
+                        location: team.Location,
+                        primaryColor: team.PrimaryColor
+                    },
+                    certificates: []
+                });
+            });
+        });
+    });
+};
+
 module.exports = {
     getEvaluatorsByEvent,
     getAllEvaluators,
@@ -1203,5 +1408,7 @@ module.exports = {
     publishOverallResults,
     getTeamPublishedResults,
     simulateEvaluatorScores,
-    clearSimulatedScores
+    clearSimulatedScores,
+    issueVirtualCertificates,
+    getTeamCertificateData
 };

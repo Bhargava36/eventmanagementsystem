@@ -324,7 +324,7 @@ export default function OrganizerCtaSection() {
             {/* Secondary Quick Route at Bottom of Pass Body */}
               <div className="mt-8 pt-5 border-t border-slate-100 dark:border-zinc-900 flex items-center justify-between gap-4">
                 <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500">
-                  PASS #{currentTrack.num} • AYOJAN ACCESS
+                  PASS #{currentTrack.num} • AVISHKAAR ACCESS
                 </span>
                 <Link
                   to={currentTrack.secondaryHref}

@@ -443,6 +443,38 @@ const clearSimulatedScores = (req, res) => {
     });
 };
 
+const issueVirtualCertificates = (req, res) => {
+    const eventId = req.params.eventId;
+    const { track = 'Virtual', teamId = null, sendEmail = true } = req.body || {};
+    evaluatorService.issueVirtualCertificates({ eventId, track, teamId, sendEmail }, (err, result) => {
+        if (err) {
+            return res.status(err.status || 400).json({
+                success: false,
+                message: err.message || 'Failed to issue certificates',
+                error: err.message
+            });
+        }
+        res.status(200).json(result);
+    });
+};
+
+const getTeamCertificateData = (req, res) => {
+    const teamId = req.params.teamId;
+    evaluatorService.getTeamCertificateData(teamId, (err, result) => {
+        if (err) {
+            return res.status(err.status || 500).json({
+                success: false,
+                message: err.message || 'Failed to load certificate data',
+                error: err.message
+            });
+        }
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+    });
+};
+
 module.exports = {
     getEvaluatorsByEvent,
     getAllEvaluators,
@@ -465,5 +497,7 @@ module.exports = {
     publishOverallResults,
     getTeamPublishedResults,
     simulateEvaluatorScores,
-    clearSimulatedScores
+    clearSimulatedScores,
+    issueVirtualCertificates,
+    getTeamCertificateData
 };

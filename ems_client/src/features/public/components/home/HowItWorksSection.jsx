@@ -206,7 +206,7 @@ export default function HowItWorksSection() {
         className="text-center max-w-3xl mx-auto mb-14 sm:mb-16 space-y-3"
       >
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
-          How AYOJAN Works
+          How AVISHKAAR Works
         </h2>
         <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-400 font-normal leading-relaxed max-w-2xl mx-auto">
           Four steps covering event discovery, registration, digital gate passes, and result publishing.

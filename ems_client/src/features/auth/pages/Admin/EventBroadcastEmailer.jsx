@@ -905,7 +905,7 @@ export default function EventBroadcastEmailer() {
                     <span className="w-2.5 h-2.5 rounded-sm bg-slate-300 dark:bg-zinc-600" />
                     <span className="w-2.5 h-2.5 rounded-sm bg-emerald-400" />
                   </div>
-                  <span className="font-mono text-[10px]">smtp.ayojan-mail.com</span>
+                  <span className="font-mono text-[10px]">smtp.avishkaar-mail.com</span>
                 </div>
                 <div className={`${getCategoryHeaderStyle(category).bg} p-5 text-white space-y-1.5 transition-colors`}>
                   <div className="text-[11px] font-extrabold tracking-wider uppercase text-white/90">
@@ -930,7 +930,7 @@ export default function EventBroadcastEmailer() {
                   </div>
                   <div className="pt-3 border-t border-slate-100 dark:border-zinc-800/80 text-[11px] text-slate-500 dark:text-zinc-400 space-y-0.5">
                     <p><strong>Dispatched by:</strong> {organizerName || "Operations Team"}</p>
-                    <p className="text-[10px] text-slate-400">Sent via AYOJAN Event Broadcast Protocol.</p>
+                    <p className="text-[10px] text-slate-400">Sent via AVISHKAAR Event Broadcast Protocol.</p>
                   </div>
                 </div>
               </div>

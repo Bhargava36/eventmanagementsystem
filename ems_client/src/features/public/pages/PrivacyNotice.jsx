@@ -68,7 +68,7 @@ export default function PrivacyNotice() {
       content: (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
-            Security is paramount in AYOJAN's engineering:
+            Security is paramount in AVISHKAAR's engineering:
           </p>
           <ul className="mt-3 space-y-2 list-disc list-inside text-slate-600 dark:text-zinc-300">
             <li>User passwords and authentication tokens are salted and hashed with modern cryptographic standards.</li>
@@ -135,7 +135,7 @@ export default function PrivacyNotice() {
             Privacy Notice
           </h1>
           <p className="text-base sm:text-lg text-slate-600 dark:text-zinc-400 max-w-2xl">
-            Learn how AYOJAN respects your privacy, safeguards your identity badges, and handles hackathon submission assets.
+            Learn how AVISHKAAR respects your privacy, safeguards your identity badges, and handles hackathon submission assets.
           </p>
         </div>
         {/* Quick Jump Bar */}
@@ -193,7 +193,7 @@ export default function PrivacyNotice() {
             </p>
           </div>
           <a
-            href="mailto:privacy@ayojan.live"
+            href="mailto:privacy@avishkaar.live"
             className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition shadow-sm cursor-pointer shrink-0"
           >
             Email Privacy Desk

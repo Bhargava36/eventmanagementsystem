@@ -34,7 +34,6 @@ export default function EventSponsorsSection({
           <div
             className="p-2.5 rounded-2xl shrink-0"
             style={{
-              backgroundColor: eventTheme?.iconBg || 'rgba(168,85,247,0.1)',
               color: eventTheme?.iconColor || '#a855f7',
             }}
           >
@@ -45,17 +44,14 @@ export default function EventSponsorsSection({
               <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
                 Sponsors & Partners
               </h2>
-              <span
+              {/* <span
                 className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full"
                 style={{
-                  backgroundColor: eventTheme?.badgeBg || 'rgba(168,85,247,0.1)',
                   color: eventTheme?.accent || '#a855f7',
-                  borderColor: eventTheme?.badgeBorder || 'rgba(168,85,247,0.2)',
-                  borderWidth: 1,
                 }}
               >
                 {normalizedSponsors.length}
-              </span>
+              </span> */}
             </div>
           </div>
         </div>
@@ -65,7 +61,7 @@ export default function EventSponsorsSection({
         {normalizedSponsors.map((sp) => {
           const cardContent = (
             <div
-              className="h-20 sm:h-24 w-36 sm:w-48 px-5 py-3 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center justify-center transition-all duration-200 hover:scale-[1.03] hover:border-slate-300 dark:hover:border-zinc-700 shadow-xs group cursor-pointer"
+              className="h-20 sm:h-24 w-36 sm:w-48 px-5 py-3 rounded-2xl bg-slate-50 dark:bg-zinc-950  flex items-center justify-center transition-all duration-200 hover:scale-[1.03] hover:border-slate-300 dark:hover:border-zinc-700 shadow-xs group cursor-pointer"
               title={sp.name}
             >
               {sp.logo ? (

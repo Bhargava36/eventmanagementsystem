@@ -130,7 +130,7 @@ const updateStatus = (eventId, status, req = null) => {
                 if (err) return reject(err);
                 recordMutation({
                     actorUserId: req?.user?.Id || req?.user?.id || null,
-                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ayojan.in',
+                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ems.aitamsac.in',
                     actorRole: req?.user?.role || 'admin',
                     eventId,
                     action: 'UPDATE_STATUS',
@@ -459,7 +459,7 @@ const allocateBooth = (boothId, teamId, req = null) => {
                 conn.release();
                 recordMutation({
                     actorUserId: req?.user?.Id || req?.user?.id || null,
-                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ayojan.in',
+                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ems.aitamsac.in',
                     actorRole: req?.user?.role || 'admin',
                     eventId: booth.EventId,
                     action: 'ALLOCATE_BOOTH',
@@ -514,7 +514,7 @@ const deallocateBooth = (boothId, req = null) => {
                 if (err) return reject(err);
                 recordMutation({
                     actorUserId: req?.user?.Id || req?.user?.id || null,
-                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ayojan.in',
+                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ems.aitamsac.in',
                     actorRole: req?.user?.role || 'admin',
                     eventId: booth.EventId || null,
                     action: 'DEALLOCATE_BOOTH',
@@ -546,7 +546,7 @@ const deleteBooth = (boothId, req = null) => {
                 if (err) return reject(err);
                 recordMutation({
                     actorUserId: req?.user?.Id || req?.user?.id || null,
-                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ayojan.in',
+                    actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ems.aitamsac.in',
                     actorRole: req?.user?.role || 'admin',
                     eventId: booth.EventId || null,
                     action: 'DELETE_BOOTH',
@@ -923,7 +923,7 @@ const publishResults = (eventId, winnersList, req = null) => {
                     conn.release();
                     recordMutation({
                         actorUserId: req?.user?.Id || req?.user?.id || null,
-                        actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ayojan.in',
+                        actorEmail: req?.user?.Email || req?.user?.email || req?.user?.UserName || 'system@ems.aitamsac.in',
                         actorRole: req?.user?.role || 'admin',
                         eventId,
                         action: 'PUBLISH_RESULTS',

@@ -2,12 +2,13 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { API_BASE_URL } from '@/lib/api';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, ExternalLink, Users, Calendar, Clock, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle, FileText, ShieldCheck, ChevronRight, Code, Lock, Check, Search, Filter, Layers, Timer, AlertTriangle, Target, X, FolderGit2, Globe, UploadCloud, Send, Edit3, ArrowLeftRight, ShieldAlert, ArrowRight } from 'lucide-react';
+import { Video, ExternalLink, Users, Calendar, Clock, ArrowLeft, RefreshCw, CheckCircle2, AlertCircle, FileText, ShieldCheck, ChevronRight, Code, Lock, Check, Search, Filter, Layers, Timer, AlertTriangle, Target, X, FolderGit2, Globe, UploadCloud, Send, Edit3, ArrowLeftRight, ShieldAlert, ArrowRight, Award, Sparkles } from 'lucide-react';
 import useAuth from '../../../../Hooks/useAuth';
 import useToast from '../../../../Hooks/useToast';
 import { isMultiModeEvent, resolveParticipantTrack, formatDate, formatTime } from '../../../../lib/utils';
 import ConfirmProblemStatementModal from './components/ConfirmProblemStatementModal';
 import VirtualProjectSubmissionModal from './components/VirtualProjectSubmissionModal';
+import ParticipantCertificateModal from '@/components/Molecules/ParticipantCertificateModal';
 export default function ParticipantVirtualEventPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -42,6 +43,9 @@ export default function ParticipantVirtualEventPage() {
     description: ''
   });
   const [submittingProject, setSubmittingProject] = useState(false);
+  // Certificate state
+  const [certificateInfo, setCertificateInfo] = useState(null);
+  const [certModalOpen, setCertModalOpen] = useState(false);
   // Filters
   const [selectedThemeFilter, setSelectedThemeFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,6 +65,7 @@ export default function ParticipantVirtualEventPage() {
       (event?.TeamSize && String(event.TeamSize).toLowerCase() === 'individual')
     );
   }, [team, event]);
+  const isRegistered = Boolean(team?.Id || team?.TeamId || team);
   const displayName = useMemo(() => {
     if (!team) return user?.Name || 'Participant';
     if (isIndividual) {
@@ -149,6 +154,18 @@ export default function ParticipantVirtualEventPage() {
                   if (subRes.ok) {
                     const subData = await subRes.json();
                     setProjectSubmission(subData.submission || null);
+                  }
+                } catch {
+                  // ignore
+                }
+                // Fetch team certificate status & data
+                try {
+                  const certRes = await fetch(`${API_BASE_URL}/api/evaluators/teams/${teamIdentifier}/certificate`);
+                  if (certRes.ok) {
+                    const certData = await certRes.json();
+                    if (certData.success && certData.data) {
+                      setCertificateInfo(certData.data);
+                    }
                   }
                 } catch {
                   // ignore
@@ -428,6 +445,12 @@ export default function ParticipantVirtualEventPage() {
       label: isIndividual ? 'Participant & Guidelines' : `Team & Guidelines (${teamMembers.length})`,
       icon: Users,
       badge: null
+    },
+    {
+      key: 'certificate',
+      label: 'Participation Certificate',
+      icon: Award,
+      badge: certificateInfo?.isIssued ? 'Available' : (certificateInfo?.isEvaluated ? 'Evaluated' : null)
     }
   ];
   if (loading) {
@@ -1374,6 +1397,175 @@ export default function ParticipantVirtualEventPage() {
           </div>
         </div>
       )}
+
+      {/* TAB 5: OFFICIAL PARTICIPATION CERTIFICATE */}
+      {activeTab === 'certificate' && (
+        <div className="space-y-6">
+          <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-zinc-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                  <Award className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>Virtual Track Participation Certificate</span>
+                    {certificateInfo?.isIssued ? (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/25">
+                        Verified &amp; Released
+                      </span>
+                    ) : certificateInfo?.isEvaluated ? (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                        Jury Evaluated
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 border border-slate-200 dark:border-zinc-700">
+                        Pending Evaluation
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-zinc-400">
+                    Official credential validating your project presentation and jury scoring in {event.EventName || 'this hackathon'}
+                  </p>
+                </div>
+              </div>
+
+              {certificateInfo?.isIssued && (
+                <button
+                  type="button"
+                  onClick={() => setCertModalOpen(true)}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-600/25 transition flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+                >
+                  <Award className="h-4 w-4" />
+                  <span>View &amp; Download Certificate (PDF)</span>
+                </button>
+              )}
+            </div>
+
+            {/* Condition 1: Not registered */}
+            {!isRegistered ? (
+              <div className="p-8 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-dashed border-slate-200 dark:border-zinc-800 text-center text-xs text-slate-500">
+                You must complete your virtual hackathon registration to access certificates.
+              </div>
+            ) : certificateInfo?.isIssued ? (
+              /* Condition 2: Certificate Issued and Ready */
+              <div className="space-y-6">
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-emerald-50/70 via-white to-amber-50/40 dark:from-emerald-950/20 dark:via-zinc-950 dark:to-amber-950/20 border border-emerald-500/30 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                          Your Certificate is Live &amp; Verified!
+                        </h4>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-zinc-300 max-w-xl leading-relaxed">
+                        Congratulations! Your project demonstration has been evaluated by the official jury panel, and your Certificate of Participation has been released.
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setCertModalOpen(true)}
+                      className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/25 transition flex items-center gap-2 cursor-pointer shrink-0"
+                    >
+                      <Award className="h-4 w-4" />
+                      <span>Open Certificate Viewer</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs">
+                    <div className="p-3 rounded-xl bg-white/80 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 space-y-0.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Certificate Code</span>
+                      <p className="font-mono font-bold text-slate-800 dark:text-zinc-200">
+                        {certificateInfo.certificateId || 'CERT-VIRT-2026'}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white/80 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 space-y-0.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Team Name</span>
+                      <p className="font-bold text-slate-800 dark:text-zinc-200 truncate">
+                        {team?.TeamName || 'Innovators'}
+                      </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white/80 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 space-y-0.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Evaluation Track</span>
+                      <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                        Virtual Track &bull; Completed
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : certificateInfo?.isEvaluated ? (
+              /* Condition 3: Evaluated, but admin has not dispatched / released certs yet */
+              <div className="p-6 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500 shrink-0 mt-0.5">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Evaluation Completed &bull; Certificate Release in Progress
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">
+                      Your virtual project evaluation has been concluded and recorded by the jury panel! The organizing committee is preparing the verified certificates for release. Once released, your certificate will appear right here and be emailed to your registered address.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Condition 4: Not evaluated yet */
+              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-xl bg-slate-200 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 shrink-0 mt-0.5">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                      Participation Certificate Criteria
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+                      Official Certificates of Participation are awarded strictly to participants whose projects undergo evaluation by the hackathon jury panel.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-xs">
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-1">
+                    <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 text-[11px] font-bold flex items-center justify-center">1</span>
+                      Submit Deliverables
+                    </span>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Submit GitHub repo and demo links under the 'Project Deliverables' tab before the code freeze.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-1">
+                    <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 text-[11px] font-bold flex items-center justify-center">2</span>
+                      Jury Presentation
+                    </span>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Join the 'Live Meet' room and demonstrate your technical architecture to the evaluators.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-1">
+                    <span className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 text-[11px] font-bold flex items-center justify-center">3</span>
+                      Instant Certificate
+                    </span>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      Once scored, your verified certificate will be released here with instant PDF download and QR verification.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
         </div>
       </div>
       {/* CONFIRMATION SELECTION MODAL */}
@@ -1397,6 +1589,14 @@ export default function ParticipantVirtualEventPage() {
         submitting={submittingProject}
         hasExistingSubmission={Boolean(projectSubmission)}
         isIndividual={isIndividual}
+      />
+
+      {/* OFFICIAL PARTICIPATION CERTIFICATE MODAL */}
+      <ParticipantCertificateModal
+        isOpen={certModalOpen}
+        onClose={() => setCertModalOpen(false)}
+        certificateData={certificateInfo}
+        currentUserName={user?.name || user?.UserName || ''}
       />
     </div>
   );

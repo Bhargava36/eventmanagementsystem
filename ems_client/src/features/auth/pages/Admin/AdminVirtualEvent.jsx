@@ -947,10 +947,10 @@ export default function AdminVirtualEvent() {
       await downloadRegistrationsWorkbook({
         event: exportData?.event || event || {
           Id: currentEventId,
-          EventName: event?.EventName || storedAdmin?.EventName || 'AYOJAN Event',
+          EventName: event?.EventName || storedAdmin?.EventName || 'AVISHKAAR Event',
           EventType: event?.EventType || storedAdmin?.EventType || 'Hackathon',
           HackathonMode: event?.HackathonMode || 'Virtual',
-          Location: event?.Location || 'AYOJAN Hub Campus'
+          Location: event?.Location || 'AVISHKAAR Hub Campus'
         },
         teams: (exportData?.teams && exportData.teams.length > 0) ? exportData.teams : virtualTeams,
         members: exportData?.members || [],
@@ -3290,7 +3290,7 @@ export default function AdminVirtualEvent() {
                   </div>
                 )}
                 <p className="text-[11px] text-slate-500 dark:text-zinc-400 italic">
-                  <strong>Tip:</strong> If a theme referenced in your Problem Statements does not exist yet, AYOJAN will automatically create it for you.
+                  <strong>Tip:</strong> If a theme referenced in your Problem Statements does not exist yet, AVISHKAAR will automatically create it for you.
                 </p>
               </div>
 

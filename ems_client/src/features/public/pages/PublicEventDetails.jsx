@@ -11,8 +11,25 @@ import EventMediaSlider from '../../../components/Molecules/EventMediaSlider';
 import EventGallerySection from '../../../components/Molecules/EventGallerySection';
 import EventSponsorsSection from '../../../components/Molecules/EventSponsorsSection';
 import PhysicalHackathonThemesSection from '../../../components/Molecules/PhysicalHackathonThemesSection';
-import { ArrowLeft, Calendar, Clock, MapPin, Users, Trophy, Award, Medal, CheckCircle2, Share2, Check, Monitor, Building2, Globe, Tag, AlertCircle, RefreshCw, FileText, ShieldCheck, ChevronRight, Layers, Radio, Info, BookOpen, GraduationCap, Laptop, Presentation, Mic, CalendarPlus } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, Users, Trophy, Award, Medal, CheckCircle2, Share2, Check, Monitor, Building2, Globe, Tag, AlertCircle, RefreshCw, FileText, ShieldCheck, ChevronRight, Layers, Radio, Info, BookOpen, GraduationCap, Laptop, Presentation, Mic, CalendarPlus, Phone, Mail } from 'lucide-react';
 import { buildGoogleCalendarUrl } from '../../../lib/calendarUtils';
+function wrapSvgText(text, maxChars = 28) {
+  if (!text) return [];
+  const words = String(text).split(' ');
+  const lines = [];
+  let currentLine = '';
+  for (const word of words) {
+    if ((currentLine + ' ' + word).trim().length <= maxChars) {
+      currentLine = (currentLine + ' ' + word).trim();
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines.slice(0, 2);
+}
+
 function PrizePodiumStage({
   firstAmount,
   firstDesc,
@@ -231,66 +248,182 @@ function PrizePodiumStage({
             transition={{ delay: 0.95, duration: 0.5 }}
           />
         </motion.g>
-        <foreignObject x="115" y="405" width="220" height="155">
-          <motion.div
-            xmlns="http://www.w3.org/1999/xhtml"
-            className="h-full flex flex-col items-center justify-start text-center text-white px-2 pt-1 select-none"
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.45, delay: 0.5 }}
+        {/* Second Prize Text & Badge (Left Pedestal: Center x = 235) */}
+        <motion.g
+          id="second-prize-details"
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.45, delay: 0.5 }}
+        >
+          <rect
+            x="170"
+            y="415"
+            width="130"
+            height="24"
+            rx="5"
+            fill="rgba(0,0,0,0.18)"
+            stroke="#FFFFFF"
+            strokeWidth="1.2"
+            strokeOpacity="0.85"
+          />
+          <text
+            x="235"
+            y="431"
+            textAnchor="middle"
+            fill="#FFFFFF"
+            fontSize="11"
+            fontWeight="900"
+            letterSpacing="1"
+            fontFamily="system-ui, -apple-system, sans-serif"
           >
-            <div className="border border-white/90 rounded px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-white shadow-sm mb-2">
-              SECOND PRIZE
-            </div>
-            <div className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight drop-shadow-sm mb-1">
-              {secondAmount}
-            </div>
-            <p className="text-[10px] text-white/95 font-medium leading-relaxed max-w-[170px] line-clamp-2">
-              {secondDesc}
-            </p>
-          </motion.div>
-        </foreignObject>
-        <foreignObject x="320" y="325" width="260" height="235">
-          <motion.div
-            xmlns="http://www.w3.org/1999/xhtml"
-            className="h-full flex flex-col items-center justify-start text-center text-white px-3 pt-2 select-none"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.4 }}
+            SECOND PRIZE
+          </text>
+          <text
+            x="235"
+            y="475"
+            textAnchor="middle"
+            fill="#FFFFFF"
+            fontSize="26"
+            fontWeight="900"
+            fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
           >
-            <div className="border border-white/90 rounded-md px-3.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-sm mb-2.5">
-              FIRST PRIZE
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight drop-shadow-sm mb-1.5">
-              {firstAmount}
-            </div>
-            <p className="text-xs text-white/95 font-medium leading-relaxed max-w-[210px] line-clamp-3">
-              {firstDesc}
-            </p>
-          </motion.div>
-        </foreignObject>
-        <foreignObject x="560" y="445" width="220" height="115">
-          <motion.div
-            xmlns="http://www.w3.org/1999/xhtml"
-            className="h-full flex flex-col items-center justify-start text-center text-white px-2 pt-1 select-none"
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.45, delay: 0.6 }}
+            {secondAmount}
+          </text>
+          {wrapSvgText(secondDesc, 26).map((line, idx) => (
+            <text
+              key={idx}
+              x="235"
+              y={502 + idx * 15}
+              textAnchor="middle"
+              fill="#FFFFFF"
+              fillOpacity="0.92"
+              fontSize="10"
+              fontWeight="600"
+              fontFamily="system-ui, -apple-system, sans-serif"
+            >
+              {line}
+            </text>
+          ))}
+        </motion.g>
+
+        {/* First Prize Text & Badge (Center Pedestal: Center x = 450) */}
+        <motion.g
+          id="first-prize-details"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+        >
+          <rect
+            x="375"
+            y="325"
+            width="150"
+            height="26"
+            rx="6"
+            fill="rgba(0,0,0,0.18)"
+            stroke="#FFFFFF"
+            strokeWidth="1.2"
+            strokeOpacity="0.85"
+          />
+          <text
+            x="450"
+            y="342"
+            textAnchor="middle"
+            fill="#FFFFFF"
+            fontSize="12"
+            fontWeight="900"
+            letterSpacing="1.2"
+            fontFamily="system-ui, -apple-system, sans-serif"
           >
-            <div className="border border-white/90 rounded px-2.5 py-0.5 text-[11px] font-black uppercase tracking-wider text-white shadow-sm mb-1.5">
-              THIRD PRIZE
-            </div>
-            <div className="text-xl sm:text-2xl font-black text-white font-mono tracking-tight drop-shadow-sm mb-1">
-              {thirdAmount}
-            </div>
-            <p className="text-[10px] text-white/95 font-medium leading-relaxed max-w-[170px] line-clamp-2">
-              {thirdDesc}
-            </p>
-          </motion.div>
-        </foreignObject>
+            FIRST PRIZE
+          </text>
+          <text
+            x="450"
+            y="392"
+            textAnchor="middle"
+            fill="#FFFFFF"
+            fontSize="32"
+            fontWeight="900"
+            fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+          >
+            {firstAmount}
+          </text>
+          {wrapSvgText(firstDesc, 32).map((line, idx) => (
+            <text
+              key={idx}
+              x="450"
+              y={422 + idx * 16}
+              textAnchor="middle"
+              fill="#FFFFFF"
+              fillOpacity="0.95"
+              fontSize="11"
+              fontWeight="600"
+              fontFamily="system-ui, -apple-system, sans-serif"
+            >
+              {line}
+            </text>
+          ))}
+        </motion.g>
+
+        {/* Third Prize Text & Badge (Right Pedestal: Center x = 665) */}
+        <motion.g
+          id="third-prize-details"
+          initial={{ opacity: 0, y: 15 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.45, delay: 0.6 }}
+        >
+          <rect
+            x="600"
+            y="448"
+            width="130"
+            height="24"
+            rx="5"
+            fill="rgba(0,0,0,0.18)"
+            stroke="#FFFFFF"
+            strokeWidth="1.2"
+            strokeOpacity="0.85"
+          />
+          <text
+            x="665"
+            y="464"
+            textAnchor="middle"
+            fill="#FFFFFF"
+            fontSize="11"
+            fontWeight="900"
+            letterSpacing="1"
+            fontFamily="system-ui, -apple-system, sans-serif"
+          >
+            THIRD PRIZE
+          </text>
+          <text
+            x="665"
+            y="505"
+            textAnchor="middle"
+            fill="#FFFFFF"
+            fontSize="26"
+            fontWeight="900"
+            fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+          >
+            {thirdAmount}
+          </text>
+          {wrapSvgText(thirdDesc, 26).map((line, idx) => (
+            <text
+              key={idx}
+              x="665"
+              y={532 + idx * 15}
+              textAnchor="middle"
+              fill="#FFFFFF"
+              fillOpacity="0.92"
+              fontSize="10"
+              fontWeight="600"
+              fontFamily="system-ui, -apple-system, sans-serif"
+            >
+              {line}
+            </text>
+          ))}
+        </motion.g>
       </svg>
     </div>
   );
@@ -354,11 +487,11 @@ function PublicEventDetails() {
           addressCountry: 'IN'
         }
       },
-      image: eventPoster || 'https://ayojan.aitamsac.in/assets/home/ai-cube.jpg',
+      image: eventPoster || 'https://ems.aitamsac.in/assets/home/ai-cube.jpg',
       organizer: {
         '@type': 'Organization',
-        name: 'AYOJAN Student Activity Center',
-        url: 'https://ayojan.aitamsac.in'
+        name: 'AVISHKAAR Student Activity Center',
+        url: 'https://ems.aitamsac.in'
       }
     };
   }, [event, eventPoster]);
@@ -367,9 +500,9 @@ function PublicEventDetails() {
     title: event ? event.EventName : 'Event Details',
     description: event?.Description
       ? event.Description.slice(0, 160).trim()
-      : 'Explore event details, timelines, prize pools, and team guidelines on AYOJAN.',
+      : 'Explore event details, timelines, prize pools, and team guidelines on AVISHKAAR.',
     keywords: event ? `${event.EventName}, ${event.EventType}, collegiate hackathon, AITAM events` : undefined,
-    canonical: `https://ayojan.aitamsac.in/events/${id}`,
+    canonical: `https://ems.aitamsac.in/events/${id}`,
     ogImage: eventPoster || undefined,
     ogType: 'event',
     structuredData: eventStructuredData
@@ -398,13 +531,13 @@ function PublicEventDetails() {
         setThemes(evData.event?.Themes || []);
         const isHackathonEvent = (evData.event?.EventType || '').toLowerCase() === 'hackathon';
         if (isHackathonEvent) {
-          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/themes`)
+          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}/themes?track=Physical`)
             .then((r) => r.json())
             .then((tData) => {
               if (tData?.themes && tData.themes.length > 0) setThemes(tData.themes);
             })
             .catch(() => {});
-          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}`)
+          fetch(`${API_BASE_URL}/api/problem-statements/event/${id}?track=Physical`)
             .then((r) => r.json())
             .then((psData) => {
               if (psData?.problemStatements) setOrganizerStatements(psData.problemStatements);
@@ -432,6 +565,7 @@ function PublicEventDetails() {
                     Role: s.Designation || 'Keynote Speaker',
                     Company: s.Organization,
                     Photo: s.PhotoUrl,
+                    Phone: s.Phone || s.ContactNumber || '',
                     Bio: s.Topic ? `Keynote: ${s.Topic}` : s.Bio
                   })));
                 }
@@ -579,22 +713,57 @@ function PublicEventDetails() {
   const isGlobalPaused = useMemo(() => {
     return event?.RegistrationOpen === 0 || event?.RegistrationOpen === false;
   }, [event]);
-  const isVirtualRegistrationClosed = useMemo(() => {
+  const isVirtualEnded = useMemo(() => {
     if (!event) return false;
     const s = (event.EventStatus || '').toLowerCase();
     if (s === 'completed') return true;
-    if (isGlobalPaused || isVirtualPaused) return true;
     if (effectiveVirtualRegEnd) return new Date().getTime() > new Date(effectiveVirtualRegEnd).getTime();
     return false;
-  }, [event, effectiveVirtualRegEnd, isGlobalPaused, isVirtualPaused]);
-  const isPhysicalRegistrationClosed = useMemo(() => {
+  }, [event, effectiveVirtualRegEnd]);
+
+  const isPhysicalEnded = useMemo(() => {
     if (!event) return false;
     const s = (event.EventStatus || '').toLowerCase();
     if (s === 'completed') return true;
-    if (isGlobalPaused || isPhysicalPaused) return true;
     if (effectivePhysicalRegEnd) return new Date().getTime() > new Date(effectivePhysicalRegEnd).getTime();
     return false;
-  }, [event, effectivePhysicalRegEnd, isGlobalPaused, isPhysicalPaused]);
+  }, [event, effectivePhysicalRegEnd]);
+
+  const isVirtualRegistrationClosed = useMemo(() => {
+    if (!event) return false;
+    return isGlobalPaused || isVirtualPaused || isVirtualEnded;
+  }, [event, isGlobalPaused, isVirtualPaused, isVirtualEnded]);
+
+  const isPhysicalRegistrationClosed = useMemo(() => {
+    if (!event) return false;
+    return isGlobalPaused || isPhysicalPaused || isPhysicalEnded;
+  }, [event, isGlobalPaused, isPhysicalPaused, isPhysicalEnded]);
+
+  const isAllRegistrationEnded = useMemo(() => {
+    if (!event) return false;
+    const s = (event.EventStatus || '').toLowerCase();
+    if (s === 'completed') return true;
+    const modes = getAvailableModes(event.HackathonMode);
+    if (modes.length > 1) {
+      return isVirtualEnded && isPhysicalEnded;
+    }
+    const singleMode = modes[0] || 'Virtual';
+    return singleMode === 'Physical' ? isPhysicalEnded : isVirtualEnded;
+  }, [event, isVirtualEnded, isPhysicalEnded]);
+
+  const isAllRegistrationPaused = useMemo(() => {
+    if (!event) return false;
+    if (isGlobalPaused) return true;
+    const modes = getAvailableModes(event.HackathonMode);
+    if (modes.length > 1) {
+      const vStopped = isVirtualPaused || isVirtualEnded;
+      const pStopped = isPhysicalPaused || isPhysicalEnded;
+      return (isVirtualPaused || isPhysicalPaused) && vStopped && pStopped;
+    }
+    const singleMode = modes[0] || 'Virtual';
+    return singleMode === 'Physical' ? isPhysicalPaused : isVirtualPaused;
+  }, [event, isGlobalPaused, isVirtualPaused, isPhysicalPaused, isVirtualEnded, isPhysicalEnded]);
+
   const isRegistrationClosed = useMemo(() => {
     if (!event) return false;
     const s = (event.EventStatus || '').toLowerCase();
@@ -604,12 +773,8 @@ function PublicEventDetails() {
     if (modes.length > 1) {
       return isVirtualRegistrationClosed && isPhysicalRegistrationClosed;
     }
-    if (event.RegistrationEnd) {
-      const end = new Date(event.RegistrationEnd).getTime();
-      return new Date().getTime() > end;
-    }
-    return false;
-  }, [event, isVirtualRegistrationClosed, isPhysicalRegistrationClosed, isGlobalPaused]);
+    return isAllRegistrationEnded || isAllRegistrationPaused;
+  }, [event, isVirtualRegistrationClosed, isPhysicalRegistrationClosed, isGlobalPaused, isAllRegistrationEnded, isAllRegistrationPaused]);
   const splitFacilities = (text) => {
     if (!text) return [];
     return text
@@ -688,6 +853,27 @@ function PublicEventDetails() {
     return str;
   };
   const physicalPrizesList = prizes.filter((p) => (p.Track || '').toLowerCase() === 'physical');
+  const physicalThemes = (() => {
+    if (!themes || !Array.isArray(themes)) return [];
+    const mode = String(event?.HackathonMode || '').toLowerCase();
+    const isDual =
+      hasBothTracks ||
+      mode === 'both' ||
+      mode === 'virtual and physical' ||
+      Boolean(event?.VirtualStartDate && event?.PhysicalStartDate);
+
+    if (isDual) {
+      return themes.filter((t) => String(t.Track || '').toLowerCase() === 'physical');
+    }
+    if (mode === 'virtual') {
+      return [];
+    }
+    const hasPhysical = themes.some((t) => String(t.Track || '').toLowerCase() === 'physical');
+    if (hasPhysical) {
+      return themes.filter((t) => String(t.Track || '').toLowerCase() === 'physical');
+    }
+    return themes.filter((t) => String(t.Track || '').toLowerCase() !== 'virtual');
+  })();
   const virtualPrizesList = prizes.filter((p) => (p.Track || '').toLowerCase() === 'virtual');
   const overallPrizesList = prizes.filter((p) => (p.Track || '').toLowerCase() === 'overall' || !p.Track);
   const hasSeparateTrackPrizes = physicalPrizesList.length > 0 || virtualPrizesList.length > 0;
@@ -794,36 +980,61 @@ function PublicEventDetails() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
               <div className="lg:col-span-7 space-y-5">
                 <div className="flex flex-wrap items-center gap-2">
-                  {(event.EventStatus || '').toLowerCase() === 'ongoing' ? (
-                    <span
-                      style={{
-                        backgroundColor: eventTheme.badgeBg,
-                        borderColor: eventTheme.badgeBorder,
-                        color: eventTheme.badgeText,
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border"
-                    >
-                      <span className="h-2 w-2 rounded-full animate-ping" style={{ backgroundColor: eventTheme.accent }} />
-                      Live Ongoing
-                    </span>
-                  ) : (event.EventStatus || '').toLowerCase() === 'completed' ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/30">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Event Concluded
-                    </span>
-                  ) : (
-                    <span
-                      style={{
-                        backgroundColor: eventTheme.badgeBg,
-                        borderColor: eventTheme.badgeBorder,
-                        color: eventTheme.badgeText,
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border"
-                    >
-                      <Clock className="h-3.5 w-3.5" />
-                      Registrations Open
-                    </span>
-                  )}
+                  {(() => {
+                    const status = (event.EventStatus || '').toLowerCase();
+                    if (status === 'ongoing' || status === 'live') {
+                      return (
+                        <span
+                          style={{
+                            backgroundColor: eventTheme.badgeBg,
+                            borderColor: eventTheme.badgeBorder,
+                            color: eventTheme.badgeText,
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border"
+                        >
+                          <span className="h-2 w-2 rounded-full animate-ping" style={{ backgroundColor: eventTheme.accent }} />
+                          Live Ongoing
+                        </span>
+                      );
+                    }
+                    if (status === 'completed') {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/30">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Event Concluded
+                        </span>
+                      );
+                    }
+                    if (isAllRegistrationEnded) {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                          <span className="w-2 h-2 rounded-full bg-rose-500" />
+                          Registrations Ended
+                        </span>
+                      );
+                    }
+                    if (isAllRegistrationPaused) {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          Registrations Paused
+                        </span>
+                      );
+                    }
+                    return (
+                      <span
+                        style={{
+                          backgroundColor: eventTheme.badgeBg,
+                          borderColor: eventTheme.badgeBorder,
+                          color: eventTheme.badgeText,
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold border"
+                      >
+                        <Clock className="h-3.5 w-3.5" />
+                        Registrations Open
+                      </span>
+                    );
+                  })()}
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-black text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
                     <Tag className="h-3 w-3" style={{ color: eventTheme.accent }} />
                     {eventTypeInfo.label}
@@ -973,14 +1184,14 @@ function PublicEventDetails() {
               </div>
             </div>
           </div>
-          <div className="p-5 sm:p-6 bg-slate-100/70 dark:bg-black backdrop-blur-xl border-t border-slate-200/90 dark:border-zinc-800">
+          <div className="p-3.5 sm:p-6 bg-slate-100/70 dark:bg-black backdrop-blur-xl border-t border-slate-200/90 dark:border-zinc-800">
             {(() => {
               const modes = getAvailableModes(event?.HackathonMode);
               if (modes.length > 1) {
                 return (
                   <div className="space-y-3.5">
                     {/* ROW 1: VIRTUAL TRACK CARD */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4 transition-all duration-200">
+                    <div className="p-3 sm:p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-3.5 sm:gap-4 transition-all duration-200 overflow-hidden">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3.5 w-full lg:w-auto">
                         <div
                           className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border shadow-xs"
@@ -993,15 +1204,15 @@ function PublicEventDetails() {
                             <span className="text-sm font-extrabold text-slate-900 dark:text-white">
                               Virtual Track
                             </span>
-                            {isVirtualPaused ? (
+                            {isVirtualPaused || isGlobalPaused ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                 <span>Paused</span>
                               </span>
-                            ) : isVirtualRegistrationClosed ? (
+                            ) : isVirtualEnded ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                <span>Closed</span>
+                                <span>Ended</span>
                               </span>
                             ) : (
                               <span
@@ -1019,21 +1230,25 @@ function PublicEventDetails() {
                         </div>
                       </div>
                       {/* Middle: Timer or Paused Alert */}
-                      <div className="flex flex-col items-center">
+                      <div className="flex flex-col items-center w-full lg:w-auto my-1 lg:my-0">
                         {isVirtualRegistrationClosed ? (
-                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold">
-                            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                          <div className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold ${
+                            isVirtualPaused || isGlobalPaused
+                              ? 'bg-amber-500/10 dark:bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300'
+                              : 'bg-rose-500/10 dark:bg-rose-500/10 border-rose-500/25 text-rose-700 dark:text-rose-300'
+                          }`}>
+                            <AlertCircle className={`h-4 w-4 shrink-0 ${isVirtualPaused || isGlobalPaused ? 'text-amber-500' : 'text-rose-500'}`} />
                             <span>
-                              {isVirtualPaused
+                              {isVirtualPaused || isGlobalPaused
                                 ? 'Virtual registration paused by organizers'
-                                : `Virtual registration closed (${formatDate(effectiveVirtualRegEnd)})`}
+                                : `Virtual registration ended (${formatDate(effectiveVirtualRegEnd)})`}
                             </span>
                           </div>
                         ) : (
-                          <div className="flex flex-col items-center gap-1.5">
+                          <div className="flex flex-col items-center gap-1.5 w-full max-w-full">
                             <FlipCountdown targetDate={effectiveVirtualRegEnd || event.StartDate} eventTheme={eventTheme} />
-                            <span className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400">
-                              Virtual Closes on: <strong style={{ color: eventTheme.accent }}>{formatDate(effectiveVirtualRegEnd)}</strong>
+                            <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 text-center">
+                              Virtual Closes on: <strong className="font-semibold text-slate-700 dark:text-zinc-200">{formatDate(effectiveVirtualRegEnd)}</strong>
                             </span>
                           </div>
                         )}
@@ -1041,9 +1256,13 @@ function PublicEventDetails() {
                       {/* Right: Action Button */}
                       <div className="w-full lg:w-auto flex justify-center lg:justify-end">
                         {isVirtualRegistrationClosed ? (
-                          <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-xs border border-slate-200 dark:border-zinc-700 cursor-not-allowed select-none">
+                          <div className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs border cursor-not-allowed select-none ${
+                            isVirtualPaused || isGlobalPaused
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                              : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-slate-200 dark:border-zinc-700'
+                          }`}>
                             <AlertCircle className="h-3.5 w-3.5" />
-                            <span>{isVirtualPaused ? 'Virtual Paused' : 'Virtual Ended'}</span>
+                            <span>{isVirtualPaused || isGlobalPaused ? 'Virtual Paused' : 'Virtual Ended'}</span>
                           </div>
                         ) : (
                           <button
@@ -1059,7 +1278,7 @@ function PublicEventDetails() {
                       </div>
                     </div>
                     {/* ROW 2: PHYSICAL TRACK CARD */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-4 transition-all duration-200">
+                    <div className="p-3 sm:p-5 rounded-2xl bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-3.5 sm:gap-4 transition-all duration-200 overflow-hidden">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-3.5 w-full lg:w-auto">
                         <div
                           className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border shadow-xs"
@@ -1072,15 +1291,15 @@ function PublicEventDetails() {
                             <span className="text-sm font-extrabold text-slate-900 dark:text-white">
                               Physical Track
                             </span>
-                            {isPhysicalPaused ? (
+                            {isPhysicalPaused || isGlobalPaused ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                 <span>Paused</span>
                               </span>
-                            ) : isPhysicalRegistrationClosed ? (
+                            ) : isPhysicalEnded ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                <span>Closed</span>
+                                <span>Ended</span>
                               </span>
                             ) : (
                               <span
@@ -1101,21 +1320,25 @@ function PublicEventDetails() {
                         </div>
                       </div>
                       {/* Middle: Timer or Paused Alert */}
-                      <div className="flex flex-col items-center">
+                      <div className="flex flex-col items-center w-full lg:w-auto my-1 lg:my-0">
                         {isPhysicalRegistrationClosed ? (
-                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold">
-                            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                          <div className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold ${
+                            isPhysicalPaused || isGlobalPaused
+                              ? 'bg-amber-500/10 dark:bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-300'
+                              : 'bg-rose-500/10 dark:bg-rose-500/10 border-rose-500/25 text-rose-700 dark:text-rose-300'
+                          }`}>
+                            <AlertCircle className={`h-4 w-4 shrink-0 ${isPhysicalPaused || isGlobalPaused ? 'text-amber-500' : 'text-rose-500'}`} />
                             <span>
-                              {isPhysicalPaused
+                              {isPhysicalPaused || isGlobalPaused
                                 ? 'Physical registration paused by organizers'
-                                : `Physical registration closed (${formatDate(effectivePhysicalRegEnd)})`}
+                                : `Physical registration ended (${formatDate(effectivePhysicalRegEnd)})`}
                             </span>
                           </div>
                         ) : (
-                          <div className="flex flex-col items-center gap-1.5">
+                          <div className="flex flex-col items-center gap-1.5 w-full max-w-full">
                             <FlipCountdown targetDate={effectivePhysicalRegEnd || event.StartDate} eventTheme={eventTheme} />
-                            <span className="text-[10px] font-semibold text-slate-500 dark:text-zinc-400">
-                              Physical Closes on: <strong style={{ color: eventTheme.accent }}>{formatDate(effectivePhysicalRegEnd)}</strong>
+                            <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 text-center">
+                              Physical Closes on: <strong className="font-semibold text-slate-700 dark:text-zinc-200">{formatDate(effectivePhysicalRegEnd)}</strong>
                             </span>
                           </div>
                         )}
@@ -1123,9 +1346,13 @@ function PublicEventDetails() {
                       {/* Right: Action Button */}
                       <div className="w-full lg:w-auto flex justify-center lg:justify-end">
                         {isPhysicalRegistrationClosed ? (
-                          <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-xs border border-slate-200 dark:border-zinc-700 cursor-not-allowed select-none">
+                          <div className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs border cursor-not-allowed select-none ${
+                            isPhysicalPaused || isGlobalPaused
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                              : 'bg-slate-100 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-slate-200 dark:border-zinc-700'
+                          }`}>
                             <AlertCircle className="h-3.5 w-3.5" />
-                            <span>{isPhysicalPaused ? 'Physical Paused' : 'Physical Ended'}</span>
+                            <span>{isPhysicalPaused || isGlobalPaused ? 'Physical Paused' : 'Physical Ended'}</span>
                           </div>
                         ) : (
                           <button
@@ -1144,8 +1371,8 @@ function PublicEventDetails() {
                 );
               }
               return (
-                <div className="flex flex-col md:flex-row items-center justify-between gap-5">
-                  <div className="flex flex-col sm:flex-row items-center sm:items-start md:items-center gap-4 w-full md:w-auto">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-5 w-full overflow-hidden">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start md:items-center gap-3 sm:gap-4 w-full md:w-auto justify-center">
                     <div className="flex items-center gap-2">
                       {!isRegistrationClosed ? (
                         <span className="relative flex h-2.5 w-2.5">
@@ -1153,15 +1380,20 @@ function PublicEventDetails() {
                           <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ backgroundColor: eventTheme.accent }}></span>
                         </span>
                       ) : (
-                        <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+                        <span className={`h-2.5 w-2.5 rounded-full ${isAllRegistrationPaused ? 'bg-amber-500' : 'bg-rose-500'}`}></span>
                       )}
                       <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
                         {isRegistrationClosed ? 'Registration Status' : 'Registration Window Closes In'}
                       </span>
                     </div>
                     {isRegistrationClosed ? (
-                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold">
-                        Registration has ended
+                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border ${
+                        isAllRegistrationPaused
+                          ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+                          : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                      }`}>
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        <span>{isAllRegistrationPaused ? 'Registration is currently paused' : 'Registration has ended'}</span>
                       </div>
                     ) : (
                       <FlipCountdown targetDate={event.RegistrationEnd || event.StartDate} eventTheme={eventTheme} />
@@ -1171,9 +1403,14 @@ function PublicEventDetails() {
                     {isRegistrationClosed ? (
                       <button
                         disabled
-                        className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-2xl bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-sm cursor-not-allowed"
+                        className={`w-full md:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-sm cursor-not-allowed border ${
+                          isAllRegistrationPaused
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                            : 'bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-slate-200 dark:border-zinc-700'
+                        }`}
                       >
-                        <span>Registrations Closed</span>
+                        <AlertCircle className="h-4 w-4" />
+                        <span>{isAllRegistrationPaused ? 'Registrations Paused' : 'Registrations Ended'}</span>
                       </button>
                     ) : (() => {
                       const singleMode = modes[0] || 'Virtual';
@@ -1204,7 +1441,7 @@ function PublicEventDetails() {
                   {eventTypeInfo.isWebinar ? 'About this Webinar' : eventTypeInfo.isWorkshop ? 'About this Workshop' : 'About the Challenge'}
                 </h2>
               </div>
-              <div className="text-slate-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed whitespace-pre-line space-y-3">
+              <div className="text-slate-700 dark:text-zinc-300 text-sm sm:text-base leading-relaxed text-justify whitespace-pre-line space-y-3">
                 {event.Description || 'No description provided.'}
               </div>
             </div>
@@ -1256,7 +1493,7 @@ function PublicEventDetails() {
                                   {session.title || session.Title || `Session ${idx + 1}`}
                                 </h4>
                                 {session.description && (
-                                  <p className="text-xs text-slate-600 dark:text-zinc-400 mt-1 leading-relaxed">
+                                  <p className="text-xs text-slate-600 dark:text-zinc-400  mt-1 leading-relaxed">
                                     {session.description}
                                   </p>
                                 )}
@@ -1592,7 +1829,7 @@ function PublicEventDetails() {
                       {/* Hackathon Innovation Themes (Displayed in advance strictly for Physical Hackathons) */}
                       {String(event?.EventType || '').toLowerCase() === 'hackathon' && (
                         <PhysicalHackathonThemesSection
-                          themes={themes}
+                          themes={physicalThemes}
                           event={event}
                           eventTheme={eventTheme}
                         />
@@ -1759,43 +1996,92 @@ function PublicEventDetails() {
                   )}
                 </div>
                 {coreTeam.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5">
                     {coreTeam.map((member, idx) => (
                       <motion.div
                         key={member.Id || idx}
-                        initial={{ opacity: 0, y: 8 }}
+                        initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2, delay: idx * 0.04 }}
-                        className={`p-4 rounded-2xl bg-slate-50 dark:bg-black border border-slate-200 dark:border-zinc-800 flex items-center gap-3.5 transition-colors ${
-                          'hover:border-emerald-500/30'
-                        }`}
+                        transition={{ duration: 0.3, delay: idx * 0.05 }}
+                        className="group relative w-full aspect-[3/4] rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-900 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-emerald-500"
                       >
+                        {/* Full Bleed Profile Photo */}
                         {member.Photo ? (
                           <img
                             src={member.Photo}
                             alt={member.Name}
-                            className="w-13 h-13 rounded-xl object-cover border border-slate-200 dark:border-zinc-800 shrink-0"
+                            className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
                           />
                         ) : (
-                          <div
-                            className="w-13 h-13 rounded-xl flex items-center justify-center font-bold text-base shrink-0"
-                            style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}
-                          >
-                            {(member.Name || 'S').charAt(0).toUpperCase()}
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-200 dark:bg-zinc-900 text-slate-500 dark:text-zinc-500 p-4 text-center">
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-300 dark:bg-zinc-800 flex items-center justify-center text-3xl sm:text-4xl font-extrabold text-slate-700 dark:text-zinc-200">
+                              {(member.Name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                            <p className="mt-3 text-xs font-semibold text-slate-700 dark:text-zinc-300 line-clamp-1">
+                              {member.Name}
+                            </p>
                           </div>
                         )}
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+
+                        {/* Idle Name & Role Bar (fades out on hover) */}
+                        {/* <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 bg-black/60 backdrop-blur-xs text-white transition-opacity duration-300 group-hover:opacity-0 pointer-events-none">
+                          <h4 className="text-sm sm:text-base font-bold text-white truncate">
                             {member.Name}
                           </h4>
-                          <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-bold border bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
-                            {member.Role || (eventTypeInfo.isWebinar ? 'Keynote Speaker' : 'Instructor')}
-                          </span>
-                          {member.Department && (
-                            <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate mt-1">
-                              {member.Department}
-                            </p>
-                          )}
+                          <p className="text-[11px] sm:text-xs text-zinc-300 font-medium truncate">
+                            {member.Role || (eventTypeInfo.isWebinar ? 'Keynote Speaker' : 'Lead Organizer')}
+                          </p>
+                        </div> */}
+
+                        {/* On-Hover Full Details Overlay */}
+                        <div className="absolute inset-0 bg-black/35 backdrop-blur-xs p-4 sm:p-5 flex flex-col justify-end text-white opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <div className="translate-y-3 group-hover:translate-y-0 transition-transform duration-300 flex flex-col justify-end">
+                            <span className="inline-block self-start px-2.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold border border-emerald-600/30 text-white mb-2 shadow-xs">
+                              {member.Role || (eventTypeInfo.isWebinar ? 'Keynote Speaker' : 'Lead Organizer')}
+                            </span>
+
+                            <h4 className="text-base sm:text-lg font-bold text-white line-clamp-1">
+                              {member.Name}
+                            </h4>
+
+                            {(member.Department || member.Company) && (
+                              <p className="mt-1 text-xs text-zinc-300 line-clamp-1 flex items-center gap-1.5 font-medium">
+                                <Building2 className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                                <span>{member.Department || member.Company}</span>
+                              </p>
+                            )}
+
+                            {member.Bio && (
+                              <p className="mt-2 text-[11px] text-zinc-300 line-clamp-2 sm:line-clamp-3 font-normal leading-relaxed">
+                                {member.Bio}
+                              </p>
+                            )}
+
+                            {/* Contact Action Bar */}
+                            {(Boolean(member.Phone && member.Phone.trim()) || Boolean(member.Email && member.Email.trim())) && (
+                              <div className="mt-3.5 pt-3 border-t border-zinc-700 flex items-center gap-2">
+                                {Boolean(member.Phone && member.Phone.trim()) && (
+                                  <a
+                                    href={`tel:${member.Phone.trim().replace(/\s+/g, '')}`}
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-600/50 hover:bg-emerald-600/30 hover:border-emerald-600/30 text-white text-xs font-bold transition-all duration-800  transition-colors shadow-xs"
+                                    title={`Call ${member.Name}: ${member.Phone}`}
+                                  >
+                                    <Phone className="h-3.5 w-3.5 shrink-0" />
+                                    <span className="truncate">{member.Phone}</span>
+                                  </a>
+                                )}
+                                {Boolean(member.Email && member.Email.trim()) && (
+                                  <a
+                                    href={`mailto:${member.Email.trim()}`}
+                                    className="p-2 rounded-xl  text-zinc-200 border border-zinc-700 text-xs font-semibold transition-colors shrink-0"
+                                    title={`Email ${member.Name}: ${member.Email}`}
+                                  >
+                                    <Mail className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -1881,9 +2167,13 @@ function PublicEventDetails() {
                 {isRegistrationClosed ? (
                   <button
                     disabled
-                    className="w-full py-3.5 px-6 rounded-2xl bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-xs cursor-not-allowed"
+                    className={`w-full py-3.5 px-6 rounded-2xl font-bold text-xs cursor-not-allowed ${
+                      isAllRegistrationPaused
+                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25'
+                        : 'bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500'
+                    }`}
                   >
-                    Registration Concluded
+                    {isAllRegistrationPaused ? 'Registrations Paused' : 'Registrations Ended'}
                   </button>
                 ) : (() => {
                   const modes = getAvailableModes(event?.HackathonMode);
@@ -1891,8 +2181,12 @@ function PublicEventDetails() {
                     return (
                       <div className="space-y-2.5">
                         {isVirtualRegistrationClosed ? (
-                          <span className="block text-center text-xs text-slate-400 font-medium py-3 px-4 rounded-2xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
-                            Virtual Registrations Ended
+                          <span className={`block text-center text-xs font-semibold py-3 px-4 rounded-2xl border ${
+                            isVirtualPaused || isGlobalPaused
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                              : 'bg-slate-100 dark:bg-zinc-900 text-slate-400 border-slate-200 dark:border-zinc-800'
+                          }`}>
+                            {isVirtualPaused || isGlobalPaused ? 'Virtual Registrations Paused' : 'Virtual Registrations Ended'}
                           </span>
                         ) : (
                           <button
@@ -1906,8 +2200,12 @@ function PublicEventDetails() {
                           </button>
                         )}
                         {isPhysicalRegistrationClosed ? (
-                          <span className="block text-center text-xs text-slate-400 font-medium py-3 px-4 rounded-2xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800">
-                            Physical Registrations Ended
+                          <span className={`block text-center text-xs font-semibold py-3 px-4 rounded-2xl border ${
+                            isPhysicalPaused || isGlobalPaused
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                              : 'bg-slate-100 dark:bg-zinc-900 text-slate-400 border-slate-200 dark:border-zinc-800'
+                          }`}>
+                            {isPhysicalPaused || isGlobalPaused ? 'Physical Registrations Paused' : 'Physical Registrations Ended'}
                           </span>
                         ) : (
                           <button
@@ -1959,7 +2257,7 @@ function PublicEventDetails() {
                 <Info className="h-4 w-4 shrink-0" style={{ color: eventTheme.accent }} />
                 <span>Need Assistance?</span>
               </div>
-              <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+              <p className="text-xs text-slate-600 dark:text-zinc-400 text-justify leading-relaxed">
                 Have questions regarding guidelines, hardware requirements, or accommodation? Contact event leads through your student dashboard.
               </p>
             </div>

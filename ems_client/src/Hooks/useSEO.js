@@ -24,8 +24,8 @@ export default function useSEO({
 } = {}) {
   useEffect(() => {
     // 1. Dynamic Page Title
-    const baseTitle = 'AYOJAN — Collegiate Event Management Platform';
-    const finalTitle = title ? `${title} | AYOJAN` : baseTitle;
+    const baseTitle = 'AVISHKAAR — Collegiate Event Management Platform';
+    const finalTitle = title ? `${title} | AVISHKAAR` : baseTitle;
     document.title = finalTitle;
 
     // Helper to safely set or create a <meta> tag

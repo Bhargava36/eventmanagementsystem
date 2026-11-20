@@ -230,9 +230,14 @@ const UserSidebarContent = ({
         </nav>
       </LayoutGroup>
       {/* Fixed Footer */}
-      <div className="mt-auto shrink-0 pt-3">
+      <div className="mt-auto shrink-0 pt-1 space-y-0.5">
+        <NotificationBellDropdown
+          variant="sidebar"
+          canShowText={canShowText}
+          isMobile={isMobile}
+        />
         <ThemeToggle variant="sidebar" canShowText={canShowText} />
-        <div className="border-t border-gray-200 dark:border-[#1A2440] my-3"></div>
+        <div className="border-t border-gray-200 dark:border-[#1A2440] my-1"></div>
         <button
           onClick={handleLogout}
           title={!isMobile && collapsed ? 'Logout' : ''}
@@ -300,7 +305,7 @@ const UserSidebar = () => {
               <div className="mt-2">{logoElement}</div>
               <div className="flex flex-col">
                 <span className="font-bold text-sm tracking-wide text-gray-900 dark:text-white">
-                  AYOJAN
+                  AVISHKAAR
                 </span>
                 <span className="text-xs text-gray-500 dark:text-gray-400 tracking-widest">
                   EMS
@@ -309,10 +314,6 @@ const UserSidebar = () => {
             </div>
           </div>
           <NotificationBellDropdown align="right" />
-        </div>
-        {/* Floating Top-Right Notification Island on Desktop */}
-        <div className="hidden lg:flex fixed top-5 right-6 z-40 items-center">
-          <NotificationBellDropdown align="right" variant="floating" />
         </div>
         <Outlet />
       </div>

@@ -58,6 +58,7 @@ const AccomodationRedirectPage = lazy(() => import('../features/auth/pages/Admin
 const IdRedirectionPage = lazy(() => import('../features/auth/pages/Admin/IdRedirectionPage'));
 const IdDesignerPage = lazy(() => import('../features/auth/pages/Admin/IdDesignerPage'));
 const TeamCardDesignerPage = lazy(() => import('../features/auth/pages/Admin/TeamCardDesignerPage'));
+const CertificateDesignerPage = lazy(() => import('../features/auth/pages/Admin/CertificateDesignerPage'));
 const Evaluators = lazy(() => import('../features/auth/pages/Admin/Evaluators'));
 const AdminResultsPage = lazy(() => import('../features/auth/pages/Admin/AdminResultsPage'));
 const EventBroadcastEmailer = lazy(() => import('../features/auth/pages/Admin/EventBroadcastEmailer'));
@@ -121,12 +122,15 @@ function App() {
   const [isReady, setIsReady] = useState(() => {
     // Only run the full preloader once per session to maintain quick subsequent navigation
     try {
-      return Boolean(sessionStorage.getItem('ayojan_preloader_seen'));
+      return Boolean(sessionStorage.getItem('avishkaar_preloader_seen'));
     } catch {
       return false;
     }
   });
   const handlePreloaderComplete = () => {
+    try {
+      sessionStorage.setItem('avishkaar_preloader_seen', 'true');
+    } catch {}
     setIsReady(true);
   };
   return (
@@ -273,6 +277,7 @@ function App() {
                 <Route path="id-card/designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <IdDesignerPage /> </AdminModeRoute>} />
                 <Route path="team-card-designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <TeamCardDesignerPage /> </AdminModeRoute>} />
                 <Route path="team-card/designer" element={<AdminModeRoute allowedModes={['physical', 'both']}> <TeamCardDesignerPage /> </AdminModeRoute>} />
+                <Route path="certificate-designer" element={<CertificateDesignerPage />} />
                 <Route path="broadcast-emailer" element={<EventBroadcastEmailer />} />
                 <Route path="feedback" element={<AdminFeedback />} />
 

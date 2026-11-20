@@ -183,7 +183,7 @@ const getEventById = (id, callback) => {
             const [reqRows] = await conn.promise().query('SELECT Phase, Requirement FROM event_requirements WHERE EventId = ? ORDER BY Id ASC', [id]);
             const [sponsorRows] = await conn.promise().query('SELECT Id, EventId, Name, LogoUrl, Tier, WebsiteUrl, DisplayOrder FROM event_sponsors WHERE EventId = ? ORDER BY DisplayOrder ASC, Id ASC', [id]);
             const [galleryRows] = await conn.promise().query('SELECT Id, EventId, ImageUrl, Caption, Season, Year, DisplayOrder FROM event_gallery WHERE EventId = ? ORDER BY Season ASC, DisplayOrder ASC, Id DESC', [id]);
-            const [themeRows] = await conn.promise().query('SELECT Id, EventId, ThemeName, Description, DisplayOrder, ImageUrl FROM event_themes WHERE EventId = ? ORDER BY DisplayOrder ASC, Id ASC', [id]);
+            const [themeRows] = await conn.promise().query('SELECT Id, EventId, ThemeName, Description, DisplayOrder, ImageUrl, Track FROM event_themes WHERE EventId = ? ORDER BY DisplayOrder ASC, Id ASC', [id]);
             conn.release();
             ev.Sponsors = sponsorRows || [];
             ev.Gallery = galleryRows || [];

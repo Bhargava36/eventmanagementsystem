@@ -121,10 +121,10 @@ function TeamsDashboard() {
 
             const activeEvent = exportData?.event || eventDetails || {
                 Id: currentEventId,
-                EventName: storedAdmin?.EventName || storedAdmin?.eventName || 'AYOJAN Event',
+                EventName: storedAdmin?.EventName || storedAdmin?.eventName || 'AVISHKAAR Event',
                 EventType: storedAdmin?.EventType || 'Hackathon',
                 HackathonMode: storedAdmin?.HackathonMode || 'Virtual & Physical',
-                Location: storedAdmin?.Location || storedAdmin?.location || 'AYOJAN Hub Campus',
+                Location: storedAdmin?.Location || storedAdmin?.location || 'AVISHKAAR Hub Campus',
                 StartDate: storedAdmin?.StartDate || storedAdmin?.startDate || '',
                 EndDate: storedAdmin?.EndDate || storedAdmin?.endDate || '',
                 TeamSize: storedAdmin?.TeamSize || '2 - 4'

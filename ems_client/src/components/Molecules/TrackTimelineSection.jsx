@@ -49,8 +49,7 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div
-            className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-            style={eventTheme ? { backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor } : undefined}
+            className="p-2.5 rounded-2xl text-emerald-600 dark:text-emerald-400"
           >
             {typeInfo.isWorkshop || typeInfo.isSeminar ? (
               <BookOpen className="h-5 w-5" />
@@ -70,8 +69,8 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
           </div>
         </div>
         <div
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20 text-xs font-bold self-start sm:self-auto"
-          style={eventTheme ? { backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder } : undefined}
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold self-start sm:self-auto"
+          style={eventTheme ? {  color: eventTheme.badgeText } : undefined}
         >
           <Clock className="h-3.5 w-3.5" style={eventTheme ? { color: eventTheme.iconColor } : undefined} />
           <span>
@@ -103,20 +102,18 @@ export default function TrackTimelineSection({ trackType = 'virtual', timelines 
                 {/* Node circle on timeline line */}
                 <div
                   className="absolute -left-[30px] sm:-left-[34px] top-3.5 w-7 h-7 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-black font-mono shadow-xs bg-white dark:bg-black border-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 z-10 transition-transform group-hover:scale-105"
-                  style={eventTheme ? { borderColor: eventTheme.border, color: eventTheme.accent } : undefined}
                 >
                   {padNum}
                 </div>
                 {/* Milestone card content matching facilities & requirements styling */}
                 <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 dark:bg-black border border-slate-200 dark:border-zinc-800 transition-all shadow-xs space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 text-xs font-semibold text-slate-700 dark:text-zinc-300 shadow-xs">
+                    <div className="inline-flex items-center gap-1.5 pr-2.5 py-1 rounded-lg bg-white dark:bg-black text-xs font-semibold text-slate-700 dark:text-zinc-300 shadow-xs">
                       <Calendar className="h-3.5 w-3.5" style={eventTheme ? { color: eventTheme.iconColor } : undefined} />
                       <span>{item.TimelineDate}</span>
                     </div>
                     <span
-                      className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20"
-                      style={eventTheme ? { backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder } : undefined}
+                      className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-full"
                     >
                       Phase {stepNum}
                     </span>

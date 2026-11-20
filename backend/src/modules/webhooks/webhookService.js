@@ -4,12 +4,12 @@ const formatPayload = (platform, eventName, payload) => {
     const timestamp = new Date().toISOString();
     if (platform === 'DISCORD') {
         return {
-            username: 'AYOJAN Event Engine',
+            username: 'AVISHKAAR Event Engine',
             avatar_url: 'https://cdn-icons-png.flaticon.com/512/906/906343.png',
             embeds: [
                 {
                     title: `Event Alert: ${eventName}`,
-                    description: payload?.message || `Triggered by AYOJAN Event Management System`,
+                    description: payload?.message || `Triggered by AVISHKAAR Event Management System`,
                     color: 0x10b981, // Emerald brand color
                     fields: Object.entries(payload?.details || payload || {}).slice(0, 8).map(([key, value]) => ({
                         name: String(key).toUpperCase(),
@@ -18,7 +18,7 @@ const formatPayload = (platform, eventName, payload) => {
                     })),
                     timestamp,
                     footer: {
-                        text: 'AYOJAN Webhook Telemetry'
+                        text: 'AVISHKAAR Webhook Telemetry'
                     }
                 }
             ]
@@ -26,7 +26,7 @@ const formatPayload = (platform, eventName, payload) => {
     }
     if (platform === 'SLACK') {
         return {
-            text: `*AYOJAN Alert*: ${eventName}`,
+            text: `*AVISHKAAR Alert*: ${eventName}`,
             blocks: [
                 {
                     type: 'header',
@@ -40,7 +40,7 @@ const formatPayload = (platform, eventName, payload) => {
                     type: 'section',
                     text: {
                         type: 'mrkdwn',
-                        text: `*Message*: ${payload?.message || 'New event activity reported in AYOJAN'}\n*Timestamp*: \`${timestamp}\``
+                        text: `*Message*: ${payload?.message || 'New event activity reported in AVISHKAAR'}\n*Timestamp*: \`${timestamp}\``
                     }
                 }
             ]
@@ -99,8 +99,8 @@ const triggerWebhooks = async (eventName, payload, eventId = null) => {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'User-Agent': 'AYOJAN-Webhook-Engine/1.0',
-                            ...(ep.SecretKey ? { 'X-Ayojan-Secret': ep.SecretKey } : {})
+                            'User-Agent': 'AVISHKAAR-Webhook-Engine/1.0',
+                            ...(ep.SecretKey ? { 'X-EMS-Secret': ep.SecretKey } : {})
                         },
                         body: JSON.stringify(formattedBody),
                         signal: AbortSignal.timeout(6000)
@@ -167,9 +167,9 @@ const testWebhook = (id) => {
             if (err || !rows.length) return reject(new Error('Webhook endpoint not found'));
             const ep = rows[0];
             const mockPayload = {
-                message: 'This is a test notification verifying connectivity with AYOJAN.',
+                message: 'This is a test notification verifying connectivity with AVISHKAAR.',
                 details: {
-                    service: 'AYOJAN Webhook Dispatcher',
+                    service: 'AVISHKAAR Webhook Dispatcher',
                     environment: 'Production / Local',
                     testId: Math.random().toString(36).substring(7).toUpperCase()
                 }
@@ -213,8 +213,8 @@ const testWebhook = (id) => {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'User-Agent': 'AYOJAN-Webhook-Engine/1.0',
-                        ...(ep.SecretKey ? { 'X-Ayojan-Secret': ep.SecretKey } : {})
+                        'User-Agent': 'AVISHKAAR-Webhook-Engine/1.0',
+                        ...(ep.SecretKey ? { 'X-EMS-Secret': ep.SecretKey } : {})
                     },
                     body: JSON.stringify(formatted),
                     signal: AbortSignal.timeout(6000)
@@ -346,7 +346,7 @@ const seedInitialWebhooksIfEmpty = () => {
         if (err || !res || res[0].count > 0) return;
         createWebhook({
             name: 'Discord Organizers Channel',
-            targetUrl: 'https://discord.com/api/webhooks/mock/ayojan-organizers',
+            targetUrl: 'https://discord.com/api/webhooks/mock/ems-organizers',
             platform: 'DISCORD',
             events: 'TEAM_REGISTERED,PROJECT_SUBMITTED,RESULTS_PUBLISHED'
         }).then((wh) => {
@@ -358,7 +358,7 @@ const seedInitialWebhooksIfEmpty = () => {
             `, [
                 wh.id,
                 'TEAM_REGISTERED',
-                'https://discord.com/api/webhooks/mock/ayojan-organizers',
+                'https://discord.com/api/webhooks/mock/ems-organizers',
                 204,
                 '{"message": "delivered"}',
                 45,

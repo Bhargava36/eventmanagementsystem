@@ -167,7 +167,7 @@ const createEvent = (req, res) => {
             }
             recordMutation({
                 actorUserId: req.user?.Id || req.user?.id || creatorAdminId || null,
-                actorEmail: req.user?.Email || req.user?.email || req.user?.UserName || 'admin@ayojan.in',
+                actorEmail: req.user?.Email || req.user?.email || req.user?.UserName || 'admin@ems.aitamsac.in',
                 actorRole: req.user?.role || 'super_admin',
                 eventId: newEventId,
                 action: 'CREATE_EVENT',
@@ -440,7 +440,7 @@ const deleteEvent = (req, res) => {
         }
         recordMutation({
             actorUserId: req.user?.Id || req.user?.id || null,
-            actorEmail: req.user?.Email || req.user?.email || req.user?.UserName || 'admin@ayojan.in',
+            actorEmail: req.user?.Email || req.user?.email || req.user?.UserName || 'admin@ems.aitamsac.in',
             actorRole: req.user?.role || 'super_admin',
             eventId: id,
             action: 'DELETE_EVENT',
@@ -583,7 +583,7 @@ const updateEventSettings = (req, res) => {
         }
         recordMutation({
             actorUserId: req.user?.Id || req.user?.id || null,
-            actorEmail: req.user?.Email || req.user?.email || req.user?.UserName || 'admin@ayojan.in',
+            actorEmail: req.user?.Email || req.user?.email || req.user?.UserName || 'admin@ems.aitamsac.in',
             actorRole: req.user?.role || 'admin',
             eventId: id,
             action: 'UPDATE_SETTINGS',

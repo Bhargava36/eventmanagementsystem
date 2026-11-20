@@ -13,7 +13,7 @@ export default function PoliciesPage() {
       content: (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
-            AYOJAN is dedicated to providing a safe, respectful, and empowering hackathon environment for everyone, regardless of gender, sexual orientation, disability, physical appearance, race, ethnicity, or technical experience level.
+            AVISHKAAR is dedicated to providing a safe, respectful, and empowering hackathon environment for everyone, regardless of gender, sexual orientation, disability, physical appearance, race, ethnicity, or technical experience level.
           </p>
           <ul className="mt-3 space-y-2 list-disc list-inside text-slate-600 dark:text-zinc-300">
             <li>Harassment, intimidation, offensive verbal comments, or inappropriate physical contact will not be tolerated in any form.</li>
@@ -49,7 +49,7 @@ export default function PoliciesPage() {
       content: (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
-            For on-campus physical hackathons, logistical facilities are managed directly through AYOJAN QR tokens:
+            For on-campus physical hackathons, logistical facilities are managed directly through AVISHKAAR QR tokens:
           </p>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50">
@@ -80,7 +80,7 @@ export default function PoliciesPage() {
       content: (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
-            Organizers and AYOJAN reserve the right to void team registrations and blacklist participants for:
+            Organizers and AVISHKAAR reserve the right to void team registrations and blacklist participants for:
           </p>
           <ul className="mt-3 space-y-2 list-disc list-inside text-slate-600 dark:text-zinc-300">
             <li>Submitting previously built commercial products or projects entered in other concurrent hackathons without substantial new development.</li>
@@ -98,7 +98,7 @@ export default function PoliciesPage() {
       content: (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
-            <strong>100% Free for Students:</strong> AYOJAN does not levy entry fees on student participants for standard platform hackathons.
+            <strong>100% Free for Students:</strong> AVISHKAAR does not levy entry fees on student participants for standard platform hackathons.
           </p>
           <p className="mt-2 leading-relaxed text-slate-600 dark:text-zinc-300">
             Where institutional organizers levy third-party kit fees or nominal security deposits for physical equipment, refund processing and cancellation requests are governed exclusively by that institution’s finance committee as noted on the event registration brochure.
@@ -199,7 +199,7 @@ export default function PoliciesPage() {
             </p>
           </div>
           <a
-            href="mailto:grievance@ayojan.live"
+            href="mailto:grievance@avishkaar.live"
             className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition shadow-sm cursor-pointer shrink-0"
           >
             File Confidential Report

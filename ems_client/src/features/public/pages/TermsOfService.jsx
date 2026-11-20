@@ -12,7 +12,7 @@ export default function TermsOfService() {
       content: (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
-            Welcome to <strong>AYOJAN Event Management Platform</strong> ("AYOJAN", "we", "us", or "our"). By registering, accessing, browsing, or utilizing any features of our platform—including participant portals, team collaboration boards, hackathon evaluation systems, and ID pass issuance—you agree to be bound by these Terms of Service ("Terms").
+            Welcome to <strong>AVISHKAAR Event Management Platform</strong> ("AVISHKAAR", "we", "us", or "our"). By registering, accessing, browsing, or utilizing any features of our platform—including participant portals, team collaboration boards, hackathon evaluation systems, and ID pass issuance—you agree to be bound by these Terms of Service ("Terms").
           </p>
           <p className="mt-3 leading-relaxed text-slate-600 dark:text-zinc-300">
             If you do not agree to these Terms, you must immediately cease accessing or using our services. For student participants registering as a team or under institutional invitations, the team leader warrants that they possess authorization to bind their team members to these conditions.
@@ -27,7 +27,7 @@ export default function TermsOfService() {
       content: (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
-            To register and participate in competitions hosted on AYOJAN, you must satisfy the following criteria:
+            To register and participate in competitions hosted on AVISHKAAR, you must satisfy the following criteria:
           </p>
           <ul className="mt-3 space-y-2 list-disc list-inside text-slate-600 dark:text-zinc-300">
             <li>You must provide accurate, current, and verifiable registration details (including college roll number, legal name, and institutional email when requested).</li>
@@ -44,7 +44,7 @@ export default function TermsOfService() {
       content: (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
-            AYOJAN is committed to fostering an inclusive, merit-driven, and ethical innovation ecosystem. All crafters and organizers agree to uphold the highest standards of integrity:
+            AVISHKAAR is committed to fostering an inclusive, merit-driven, and ethical innovation ecosystem. All crafters and organizers agree to uphold the highest standards of integrity:
           </p>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 rounded-2xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900/50">
@@ -78,7 +78,7 @@ export default function TermsOfService() {
           </p>
           <ul className="mt-3 space-y-2 list-disc list-inside text-slate-600 dark:text-zinc-300">
             <li>Participants retain 100% intellectual property (IP) and copyright ownership over their source code, designs, and pitch presentations.</li>
-            <li>By participating, teams grant event organizers and AYOJAN a worldwide, royalty-free, non-exclusive license to display, summarize, record, and promote event submissions for marketing and portfolio purposes.</li>
+            <li>By participating, teams grant event organizers and AVISHKAAR a worldwide, royalty-free, non-exclusive license to display, summarize, record, and promote event submissions for marketing and portfolio purposes.</li>
             <li>Organizer-provided proprietary problem statement datasets or corporate APIs remain the sole property of their respective creators.</li>
           </ul>
         </>
@@ -91,7 +91,7 @@ export default function TermsOfService() {
       content: (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
-            Prize allocations, sponsor bounties, and awards published on event landing pages are administered by designated Event Organizers under AYOJAN verification standards:
+            Prize allocations, sponsor bounties, and awards published on event landing pages are administered by designated Event Organizers under AVISHKAAR verification standards:
           </p>
           <ul className="mt-3 space-y-2 list-disc list-inside text-slate-600 dark:text-zinc-300">
             <li>Jury scores, rubric evaluations, and final track rankings entered via our Jury Portal are final and binding once ratified by organizers.</li>
@@ -108,7 +108,7 @@ export default function TermsOfService() {
       content: (
         <>
           <p className="leading-relaxed text-slate-600 dark:text-zinc-300">
-            AYOJAN reserves the right to suspend or terminate access to any user or organizer account without notice in the event of security breaches, spam distribution, disruptive bot activities, or violation of these Terms.
+            AVISHKAAR reserves the right to suspend or terminate access to any user or organizer account without notice in the event of security breaches, spam distribution, disruptive bot activities, or violation of these Terms.
           </p>
         </>
       ),
@@ -143,7 +143,7 @@ export default function TermsOfService() {
             Terms of Service
           </h1>
           <p className="text-base sm:text-lg text-slate-600 dark:text-zinc-400 max-w-2xl">
-            Please read these terms carefully before registering for competitions, creating teams, or hosting events on the AYOJAN platform.
+            Please read these terms carefully before registering for competitions, creating teams, or hosting events on the AVISHKAAR platform.
           </p>
         </div>
         {/* Quick Jump Bar */}
@@ -201,7 +201,7 @@ export default function TermsOfService() {
             </p>
           </div>
           <a
-            href="mailto:support@ayojan.live"
+            href="mailto:support@avishkaar.live"
             className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition shadow-sm cursor-pointer shrink-0"
           >
             Contact Legal Team

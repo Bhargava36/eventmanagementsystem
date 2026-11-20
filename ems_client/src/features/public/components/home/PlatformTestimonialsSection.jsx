@@ -88,7 +88,7 @@ const DEFAULT_TESTIMONIALS = [
   },
 ];
 
-// Precision die-cut testimonial pass shell matching the AYOJAN pass geometry above
+// Precision die-cut testimonial pass shell matching the AVISHKAAR pass geometry above
 function DieCutQuoteShell({ width, height, notchY, gradId, isCenter }) {
   const r = 24;
   const nr = 10;
@@ -397,7 +397,7 @@ export default function PlatformTestimonialsSection() {
             </span>
           </h2>
           <p className="text-sm sm:text-base text-emerald-50 dark:text-emerald-50 leading-relaxed font-normal">
-            See what our participants say about organizing, competing, and collaborating on AYOJAN.
+            See what our participants say about organizing, competing, and collaborating on AVISHKAAR.
           </p>
         </motion.div>
       </div>

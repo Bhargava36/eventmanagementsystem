@@ -1205,7 +1205,27 @@ const migrationQueries = [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS TwoFactorEnabled TINYINT(1) DEFAULT 0`,
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS TwoFactorCode VARCHAR(10) NULL`,
-    `ALTER TABLE users ADD COLUMN IF NOT EXISTS TwoFactorExpiresAt DATETIME NULL`
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS TwoFactorExpiresAt DATETIME NULL`,
+    `ALTER TABLE event_registrations ADD COLUMN IF NOT EXISTS CertificateIssued BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE event_registrations ADD COLUMN IF NOT EXISTS CertificateIssuedAt DATETIME NULL`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS CertificateIssued BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE registered_teams ADD COLUMN IF NOT EXISTS CertificateIssuedAt DATETIME NULL`,
+    `ALTER TABLE registered_team_members ADD COLUMN IF NOT EXISTS CertificateIssued BOOLEAN DEFAULT FALSE`,
+    `ALTER TABLE registered_team_members ADD COLUMN IF NOT EXISTS CertificateIssuedAt DATETIME NULL`,
+    `CREATE TABLE IF NOT EXISTS certificate_templates (
+        Id INT AUTO_INCREMENT PRIMARY KEY,
+        EventId INT NOT NULL,
+        TemplateName VARCHAR(255) NOT NULL,
+        Orientation ENUM('landscape', 'portrait') DEFAULT 'landscape',
+        WidthMm DECIMAL(8,2) DEFAULT 297.00,
+        HeightMm DECIMAL(8,2) DEFAULT 210.00,
+        Config LONGTEXT NOT NULL,
+        IsDefault TINYINT(1) DEFAULT 0,
+        Track VARCHAR(50) DEFAULT 'Virtual',
+        CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_cert_event (EventId)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`
 ];
 let isMigrating = false;
 const migrate = () => {

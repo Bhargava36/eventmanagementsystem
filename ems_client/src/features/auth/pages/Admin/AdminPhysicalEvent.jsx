@@ -277,10 +277,10 @@ function AdminPhysicalEvent() {
       await downloadRegistrationsWorkbook({
         event: exportData?.event || eventDetails || {
           Id: eventId,
-          EventName: eventDetails?.EventName || 'AYOJAN Event',
+          EventName: eventDetails?.EventName || 'AVISHKAAR Event',
           EventType: eventDetails?.EventType || 'Hackathon',
           HackathonMode: eventDetails?.HackathonMode || 'Physical',
-          Location: eventDetails?.Location || 'AYOJAN Hub Campus'
+          Location: eventDetails?.Location || 'AVISHKAAR Hub Campus'
         },
         teams: (exportData?.teams && exportData.teams.length > 0) ? exportData.teams : teams,
         members: exportData?.members || [],
@@ -2097,7 +2097,7 @@ function AdminPhysicalEvent() {
 
                 <button
                   type="button"
-                  onClick={() => navigate(`/admin/events/${eventId}/settings`)}
+                  onClick={() => navigate(`/admin/settings`)}
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-xs font-bold text-slate-700 dark:text-zinc-300 transition cursor-pointer self-start sm:self-auto shrink-0 shadow-2xs"
                 >
                   <Settings className="h-3.5 w-3.5 text-emerald-600" />
@@ -3106,7 +3106,7 @@ function AdminPhysicalEvent() {
                       <span>Challenge submission format can be configured in Event Settings.</span>
                       <button
                         type="button"
-                        onClick={() => navigate(`/admin/events/${eventId}/settings`)}
+                        onClick={() => navigate(`/admin/settings`)}
                         className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer inline-flex items-center gap-1"
                       >
                         <span>Go to Event Settings</span>

@@ -143,7 +143,7 @@ const retryEmail = (logId) => {
             const log = rows[0];
             try {
                 const transporter = getTransporter();
-                const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AYOJAN" <no-reply@ayojan.live>';
+                const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AVISHKAAR" <no-reply@ems.aitamsac.in>';
                 await transporter.sendMail({
                     from: fromAddress,
                     to: log.RecipientEmail,
@@ -171,16 +171,16 @@ const retryEmail = (logId) => {
     });
 };
 // Send test diagnostic email
-const sendTestEmail = async ({ to, subject = 'AYOJAN Telemetry Diagnostic Test', body = 'Test email dispatch verification' }) => {
+const sendTestEmail = async ({ to, subject = 'AVISHKAAR Telemetry Diagnostic Test', body = 'Test email dispatch verification' }) => {
     const transporter = getTransporter();
-    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AYOJAN" <no-reply@ayojan.live>';
+    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AVISHKAAR" <no-reply@ems.aitamsac.in>';
     const info = await transporter.sendMail({
         from: fromAddress,
         to,
         subject,
         html: `
             <div style="font-family:sans-serif; padding:20px; border:1px solid #e2e8f0; border-radius:12px;">
-                <h2 style="color:#059669; margin-top:0;">AYOJAN Email Dispatch Test</h2>
+                <h2 style="color:#059669; margin-top:0;">AVISHKAAR Email Dispatch Test</h2>
                 <p>${body}</p>
                 <p style="color:#64748b; font-size:12px;">Dispatched from SuperAdmin Operations Center at ${new Date().toISOString()}</p>
             </div>

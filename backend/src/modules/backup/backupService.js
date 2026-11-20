@@ -36,7 +36,7 @@ const generateSqlDump = () => {
                 if (err) return reject(err);
                 const tables = tableRows.map(r => Object.values(r)[0]);
                 let sqlDump = `-- ========================================================\n`;
-                sqlDump += `-- AYOJAN Event Management System Database Snapshot Dump\n`;
+                sqlDump += `-- AVISHKAAR Event Management System Database Snapshot Dump\n`;
                 sqlDump += `-- Generated: ${new Date().toISOString()}\n`;
                 sqlDump += `-- ========================================================\n\n`;
                 sqlDump += `SET FOREIGN_KEY_CHECKS = 0;\n\n`;
@@ -168,7 +168,7 @@ const seedInitialBackupsIfEmpty = () => {
     db.query('SELECT COUNT(*) AS count FROM database_backups', (err, res) => {
         if (err || !res || res[0].count > 0) return;
         recordBackup({
-            filename: `ayojan_db_snapshot_initial.sql`,
+            filename: `ems_db_snapshot_initial.sql`,
             sizeBytes: 1420580,
             totalTables: 48,
             totalRows: 1240,

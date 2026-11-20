@@ -28,6 +28,9 @@ router.get('/event/:eventId/results', evaluatorController.getEventResults);
 router.put('/rounds/:roundId/publish', evaluatorController.publishRoundResults);
 router.put('/event/:eventId/publish-overall', evaluatorController.publishOverallResults);
 router.get('/teams/:teamId/published-results', evaluatorController.getTeamPublishedResults);
+// Certificate Management routes
+router.post('/event/:eventId/issue-certificates', evaluatorController.issueVirtualCertificates);
+router.get('/teams/:teamId/certificate', evaluatorController.getTeamCertificateData);
 // Simulation & testing helpers
 router.post('/event/:eventId/simulate-scores', evaluatorController.simulateEvaluatorScores);
 router.post('/event/:eventId/clear-simulated-scores', evaluatorController.clearSimulatedScores);

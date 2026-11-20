@@ -16,6 +16,16 @@ export default defineConfig({
     },
     dedupe: ['three'],
   },
+  optimizeDeps: {
+    include: [
+      'react-icons/gi',
+      'react-icons/lu',
+      'lucide-react',
+      'qrcode',
+      'qrcode.react',
+      'jspdf'
+    ]
+  },
   server: {
     proxy: {
       '/api': {

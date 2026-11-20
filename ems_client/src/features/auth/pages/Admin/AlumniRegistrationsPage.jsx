@@ -138,7 +138,7 @@ export default function AlumniRegistrationsPage() {
         Email: r.Email || '',
         Mobile: r.Mobile || '',
         Gender: r.Gender || 'Not Specified',
-        College: r.College || admin?.College || 'AYOJAN Alumni',
+        College: r.College || admin?.College || 'AVISHKAAR Alumni',
         State: r.City || r.State || '',
         RegistrationDate: r.CreatedAt,
         ProblemTitle: r.CurrentCompany ? `${r.Designation || 'Alumnus'} at ${r.CurrentCompany}` : 'Alumnus',
@@ -149,7 +149,7 @@ export default function AlumniRegistrationsPage() {
       await downloadRegistrationsWorkbook({
         event: {
           Id: eventId,
-          EventName: admin?.EventName || 'AYOJAN Alumni Grand Reunion',
+          EventName: admin?.EventName || 'AVISHKAAR Alumni Grand Reunion',
           EventType: 'Alumni Meet',
           HackathonMode: 'Physical',
           Location: admin?.Location || 'Campus Alumni Grounds'
@@ -165,7 +165,7 @@ export default function AlumniRegistrationsPage() {
           physicalMembers: registrations.length + totalGuests
         },
         filterMode: 'all',
-        customFilename: `AYOJAN_Alumni_Directory_Event_${eventId}.xlsx`
+        customFilename: `AVISHKAAR_Alumni_Directory_Event_${eventId}.xlsx`
       });
       toast.success('Alumni Excel directory downloaded successfully!');
     } catch (e) {

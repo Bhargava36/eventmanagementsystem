@@ -4,6 +4,7 @@ import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import HeroSection from '../../../components/ui/HeroSection';
+import UpdatedHeroSection from '../../../components/ui/UpdatedHeroSection';
 import FeaturedHackathonsSection from '../components/home/FeaturedHackathonsSection';
 import HowItWorksSection from '../components/home/HowItWorksSection';
 import LogisticsAutomationSection from '../components/home/LogisticsAutomationSection';
@@ -16,9 +17,9 @@ gsap.registerPlugin(ScrollTrigger);
 export default function HomePage() {
   useSEO({
     title: 'Home',
-    description: 'AYOJAN is the collegiate event management platform. Discover hackathons, project expos, live jury evaluations, ID pass generation, and automated campus accommodation.',
-    canonical: 'https://ayojan.aitamsac.in/',
-    ogImage: 'https://ayojan.aitamsac.in/assets/home/ai-cube.jpg',
+    description: 'AVISHKAAR is the collegiate event management platform. Discover hackathons, project expos, live jury evaluations, ID pass generation, and automated campus accommodation.',
+    canonical: 'https://ems.aitamsac.in/',
+    ogImage: 'https://ems.aitamsac.in/assets/home/ai-cube.jpg',
   });
 
   // Lenis Smooth Scroll Integration with GSAP ScrollTrigger
@@ -52,7 +53,8 @@ export default function HomePage() {
       {/* GSAP ScrollTrigger Parallax Ambient Depth Backdrop */}
       {/* <ParallaxStoryBackdrop /> */}
       {/* 1. The Vision & Real-time Platform Scale */}
-      <HeroSection />
+      {/* <HeroSection /> */}
+      <UpdatedHeroSection />
       {/* 2. The Arena: Live & Upcoming Hackathons with Staggered ScrollReveal */}
       <FeaturedHackathonsSection />
       {/* 3. The Builder Pathway: 4-Step Execution Blueprint with Scroll-driven Circuit */}

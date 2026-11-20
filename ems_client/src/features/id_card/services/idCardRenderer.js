@@ -62,7 +62,7 @@ export const replaceDynamicPlaceholders = (text, participant = {}, event = {}) =
   const m2Roll = member2.RollNumber || member2.RollNo || '21A51A4205';
   const m3Roll = member3.RollNumber || member3.RollNo || '21A51A1210';
   const m4Roll = member4.RollNumber || member4.RollNo || '21A51A0415';
-  const eventName = event.EventName || event.eventName || 'Ayojan Hackathon';
+  const eventName = event.EventName || event.eventName || 'Avishkaar Hackathon';
   const category = participant.ParticipantCategory || (participant.TeamLeader ? 'Team Leader' : 'Participant');
   let dateVal = event.PhysicalStartDate || event.StartDate || event.startDate || 'Upcoming';
   if (dateVal && dateVal !== 'Upcoming') {
@@ -463,7 +463,7 @@ export const renderCardSide = async (
       const teamId = participant.TeamId || participant.Id || '';
       const token = participant.VerificationToken || participant.IdCardNumber || 'DEMO-TOKEN';
       const eventId = event.Id || '';
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://ayojan.event';
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://avishkaar.event';
       const verifyUrl = isTeam && teamId
         ? `${origin}/teams/public/${teamId}`
         : `${origin}/verify-id?token=${encodeURIComponent(token)}&eventId=${encodeURIComponent(eventId)}`;

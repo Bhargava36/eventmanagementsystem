@@ -1,7 +1,9 @@
 import React, { useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowUp, ArrowUpRight, Mail, MapPin } from "lucide-react";
+import { ArrowUp, ArrowUpRight, MapPin } from "lucide-react";
+import { FaLinkedin } from "react-icons/fa6";
+import { DEVELOPERS } from "../../constants/developers";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -51,13 +53,7 @@ const FOOTER_DIRECTORIES = [
   },
 ];
 
-const CONTACT_DESKS = [
-  { label: "Support", value: "support@ayojan.live", href: "mailto:support@ayojan.live" },
-  { label: "Privacy", value: "privacy@ayojan.live", href: "mailto:privacy@ayojan.live" },
-  { label: "Grievance", value: "grievance@ayojan.live", href: "mailto:grievance@ayojan.live" },
-];
-
-const BRAND_LETTERS = ["A", "Y", "O", "J", "A", "N"];
+const BRAND_LETTERS = ["A", "V", "I", "S", "H", "K", "A", "A", "R"];
 
 function SlotFooterLink({ href, children, onClick }) {
   return (
@@ -206,7 +202,7 @@ export function Footer() {
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-800 dark:bg-emerald-500 bottom-0 left-1/2 -translate-x-1/2 absolute" />
                 </span>
                 <span className="font-heading text-lg font-bold tracking-[0.14em] text-slate-900 dark:text-white">
-                  AYOJAN
+                  AVISHKAAR
                 </span>
               </Link>
 
@@ -224,29 +220,6 @@ export function Footer() {
                 Structured infrastructure for campus hackathons, project expos, workshops, seminars, and alumni meets.
               </p>
             </div>
-          </div>
-
-          {/* Official Contact Desks */}
-          <div className="pt-4 border-t border-slate-200/80 dark:border-zinc-800 space-y-2">
-            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-slate-500 dark:text-zinc-500 mb-2">
-              Official Desks
-            </p>
-            {CONTACT_DESKS.map((desk) => (
-              <a
-                key={desk.label}
-                href={desk.href}
-                className="group/mail flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-slate-200/80 dark:border-zinc-800/80 bg-slate-50/70 dark:bg-zinc-950 hover:border-emerald-500/50 transition-colors"
-              >
-                <span className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-zinc-500">
-                  <Mail className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                  {desk.label}
-                </span>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-zinc-300 group-hover/mail:text-emerald-600 dark:group-hover/mail:text-emerald-400 transition-colors">
-                  <span>{desk.value}</span>
-                  <ArrowUpRight className="w-3 h-3 opacity-70 group-hover/mail:opacity-100 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover/mail:translate-x-0.5 motion-safe:group-hover/mail:-translate-y-0.5" />
-                </span>
-              </a>
-            ))}
           </div>
         </div>
 
@@ -305,7 +278,7 @@ export function Footer() {
 
           {/* Sculpted Full-Width Playfair Brand Wordmark */}
           <div className="font-heading flex items-baseline text-5xl sm:text-7xl md:text-8xl lg:text-[116px] xl:text-[148px] 2xl:text-[176px] font-bold tracking-[0.14em] leading-none text-white">
-            <span className="sr-only">AYOJAN</span>
+            <span className="sr-only">AVISHKAAR</span>
             {BRAND_LETTERS.map((char, index) => (
               <span
                 key={`${char}-${index}`}
@@ -328,16 +301,34 @@ export function Footer() {
         </div>
       </motion.div>
 
-      {/* Tier 3: Full-Width White / Black Legal Baseline */}
-      <div className="relative z-10 w-full rounded-2xl sm:rounded-full border border-white/80 dark:border-emerald-900/70 bg-white dark:bg-black px-5 sm:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-600 dark:text-zinc-400 shadow-sm dark:shadow-none">
+      {/* Tier 3: Full-Width White / Black Legal Baseline & Developers */}
+      <div className="relative z-10 w-full rounded-2xl sm:rounded-full border border-white/80 dark:border-emerald-900/70 bg-white dark:bg-black px-5 sm:px-8 py-3.5 flex flex-col xl:flex-row items-center justify-between gap-4 text-xs text-slate-600 dark:text-zinc-400 shadow-sm dark:shadow-none">
         <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5 text-center">
           <span className="font-semibold text-slate-900 dark:text-white">
-            © {CURRENT_YEAR} AYOJAN
+            © {CURRENT_YEAR} AVISHKAAR
           </span>
           <span className="text-slate-300 dark:text-zinc-700">•</span>
-          <span>Collegiate Event Management System</span>
-          <span className="hidden sm:inline text-slate-300 dark:text-zinc-700">•</span>
-          <span className="hidden sm:inline">AITAM Tekkali</span>
+          <span>AITAM Tekkali</span>
+        </div>
+
+        {/* Developers */}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            Developers:
+          </span>
+          {DEVELOPERS.map((dev) => (
+            <a
+              key={dev.name}
+              href={dev.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-200/80 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-950/80 hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-xs font-medium text-slate-700 dark:text-zinc-300"
+            >
+              <FaLinkedin className="w-3.5 h-3.5 text-[#0A66C2]" />
+              <span>{dev.name}</span>
+              <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </a>
+          ))}
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-5 sm:gap-6">

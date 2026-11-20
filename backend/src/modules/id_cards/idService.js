@@ -464,7 +464,7 @@ const getDefaultTemplateConfig = (orientation = "portrait") => {
         {
             id: "back-rule-3",
             type: "text",
-            text: "• For emergency assistance or lost badge reporting, please contact the Ayojan helpdesk.",
+            text: "• For emergency assistance or lost badge reporting, please contact the Avishkaar helpdesk.",
             dynamicField: null,
             x: 30,
             y: 160,
@@ -482,7 +482,7 @@ const getDefaultTemplateConfig = (orientation = "portrait") => {
         {
             id: "back-footer",
             type: "text",
-            text: "Ayojan Event Management System • Authorized Print",
+            text: "Avishkaar Event Management System • Authorized Print",
             dynamicField: null,
             x: 20,
             y: height - 40,
@@ -1119,7 +1119,7 @@ const getDefaultTeamCardTemplateConfig = () => {
         {
             id: "footer-txt",
             type: "text",
-            text: "Ayojan Hackathon Presentation Desk Card • Official Table Placard",
+            text: "Avishkaar Hackathon Presentation Desk Card • Official Table Placard",
             dynamicField: null,
             x: 30,
             y: 440,

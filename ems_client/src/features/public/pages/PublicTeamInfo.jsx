@@ -927,7 +927,7 @@ export default function PublicTeamInfo() {
             </Link>
             <span>•</span>
             <Link to="/" className="hover:opacity-80 transition-opacity">
-              AYOJAN Home
+              AVISHKAAR Home
             </Link>
           </div>
         </motion.div>

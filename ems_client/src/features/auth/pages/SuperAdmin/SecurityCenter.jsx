@@ -1257,7 +1257,7 @@ export default function SecurityCenter() {
                     <input
                       type="email"
                       required
-                      placeholder="e.g. user@example.com or admin@ayojan.in"
+                      placeholder="e.g. user@example.com or admin@avishkaar.in"
                       value={unlockEmail}
                       onChange={(e) => setUnlockEmail(e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-zinc-800 bg-gray-50/50 dark:bg-black text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 shadow-xs"

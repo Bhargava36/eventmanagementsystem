@@ -315,7 +315,7 @@ function UserProfile() {
                   </span>
                 </div>
                 <p className="text-xs sm:text-sm text-emerald-100/90 mt-1 font-medium">
-                  {profile.College || 'AYOJAN EMS Member'}
+                  {profile.College || 'AVISHKAAR EMS Member'}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-white/80">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/20 backdrop-blur-md border border-white/10">

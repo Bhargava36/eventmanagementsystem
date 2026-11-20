@@ -35,7 +35,7 @@ function colToLetter(colIndex) {
 }
 
 /**
- * Generates OpenXML styles for professional AYOJAN branding:
+ * Generates OpenXML styles for professional AVISHKAAR branding:
  * Emerald headers, clean fonts, borders, zebra striping, and colored status badges.
  */
 function generateStylesXml() {
@@ -314,11 +314,11 @@ function buildSummaryWorksheetXml({ event, summary, teams = [] }) {
   const colCount = 6;
   const endColLetter = colToLetter(colCount);
 
-  const eventName = event?.EventName || 'AYOJAN Event';
+  const eventName = event?.EventName || 'AVISHKAAR Event';
   const eventType = event?.EventType || 'Hackathon';
   const mode = event?.HackathonMode || 'Virtual & Physical';
   const dates = `${event?.StartDate || 'TBA'} to ${event?.EndDate || 'TBA'}`;
-  const location = event?.Location || 'AYOJAN Hub Campus';
+  const location = event?.Location || 'AVISHKAAR Hub Campus';
 
   let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
   xml += '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">\n';
@@ -591,11 +591,11 @@ export async function downloadRegistrationsWorkbook({
   filterMode = 'all',
   customFilename = ''
 }) {
-  const eventName = event?.EventName || 'AYOJAN Event';
+  const eventName = event?.EventName || 'AVISHKAAR Event';
   const eventType = event?.EventType || 'Hackathon';
   const mode = event?.HackathonMode || 'Virtual & Physical';
   const dates = `${event?.StartDate || 'TBA'} - ${event?.EndDate || 'TBA'}`;
-  const location = event?.Location || 'AYOJAN Hub Campus';
+  const location = event?.Location || 'AVISHKAAR Hub Campus';
   const timestamp = new Date().toLocaleString('en-IN', { timeZoneName: 'short' });
 
   // Normalize full rows
@@ -626,7 +626,7 @@ export async function downloadRegistrationsWorkbook({
     sheetsToCreate.push({
       name: 'All Registrations',
       xml: buildWorksheetXml({
-        title: `AYOJAN // ${eventName.toUpperCase()} — ALL CONFIRMED REGISTRATIONS`,
+        title: `${eventName.toUpperCase()} — ALL CONFIRMED REGISTRATIONS`,
         subtitle: `Track: Universal (${mode})  |  Category: ${eventType}  |  Dates: ${dates}  |  Venue: ${location}`,
         meta: `Exported on ${timestamp}  |  Total Teams: ${finalSummary.totalTeams}  |  Total Participants: ${finalSummary.totalMembers}`,
         kpis: [
@@ -644,7 +644,7 @@ export async function downloadRegistrationsWorkbook({
     sheetsToCreate.push({
       name: 'Virtual Track',
       xml: buildWorksheetXml({
-        title: `AYOJAN // ${eventName.toUpperCase()} — VIRTUAL TRACK DIRECTORY`,
+        title: ` ${eventName.toUpperCase()} — VIRTUAL TRACK DIRECTORY`,
         subtitle: `Track: Virtual Track (Online)  |  Category: ${eventType}  |  Live Platform Access Enabled`,
         meta: `Exported on ${timestamp}  |  Virtual Teams: ${finalSummary.virtualTeams}  |  Virtual Participants: ${finalSummary.virtualMembers}`,
         kpis: [
@@ -660,7 +660,7 @@ export async function downloadRegistrationsWorkbook({
     sheetsToCreate.push({
       name: 'Physical Track',
       xml: buildWorksheetXml({
-        title: `AYOJAN // ${eventName.toUpperCase()} — PHYSICAL ON-CAMPUS DIRECTORY`,
+        title: `${eventName.toUpperCase()} — PHYSICAL ON-CAMPUS DIRECTORY`,
         subtitle: `Track: Physical Track (On-Campus)  |  Venue: ${location}  |  Accommodation & Meals Tracked`,
         meta: `Exported on ${timestamp}  |  Physical Teams: ${finalSummary.physicalTeams}  |  On-Campus Participants: ${finalSummary.physicalMembers}`,
         kpis: [
@@ -681,7 +681,7 @@ export async function downloadRegistrationsWorkbook({
     sheetsToCreate.push({
       name: 'Virtual Track Registrations',
       xml: buildWorksheetXml({
-        title: `AYOJAN // ${eventName.toUpperCase()} — VIRTUAL TRACK DIRECTORY`,
+        title: `${eventName.toUpperCase()} — VIRTUAL TRACK DIRECTORY`,
         subtitle: `Track: Virtual Track (Online)  |  Category: ${eventType}  |  Platform Access Enabled`,
         meta: `Exported on ${timestamp}  |  Virtual Teams: ${finalSummary.virtualTeams}  |  Virtual Participants: ${finalSummary.virtualMembers}`,
         kpis: [
@@ -700,7 +700,7 @@ export async function downloadRegistrationsWorkbook({
     sheetsToCreate.push({
       name: 'Physical Track Registrations',
       xml: buildWorksheetXml({
-        title: `AYOJAN // ${eventName.toUpperCase()} — PHYSICAL ON-CAMPUS DIRECTORY`,
+        title: `${eventName.toUpperCase()} — PHYSICAL ON-CAMPUS DIRECTORY`,
         subtitle: `Track: Physical Track (On-Campus)  |  Venue: ${location}  |  Accommodation & Food`,
         meta: `Exported on ${timestamp}  |  Physical Teams: ${finalSummary.physicalTeams}  |  On-Campus Participants: ${finalSummary.physicalMembers}`,
         kpis: [
@@ -720,7 +720,7 @@ export async function downloadRegistrationsWorkbook({
     sheetsToCreate.push({
       name: 'Registrations',
       xml: buildWorksheetXml({
-        title: `AYOJAN // ${eventName.toUpperCase()} — ACTIVE FILTERED REGISTRATIONS`,
+        title: `${eventName.toUpperCase()} — ACTIVE FILTERED REGISTRATIONS`,
         subtitle: `Event: ${eventName}  |  Category: ${eventType}  |  Schedule: ${dates}`,
         meta: `Exported on ${timestamp}  |  Matching Records: ${allRows.length}`,
         kpis: [
@@ -794,7 +794,7 @@ export async function downloadRegistrationsWorkbook({
   const cleanName = eventName.replace(/[^a-zA-Z0-9_-]/g, '_');
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const trackSuffix = filterMode === 'virtual' ? '_Virtual_Track' : filterMode === 'physical' ? '_Physical_Track' : '_All_Registrations';
-  const finalFilename = customFilename || `AYOJAN_${cleanName}${trackSuffix}_${dateStr}.xlsx`;
+  const finalFilename = customFilename || `AVISHKAAR_${cleanName}${trackSuffix}_${dateStr}.xlsx`;
 
   // Trigger browser download
   const url = window.URL.createObjectURL(blob);
@@ -1004,7 +1004,7 @@ export async function downloadPSTemplateWorkbook({ eventName = 'Hackathon' } = {
   });
 
   const cleanName = eventName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  const filename = `AYOJAN_${cleanName}_Problem_Statements_and_Themes_Template.xlsx`;
+  const filename = `AVISHKAAR_${cleanName}_Problem_Statements_and_Themes_Template.xlsx`;
 
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');

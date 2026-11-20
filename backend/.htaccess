@@ -22,7 +22,7 @@
 
 # Security & CORS Headers for Static Assets & Uploads
 <IfModule mod_headers.c>
-  SetEnvIf Origin "^https?://(ayojan\.aitamsac\.in|ems\.aitamsac\.in|localhost:5173|localhost:5174)$" CORS_ALLOWED_ORIGIN=$0
+  SetEnvIf Origin "^https?://(ems\.aitamsac\.in|localhost:5173|localhost:5174)$" CORS_ALLOWED_ORIGIN=$0
   Header always set Access-Control-Allow-Origin "%{CORS_ALLOWED_ORIGIN}e" env=CORS_ALLOWED_ORIGIN
   Header always set Access-Control-Allow-Credentials "true"
   Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"

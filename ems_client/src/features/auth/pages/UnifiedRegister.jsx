@@ -44,7 +44,7 @@ const REGISTER_CONFIGS = {
     titleFirst: "Master Admin",
     titleHighlight: "Provisioning",
     description:
-      "Establish master authority over AYOJAN EMS. Manage multi-event infrastructures, deploy organizing committees, and track cross-campus innovation metrics.",
+      "Establish master authority over AVISHKAAR EMS. Manage multi-event infrastructures, deploy organizing committees, and track cross-campus innovation metrics.",
     features: [
       {
         icon: ShieldCheck,

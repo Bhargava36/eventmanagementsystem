@@ -31,8 +31,8 @@ export default function OperationsHub({ defaultTab = 'email' }) {
   // Test Mail Modal
   const [showTestMailModal, setShowTestMailModal] = useState(false);
   const [testMailRecipient, setTestMailRecipient] = useState('');
-  const [testMailSubject, setTestMailSubject] = useState('AYOJAN Telemetry Diagnostic Test');
-  const [testMailBody, setTestMailBody] = useState('Hello, this is a test email verifying SMTP configuration from AYOJAN Operations Center.');
+  const [testMailSubject, setTestMailSubject] = useState('AVISHKAAR Telemetry Diagnostic Test');
+  const [testMailBody, setTestMailBody] = useState('Hello, this is a test email verifying SMTP configuration from AVISHKAAR Operations Center.');
   const [testMailSending, setTestMailSending] = useState(false);
   const [testMailResult, setTestMailResult] = useState(null);
   // -------------------------------------------------------------
@@ -822,7 +822,7 @@ export default function OperationsHub({ defaultTab = 'email' }) {
                     required
                     value={testMailRecipient}
                     onChange={(e) => setTestMailRecipient(e.target.value)}
-                    placeholder="e.g. test@ayojan.live"
+                    placeholder="e.g. test@avishkaar.live"
                     className="w-full py-2 px-3 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -933,7 +933,7 @@ export default function OperationsHub({ defaultTab = 'email' }) {
                       type="text"
                       value={whSecret}
                       onChange={(e) => setWhSecret(e.target.value)}
-                      placeholder="X-Ayojan-Secret header"
+                      placeholder="X-Avishkaar-Secret header"
                       className="w-full py-2 px-3 rounded-xl bg-gray-50 dark:bg-black border border-gray-200 dark:border-gray-800 font-mono text-[11px]"
                     />
                   </div>

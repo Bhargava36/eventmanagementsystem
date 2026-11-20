@@ -22,6 +22,7 @@ const sponsorRoutes = require("./src/modules/sponsors/sponsorRoutes");
 const galleryRoutes = require("./src/modules/gallery/galleryRoutes");
 const devRoute = require("./src/modules/dev/devRoute");
 const evaluatorRoutes = require("./src/modules/evaluators/evaluatorRoutes");
+const certificateRoutes = require("./src/modules/certificates/certificateRoutes");
 const psRoutes = require("./src/modules/problem_statements/psRoutes");
 const projectSubmissionRoutes = require("./src/modules/project_submissions/projectSubmissionRoute");
 const feedbackRoutes = require("./src/modules/feedback/feedbackRoute");
@@ -46,8 +47,6 @@ const app = express();
 // Allowed origins: ems.aitamsac.in and localhosts 5173, 5174 only
 const envAllowed = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()) : [];
 const defaultAllowed = [
-    'https://ayojan.aitamsac.in',
-    'http://ayojan.aitamsac.in',
     'https://ems.aitamsac.in',
     'http://ems.aitamsac.in',
     'http://localhost:5173',
@@ -114,6 +113,7 @@ app.use("/api/sponsors", sponsorRoutes);
 app.use("/api/gallery", galleryRoutes);
 app.use("/api/dev", devRoute);
 app.use("/api/evaluators", evaluatorRoutes);
+app.use("/api/certificates", certificateRoutes);
 app.use("/api/problem-statements", psRoutes);
 app.use("/api/project-submissions", projectSubmissionRoutes);
 app.use('/api/feedback', feedbackRoutes);

@@ -17,7 +17,7 @@ function createInitialMessage() {
   return {
     id: 1,
     sender: "concierge",
-    text: "Hi, I'm Byte — your AYOJAN event guide. Ask about open events, solo or squad registration, digital QR passes, or hosting.",
+    text: "Hi, I'm Byte — your AVISHKAAR event guide. Ask about open events, solo or squad registration, digital QR passes, or hosting.",
     timestamp: getFormattedTime(),
     suggestions: [
       "How to register?",
@@ -119,7 +119,7 @@ function generateConciergeReply(userInput) {
     text.includes("seminar")
   ) {
     return {
-      text: "AYOJAN hosts hackathons, project expos, workshops, seminars, webinars, and alumni meets across on-campus, virtual, and hybrid formats.",
+      text: "AVISHKAAR hosts hackathons, project expos, workshops, seminars, webinars, and alumni meets across on-campus, virtual, and hybrid formats.",
       action: { label: "Explore Open Events", path: "/events" },
     };
   }

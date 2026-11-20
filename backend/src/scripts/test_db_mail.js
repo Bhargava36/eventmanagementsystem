@@ -24,9 +24,9 @@ async function runTest() {
                 userName: targetUser.UserName || 'Valued Participant',
                 eventName: 'HackMatrix 2026: AI & Systems',
                 subject: 'Official Verification: Member Dispatch Confirmation',
-                message: 'Hello! This is a real-time verification email confirming that the AYOJAN Member-Wise Email Dispatch Engine is functioning properly.',
+                message: 'Hello! This is a real-time verification email confirming that the AVISHKAAR Member-Wise Email Dispatch Engine is functioning properly.',
                 category: 'Important Alert',
-                organizerName: 'AYOJAN Platform Directorate'
+                organizerName: 'AVISHKAAR Platform Directorate'
             });
             console.log('Send result:', sendResult);
             console.log('\n--- Step 3: Fetching recent email dispatch logs from DB ---');

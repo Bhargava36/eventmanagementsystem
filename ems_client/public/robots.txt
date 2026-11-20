@@ -1,5 +1,5 @@
-# AYOJAN Platform - robots.txt
-# Domain: https://ayojan.aitamsac.in
+# AVISHKAAR Platform - robots.txt
+# Domain: https://ems.aitamsac.in
 
 User-agent: *
 Allow: /
@@ -20,4 +20,4 @@ Disallow: /api/
 Disallow: /test-credentials
 
 # Sitemap
-Sitemap: https://ayojan.aitamsac.in/sitemap.xml
+Sitemap: https://ems.aitamsac.in/sitemap.xml

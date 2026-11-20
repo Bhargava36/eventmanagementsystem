@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const sessionService = require('../modules/security/sessionService');
 const { recordLoginAttempt } = require('../modules/security/securityAlertService');
-const JWT_SECRET = process.env.JWT_SECRECT || process.env.JWT_SECRET || 'ayojan_enterprise_secret_2026';
+const JWT_SECRET = process.env.JWT_SECRECT || process.env.JWT_SECRET || 'ems_enterprise_secret_2026';
 // Validates the Bearer token on incoming requests and verifies that the associated database session hasn't been revoked.
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers.authorization;

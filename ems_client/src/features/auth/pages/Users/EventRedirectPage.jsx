@@ -13,7 +13,7 @@ import EventSponsorsSection from '../../../../components/Molecules/EventSponsors
 import PhysicalHackathonThemesSection from '../../../../components/Molecules/PhysicalHackathonThemesSection';
 import PhysicalTeamPSActionCard from '../../../../components/Molecules/PhysicalTeamPSActionCard';
 import { getEventTheme, getEventTypeInfo, isSoloTeamSize, parseTeamSizeOptions, formatDate } from '../../../../lib/utils';
-import { ArrowLeft, Calendar, Clock, MapPin, Users, Trophy, Award, Medal, CheckCircle2, Share2, Check, Monitor, Building2, Globe, Tag, AlertCircle, RefreshCw, FileText, ShieldCheck, ChevronRight, Layers, Radio, Info, X, Camera, Upload, User, Loader2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, Users, Trophy, Award, Medal, CheckCircle2, Share2, Check, Monitor, Building2, Globe, Tag, AlertCircle, RefreshCw, FileText, ShieldCheck, ChevronRight, Layers, Radio, Info, X, Camera, Upload, User, Loader2, Phone, Mail } from 'lucide-react';
 // Prize Podium SVG (same as PublicEventDetails)
 function PrizePodiumStage({
   firstAmount, firstDesc, firstTrack,
@@ -722,30 +722,66 @@ function EventDetails() {
   const isGlobalPaused = useMemo(() => {
     return event?.RegistrationOpen === 0 || event?.RegistrationOpen === false;
   }, [event]);
-  const isVirtualRegistrationClosed = useMemo(() => {
+  const isVirtualEnded = useMemo(() => {
     if (!event) return false;
     const s = (event.EventStatus || '').toLowerCase();
     if (s === 'completed') return true;
-    if (isGlobalPaused || isVirtualPaused) return true;
     if (effectiveVirtualRegEnd) return new Date().getTime() > new Date(effectiveVirtualRegEnd).getTime();
     return false;
-  }, [event, effectiveVirtualRegEnd, isGlobalPaused, isVirtualPaused]);
-  const isPhysicalRegistrationClosed = useMemo(() => {
+  }, [event, effectiveVirtualRegEnd]);
+
+  const isPhysicalEnded = useMemo(() => {
     if (!event) return false;
     const s = (event.EventStatus || '').toLowerCase();
     if (s === 'completed') return true;
-    if (isGlobalPaused || isPhysicalPaused) return true;
     if (effectivePhysicalRegEnd) return new Date().getTime() > new Date(effectivePhysicalRegEnd).getTime();
     return false;
-  }, [event, effectivePhysicalRegEnd, isGlobalPaused, isPhysicalPaused]);
+  }, [event, effectivePhysicalRegEnd]);
+
+  const isVirtualRegistrationClosed = useMemo(() => {
+    if (!event) return false;
+    return isGlobalPaused || isVirtualPaused || isVirtualEnded;
+  }, [event, isGlobalPaused, isVirtualPaused, isVirtualEnded]);
+
+  const isPhysicalRegistrationClosed = useMemo(() => {
+    if (!event) return false;
+    return isGlobalPaused || isPhysicalPaused || isPhysicalEnded;
+  }, [event, isGlobalPaused, isPhysicalPaused, isPhysicalEnded]);
+
+  const isAllRegistrationEnded = useMemo(() => {
+    if (!event) return false;
+    const s = (event.EventStatus || '').toLowerCase();
+    if (s === 'completed') return true;
+    const modes = (event.HackathonMode || '').toLowerCase();
+    if (modes === 'both' || modes === 'virtual and physical') {
+      return isVirtualEnded && isPhysicalEnded;
+    }
+    return modes === 'physical' ? isPhysicalEnded : isVirtualEnded;
+  }, [event, isVirtualEnded, isPhysicalEnded]);
+
+  const isAllRegistrationPaused = useMemo(() => {
+    if (!event) return false;
+    if (isGlobalPaused) return true;
+    const modes = (event.HackathonMode || '').toLowerCase();
+    if (modes === 'both' || modes === 'virtual and physical') {
+      const vStopped = isVirtualPaused || isVirtualEnded;
+      const pStopped = isPhysicalPaused || isPhysicalEnded;
+      return (isVirtualPaused || isPhysicalPaused) && vStopped && pStopped;
+    }
+    return modes === 'physical' ? isPhysicalPaused : isVirtualPaused;
+  }, [event, isGlobalPaused, isVirtualPaused, isPhysicalPaused, isVirtualEnded, isPhysicalEnded]);
+
   const isRegistrationClosed = useMemo(() => {
     if (!event) return false;
     const s = (event.EventStatus || '').toLowerCase();
     if (s === 'completed') return true;
     if (isGlobalPaused) return true;
-    if (event.RegistrationEnd) return new Date().getTime() > new Date(event.RegistrationEnd).getTime();
-    return false;
-  }, [event, isGlobalPaused]);
+    const modes = (event.HackathonMode || '').toLowerCase();
+    if (modes === 'both' || modes === 'virtual and physical') {
+      return isVirtualRegistrationClosed && isPhysicalRegistrationClosed;
+    }
+    return isAllRegistrationEnded || isAllRegistrationPaused;
+  }, [event, isGlobalPaused, isVirtualRegistrationClosed, isPhysicalRegistrationClosed, isAllRegistrationEnded, isAllRegistrationPaused]);
   const splitFacilities = (text) => {
     if (!text) return [];
     return text.split('\n').map((i) => i.trim()).filter(Boolean);
@@ -813,6 +849,27 @@ function EventDetails() {
     return str;
   };
   const physicalPrizesList = prizes.filter((p) => (p.Track || '').toLowerCase() === 'physical');
+  const physicalThemes = (() => {
+    if (!themes || !Array.isArray(themes)) return [];
+    const mode = String(event?.HackathonMode || '').toLowerCase();
+    const isDual =
+      hasBothTracks ||
+      mode === 'both' ||
+      mode === 'virtual and physical' ||
+      Boolean(event?.VirtualStartDate && event?.PhysicalStartDate);
+
+    if (isDual) {
+      return themes.filter((t) => String(t.Track || '').toLowerCase() === 'physical');
+    }
+    if (mode === 'virtual') {
+      return [];
+    }
+    const hasPhysical = themes.some((t) => String(t.Track || '').toLowerCase() === 'physical');
+    if (hasPhysical) {
+      return themes.filter((t) => String(t.Track || '').toLowerCase() === 'physical');
+    }
+    return themes.filter((t) => String(t.Track || '').toLowerCase() !== 'virtual');
+  })();
   const virtualPrizesList = prizes.filter((p) => (p.Track || '').toLowerCase() === 'virtual');
   const overallPrizesList = prizes.filter((p) => (p.Track || '').toLowerCase() === 'overall' || !p.Track);
   const hasSeparateTrackPrizes = physicalPrizesList.length > 0 || virtualPrizesList.length > 0;
@@ -961,25 +1018,48 @@ function EventDetails() {
               <div className="lg:col-span-7 space-y-5">
                 {/* status + type + mode badges */}
                 <div className="flex flex-wrap items-center gap-2">
-                  {(event.EventStatus || '').toLowerCase() === 'ongoing' ? (
-                    <span
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold"
-                      style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
-                    >
-                      <span className="h-2 w-2 rounded-full animate-ping" style={{ backgroundColor: eventTheme.accent }} />Live Ongoing
-                    </span>
-                  ) : (event.EventStatus || '').toLowerCase() === 'completed' ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/30">
-                      <CheckCircle2 className="h-3.5 w-3.5" />Event Concluded
-                    </span>
-                  ) : (
-                    <span
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold"
-                      style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
-                    >
-                      <Clock className="h-3.5 w-3.5" style={{ color: eventTheme.accent }} />Registrations Open
-                    </span>
-                  )}
+                  {(() => {
+                    const status = (event.EventStatus || '').toLowerCase();
+                    if (status === 'ongoing' || status === 'live') {
+                      return (
+                        <span
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold"
+                          style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                        >
+                          <span className="h-2 w-2 rounded-full animate-ping" style={{ backgroundColor: eventTheme.accent }} />Live Ongoing
+                        </span>
+                      );
+                    }
+                    if (status === 'completed') {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border border-zinc-500/30">
+                          <CheckCircle2 className="h-3.5 w-3.5" />Event Concluded
+                        </span>
+                      );
+                    }
+                    if (isAllRegistrationEnded) {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                          <span className="w-2 h-2 rounded-full bg-rose-500" />Registrations Ended
+                        </span>
+                      );
+                    }
+                    if (isAllRegistrationPaused) {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />Registrations Paused
+                        </span>
+                      );
+                    }
+                    return (
+                      <span
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold"
+                        style={{ backgroundColor: eventTheme.badgeBg, color: eventTheme.badgeText, borderColor: eventTheme.badgeBorder, borderWidth: 1 }}
+                      >
+                        <Clock className="h-3.5 w-3.5" style={{ color: eventTheme.accent }} />Registrations Open
+                      </span>
+                    );
+                  })()}
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-zinc-950 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
                     <Tag className="h-3 w-3" style={{ color: eventTheme.accent }} />{eventTypeInfo.label}
                   </span>
@@ -1092,15 +1172,15 @@ function EventDetails() {
                                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: eventTheme.accent }} />
                                 <span>Registered</span>
                               </span>
-                            ) : isVirtualPaused ? (
+                            ) : isVirtualPaused || isGlobalPaused ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                 <span>Paused</span>
                               </span>
-                            ) : isVirtualRegistrationClosed ? (
+                            ) : isVirtualEnded ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                <span>Closed</span>
+                                <span>Ended</span>
                               </span>
                             ) : (
                               <span
@@ -1120,12 +1200,16 @@ function EventDetails() {
                       {/* Middle: Timer or Paused Alert */}
                       <div className="flex flex-col items-center">
                         {isVirtualRegistrationClosed ? (
-                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold">
-                            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                          <div className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold ${
+                            isVirtualPaused || isGlobalPaused
+                              ? 'bg-amber-500/10 dark:bg-amber-950/30 border-amber-500/25 text-amber-700 dark:text-amber-300'
+                              : 'bg-rose-500/10 dark:bg-rose-950/30 border-rose-500/25 text-rose-700 dark:text-rose-300'
+                          }`}>
+                            <AlertCircle className={`h-4 w-4 shrink-0 ${isVirtualPaused || isGlobalPaused ? 'text-amber-500' : 'text-rose-500'}`} />
                             <span>
-                              {isVirtualPaused
+                              {isVirtualPaused || isGlobalPaused
                                 ? 'Virtual registration paused by organizers'
-                                : `Virtual registration closed (${formatDate(effectiveVirtualRegEnd)})`}
+                                : `Virtual registration ended (${formatDate(effectiveVirtualRegEnd)})`}
                             </span>
                           </div>
                         ) : (
@@ -1207,15 +1291,15 @@ function EventDetails() {
                                 <CheckCircle2 className="w-3.5 h-3.5" style={{ color: eventTheme.accent }} />
                                 <span>Registered</span>
                               </span>
-                            ) : isPhysicalPaused ? (
+                            ) : isPhysicalPaused || isGlobalPaused ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                 <span>Paused</span>
                               </span>
-                            ) : isPhysicalRegistrationClosed ? (
+                            ) : isPhysicalEnded ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                <span>Closed</span>
+                                <span>Ended</span>
                               </span>
                             ) : (
                               <span
@@ -1238,12 +1322,16 @@ function EventDetails() {
                       {/* Middle: Timer or Paused Alert */}
                       <div className="flex flex-col items-center">
                         {isPhysicalRegistrationClosed ? (
-                          <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold">
-                            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                          <div className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold ${
+                            isPhysicalPaused || isGlobalPaused
+                              ? 'bg-amber-500/10 dark:bg-amber-950/30 border-amber-500/25 text-amber-700 dark:text-amber-300'
+                              : 'bg-rose-500/10 dark:bg-rose-950/30 border-rose-500/25 text-rose-700 dark:text-rose-300'
+                          }`}>
+                            <AlertCircle className={`h-4 w-4 shrink-0 ${isPhysicalPaused || isGlobalPaused ? 'text-amber-500' : 'text-rose-500'}`} />
                             <span>
-                              {isPhysicalPaused
+                              {isPhysicalPaused || isGlobalPaused
                                 ? 'Physical registration paused by organizers'
-                                : `Physical registration closed (${formatDate(effectivePhysicalRegEnd)})`}
+                                : `Physical registration ended (${formatDate(effectivePhysicalRegEnd)})`}
                             </span>
                           </div>
                         ) : (
@@ -1534,7 +1622,7 @@ function EventDetails() {
                       {String(event?.EventType || '').toLowerCase() === 'hackathon' && (
                         <div className="space-y-6">
                           <PhysicalHackathonThemesSection
-                            themes={themes}
+                            themes={physicalThemes}
                             event={event}
                             eventTheme={eventTheme}
                           />
@@ -1549,7 +1637,7 @@ function EventDetails() {
                               organizerStatements={organizerStatements}
                               selectedStatement={selectedStatement}
                               onSelectOrganizerStatement={(locked) => setSelectedStatement(locked)}
-                              themes={themes}
+                              themes={physicalThemes}
                             />
                           )}
                         </div>
@@ -1639,23 +1727,83 @@ function EventDetails() {
                   <Users className="h-5 w-5" style={{ color: eventTheme.accent }} />
                   <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Organizing Committee & Leads</h2>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5">
                   {coreTeam.map((member, idx) => (
-                    <div key={member.Id || idx} className="p-4 rounded-2xl bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 flex items-center gap-3.5">
+                    <div
+                      key={member.Id || idx}
+                      className="group relative w-full aspect-[3/4] rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-900 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-emerald-500"
+                    >
+                      {/* Full Bleed Profile Photo */}
                       {member.Photo ? (
-                        <img src={member.Photo} alt={member.Name} className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-zinc-800 shrink-0" />
+                        <img
+                          src={member.Photo}
+                          alt={member.Name}
+                          className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                        />
                       ) : (
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm shrink-0"
-                          style={{ backgroundColor: eventTheme.iconBg, color: eventTheme.iconColor }}
-                        >
-                          {(member.Name || 'U').charAt(0).toUpperCase()}
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-slate-200 dark:bg-zinc-900 text-slate-500 dark:text-zinc-500 p-4 text-center">
+                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-slate-300 dark:bg-zinc-800 flex items-center justify-center text-3xl sm:text-4xl font-extrabold text-slate-700 dark:text-zinc-200">
+                            {(member.Name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <p className="mt-3 text-xs font-semibold text-slate-700 dark:text-zinc-300 line-clamp-1">
+                            {member.Name}
+                          </p>
                         </div>
                       )}
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{member.Name}</h4>
-                        <p className="text-xs font-semibold truncate" style={{ color: eventTheme.accent }}>{member.Role}</p>
-                        {member.Department && <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">{member.Department}</p>}
+
+                      {/* Idle Name & Role Bar (fades out on hover) */}
+                      <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4 bg-black/60 backdrop-blur-xs text-white transition-opacity duration-300 group-hover:opacity-0 pointer-events-none">
+                        <h4 className="text-sm sm:text-base font-bold text-white truncate">
+                          {member.Name}
+                        </h4>
+                        <p className="text-[11px] sm:text-xs text-zinc-300 font-medium truncate">
+                          {member.Role || 'Lead Organizer'}
+                        </p>
+                      </div>
+
+                      {/* On-Hover Full Details Overlay */}
+                      <div className="absolute inset-0 bg-black/85 backdrop-blur-xs p-4 sm:p-5 flex flex-col justify-end text-white opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <div className="translate-y-3 group-hover:translate-y-0 transition-transform duration-300 flex flex-col justify-end">
+                          <span className="inline-block self-start px-2.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold bg-emerald-600 text-white mb-2 shadow-xs">
+                            {member.Role || 'Lead Organizer'}
+                          </span>
+
+                          <h4 className="text-base sm:text-lg font-bold text-white line-clamp-1">
+                            {member.Name}
+                          </h4>
+
+                          {member.Department && (
+                            <p className="mt-1 text-xs text-zinc-300 line-clamp-1 flex items-center gap-1.5 font-medium">
+                              <Building2 className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                              <span>{member.Department}</span>
+                            </p>
+                          )}
+
+                          {/* Contact Action Bar */}
+                          {(Boolean(member.Phone && member.Phone.trim()) || Boolean(member.Email && member.Email.trim())) && (
+                            <div className="mt-3.5 pt-3 border-t border-zinc-700 flex items-center gap-2">
+                              {Boolean(member.Phone && member.Phone.trim()) && (
+                                <a
+                                  href={`tel:${member.Phone.trim().replace(/\s+/g, '')}`}
+                                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors shadow-xs"
+                                  title={`Call ${member.Name}: ${member.Phone}`}
+                                >
+                                  <Phone className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="truncate">{member.Phone}</span>
+                                </a>
+                              )}
+                              {Boolean(member.Email && member.Email.trim()) && (
+                                <a
+                                  href={`mailto:${member.Email.trim()}`}
+                                  className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-semibold transition-colors shrink-0"
+                                  title={`Email ${member.Name}: ${member.Email}`}
+                                >
+                                  <Mail className="h-3.5 w-3.5" />
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1723,9 +1871,13 @@ function EventDetails() {
                   <>
                     {/* Virtual Track Sidebar Action */}
                     {isVirtualRegistrationClosed ? (
-                      <div className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed">
+                      <div className={`w-full py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed ${
+                        isVirtualPaused || isGlobalPaused
+                          ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
+                          : 'bg-slate-100 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500'
+                      }`}>
                         <AlertCircle className="h-3.5 w-3.5" />
-                        <span>Virtual Registration Closed</span>
+                        <span>{isVirtualPaused || isGlobalPaused ? 'Virtual Registration Paused' : 'Virtual Registration Ended'}</span>
                       </div>
                     ) : (
                       <button
@@ -1740,9 +1892,13 @@ function EventDetails() {
                     )}
                     {/* Physical Track Sidebar Action */}
                     {isPhysicalRegistrationClosed ? (
-                      <div className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed">
+                      <div className={`w-full py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 cursor-not-allowed ${
+                        isPhysicalPaused || isGlobalPaused
+                          ? 'bg-amber-500/10 border-amber-500/25 text-amber-700 dark:text-amber-400'
+                          : 'bg-slate-100 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-400 dark:text-zinc-500'
+                      }`}>
                         <AlertCircle className="h-3.5 w-3.5" />
-                        <span>Physical Registration Closed</span>
+                        <span>{isPhysicalPaused || isGlobalPaused ? 'Physical Registration Paused' : 'Physical Registration Ended'}</span>
                       </div>
                     ) : (
                       <button
@@ -1761,10 +1917,15 @@ function EventDetails() {
                     const singleMode = availableModes[0] || 'Virtual';
                     const isPhysical = singleMode === 'Physical';
                     const isClosed = isPhysical ? isPhysicalRegistrationClosed : isVirtualRegistrationClosed;
+                    const isPaused = isPhysical ? (isPhysicalPaused || isGlobalPaused) : (isVirtualPaused || isGlobalPaused);
                     if (isClosed) {
                       return (
-                        <button disabled className="w-full py-3.5 px-6 rounded-2xl bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 font-bold text-xs cursor-not-allowed">
-                          Registration Concluded
+                        <button disabled className={`w-full py-3.5 px-6 rounded-2xl font-bold text-xs cursor-not-allowed border ${
+                          isPaused
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25'
+                            : 'bg-slate-200 dark:bg-zinc-800 text-slate-400 dark:text-zinc-500 border-transparent'
+                        }`}>
+                          {isPaused ? 'Registration Paused' : 'Registration Ended'}
                         </button>
                       );
                     }

@@ -7,7 +7,9 @@ import useAuth from '../../Hooks/useAuth';
 export default function NotificationBellDropdown({
   className = '',
   align = 'right',
-  variant = 'default' // 'default' | 'floating'
+  variant = 'default', // 'default' | 'floating' | 'sidebar'
+  canShowText = true,
+  isMobile = false
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -244,9 +246,49 @@ export default function NotificationBellDropdown({
     ? notifications.filter((n) => !n.IsRead)
     : notifications;
   return (
-    <div className={`relative inline-block ${className}`} ref={dropdownRef}>
+    <div className={`relative ${variant === 'sidebar' ? 'w-full' : 'inline-block'} ${className}`} ref={dropdownRef}>
       {/* ── TRIGGER BUTTON ── */}
-      {variant === 'floating' ? (
+      {variant === 'sidebar' ? (
+        // Sidebar Utility Button (Matches ThemeToggle / Sidebar Navigation)
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle notifications"
+          title={!canShowText ? (unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications') : ''}
+          className={`w-full flex items-center ${
+            !canShowText ? 'justify-center' : 'justify-between'
+          } px-4 py-3 rounded-xl transition-all duration-200 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-gray-700 dark:text-gray-300 cursor-pointer select-none ${
+            isOpen ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold' : ''
+          }`}
+        >
+          <div className={`flex items-center ${!canShowText ? '' : 'gap-3'}`}>
+            <div className="relative shrink-0 flex items-center justify-center">
+              <motion.div
+                animate={isRinging ? { rotate: [0, 18, -18, 12, -12, 6, 0] } : {}}
+                transition={{ duration: 0.6 }}
+              >
+                <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              </motion.div>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+              )}
+            </div>
+            {canShowText && (
+              <span className="font-medium text-sm whitespace-nowrap">
+                Notifications
+              </span>
+            )}
+          </div>
+          {canShowText && unreadCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold text-xs leading-none shadow-xs">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </button>
+      ) : variant === 'floating' ? (
         // Floating Top-Right Glass Island Pill
         <motion.button
           onClick={() => setIsOpen(!isOpen)}
@@ -304,20 +346,38 @@ export default function NotificationBellDropdown({
           )}
         </motion.button>
       )}
-      {/* ── THE FLOATING GLASSMORPHIC ISLAND (Apple macOS / Raycast style) ── */}
+      {/* ── THE FLOATING NOTIFICATIONS PANEL ── */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 12, scale: 0.94, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: 8, scale: 0.95, filter: 'blur(6px)' }}
+            initial={
+              variant === 'sidebar' && !isMobile
+                ? { opacity: 0, x: -14, scale: 0.95 }
+                : { opacity: 0, y: 12, scale: 0.94, filter: 'blur(8px)' }
+            }
+            animate={
+              variant === 'sidebar' && !isMobile
+                ? { opacity: 1, x: 0, scale: 1 }
+                : { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }
+            }
+            exit={
+              variant === 'sidebar' && !isMobile
+                ? { opacity: 0, x: -10, scale: 0.95 }
+                : { opacity: 0, y: 8, scale: 0.95, filter: 'blur(6px)' }
+            }
             transition={{
               type: 'spring',
               stiffness: 420,
               damping: 32,
               mass: 0.8
             }}
-            className={`absolute ${align === 'left' ? 'left-0' : 'right-0'} mt-3 w-[92vw] sm:w-[410px] max-w-[430px] backdrop-blur-2xl bg-white/90 dark:bg-black/95 rounded-[30px] border border-white/60 dark:border-white/10 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.25)] dark:shadow-[0_35px_80px_-15px_rgba(0,0,0,0.9)] ring-1 ring-emerald-500/20 z-50 overflow-hidden text-gray-900 dark:text-gray-100 flex flex-col`}
+            className={`absolute ${
+              variant === 'sidebar'
+                ? isMobile
+                  ? 'left-0 bottom-full mb-3'
+                  : 'left-[calc(100%+14px)] bottom-0'
+                : `${align === 'left' ? 'left-0' : 'right-0'} mt-3`
+            } w-[92vw] sm:w-[410px] max-w-[430px] backdrop-blur-2xl bg-white/95 dark:bg-black/95 rounded-[28px] border border-gray-200 dark:border-white/10 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.25)] dark:shadow-[0_35px_80px_-15px_rgba(0,0,0,0.9)] ring-1 ring-emerald-500/20 z-50 overflow-hidden text-gray-900 dark:text-gray-100 flex flex-col`}
           >
             {/* Top Iridescent Sheen Bar */}
             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent pointer-events-none" />
@@ -503,7 +563,7 @@ export default function NotificationBellDropdown({
             <div className="px-4 py-2.5 border-t border-gray-100/80 dark:border-white/10 bg-gray-50/70 dark:bg-black flex items-center justify-between text-[11px] text-gray-400">
               <div className="flex items-center gap-1.5 text-[10px]">
                 <Zap className="w-3 h-3 text-emerald-500" />
-                <span>AYOJAN Live WebSocket Telemetry</span>
+                <span>AVISHKAAR Live WebSocket Telemetry</span>
               </div>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-200/50 dark:bg-white/10 text-gray-500 dark:text-gray-400">
                 Esc

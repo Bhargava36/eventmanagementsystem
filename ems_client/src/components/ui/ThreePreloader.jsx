@@ -18,11 +18,14 @@ export default function ThreePreloader({ onComplete }) {
   // Luxury Brand Title Letters with Emerald Underscore accent
   const BRAND_LETTERS = [
     { char: 'A', isAccent: true },
-    { char: 'Y', isAccent: false },
-    { char: 'O', isAccent: false },
-    { char: 'J', isAccent: false },
+    { char: 'V', isAccent: false },
+    { char: 'I', isAccent: false },
+    { char: 'S', isAccent: false },
+    { char: 'H', isAccent: false },
+    { char: 'K', isAccent: false },
     { char: 'A', isAccent: true },
-    { char: 'N', isAccent: false },
+    { char: 'A', isAccent: false },
+    { char: 'R', isAccent: false },
   ];
   useEffect(() => {
     const mount = mountRef.current;
@@ -170,7 +173,7 @@ export default function ThreePreloader({ onComplete }) {
       },
       1.1
     );
-    // --- PHASE 3: Right as rotation completes & stops, Ayojan letters appear in Title Style ---
+    // --- PHASE 3: Right as rotation completes & stops, Avishkaar letters appear in Title Style ---
     tl.to(
       lettersRef.current,
       {
@@ -258,7 +261,7 @@ export default function ThreePreloader({ onComplete }) {
       <div ref={mountRef} className="absolute inset-0 w-full h-full pointer-events-none" />
       {/* Display Title Typography Placed Cleanly BELOW the Logo */}
       <div className="relative z-10 flex flex-col items-center space-y-3 mt-48 pointer-events-none">
-        {/* Title-style AYOJAN with emerald underscore */}
+        {/* Title-style AVISHKAAR with emerald underscore */}
         <div className="flex items-center tracking-[0.2em] sm:tracking-[0.25em] pl-[0.2em]">
           {BRAND_LETTERS.map((item, i) => (
             <span
@@ -283,7 +286,7 @@ export default function ThreePreloader({ onComplete }) {
               className={`inline-block text-sm sm:text-base md:text-lg  font-semibold opacity-0`}
               style={{ transform: 'translateY(12px)' }}
             >
-              PLAN. ORGANIZE. CELEBRATE.
+              PLAN. COORDINATE. EVALUATE.
             </span>
           </div>
         {/* Title Tagline with flanking geometric lines */}

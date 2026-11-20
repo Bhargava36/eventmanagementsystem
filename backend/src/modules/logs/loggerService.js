@@ -265,7 +265,7 @@ const seedInitialLogsIfEmpty = () => {
                     category: 'AUTH',
                     action: 'SUPER_ADMIN_SESSION',
                     message: 'Super Administrator session validated and telemetry stream active.',
-                    userEmail: 'superadmin@ayojan.io',
+                    userEmail: 'superadmin@ems.aitamsac.in',
                     userRole: 'super_admin',
                     httpMethod: 'POST',
                     endpoint: '/api/super_admin/login',

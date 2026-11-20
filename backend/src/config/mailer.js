@@ -43,7 +43,7 @@ const getTransporter = () => {
 };
 // Send 6-digit OTP verification email for password reset
 const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
-    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AYOJAN" <no-reply@ayojan.live>';
+    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AVISHKAAR" <no-reply@ems.aitamsac.in>';
     // Beautiful, responsive, Google-grade HTML template
     const html = `
     <!DOCTYPE html>
@@ -72,7 +72,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
     <body>
       <div class="container">
         <div class="header">
-          <h1>AYOJAN</h1>
+          <h1>AVISHKAAR</h1>
           <p>Security & Account Protection Portal</p>
         </div>
         <div class="content">
@@ -92,7 +92,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
           </div>
         </div>
         <div class="footer">
-          &copy; ${new Date().getFullYear()} AYOJAN. All rights reserved.
+          &copy; ${new Date().getFullYear()} AVISHKAAR. All rights reserved.
         </div>
       </div>
     </body>
@@ -114,14 +114,14 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
         const info = await transporter.sendMail({
             from: fromAddress,
             to: toEmail,
-            subject: `${otpCode} is your AYOJAN Verification code`,
+            subject: `${otpCode} is your AVISHKAAR Verification code`,
             text: `Your password reset code is: ${otpCode}. It expires in 10 minutes.`,
             html
         });
         recordEmailLogSafe({
             recipientEmail: toEmail,
             recipientName: userName,
-            subject: `${otpCode} is your AYOJAN Verification code`,
+            subject: `${otpCode} is your AVISHKAAR Verification code`,
             emailType: 'OTP',
             status: 'Delivered',
             payloadSnippet: `Password reset OTP: ${otpCode}`
@@ -131,7 +131,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
         recordEmailLogSafe({
             recipientEmail: toEmail,
             recipientName: userName,
-            subject: `${otpCode} is your AYOJAN Verification code`,
+            subject: `${otpCode} is your AVISHKAAR Verification code`,
             emailType: 'OTP',
             status: 'Failed',
             errorMessage: err.message,
@@ -142,7 +142,7 @@ const sendOtpEmail = async (toEmail, otpCode, userName = 'Participant') => {
 };
 // Send confirmation email after password has been successfully reset
 const sendPasswordResetSuccessEmail = async (toEmail, userName = 'Participant') => {
-    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AYOJAN" <no-reply@ayojan.live>';
+    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_USER || '"AVISHKAAR" <no-reply@ems.aitamsac.in>';
     const html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -322,12 +322,12 @@ const sendEventBroadcastEmail = async ({
           </div>
           <div class="organizer-card">
             <strong>Dispatched by:</strong> ${organizerName}<br/>
-            <span>Broadcast sent via AYOJAN Event Protocol.</span>
+            <span>Broadcast sent via AVISHKAAR Event Protocol.</span>
           </div>
         </div>
         <div class="footer">
           You are receiving this communication because you are registered for ${eventName}.<br/>
-          &copy; ${new Date().getFullYear()} AYOJAN.
+          &copy; ${new Date().getFullYear()} AVISHKAAR.
         </div>
       </div>
     </body>

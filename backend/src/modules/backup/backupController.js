@@ -12,7 +12,7 @@ const getStats = async (req, res) => {
 const downloadSqlBackup = async (req, res) => {
     try {
         const { sql, totalTables, totalRows } = await backupService.generateSqlDump();
-        const filename = `ayojan_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.sql`;
+        const filename = `ems_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.sql`;
         const sizeBytes = Buffer.byteLength(sql, 'utf8');
         await backupService.recordBackup({
             filename,
@@ -32,7 +32,7 @@ const downloadSqlBackup = async (req, res) => {
 const downloadJsonBackup = async (req, res) => {
     try {
         const { json, totalTables, totalRows } = await backupService.generateJsonDump();
-        const filename = `ayojan_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+        const filename = `ems_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
         const jsonString = JSON.stringify(json, null, 2);
         const sizeBytes = Buffer.byteLength(jsonString, 'utf8');
         await backupService.recordBackup({
