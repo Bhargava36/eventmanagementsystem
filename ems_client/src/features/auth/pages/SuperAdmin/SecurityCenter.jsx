@@ -606,8 +606,8 @@ export default function SecurityCenter() {
           </div>
         </div>
         {/* TAB NAVIGATION */}
-        <div className="border-b border-gray-200 dark:border-zinc-800">
-          <nav className="flex space-x-6">
+        <div className="border-b border-gray-200 dark:border-zinc-800 -mx-4 sm:mx-0 px-4 sm:px-0 overflow-x-auto sidebar-scrollbar">
+          <nav className="flex items-center space-x-2 sm:space-x-6 min-w-max pb-0.5" aria-label="Security Tabs">
             {[
               { id: 'alerts', label: 'Security Alerts', icon: ShieldAlert, count: overview.threats?.openAlerts },
               { id: 'sessions', label: 'Active Sessions', icon: Laptop, count: overview.activeSessions },
@@ -620,17 +620,17 @@ export default function SecurityCenter() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
+                  className={`flex items-center gap-2 py-3 sm:py-4 px-2.5 sm:px-1.5 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap transition-colors cursor-pointer shrink-0 ${
                     isActive
-                      ? 'border-emerald-600 dark:border-emerald-400 text-emerald-700 dark:text-emerald-400'
+                      ? 'border-emerald-600 dark:border-emerald-400 text-emerald-700 dark:text-emerald-400 font-bold'
                       : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-zinc-700'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 shrink-0" />
                   <span>{tab.label}</span>
                   {tab.count !== undefined && tab.count > 0 && (
-                    <span className="ml-1 text-xs font-semibold text-rose-600 dark:text-rose-400">
-                      ({tab.count})
+                    <span className="ml-1 text-[11px] sm:text-xs font-semibold px-1.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                      {tab.count}
                     </span>
                   )}
                 </button>

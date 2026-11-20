@@ -266,19 +266,44 @@ export default function SeminarAttendancePage() {
     }, 300);
   };
   const stopQrScanner = () => {
-    if (html5QrCodeRef.current) {
-      html5QrCodeRef.current
-        .stop()
-        .then(() => html5QrCodeRef.current.clear())
-        .catch(() => {})
-        .finally(() => {
-          html5QrCodeRef.current = null;
-          setScannerOpen(false);
-        });
-    } else {
-      setScannerOpen(false);
+    setScannerOpen(false);
+    setScannerError('');
+    const scanner = html5QrCodeRef.current;
+    html5QrCodeRef.current = null;
+    if (scanner) {
+      try {
+        if (scanner.isScanning) {
+          scanner
+            .stop()
+            .then(() => {
+              try { scanner.clear(); } catch (_) {}
+            })
+            .catch(() => {
+              try { scanner.clear(); } catch (_) {}
+            });
+        } else {
+          try { scanner.clear(); } catch (_) {}
+        }
+      } catch (err) {
+        console.warn('Error clearing QR scanner:', err);
+      }
     }
   };
+
+  // Close scanner on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && scannerOpen) {
+        stopQrScanner();
+      }
+    };
+    if (scannerOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [scannerOpen]);
   const handleScannedPass = (scannedText) => {
     let cleanText = (scannedText || '').trim();
     let delegateIdOrEmail = cleanText;
@@ -853,12 +878,16 @@ export default function SeminarAttendancePage() {
       {/* QR Scanner Modal */}
       <AnimatePresence>
         {scannerOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div
+            onClick={stopQrScanner}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm cursor-pointer"
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4"
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-black border border-slate-200 dark:border-zinc-800 rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-4 cursor-default"
             >
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-zinc-800">
                 <div className="flex items-center gap-2">
@@ -870,8 +899,10 @@ export default function SeminarAttendancePage() {
                   </h3>
                 </div>
                 <button
+                  type="button"
                   onClick={stopQrScanner}
                   className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-400 hover:text-slate-600 dark:hover:text-white transition cursor-pointer"
+                  title="Close scanner"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -890,6 +921,15 @@ export default function SeminarAttendancePage() {
                   </p>
                 </div>
               )}
+              <div className="pt-2 flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={stopQrScanner}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-200 text-xs font-bold transition cursor-pointer"
+                >
+                  Close Scanner
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

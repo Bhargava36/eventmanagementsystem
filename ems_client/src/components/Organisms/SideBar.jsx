@@ -114,13 +114,13 @@ const SidebarContent = ({
   function handleLogout() {
     logout();
     toast.success('Logged out successfully');
-    navigate('/login');
+    navigate('/');
   }
   return (
     <aside
       className={`relative ${
         isMobile ? 'w-[280px]' : collapsed ? 'w-[80px]' : 'w-[280px]'
-      } h-screen max-h-screen z-20 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-3 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
+      } h-[100dvh] max-h-[100dvh] z-20 shrink-0 border-r-2 border-emerald-700 dark:border-emerald-500 rounded-tr-2xl rounded-br-2xl flex flex-col p-3 bg-white dark:bg-black text-gray-800 dark:text-white shadow-xl transition-all ease-in-out duration-500`}
     >
       {!isMobile && (
         <button
@@ -185,9 +185,10 @@ const SidebarContent = ({
         )}
       </div>
       <div className="border-t border-gray-200 dark:border-[#1A2440] mb-3 shrink-0"></div>
-      {/* Only Navigation Links Scroll */}
-      <LayoutGroup id={isMobile ? 'superadmin-nav-mobile' : 'superadmin-nav-desktop'}>
-        <nav className="space-y-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1.5 sidebar-scrollbar">
+      {/* Scrollable Navigation Area - Strictly Bounded */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden my-1">
+        <LayoutGroup id={isMobile ? 'superadmin-nav-mobile' : 'superadmin-nav-desktop'}>
+          <nav className="space-y-1.5 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1.5 sidebar-scrollbar">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isCurrentActive = item.end
@@ -260,28 +261,29 @@ const SidebarContent = ({
           })}
         </nav>
       </LayoutGroup>
-      {/* Fixed Footer */}
-      <div className="mt-auto shrink-0 pt-3 space-y-0.5">
+      </div>
+      {/* Fixed Footer - Always Pinned Inside Viewport */}
+      <div className="mt-auto shrink-0 pt-2 space-y-0.5 border-t border-gray-100 dark:border-zinc-800/80">
         <NotificationBellDropdown
           variant="sidebar"
           canShowText={canShowText}
           isMobile={isMobile}
         />
         <ThemeToggle variant="sidebar" canShowText={canShowText} />
-        <div className="border-t border-gray-200 dark:border-[#1A2440] my-3"></div>
+        <div className="border-t border-gray-200 dark:border-[#1A2440] my-2"></div>
         <button
           onClick={handleLogout}
           title={!isMobile && collapsed ? 'Logout' : ''}
           className={`w-full flex items-center ${
             !isMobile && collapsed ? 'justify-center' : 'gap-3'
-          } px-4 py-3 rounded-xl transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer`}
+          } px-4 py-2.5 rounded-xl transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer`}
         >
           <LogOut className="w-5 h-5 shrink-0" />
           {canShowText && (
             <motion.span
               initial={{ opacity: 0, x: -5 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.2, delay: 1 }}
+              transition={{ duration: 0.2, delay: 0.1 }}
               className="font-medium text-sm whitespace-nowrap"
             >
               Logout

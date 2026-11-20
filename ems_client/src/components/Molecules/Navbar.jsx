@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useId } from "react";
+import React, { useState, useEffect, useRef, useId, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   motion,
@@ -8,9 +8,10 @@ import {
   LayoutGroup,
   useReducedMotion,
 } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "../Organisms/ThemeToggler";
+import useAuth from "../../Hooks/useAuth";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -64,6 +65,17 @@ export function Navbar() {
   const navUid = useId();
   const { pathname } = useLocation();
   const reduceMotion = useReducedMotion();
+  const { isAuthenticated, role, user } = useAuth();
+
+  const dashboardPath = useMemo(() => {
+    const activeRole = String(
+      role || user?.role || user?.Role || localStorage.getItem("role") || ""
+    ).toLowerCase();
+    if (activeRole === "admin" || localStorage.getItem("admin")) return "/admin/dashboard";
+    if (activeRole === "super_admin") return "/sidebar";
+    if (activeRole === "evaluator") return "/evaluator/dashboard";
+    return "/user/dashboard";
+  }, [role, user]);
 
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(() =>
@@ -239,20 +251,33 @@ export function Navbar() {
         <div className="hidden lg:flex items-center gap-2 xl:gap-2.5 shrink-0">
           <ThemeToggle />
 
-          <Link
-            to="/user/login"
-            className="px-3 xl:px-4 py-1.5 xl:py-2 text-xs font-semibold rounded-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-200 hover:border-emerald-500/70 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-          >
-            Log In
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              to={dashboardPath}
+              className="group/join inline-flex items-center gap-1.5 px-3.5 xl:px-4 py-1.5 xl:py-2 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-xs"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Dashboard</span>
+              <ArrowRight className="w-3.5 h-3.5 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover/join:translate-x-0.5" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/user/login"
+                className="px-3 xl:px-4 py-1.5 xl:py-2 text-xs font-semibold rounded-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-200 hover:border-emerald-500/70 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+              >
+                Log In
+              </Link>
 
-          <Link
-            to="/user/register"
-            className="group/join inline-flex items-center gap-1 xl:gap-1.5 px-3 xl:px-4 py-1.5 xl:py-2 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-xs"
-          >
-            <span>Join Free</span>
-            <ArrowRight className="w-3.5 h-3.5 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover/join:translate-x-0.5" />
-          </Link>
+              <Link
+                to="/user/register"
+                className="group/join inline-flex items-center gap-1 xl:gap-1.5 px-3 xl:px-4 py-1.5 xl:py-2 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-xs"
+              >
+                <span>Join Free</span>
+                <ArrowRight className="w-3.5 h-3.5 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover/join:translate-x-0.5" />
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile & Tablet Controls (< lg: below 1024px) */}
@@ -260,20 +285,33 @@ export function Navbar() {
           <ThemeToggle />
 
           {/* Quick CTA buttons on tablet screens (sm to lg) */}
-          <Link
-            to="/user/login"
-            className="hidden sm:inline-flex px-3 py-1.5 text-xs font-semibold rounded-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-200 hover:border-emerald-500/70 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
-          >
-            Log In
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              to={dashboardPath}
+              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-xs"
+            >
+              <LayoutDashboard className="w-3 h-3" />
+              <span>Dashboard</span>
+              <ArrowRight className="w-3 h-3 motion-safe:transition-transform motion-safe:duration-200" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/user/login"
+                className="hidden sm:inline-flex px-3 py-1.5 text-xs font-semibold rounded-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-700 dark:text-zinc-200 hover:border-emerald-500/70 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+              >
+                Log In
+              </Link>
 
-          <Link
-            to="/user/register"
-            className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-xs"
-          >
-            <span>Join Free</span>
-            <ArrowRight className="w-3 h-3 motion-safe:transition-transform motion-safe:duration-200" />
-          </Link>
+              <Link
+                to="/user/register"
+                className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-xs"
+              >
+                <span>Join Free</span>
+                <ArrowRight className="w-3 h-3 motion-safe:transition-transform motion-safe:duration-200" />
+              </Link>
+            </>
+          )}
 
           <button
             type="button"
@@ -352,22 +390,36 @@ export function Navbar() {
               {/* Mobile-only auth CTA buttons (hidden on sm: where they are already in the top row) */}
               <motion.div
                 variants={itemVariants}
-                className="sm:hidden pt-3 border-t border-slate-200/80 dark:border-zinc-800 grid grid-cols-2 gap-2.5"
+                className="sm:hidden pt-3 border-t border-slate-200/80 dark:border-zinc-800"
               >
-                <Link
-                  to="/user/login"
-                  onClick={() => setIsOpen(false)}
-                  className="py-2.5 text-center text-xs font-semibold rounded-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-800 dark:text-zinc-200 hover:border-emerald-500/60 transition-colors"
-                >
-                  Log In
-                </Link>
-                <Link
-                  to="/user/register"
-                  onClick={() => setIsOpen(false)}
-                  className="py-2.5 text-center text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
-                >
-                  Join Free
-                </Link>
+                {isAuthenticated ? (
+                  <Link
+                    to={dashboardPath}
+                    onClick={() => setIsOpen(false)}
+                    className="w-full py-2.5 text-center text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>Go to Dashboard</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <Link
+                      to="/user/login"
+                      onClick={() => setIsOpen(false)}
+                      className="py-2.5 text-center text-xs font-semibold rounded-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-black text-slate-800 dark:text-zinc-200 hover:border-emerald-500/60 transition-colors"
+                    >
+                      Log In
+                    </Link>
+                    <Link
+                      to="/user/register"
+                      onClick={() => setIsOpen(false)}
+                      className="py-2.5 text-center text-xs font-semibold rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
+                    >
+                      Join Free
+                    </Link>
+                  </div>
+                )}
               </motion.div>
             </div>
           </motion.div>

@@ -903,10 +903,12 @@ const migrationQueries = [
         Title VARCHAR(255) NOT NULL,
         Message TEXT NOT NULL,
         Type VARCHAR(50) DEFAULT 'ANNOUNCEMENT',
+        TargetRole VARCHAR(50) DEFAULT 'ALL',
         LinkUrl VARCHAR(255) DEFAULT NULL,
         IsRead BOOLEAN DEFAULT FALSE,
         CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_notif_user (UserId),
+        INDEX idx_notif_target_role (TargetRole),
         INDEX idx_notif_read (IsRead),
         INDEX idx_notif_created (CreatedAt DESC)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,

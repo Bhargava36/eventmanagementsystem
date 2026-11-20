@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '@/lib/api';
-import { Users, UsersRound, Calendar, CheckCircle2, Clock, Activity, UserCheck, UserPlus } from 'lucide-react';
+import { Users, UsersRound, Calendar, CheckCircle2, Clock, Activity, UserCheck, UserPlus, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import useTheme from '../../../../Hooks/useTheme';
 import SuperAdminAnalytics from './components/SuperAdminAnalytics';
@@ -60,8 +61,16 @@ function SuperAdminDashboard() {
   const [teamsCount, setTeamsCount] = useState(0);
   const [eventsCount, setEventsCount] = useState(0);
   const [events, setEvents] = useState([]);
+  const [eventLimit, setEventLimit] = useState(8);
   const [recentRegistrations, setRecentRegistrations] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
+
+  const displayedEvents = useMemo(() => {
+    if (eventLimit === 'all' || (typeof eventLimit === 'number' && eventLimit >= events.length)) {
+      return events;
+    }
+    return events.slice(0, Number(eventLimit) || 8);
+  }, [events, eventLimit]);
   useEffect(() => {
     fetchUsersCount();
     fetchMembersCount();
@@ -490,11 +499,55 @@ function SuperAdminDashboard() {
           }}
           className="bg-white dark:bg-black rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-zinc-800 shadow-sm"
         >
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-              Events Overview
-            </h2>
-            {/* Unused template component */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-gray-100 dark:border-zinc-800">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  Events Overview
+                </h2>
+                {events.length > 0 && (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                    {events.length} Total
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Showing {displayedEvents.length} of {events.length} campus events
+              </p>
+            </div>
+
+            {events.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center bg-gray-100 dark:bg-zinc-900 p-0.5 rounded-lg border border-gray-200 dark:border-zinc-800 text-xs">
+                  {[4, 8, 12, 'All'].map((limitVal) => {
+                    const val = limitVal === 'All' ? 'all' : limitVal;
+                    const isSelected = eventLimit === val;
+                    return (
+                      <button
+                        key={limitVal}
+                        type="button"
+                        onClick={() => setEventLimit(val)}
+                        className={`px-2.5 py-1 rounded-md font-medium transition cursor-pointer ${
+                          isSelected
+                            ? 'bg-white dark:bg-black text-emerald-600 dark:text-emerald-400 shadow-xs font-bold'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        }`}
+                      >
+                        {limitVal}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Link
+                  to="/sidebar/events"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition border border-emerald-500/20"
+                >
+                  <span>Manage All</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            )}
           </div>
           {events.length === 0 ? (
             <div className="text-center py-10">
@@ -505,7 +558,7 @@ function SuperAdminDashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4 sm:gap-5">
-              {events.map((event, i) => {
+              {displayedEvents.map((event, i) => {
                 const eventStatus = String(
                   event.status || event.EventStatus || ''
                 ).toLowerCase();
@@ -614,6 +667,32 @@ function SuperAdminDashboard() {
                   </motion.div>
                 );
               })}
+            </div>
+          )}
+
+          {events.length > 4 && (
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+              <span className="text-gray-500 dark:text-gray-400">
+                Viewing {displayedEvents.length} of {events.length} events
+              </span>
+              <div className="flex items-center gap-3">
+                {eventLimit !== 'all' && events.length > displayedEvents.length && (
+                  <button
+                    type="button"
+                    onClick={() => setEventLimit('all')}
+                    className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                  >
+                    View all ({events.length})
+                  </button>
+                )}
+                <Link
+                  to="/sidebar/events"
+                  className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+                >
+                  <span>Events Hub</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
             </div>
           )}
         </motion.div>

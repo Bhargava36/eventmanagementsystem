@@ -135,19 +135,19 @@ export default function MyEventsPage() {
     });
   }, [events, searchQuery, activeFilter]);
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-6 sm:p-10 transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white p-4 sm:p-6 lg:p-8 transition-colors overflow-x-hidden">
       {/* Top Header */}
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-200 dark:border-zinc-800/80">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 pb-6 border-b border-slate-200 dark:border-zinc-800/80">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
               <Layers className="w-3.5 h-3.5" />
               Multi-Event Command Center
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               My Hosted Events
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
               Switch between workspaces, oversee multiple hackathons and workshops, or launch a new event effortlessly.
             </p>
           </div>
@@ -155,63 +155,63 @@ export default function MyEventsPage() {
             <button
               onClick={fetchAdminEvents}
               title="Refresh list"
-              className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="p-2.5 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
         {/* Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm flex items-center justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Total Events Assigned
               </p>
-              <h3 className="text-3xl font-black mt-1 text-slate-900 dark:text-white">
+              <h3 className="text-2xl sm:text-3xl font-black mt-1 text-slate-900 dark:text-white">
                 {events.length}
               </h3>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <Layers className="w-6 h-6" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <Layers className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
           </div>
-          <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm flex items-center justify-between">
-            <div>
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm flex items-center justify-between">
+            <div className="min-w-0 flex-1 mr-2">
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Active Workspace
               </p>
-              <h3 className="text-lg font-bold mt-1 text-emerald-600 dark:text-emerald-400 truncate max-w-[200px]">
+              <h3 className="text-base sm:text-lg font-bold mt-1 text-emerald-600 dark:text-emerald-400 truncate max-w-full">
                 {admin?.EventName || 'None Selected'}
               </h3>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <Zap className="w-6 h-6" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
           </div>
-          <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm flex items-center justify-between">
+          <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm flex items-center justify-between sm:col-span-2 lg:col-span-1">
             <div>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Access Level
               </p>
-              <h3 className="text-lg font-bold mt-1 text-slate-900 dark:text-white flex items-center gap-1.5">
-                <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                Multi-Event Organizer
+              <h3 className="text-base sm:text-lg font-bold mt-1 text-slate-900 dark:text-white flex items-center gap-1.5">
+                <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0" />
+                <span>Multi-Event Organizer</span>
               </h3>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-              <Users className="w-6 h-6" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
           </div>
         </div>
         {/* Filters & Search */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 w-fit overflow-x-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 w-full sm:w-fit overflow-x-auto sidebar-scrollbar">
             {['all', 'hackathons', 'workshops', 'conferences'].map((f) => (
               <button
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold capitalize transition-all cursor-pointer ${
+                className={`px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold capitalize transition-all cursor-pointer whitespace-nowrap ${
                   activeFilter === f
                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -221,7 +221,7 @@ export default function MyEventsPage() {
               </button>
             ))}
           </div>
-          <div className="relative min-w-[260px] sm:w-80">
+          <div className="relative w-full sm:w-80 shrink-0">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
@@ -239,7 +239,7 @@ export default function MyEventsPage() {
             <p className="text-sm text-slate-400 font-medium">Loading your event portfolio...</p>
           </div>
         ) : filteredEvents.length === 0 ? (
-          <div className="py-20 text-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-10 bg-white/40 dark:bg-slate-900/20">
+          <div className="py-16 sm:py-20 text-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 p-6 sm:p-10 bg-white/40 dark:bg-slate-900/20">
             <Layers className="w-12 h-12 text-slate-400 mx-auto mb-3 opacity-60" />
             <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
               No Events Found
@@ -258,7 +258,7 @@ export default function MyEventsPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {filteredEvents.map((ev) => {
               const isActive = Number(ev.Id) === Number(currentActiveEventId);
               const typeInfo = getEventTypeInfo(ev.EventType);
@@ -267,7 +267,7 @@ export default function MyEventsPage() {
                   key={ev.Id}
                   whileHover={{ y: -3 }}
                   transition={{ duration: 0.2 }}
-                  className={`relative rounded-2xl p-6 border transition-all flex flex-col justify-between ${
+                  className={`relative rounded-2xl p-4 sm:p-5 border transition-all flex flex-col justify-between ${
                     isActive
                       ? 'border-emerald-500 bg-emerald-50/60 dark:bg-zinc-900/90 dark:border-emerald-500/60 shadow-lg ring-1 ring-emerald-500/20'
                       : 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-black hover:border-slate-300 dark:hover:border-zinc-700 shadow-sm'

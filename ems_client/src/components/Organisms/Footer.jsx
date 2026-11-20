@@ -262,22 +262,22 @@ export function Footer() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.15 }}
         transition={{ duration: 0.6, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
-        className="group/plinth relative z-10 flex-1 w-full flex flex-col items-center justify-center py-6 sm:py-10 select-none"
+        className="group/plinth relative z-10 flex-1 w-full flex flex-col items-center justify-center py-6 sm:py-10 select-none overflow-hidden"
       >
-        <div className="flex items-center justify-center gap-4 sm:gap-7 md:gap-10">
+        <div className="w-full max-w-full flex items-center justify-center gap-2.5 sm:gap-4 md:gap-6 lg:gap-8 px-2 overflow-hidden">
           {/* Signature 4-Dot Orbital Emblem */}
           <div
-            className="relative w-10 h-10 sm:w-14 sm:h-14 md:w-18 md:h-18 lg:w-22 lg:h-22 xl:w-28 xl:h-28 flex items-center justify-center shrink-0 motion-safe:transition-transform motion-safe:duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:group-hover/plinth:rotate-90"
+            className="relative w-7 h-7 sm:w-10 sm:h-10 md:w-14 md:h-14 lg:w-18 lg:h-18 xl:w-20 xl:h-20 flex items-center justify-center shrink-0 motion-safe:transition-transform motion-safe:duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:group-hover/plinth:rotate-90"
             aria-hidden="true"
           >
-            <span className="absolute w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 xl:w-5 xl:h-5 rounded-full bg-white top-0 left-1/2 -translate-x-1/2 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover/plinth:-translate-y-0.5" />
-            <span className="absolute w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 xl:w-5 xl:h-5 rounded-full bg-emerald-200 dark:bg-emerald-400 left-0 top-1/2 -translate-y-1/2 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover/plinth:-translate-x-0.5" />
-            <span className="absolute w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 xl:w-5 xl:h-5 rounded-full bg-emerald-200 dark:bg-emerald-400 right-0 top-1/2 -translate-y-1/2 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover/plinth:translate-x-0.5" />
-            <span className="absolute w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4 xl:w-5 xl:h-5 rounded-full bg-white bottom-0 left-1/2 -translate-x-1/2 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover/plinth:translate-y-0.5" />
+            <span className="absolute w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3.5 md:h-3.5 xl:w-4 xl:h-4 rounded-full bg-white top-0 left-1/2 -translate-x-1/2 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover/plinth:-translate-y-0.5" />
+            <span className="absolute w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3.5 md:h-3.5 xl:w-4 xl:h-4 rounded-full bg-emerald-200 dark:bg-emerald-400 left-0 top-1/2 -translate-y-1/2 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover/plinth:-translate-x-0.5" />
+            <span className="absolute w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3.5 md:h-3.5 xl:w-4 xl:h-4 rounded-full bg-emerald-200 dark:bg-emerald-400 right-0 top-1/2 -translate-y-1/2 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover/plinth:translate-x-0.5" />
+            <span className="absolute w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3.5 md:h-3.5 xl:w-4 xl:h-4 rounded-full bg-white bottom-0 left-1/2 -translate-x-1/2 motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover/plinth:translate-y-0.5" />
           </div>
 
-          {/* Sculpted Full-Width Playfair Brand Wordmark */}
-          <div className="font-heading flex items-baseline text-5xl sm:text-7xl md:text-8xl lg:text-[116px] xl:text-[148px] 2xl:text-[176px] font-bold tracking-[0.14em] leading-none text-white">
+          {/* Sculpted Fluid-Width Brand Wordmark (no cut-off on any screen) */}
+          <div className="font-heading flex items-baseline text-[clamp(1.5rem,6.8vw,8.5rem)] font-bold tracking-[0.04em] sm:tracking-[0.08em] md:tracking-[0.12em] leading-none text-white whitespace-nowrap overflow-hidden">
             <span className="sr-only">AVISHKAAR</span>
             {BRAND_LETTERS.map((char, index) => (
               <span

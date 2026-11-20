@@ -12,8 +12,18 @@ export default function NotificationBellDropdown({
   isMobile = false
 }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, role, token } = useAuth();
   const userId = user?.Id || user?.id || null;
+  const userRole = (role || user?.role || user?.Role || localStorage.getItem('role') || '').toLowerCase();
+
+  const activeRole = (() => {
+    if (window.location.pathname.startsWith('/sidebar')) return 'super_admin';
+    if (window.location.pathname.startsWith('/admin')) return 'admin';
+    if (window.location.pathname.startsWith('/evaluator')) return 'evaluator';
+    if (userRole) return userRole;
+    if (localStorage.getItem('admin')) return 'admin';
+    return 'user';
+  })();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -47,7 +57,15 @@ export default function NotificationBellDropdown({
       if (!isSilent) setLoading(true);
       const params = new URLSearchParams({ limit: '30' });
       if (userId) params.append('userId', String(userId));
-      const res = await fetch(`${API_BASE_URL}/api/notifications?${params.toString()}`);
+      if (activeRole) params.append('role', activeRole);
+
+      const headers = {};
+      const currentToken = token || localStorage.getItem('token');
+      if (currentToken) {
+        headers['Authorization'] = `Bearer ${currentToken}`;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/notifications?${params.toString()}`, { headers });
       if (!res.ok) return;
       const data = await res.json();
       if (data && data.success) {
@@ -62,16 +80,13 @@ export default function NotificationBellDropdown({
     } finally {
       if (!isSilent) setLoading(false);
     }
-  }, [userId]);
-  // Initial fetch (only when authenticated)
+  }, [userId, activeRole, token]);
+  // Initial fetch (runs on mount and role/user updates)
   useEffect(() => {
-    if (userId) {
-      fetchNotifications();
-    }
+    fetchNotifications();
   }, [fetchNotifications]);
   // Gentle fallback polling every 60s when active (relies on real-time WebSocket)
   useEffect(() => {
-    if (!userId) return;
     const timer = setInterval(() => {
       fetchNotifications(true);
     }, 60000);
@@ -106,7 +121,11 @@ export default function NotificationBellDropdown({
             const data = JSON.parse(event.data);
             if (data.type === 'NEW_NOTIFICATION') {
               const notif = data.notification;
-              if (!notif.UserId || Number(notif.UserId) === Number(userId)) {
+              const notifTarget = (notif.TargetRole || notif.targetRole || 'ALL').toString().toLowerCase();
+              const isDirectUser = notif.UserId && Number(notif.UserId) === Number(userId);
+              const isRoleMatch = notifTarget === 'all' || notifTarget === activeRole || (activeRole === 'user' && notifTarget === 'teamlead');
+
+              if (isDirectUser || (!notif.UserId && isRoleMatch)) {
                 setNotifications((prev) => [notif, ...prev]);
                 setUnreadCount((prev) => prev + 1);
                 // Ring animation
@@ -135,7 +154,7 @@ export default function NotificationBellDropdown({
         }
       }
     };
-  }, [userId]);
+  }, [userId, activeRole]);
   // Mark single as read
   const handleMarkAsRead = async (id, e) => {
     if (e) e.stopPropagation();
@@ -155,7 +174,7 @@ export default function NotificationBellDropdown({
       await fetch(`${API_BASE_URL}/api/notifications/read-all`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        body: JSON.stringify({ userId, role: activeRole })
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, IsRead: 1 })));
       setUnreadCount(0);
@@ -183,8 +202,52 @@ export default function NotificationBellDropdown({
       handleMarkAsRead(notif.Id);
     }
     if (notif.LinkUrl) {
+      const rawUrl = String(notif.LinkUrl).trim();
+      if (!rawUrl || rawUrl === '#' || rawUrl === 'null' || rawUrl === 'undefined') {
+        setIsOpen(false);
+        return;
+      }
+
       setIsOpen(false);
-      navigate(notif.LinkUrl);
+
+      // Determine current user role & portal context
+      const currentRole = String(user?.role || user?.Role || localStorage.getItem('role') || '').toLowerCase();
+      const isAdminPortal = currentRole === 'admin' || window.location.pathname.startsWith('/admin') || Boolean(localStorage.getItem('admin'));
+      const isUserPortal = currentRole === 'user' || currentRole === 'teamlead' || window.location.pathname.startsWith('/user');
+      const isSuperAdminPortal = currentRole === 'super_admin' || window.location.pathname.startsWith('/sidebar');
+
+      // Prevent kicking logged-in portal users to public Explore Events
+      if (rawUrl === '/events' || rawUrl === '/explore') {
+        if (isAdminPortal) {
+          navigate('/admin/dashboard');
+          return;
+        }
+        if (isUserPortal) {
+          navigate('/user/competitions');
+          return;
+        }
+        if (isSuperAdminPortal) {
+          navigate('/sidebar/events');
+          return;
+        }
+      }
+
+      // If linking to a public event /events/:id while in user portal, route to in-portal event redirect page
+      if (rawUrl.startsWith('/events/') && isUserPortal) {
+        const eventId = rawUrl.replace('/events/', '');
+        if (eventId) {
+          navigate(`/user/events/${eventId}`);
+          return;
+        }
+      }
+
+      // If linking to a public event /events/:id while in admin portal, keep in admin dashboard
+      if (rawUrl.startsWith('/events/') && isAdminPortal) {
+        navigate('/admin/dashboard');
+        return;
+      }
+
+      navigate(rawUrl);
     }
   };
   // Relative timestamp formatting
@@ -377,7 +440,7 @@ export default function NotificationBellDropdown({
                   ? 'left-0 bottom-full mb-3'
                   : 'left-[calc(100%+14px)] bottom-0'
                 : `${align === 'left' ? 'left-0' : 'right-0'} mt-3`
-            } w-[92vw] sm:w-[410px] max-w-[430px] backdrop-blur-2xl bg-white/95 dark:bg-black/95 rounded-[28px] border border-gray-200 dark:border-white/10 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.25)] dark:shadow-[0_35px_80px_-15px_rgba(0,0,0,0.9)] ring-1 ring-emerald-500/20 z-50 overflow-hidden text-gray-900 dark:text-gray-100 flex flex-col`}
+            } w-[92vw] sm:w-[410px] max-w-[430px] backdrop-blur-2xl bg-white/95 dark:bg-black/95 rounded-[28px] border border-gray-200 dark:border-white/10 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.25)] dark:shadow-[0_35px_80px_-15px_rgba(0,0,0,0.9)] ring-1 ring-emerald-500/20 z-[100] overflow-hidden text-gray-900 dark:text-gray-100 flex flex-col`}
           >
             {/* Top Iridescent Sheen Bar */}
             <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent pointer-events-none" />
